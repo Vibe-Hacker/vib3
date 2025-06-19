@@ -7,7 +7,9 @@ window.currentUser = null;
 // Replace Firebase auth
 const auth = {
     currentUser: null,
+    _callbacks: [],
     onAuthStateChanged: function(callback) {
+        this._callbacks.push(callback);
         // Check if user is logged in
         if (window.authToken) {
             fetch('/api/auth/me', {
@@ -27,6 +29,9 @@ const auth = {
         } else {
             callback(null);
         }
+    },
+    _triggerCallbacks: function(user) {
+        this._callbacks.forEach(callback => callback(user));
     }
 };
 
@@ -45,6 +50,9 @@ async function signInWithEmailAndPassword(authObj, email, password) {
     localStorage.setItem('vib3_token', data.token);
     auth.currentUser = data.user;
     window.currentUser = data.user;
+    
+    // Trigger auth state change
+    auth._triggerCallbacks(data.user);
     
     return { user: data.user };
 }
@@ -65,6 +73,9 @@ async function createUserWithEmailAndPassword(authObj, email, password) {
     auth.currentUser = data.user;
     window.currentUser = data.user;
     
+    // Trigger auth state change
+    auth._triggerCallbacks(data.user);
+    
     return { user: data.user };
 }
 
@@ -80,6 +91,9 @@ async function signOut(authObj) {
     localStorage.removeItem('vib3_token');
     auth.currentUser = null;
     window.currentUser = null;
+    
+    // Trigger auth state change
+    auth._triggerCallbacks(null);
 }
 
 async function updateProfile(user, updates) {
