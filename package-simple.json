@@ -1,0 +1,15 @@
+{
+  "name": "vib3",
+  "version": "1.0.0",
+  "description": "TikTok-style video social platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

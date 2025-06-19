@@ -48,9 +48,49 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke!');
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server with proper error handling
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`VIB3 server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`);
     console.log(`Visit http://localhost:${PORT} to view the app`);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+    if (error.syscall !== 'listen') {
+        throw error;
+    }
+
+    const bind = typeof PORT === 'string' ? 'Pipe ' + PORT : 'Port ' + PORT;
+
+    switch (error.code) {
+        case 'EACCES':
+            console.error(bind + ' requires elevated privileges');
+            process.exit(1);
+            break;
+        case 'EADDRINUSE':
+            console.error(bind + ' is already in use');
+            process.exit(1);
+            break;
+        default:
+            throw error;
+    }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down gracefully');
+    server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
 });
