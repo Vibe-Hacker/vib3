@@ -44,6 +44,11 @@ www/
 - Commit pattern: Use 🤖 emoji in commit messages
 - Always run linting/testing before commits (when available)
 
+## User Preferences
+- Don't ask for confirmation during tasks - just complete them
+- Only pause when there are multiple options requiring a choice
+- Be proactive and complete the full task
+
 ## Session Recovery
 When starting a new conversation, mention:
 1. "Working on VIB3 project"
