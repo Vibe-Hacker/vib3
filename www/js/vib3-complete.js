@@ -695,18 +695,44 @@ function loadMusicTracks(category) {
 
 // ================ LIVE STREAMING ================
 function showPage(page) {
+    // Special handling for live page
     if (page === 'live') {
         openLiveStreamSetup();
+        return;
     }
-    // Hide all pages first
-    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page').forEach(el => {
+    
+    // Hide all pages and feeds first
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page').forEach(el => {
         el.style.display = 'none';
     });
+    
+    // Hide main video feed
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'none';
+    }
+    
+    // Handle special cases for pages that don't exist yet
+    if (page === 'activity') {
+        createActivityPage();
+        return;
+    }
+    
+    if (page === 'friends') {
+        createFriendsPage();
+        return;
+    }
     
     // Show specific page
     const pageElement = document.getElementById(page + 'Page');
     if (pageElement) {
         pageElement.style.display = 'block';
+    } else {
+        // Fallback - show main app if page doesn't exist
+        if (mainApp) {
+            mainApp.style.display = 'block';
+        }
+        showNotification(`${page} page coming soon!`, 'info');
     }
 }
 
@@ -1198,6 +1224,187 @@ function shareAnalytics() {
     // Share analytics
 }
 
+// ================ LIVE STREAMING FUNCTIONS ================
+function startLiveStream() {
+    showNotification('🔴 Starting live stream...', 'success');
+    // Initialize live stream
+    document.getElementById('liveChat').style.display = 'block';
+}
+
+function scheduleLiveStream() {
+    const time = prompt('Schedule for when? (e.g., "Tomorrow 8PM")');
+    if (time) {
+        showNotification(`Live stream scheduled for ${time}`, 'success');
+    }
+}
+
+function closeLiveStream() {
+    document.querySelector('.live-stream-modal').remove();
+}
+
+function toggleChatSettings() {
+    showNotification('Chat settings toggled', 'info');
+}
+
+function sendChatMessage(message) {
+    if (message.trim()) {
+        const chatMessages = document.getElementById('chatMessages');
+        if (chatMessages) {
+            chatMessages.innerHTML += `<div class="chat-message"><strong>You:</strong> ${message}</div>`;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        event.target.value = '';
+    }
+}
+
+function sendGift() {
+    const giftSelection = document.getElementById('giftSelection');
+    if (giftSelection) {
+        giftSelection.style.display = giftSelection.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function sendSpecificGift(giftType, cost) {
+    showNotification(`Sent ${giftType} gift! (${cost} coins)`, 'success');
+    document.getElementById('giftSelection').style.display = 'none';
+}
+
+// ================ PAGE CREATORS FOR MISSING PAGES ================
+function createActivityPage() {
+    let activityPage = document.getElementById('activityPage');
+    if (!activityPage) {
+        activityPage = document.createElement('div');
+        activityPage.id = 'activityPage';
+        activityPage.className = 'activity-page';
+        activityPage.style.cssText = 'margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px;';
+        activityPage.innerHTML = `
+            <h2>Activity</h2>
+            <div class="activity-tabs">
+                <button class="tab-btn active" onclick="filterActivity('all')">All</button>
+                <button class="tab-btn" onclick="filterActivity('likes')">Likes</button>
+                <button class="tab-btn" onclick="filterActivity('comments')">Comments</button>
+                <button class="tab-btn" onclick="filterActivity('follows')">Follows</button>
+                <button class="tab-btn" onclick="filterActivity('mentions')">Mentions</button>
+            </div>
+            <div class="activity-list">
+                <div class="activity-item">
+                    <div class="activity-avatar">👤</div>
+                    <div class="activity-content">
+                        <div class="activity-text"><strong>user123</strong> liked your video</div>
+                        <div class="activity-time">2 hours ago</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-avatar">👤</div>
+                    <div class="activity-content">
+                        <div class="activity-text"><strong>jane_doe</strong> commented: "Amazing content!"</div>
+                        <div class="activity-time">5 hours ago</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-avatar">👤</div>
+                    <div class="activity-content">
+                        <div class="activity-text"><strong>musiclover</strong> started following you</div>
+                        <div class="activity-time">1 day ago</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(activityPage);
+    }
+    
+    // Hide all other pages
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page').forEach(el => {
+        el.style.display = 'none';
+    });
+    document.getElementById('mainApp').style.display = 'none';
+    
+    activityPage.style.display = 'block';
+}
+
+function createFriendsPage() {
+    let friendsPage = document.getElementById('friendsPage');
+    if (!friendsPage) {
+        friendsPage = document.createElement('div');
+        friendsPage.id = 'friendsPage';
+        friendsPage.className = 'friends-page';
+        friendsPage.style.cssText = 'margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px;';
+        friendsPage.innerHTML = `
+            <h2>Friends</h2>
+            <div class="friends-tabs">
+                <button class="tab-btn active" onclick="filterFriends('suggested')">Suggested</button>
+                <button class="tab-btn" onclick="filterFriends('following')">Following</button>
+                <button class="tab-btn" onclick="filterFriends('followers')">Followers</button>
+                <button class="tab-btn" onclick="filterFriends('requests')">Requests</button>
+            </div>
+            <div class="friends-search">
+                <input type="text" placeholder="Search friends..." onkeypress="if(event.key==='Enter') searchFriends(this.value)">
+            </div>
+            <div class="friends-list">
+                <div class="friend-item">
+                    <div class="friend-avatar">👤</div>
+                    <div class="friend-info">
+                        <div class="friend-name">alex_creator</div>
+                        <div class="friend-stats">1.2M followers</div>
+                    </div>
+                    <button class="follow-btn" onclick="toggleFollow('alex_creator')">Follow</button>
+                </div>
+                <div class="friend-item">
+                    <div class="friend-avatar">👤</div>
+                    <div class="friend-info">
+                        <div class="friend-name">dance_queen</div>
+                        <div class="friend-stats">856K followers</div>
+                    </div>
+                    <button class="follow-btn" onclick="toggleFollow('dance_queen')">Follow</button>
+                </div>
+                <div class="friend-item">
+                    <div class="friend-avatar">👤</div>
+                    <div class="friend-info">
+                        <div class="friend-name">tech_reviewer</div>
+                        <div class="friend-stats">2.1M followers</div>
+                    </div>
+                    <button class="follow-btn" onclick="toggleFollow('tech_reviewer')">Follow</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(friendsPage);
+    }
+    
+    // Hide all other pages
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page').forEach(el => {
+        el.style.display = 'none';
+    });
+    document.getElementById('mainApp').style.display = 'none';
+    
+    friendsPage.style.display = 'block';
+}
+
+function filterActivity(type) {
+    showNotification(`Showing ${type} activity`, 'info');
+    // Update tab styles
+    document.querySelectorAll('.activity-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function filterFriends(type) {
+    showNotification(`Showing ${type} friends`, 'info');
+    // Update tab styles
+    document.querySelectorAll('.friends-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function searchFriends(query) {
+    showNotification(`Searching friends: ${query}`, 'info');
+}
+
+function toggleFollow(username) {
+    const btn = event.target;
+    const isFollowing = btn.textContent === 'Following';
+    btn.textContent = isFollowing ? 'Follow' : 'Following';
+    btn.style.background = isFollowing ? 'var(--accent-color)' : 'var(--bg-tertiary)';
+    showNotification(`${isFollowing ? 'Unfollowed' : 'Following'} ${username}`, 'success');
+}
+
 // ================ MISC ================
 function showMoreOptions() {
     showNotification('More options...', 'info');
@@ -1277,3 +1484,20 @@ window.shareAnalytics = shareAnalytics;
 
 // Misc functions
 window.showMoreOptions = showMoreOptions;
+
+// Live streaming functions
+window.startLiveStream = startLiveStream;
+window.scheduleLiveStream = scheduleLiveStream;
+window.closeLiveStream = closeLiveStream;
+window.toggleChatSettings = toggleChatSettings;
+window.sendChatMessage = sendChatMessage;
+window.sendGift = sendGift;
+window.sendSpecificGift = sendSpecificGift;
+
+// Page and friend functions
+window.createActivityPage = createActivityPage;
+window.createFriendsPage = createFriendsPage;
+window.filterActivity = filterActivity;
+window.filterFriends = filterFriends;
+window.searchFriends = searchFriends;
+window.toggleFollow = toggleFollow;
