@@ -45,11 +45,12 @@ www/
 - Always run linting/testing before commits (when available)
 
 ## User Preferences
-- Don't ask for confirmation during tasks - just complete them
+- NEVER ASK FOR PERMISSION OR CONFIRMATION - JUST DO IT
 - Don't announce what you're going to do - just do it
 - Only pause when there are multiple options requiring a choice
 - Be proactive and complete the full task
 - Execute immediately without explanatory preambles
+- USER CAN WALK AWAY AND RETURN TO COMPLETED WORK
 
 ## Session Recovery
 When starting a new conversation, mention:
