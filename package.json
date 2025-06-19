@@ -5,7 +5,7 @@
   "license": "ISC",
   "author": "Tavis Chaney",
   "type": "commonjs",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
