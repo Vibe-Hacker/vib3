@@ -98,6 +98,44 @@ async function handleLogout() {
     }
 }
 
+// ================ USER PROFILE ================
+async function loadUserProfile() {
+    if (!currentUser) {
+        console.error('No current user to load profile for');
+        return;
+    }
+    
+    // Update profile UI elements
+    const profileElements = {
+        username: document.querySelectorAll('.profile-username'),
+        avatar: document.querySelectorAll('.profile-avatar'),
+        displayName: document.querySelectorAll('.profile-displayname')
+    };
+    
+    // Set username
+    profileElements.username.forEach(el => {
+        if (el) el.textContent = currentUser.username || currentUser.email?.split('@')[0] || 'User';
+    });
+    
+    // Set display name
+    profileElements.displayName.forEach(el => {
+        if (el) el.textContent = currentUser.displayName || currentUser.username || 'VIB3 User';
+    });
+    
+    // Set avatar (use default if none)
+    profileElements.avatar.forEach(el => {
+        if (el) {
+            if (el.tagName === 'IMG') {
+                el.src = currentUser.photoURL || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Ccircle cx="50" cy="50" r="40" fill="%23ddd"/%3E%3Ctext x="50" y="55" text-anchor="middle" font-size="40" fill="%23666"%3E👤%3C/text%3E%3C/svg%3E';
+            } else {
+                el.textContent = currentUser.photoURL ? '' : '👤';
+            }
+        }
+    });
+    
+    console.log('User profile loaded:', currentUser.email);
+}
+
 // ================ VIDEO FEED MANAGEMENT ================
 async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
     currentFeed = feedType;
@@ -941,6 +979,7 @@ window.handleSignup = handleSignup;
 window.handleLogout = handleLogout;
 window.showLogin = showLogin;
 window.showSignup = showSignup;
+window.loadUserProfile = loadUserProfile;
 window.loadVideoFeed = loadVideoFeed;
 window.switchFeedTab = switchFeedTab;
 window.refreshForYou = refreshForYou;
