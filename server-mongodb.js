@@ -19,25 +19,44 @@ app.use((req, res, next) => {
 // Serve static files
 app.use(express.static(path.join(__dirname, 'www')));
 
-// MongoDB connection (when DATABASE_URL is added)
+// MongoDB connection
+const { MongoClient } = require('mongodb');
 let db = null;
-if (process.env.DATABASE_URL) {
-    // MongoDB connection will go here
-    console.log('MongoDB connection configured');
-} else {
-    console.log('No DATABASE_URL found - running without database');
+let client = null;
+
+async function connectDB() {
+    if (process.env.DATABASE_URL) {
+        try {
+            client = new MongoClient(process.env.DATABASE_URL);
+            await client.connect();
+            db = client.db('vib3');
+            console.log('✅ MongoDB connected successfully');
+            return true;
+        } catch (error) {
+            console.error('MongoDB connection error:', error.message);
+            return false;
+        }
+    } else {
+        console.log('No DATABASE_URL found - running without database');
+        return false;
+    }
 }
+
+// Connect to database on startup
+connectDB();
 
 // API Routes
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+    const dbConnected = db !== null;
     res.json({ 
         status: 'ok',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
-        database: process.env.DATABASE_URL ? 'configured' : 'not configured'
+        database: dbConnected ? 'connected' : 'not connected',
+        databaseUrl: process.env.DATABASE_URL ? 'configured' : 'not configured'
     });
 });
 
@@ -77,6 +96,37 @@ app.post('/api/videos', (req, res) => {
 // User endpoints  
 app.get('/api/users/:id', (req, res) => {
     res.json({ message: 'User profile endpoint ready' });
+});
+
+// Database test endpoint
+app.get('/api/database/test', async (req, res) => {
+    if (!db) {
+        return res.json({ 
+            connected: false, 
+            message: 'Database not connected',
+            configured: !!process.env.DATABASE_URL 
+        });
+    }
+    
+    try {
+        // Test the connection
+        await db.admin().ping();
+        const collections = await db.listCollections().toArray();
+        
+        res.json({ 
+            connected: true, 
+            message: 'MongoDB connected successfully',
+            database: db.databaseName,
+            collections: collections.map(c => c.name),
+            configured: true
+        });
+    } catch (error) {
+        res.json({ 
+            connected: false, 
+            message: error.message,
+            configured: true 
+        });
+    }
 });
 
 // Serve the lightweight frontend by default

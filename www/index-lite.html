@@ -104,14 +104,33 @@
         }
         
         function testDatabase() {
-            // This will test the MongoDB connection once we add it
-            document.getElementById('results').innerHTML = `
-                <div class="status">
-                    <h3>Database Test</h3>
-                    <p>MongoDB connection ready to be configured</p>
-                    <p>Add DATABASE_URL environment variable to connect</p>
-                </div>
-            `;
+            fetch('/api/database/test')
+                .then(response => response.json())
+                .then(data => {
+                    const statusColor = data.connected ? '#00ff88' : '#ff4444';
+                    const icon = data.connected ? '✅' : '❌';
+                    document.getElementById('results').innerHTML = `
+                        <div class="status">
+                            <h3>Database Test ${icon}</h3>
+                            <p style="color: ${statusColor};">${data.message}</p>
+                            ${data.connected ? `
+                                <p>Database: ${data.database}</p>
+                                <p>Collections: ${data.collections.length > 0 ? data.collections.join(', ') : 'None yet'}</p>
+                            ` : `
+                                <p>Configured: ${data.configured ? 'Yes' : 'No'}</p>
+                                <p>Make sure DATABASE_URL is set in environment variables</p>
+                            `}
+                        </div>
+                    `;
+                })
+                .catch(err => {
+                    document.getElementById('results').innerHTML = `
+                        <div class="status" style="color: #ff4444;">
+                            <h3>Database Test Failed ❌</h3>
+                            <p>Error: ${err.message}</p>
+                        </div>
+                    `;
+                });
         }
         
         function loadFullApp() {
