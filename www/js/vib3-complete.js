@@ -701,8 +701,8 @@ function showPage(page) {
         return;
     }
     
-    // Hide all pages and feeds first
-    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page').forEach(el => {
+    // Hide all pages and feeds first including dynamically created ones
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
         el.style.display = 'none';
     });
     
@@ -1355,11 +1355,12 @@ function createActivityPage() {
         document.body.appendChild(activityPage);
     }
     
-    // Hide all other pages
-    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page').forEach(el => {
+    // Hide all other pages including activity and friends
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
         el.style.display = 'none';
     });
-    document.getElementById('mainApp').style.display = 'none';
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) mainApp.style.display = 'none';
     
     activityPage.style.display = 'block';
 }
@@ -1412,11 +1413,12 @@ function createFriendsPage() {
         document.body.appendChild(friendsPage);
     }
     
-    // Hide all other pages
-    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page').forEach(el => {
+    // Hide all other pages including activity and friends
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
         el.style.display = 'none';
     });
-    document.getElementById('mainApp').style.display = 'none';
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) mainApp.style.display = 'none';
     
     friendsPage.style.display = 'block';
 }
