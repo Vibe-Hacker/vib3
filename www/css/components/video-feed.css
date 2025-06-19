@@ -1,0 +1,74 @@
+/* Video Feed Styles */
+.video-feed {
+    height: 100vh;
+    margin-top: 0;
+    margin-left: 240px;
+    width: calc(100vw - 240px);
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    background: #000;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.video-feed::-webkit-scrollbar {
+    display: none;
+}
+
+.feed-tabs {
+    display: none; /* TikTok-style - no tabs in feed */
+}
+
+@media (min-width: 768px) {
+    .feed-tabs {
+        border-radius: 15px 15px 0 0;
+    }
+}
+
+.feed-tab {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.feed-tab.active {
+    color: white;
+}
+
+.feed-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 3px;
+    background: #ff006e;
+    border-radius: 2px;
+}
+
+.feed-tab:hover {
+    color: #ccc;
+}
+
+.feed-content {
+    display: none;
+}
+
+.feed-content.active {
+    display: block;
+}
+
+.feed-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888;
+}

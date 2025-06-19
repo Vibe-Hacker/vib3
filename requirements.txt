@@ -1,0 +1,17 @@
+# VIB3 CLI Requirements
+# Python 3.8+
+
+# Core dependencies
+boto3>=1.26.0      # AWS SDK for Python (S3 operations)
+botocore>=1.29.0   # Low-level AWS SDK components
+PyYAML>=6.0        # YAML parsing for deployment specs
+
+# Testing dependencies
+pytest>=7.4.0      # Testing framework
+pytest-cov>=4.1.0  # Coverage reporting
+pytest-mock>=3.11.0 # Mocking support
+
+# Optional dependencies for enhanced features:
+# colorama>=0.4.6   # For colored terminal output
+# click>=8.1.0      # Alternative CLI framework
+# requests>=2.31.0  # For HTTP requests

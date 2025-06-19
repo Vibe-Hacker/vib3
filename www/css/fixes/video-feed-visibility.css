@@ -1,0 +1,50 @@
+/* Video Feed Visibility Fix */
+/* Ensures video feed and related elements are properly visible */
+
+/* Force video feed to be visible */
+#videoFeed {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Ensure feed tabs are visible */
+.feed-tabs {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ensure feed content containers are visible when active */
+.feed-content.active {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ensure video items are visible */
+.video-item {
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Debug helper - highlight active feed */
+.feed-content.active::before {
+    content: "ACTIVE FEED";
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: rgba(0, 255, 0, 0.2);
+    color: white;
+    padding: 2px 5px;
+    font-size: 10px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+/* Hide debug helper in production */
+body:not(.debug-mode) .feed-content.active::before {
+    display: none;
+}

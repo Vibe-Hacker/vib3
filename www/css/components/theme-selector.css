@@ -1,0 +1,93 @@
+/* Theme Selection Styles */
+.theme-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.theme-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 15px;
+    border: 2px solid var(--border-primary);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--bg-secondary);
+}
+
+.theme-option:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+}
+
+.theme-option.active {
+    border-color: var(--accent-primary);
+    background: var(--bg-tertiary);
+}
+
+.theme-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-preview::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+}
+
+.theme-preview::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 100%;
+}
+
+/* Theme Preview Colors */
+.theme-light {
+    background: #f8f8f8;
+}
+.theme-light::before { background: #ffffff; }
+.theme-light::after { background: #fe2c55; }
+
+.theme-dark {
+    background: #000000;
+}
+.theme-dark::before { background: #161823; }
+.theme-dark::after { background: #fe2c55; }
+
+.theme-purple {
+    background: #f3f0ff;
+}
+.theme-purple::before { background: #ffffff; }
+.theme-purple::after { background: #8b5cf6; }
+
+.theme-blue {
+    background: #f0f9ff;
+}
+.theme-blue::before { background: #ffffff; }
+.theme-blue::after { background: #3b82f6; }
+
+.theme-green {
+    background: #f0fdf4;
+}
+.theme-green::before { background: #ffffff; }
+.theme-green::after { background: #22c55e; }
+
+.theme-rose {
+    background: #fff1f2;
+}
+.theme-rose::before { background: #ffffff; }
+.theme-rose::after { background: #f43f5e; }

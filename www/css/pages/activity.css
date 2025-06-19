@@ -1,0 +1,101 @@
+/* Activity Page Styles */
+.activity-page {
+    margin-left: 240px;
+    width: calc(100vw - 240px);
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--bg-primary);
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--text-primary);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+/* Large Desktop (1200px+) */
+@media (min-width: 1200px) {
+    .activity-page {
+        margin-left: 260px;
+        width: calc(100vw - 260px);
+    }
+}
+
+/* Medium Desktop (992px - 1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+    .activity-page {
+        margin-left: 220px;
+        width: calc(100vw - 220px);
+    }
+}
+
+/* Small Desktop/Tablet (768px - 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+    .activity-page {
+        margin-left: 180px;
+        width: calc(100vw - 180px);
+    }
+}
+
+/* Large Mobile (600px - 767px) */
+@media (min-width: 600px) and (max-width: 767px) {
+    .activity-page {
+        margin-left: 0;
+        width: 100vw;
+        margin-top: 60px;
+        height: calc(100vh - 60px - 80px);
+    }
+}
+
+/* Small Mobile (up to 599px) */
+@media (max-width: 599px) {
+    .activity-page {
+        margin-left: 0;
+        margin-top: 0;
+        width: 100vw;
+        height: calc(100vh - 80px);
+    }
+}
+
+/* Viewport height adjustments for console/dev tools */
+@media (max-height: 600px) {
+    .activity-page {
+        padding: 20px;
+    }
+    
+    .activity-page h2 {
+        font-size: 20px;
+    }
+    
+    .activity-page p {
+        font-size: 14px;
+    }
+}
+
+/* Very short viewport (dev tools taking most of screen) */
+@media (max-height: 400px) {
+    .activity-page {
+        padding: 10px;
+        justify-content: flex-start;
+        padding-top: 20px;
+    }
+    
+    .activity-page h2 {
+        font-size: 18px;
+        margin-bottom: 5px;
+    }
+    
+    .activity-page p {
+        font-size: 12px;
+    }
+    
+    .activity-page div:first-child {
+        font-size: 32px !important;
+        margin-bottom: 10px !important;
+    }
+}
