@@ -1,7 +1,7 @@
 # VIB3 Project Context for Claude
 
 ## Project Overview
-VIB3 is a TikTok-style video sharing social media app with:
+VIB3 is a short-form video sharing social media app with:
 - MongoDB backend (replaced Firebase)
 - Node.js/Express server
 - Vanilla JavaScript frontend (no ES6 modules, global functions)

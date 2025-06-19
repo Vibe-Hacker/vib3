@@ -1,4 +1,4 @@
-// VIB3 Complete TikTok-Style App - All Features
+// VIB3 Complete Video Sharing App - All Features
 // No ES6 modules - global functions only
 
 // ================ CONFIGURATION ================
@@ -885,7 +885,7 @@ document.addEventListener('DOMContentLoaded', function() {
     addGlobalStyles();
     
     // Initialize all features
-    console.log('All TikTok features loaded successfully!');
+    console.log('All VIB3 features loaded successfully!');
 });
 
 function addGlobalStyles() {

@@ -1,4 +1,4 @@
-# VIB3 TikTok Features
+# VIB3 Video Platform Features
 
 ## Core Features
 - ✅ Video Feed (For You Page)

@@ -1,7 +1,7 @@
 {
   "name": "vib3",
   "version": "1.0.0",
-  "description": "TikTok-style video social platform",
+  "description": "VIB3 - Video social sharing platform",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
