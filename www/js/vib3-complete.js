@@ -15,7 +15,9 @@ const appConfig = {
 };
 
 // Global state
-let currentUser = null;
+if (typeof currentUser === 'undefined') {
+    window.currentUser = null;
+}
 let currentFeed = 'foryou';
 let currentVideoId = null;
 let isRecording = false;
@@ -934,9 +936,9 @@ function addGlobalStyles() {
 
 // Make all functions globally available
 window.initializeAuth = initializeAuth;
-window.login = login;
-window.signup = signup;
-window.logout = logout;
+window.handleLogin = handleLogin;
+window.handleSignup = handleSignup;
+window.handleLogout = handleLogout;
 window.showLogin = showLogin;
 window.showSignup = showSignup;
 window.loadVideoFeed = loadVideoFeed;
