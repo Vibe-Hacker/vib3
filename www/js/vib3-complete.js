@@ -896,8 +896,50 @@ function refreshForYou() {
 }
 
 function performSearch(query) {
-    // Advanced search implementation
+    if (!query || !query.trim()) return;
+    
     showNotification(`Searching for: ${query}`, 'info');
+    showPage('search');
+    
+    const searchResults = document.getElementById('searchResults');
+    if (searchResults) {
+        searchResults.innerHTML = `
+            <div class="search-results">
+                <h3>Search Results for "${query}"</h3>
+                <div class="search-tabs">
+                    <button class="tab-btn active" onclick="filterSearchResults('all')">All</button>
+                    <button class="tab-btn" onclick="filterSearchResults('videos')">Videos</button>
+                    <button class="tab-btn" onclick="filterSearchResults('users')">Users</button>
+                    <button class="tab-btn" onclick="filterSearchResults('sounds')">Sounds</button>
+                    <button class="tab-btn" onclick="filterSearchResults('hashtags')">Hashtags</button>
+                </div>
+                <div class="search-items">
+                    <div class="search-item video-result">
+                        <div class="video-thumbnail" style="background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);"></div>
+                        <div class="video-info">
+                            <div class="video-title">Dance Challenge with ${query}</div>
+                            <div class="video-stats">2.3M views • @dancer_pro</div>
+                        </div>
+                    </div>
+                    <div class="search-item user-result">
+                        <div class="user-avatar">👤</div>
+                        <div class="user-info">
+                            <div class="user-name">${query}_official</div>
+                            <div class="user-stats">1.2M followers</div>
+                        </div>
+                        <button class="follow-btn" onclick="toggleFollow('${query}_official')">Follow</button>
+                    </div>
+                    <div class="search-item hashtag-result">
+                        <div class="hashtag-icon">#</div>
+                        <div class="hashtag-info">
+                            <div class="hashtag-name">#${query}</div>
+                            <div class="hashtag-stats">456K videos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 }
 
 // ================ INITIALIZATION ================
@@ -1405,6 +1447,497 @@ function toggleFollow(username) {
     showNotification(`${isFollowing ? 'Unfollowed' : 'Following'} ${username}`, 'success');
 }
 
+// ================ VIDEO INTERACTION FUNCTIONS ================
+function toggleVideoPlayback(videoElement) {
+    if (videoElement.paused) {
+        videoElement.play();
+    } else {
+        videoElement.pause();
+    }
+}
+
+function openCommentsModal(videoId) {
+    const modal = document.createElement('div');
+    modal.className = 'modal comments-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Comments</h3>
+                <button onclick="this.closest('.modal').remove()" class="close-btn">&times;</button>
+            </div>
+            <div class="comments-list">
+                <div class="comment">
+                    <div class="comment-avatar">👤</div>
+                    <div class="comment-content">
+                        <div class="comment-user">user123</div>
+                        <div class="comment-text">Amazing video! 🔥</div>
+                        <div class="comment-actions">
+                            <button onclick="likeComment(this)">👍 12</button>
+                            <button onclick="replyToComment(this)">Reply</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="comment">
+                    <div class="comment-avatar">👤</div>
+                    <div class="comment-content">
+                        <div class="comment-user">dance_lover</div>
+                        <div class="comment-text">Tutorial please!</div>
+                        <div class="comment-actions">
+                            <button onclick="likeComment(this)">👍 5</button>
+                            <button onclick="replyToComment(this)">Reply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="comment-input">
+                <input type="text" placeholder="Add a comment..." onkeypress="if(event.key==='Enter') addComment(this.value, '${videoId}')">
+                <button onclick="addComment(this.previousElementSibling.value, '${videoId}')">Post</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function openShareModal(videoId) {
+    const modal = document.createElement('div');
+    modal.className = 'modal share-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Share</h3>
+                <button onclick="this.closest('.modal').remove()" class="close-btn">&times;</button>
+            </div>
+            <div class="share-options">
+                <button onclick="shareToInstagram(); this.closest('.modal').remove();">📷 Instagram</button>
+                <button onclick="shareToTwitter(); this.closest('.modal').remove();">🐦 Twitter</button>
+                <button onclick="shareToFacebook(); this.closest('.modal').remove();">📘 Facebook</button>
+                <button onclick="shareToWhatsApp(); this.closest('.modal').remove();">💬 WhatsApp</button>
+                <button onclick="copyVideoLink(); this.closest('.modal').remove();">🔗 Copy Link</button>
+                <button onclick="downloadVideo(); this.closest('.modal').remove();">⬇️ Download</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function viewProfile(username) {
+    showPage('profile');
+    const profileContent = document.querySelector('.profile-content');
+    if (profileContent) {
+        profileContent.innerHTML = `
+            <div class="profile-header">
+                <div class="profile-avatar-large">👤</div>
+                <div class="profile-info">
+                    <h2>@${username}</h2>
+                    <div class="profile-stats">
+                        <span>1.2M followers</span>
+                        <span>124 following</span>
+                        <span>2.3M likes</span>
+                    </div>
+                    <div class="profile-bio">Content creator 🎭 Follow for daily videos!</div>
+                    <button class="follow-btn" onclick="toggleFollow('${username}')">Follow</button>
+                </div>
+            </div>
+            <div class="profile-videos">
+                <div class="video-grid">
+                    ${Array(12).fill(0).map(() => `
+                        <div class="video-item" onclick="playVideo('${username}_video')">
+                            <div class="video-thumbnail" style="background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);"></div>
+                            <div class="video-plays">2.3M</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+}
+
+function showVideoOptions(videoId) {
+    const modal = document.createElement('div');
+    modal.className = 'modal video-options-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Video Options</h3>
+                <button onclick="this.closest('.modal').remove()" class="close-btn">&times;</button>
+            </div>
+            <div class="video-options">
+                <button onclick="saveVideo('${videoId}'); this.closest('.modal').remove();">💾 Save</button>
+                <button onclick="reportVideo('${videoId}'); this.closest('.modal').remove();">⚠️ Report</button>
+                <button onclick="shareVideo('${videoId}'); this.closest('.modal').remove();">📤 Share</button>
+                <button onclick="copyVideoLink('${videoId}'); this.closest('.modal').remove();">🔗 Copy Link</button>
+                <button onclick="notInterested('${videoId}'); this.closest('.modal').remove();">🚫 Not Interested</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function saveVideo(videoId) {
+    showNotification('Video saved to your collection!', 'success');
+}
+
+function browseSound(soundId) {
+    const modal = document.createElement('div');
+    modal.className = 'modal sound-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Sound Details</h3>
+                <button onclick="this.closest('.modal').remove()" class="close-btn">&times;</button>
+            </div>
+            <div class="sound-info">
+                <div class="sound-preview">
+                    <div class="sound-icon">🎵</div>
+                    <div class="sound-details">
+                        <div class="sound-title">Trending Beat #${soundId}</div>
+                        <div class="sound-artist">by VIB3 Music</div>
+                        <button onclick="playPreview('${soundId}')">▶️ Play</button>
+                    </div>
+                </div>
+                <div class="sound-actions">
+                    <button onclick="useSound('${soundId}'); this.closest('.modal').remove();">Use This Sound</button>
+                    <button onclick="favoriteSound('${soundId}');">❤️ Favorite</button>
+                </div>
+                <div class="sound-videos">
+                    <h4>Videos using this sound</h4>
+                    <div class="sound-video-grid">
+                        ${Array(6).fill(0).map(() => `
+                            <div class="video-item">
+                                <div class="video-thumbnail" style="background: linear-gradient(45deg, #ff6b6b 0%, #ffa726 100%);"></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// ================ VIDEO EDITOR FUNCTIONS ================
+function addEffect(effectType) {
+    showNotification(`Added ${effectType} effect`, 'success');
+    const effectsPanel = document.querySelector('.effects-panel');
+    if (effectsPanel) {
+        effectsPanel.classList.add('effect-active');
+    }
+}
+
+function applyFilter(filterName) {
+    showNotification(`Applied ${filterName} filter`, 'success');
+    const videoPreview = document.querySelector('.video-preview');
+    if (videoPreview) {
+        videoPreview.style.filter = getFilterStyle(filterName);
+    }
+}
+
+function getFilterStyle(filterName) {
+    const filters = {
+        'vintage': 'sepia(0.5) contrast(1.2)',
+        'dramatic': 'contrast(1.5) brightness(0.9)',
+        'bright': 'brightness(1.3) saturate(1.2)',
+        'noir': 'grayscale(1) contrast(1.3)',
+        'warm': 'hue-rotate(15deg) saturate(1.1)',
+        'cool': 'hue-rotate(-15deg) saturate(1.1)'
+    };
+    return filters[filterName] || 'none';
+}
+
+function addTextOverlay() {
+    const text = prompt('Enter text:');
+    if (text) {
+        showNotification('Text overlay added', 'success');
+        const videoContainer = document.querySelector('.video-preview-container');
+        if (videoContainer) {
+            const textOverlay = document.createElement('div');
+            textOverlay.className = 'text-overlay';
+            textOverlay.textContent = text;
+            textOverlay.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                font-size: 24px;
+                font-weight: bold;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+                z-index: 10;
+            `;
+            videoContainer.appendChild(textOverlay);
+        }
+    }
+}
+
+function setSpeed(speed) {
+    showNotification(`Video speed set to ${speed}x`, 'info');
+    const video = document.querySelector('.video-preview video');
+    if (video) {
+        video.playbackRate = speed;
+    }
+}
+
+function setTextStyle(style) {
+    showNotification(`Text style set to ${style}`, 'info');
+    const textOverlays = document.querySelectorAll('.text-overlay');
+    textOverlays.forEach(overlay => {
+        overlay.className = `text-overlay text-${style}`;
+    });
+}
+
+function toggleEffect(effectName) {
+    const isActive = document.querySelector(`[data-effect="${effectName}"]`)?.classList.toggle('active');
+    showNotification(`${effectName} effect ${isActive ? 'enabled' : 'disabled'}`, 'info');
+}
+
+function flipCamera() {
+    showNotification('Camera flipped', 'info');
+    const video = document.querySelector('.camera-preview video');
+    if (video) {
+        video.style.transform = video.style.transform === 'scaleX(-1)' ? 'scaleX(1)' : 'scaleX(-1)';
+    }
+}
+
+function toggleFlash() {
+    showNotification('Flash toggled', 'info');
+}
+
+function toggleRecording() {
+    const isRecording = window.isRecording || false;
+    window.isRecording = !isRecording;
+    showNotification(isRecording ? 'Recording stopped' : 'Recording started', isRecording ? 'info' : 'success');
+    
+    const recordBtn = document.querySelector('.record-btn');
+    if (recordBtn) {
+        recordBtn.classList.toggle('recording', !isRecording);
+    }
+}
+
+function toggleCountdown() {
+    showNotification('Countdown toggled', 'info');
+}
+
+function toggleGridLines() {
+    showNotification('Grid lines toggled', 'info');
+    const cameraPreview = document.querySelector('.camera-preview');
+    if (cameraPreview) {
+        cameraPreview.classList.toggle('show-grid');
+    }
+}
+
+function closeVideoEditor() {
+    const editorModal = document.querySelector('.video-editor-modal');
+    if (editorModal) {
+        editorModal.remove();
+    }
+}
+
+function saveEditedVideo() {
+    showNotification('Video saved successfully!', 'success');
+    closeVideoEditor();
+}
+
+// ================ PROFILE AND UPLOAD FUNCTIONS ================
+function handleProfilePicUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.querySelectorAll('.profile-avatar').forEach(avatar => {
+                if (avatar.tagName === 'IMG') {
+                    avatar.src = e.target.result;
+                } else {
+                    avatar.style.backgroundImage = `url(${e.target.result})`;
+                    avatar.textContent = '';
+                }
+            });
+        };
+        reader.readAsDataURL(file);
+        showNotification('Profile picture updated!', 'success');
+    }
+}
+
+function filterDiscoverVideos(query) {
+    showNotification(`Filtering discover videos: ${query}`, 'info');
+    const discoverFeed = document.getElementById('discoverVideoFeed');
+    if (discoverFeed) {
+        // Filter videos based on query
+        const videos = discoverFeed.querySelectorAll('.video-card');
+        videos.forEach(video => {
+            const shouldShow = query === '' || 
+                video.textContent.toLowerCase().includes(query.toLowerCase());
+            video.style.display = shouldShow ? 'block' : 'none';
+        });
+    }
+}
+
+// ================ COMMENT SYSTEM ================
+function addComment(text, videoId) {
+    if (!text || !text.trim()) return;
+    
+    const commentsList = document.querySelector('.comments-list');
+    if (commentsList) {
+        const comment = document.createElement('div');
+        comment.className = 'comment';
+        comment.innerHTML = `
+            <div class="comment-avatar">👤</div>
+            <div class="comment-content">
+                <div class="comment-user">${currentUser?.username || 'You'}</div>
+                <div class="comment-text">${text}</div>
+                <div class="comment-actions">
+                    <button onclick="likeComment(this)">👍 0</button>
+                    <button onclick="replyToComment(this)">Reply</button>
+                </div>
+            </div>
+        `;
+        commentsList.appendChild(comment);
+        event.target.value = '';
+        showNotification('Comment added!', 'success');
+    }
+}
+
+function likeComment(button) {
+    const currentLikes = parseInt(button.textContent.split(' ')[1]) || 0;
+    button.textContent = `👍 ${currentLikes + 1}`;
+    button.style.color = '#ff6b6b';
+    showNotification('Comment liked!', 'success');
+}
+
+function replyToComment(button) {
+    const reply = prompt('Enter your reply:');
+    if (reply) {
+        showNotification('Reply added!', 'success');
+    }
+}
+
+// ================ MUSIC AND AUDIO ================
+function recordVoiceover() {
+    showNotification('Recording voiceover...', 'info');
+}
+
+function playPreview(trackId) {
+    showNotification(`Playing track ${trackId}`, 'info');
+}
+
+function selectMusic(trackId) {
+    showNotification(`Music selected: Track ${trackId}`, 'success');
+    closeMusicLibrary();
+}
+
+function favoriteTrack(trackId) {
+    showNotification(`Track ${trackId} added to favorites!`, 'success');
+}
+
+function filterMusic(genre) {
+    showNotification(`Filtering music: ${genre}`, 'info');
+}
+
+function closeMusicLibrary() {
+    const musicModal = document.querySelector('.music-library-modal');
+    if (musicModal) {
+        musicModal.remove();
+    }
+}
+
+// ================ DUET AND STITCH FUNCTIONS ================
+function addDuetEffect(effect) {
+    showNotification(`Added duet effect: ${effect}`, 'success');
+}
+
+function closeDuetModal() {
+    const duetModal = document.querySelector('.duet-modal');
+    if (duetModal) {
+        duetModal.remove();
+    }
+}
+
+function publishDuet() {
+    showNotification('Duet published successfully!', 'success');
+    closeDuetModal();
+}
+
+function saveDuetDraft() {
+    showNotification('Duet saved as draft', 'info');
+}
+
+function closeStitchModal() {
+    const stitchModal = document.querySelector('.stitch-modal');
+    if (stitchModal) {
+        stitchModal.remove();
+    }
+}
+
+function publishStitch() {
+    showNotification('Stitch published successfully!', 'success');
+    closeStitchModal();
+}
+
+function previewStitch() {
+    showNotification('Previewing stitch...', 'info');
+}
+
+// ================ RECORDING FUNCTIONS ================
+function setRecordingTimer(seconds) {
+    showNotification(`Recording timer set to ${seconds} seconds`, 'info');
+    window.recordingTimer = seconds;
+}
+
+function setDuetTimer(seconds) {
+    showNotification(`Duet timer set to ${seconds} seconds`, 'info');
+}
+
+function flipDuetCamera() {
+    showNotification('Duet camera flipped', 'info');
+}
+
+function flipStitchCamera() {
+    showNotification('Stitch camera flipped', 'info');
+}
+
+function toggleDuetRecording() {
+    const isRecording = window.isDuetRecording || false;
+    window.isDuetRecording = !isRecording;
+    showNotification(isRecording ? 'Duet recording stopped' : 'Duet recording started', 'info');
+}
+
+function toggleStitchRecording() {
+    const isRecording = window.isStitchRecording || false;
+    window.isStitchRecording = !isRecording;
+    showNotification(isRecording ? 'Stitch recording stopped' : 'Stitch recording started', 'info');
+}
+
+// ================ ADDITIONAL SEARCH FUNCTIONS ================
+function filterSearchResults(type) {
+    showNotification(`Filtering search results: ${type}`, 'info');
+    document.querySelectorAll('.search-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+// ================ UTILITY FUNCTIONS ================
+function reportVideo(videoId) {
+    showNotification('Video reported', 'info');
+}
+
+function notInterested(videoId) {
+    showNotification('Marked as not interested', 'info');
+}
+
+function shareVideo(videoId) {
+    openShareModal(videoId);
+}
+
+function useSound(soundId) {
+    showNotification(`Using sound ${soundId}`, 'success');
+}
+
+function favoriteSound(soundId) {
+    showNotification(`Sound ${soundId} favorited!`, 'success');
+}
+
+function playVideo(videoId) {
+    showNotification(`Playing video ${videoId}`, 'info');
+}
+
 // ================ MISC ================
 function showMoreOptions() {
     showNotification('More options...', 'info');
@@ -1501,3 +2034,72 @@ window.filterActivity = filterActivity;
 window.filterFriends = filterFriends;
 window.searchFriends = searchFriends;
 window.toggleFollow = toggleFollow;
+
+// Video interaction functions
+window.toggleVideoPlayback = toggleVideoPlayback;
+window.openCommentsModal = openCommentsModal;
+window.openShareModal = openShareModal;
+window.viewProfile = viewProfile;
+window.showVideoOptions = showVideoOptions;
+window.saveVideo = saveVideo;
+window.browseSound = browseSound;
+
+// Video editor functions
+window.addEffect = addEffect;
+window.applyFilter = applyFilter;
+window.addTextOverlay = addTextOverlay;
+window.setSpeed = setSpeed;
+window.setTextStyle = setTextStyle;
+window.toggleEffect = toggleEffect;
+window.flipCamera = flipCamera;
+window.toggleFlash = toggleFlash;
+window.toggleRecording = toggleRecording;
+window.toggleCountdown = toggleCountdown;
+window.toggleGridLines = toggleGridLines;
+window.closeVideoEditor = closeVideoEditor;
+window.saveEditedVideo = saveEditedVideo;
+
+// Profile and upload functions
+window.handleProfilePicUpload = handleProfilePicUpload;
+window.filterDiscoverVideos = filterDiscoverVideos;
+
+// Comment system
+window.addComment = addComment;
+window.likeComment = likeComment;
+window.replyToComment = replyToComment;
+
+// Music and audio functions
+window.recordVoiceover = recordVoiceover;
+window.playPreview = playPreview;
+window.selectMusic = selectMusic;
+window.favoriteTrack = favoriteTrack;
+window.filterMusic = filterMusic;
+window.closeMusicLibrary = closeMusicLibrary;
+
+// Duet and stitch functions
+window.addDuetEffect = addDuetEffect;
+window.closeDuetModal = closeDuetModal;
+window.publishDuet = publishDuet;
+window.saveDuetDraft = saveDuetDraft;
+window.closeStitchModal = closeStitchModal;
+window.publishStitch = publishStitch;
+window.previewStitch = previewStitch;
+
+// Recording functions
+window.setRecordingTimer = setRecordingTimer;
+window.setDuetTimer = setDuetTimer;
+window.flipDuetCamera = flipDuetCamera;
+window.flipStitchCamera = flipStitchCamera;
+window.toggleDuetRecording = toggleDuetRecording;
+window.toggleStitchRecording = toggleStitchRecording;
+
+// Search functions
+window.filterSearchResults = filterSearchResults;
+
+// Utility functions
+window.reportVideo = reportVideo;
+window.notInterested = notInterested;
+window.shareVideo = shareVideo;
+window.useSound = useSound;
+window.favoriteSound = favoriteSound;
+window.playVideo = playVideo;
