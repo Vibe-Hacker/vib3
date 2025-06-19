@@ -157,28 +157,60 @@ function setupKeyboardShortcuts() {
 
 // Handle login
 async function handleLogin(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+        e.preventDefault();
+    }
+    
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     
     const result = await login(email, password);
     if (result.success) {
-        closeModal('loginModal');
-        e.target.reset();
+        const modal = document.getElementById('loginModal');
+        if (modal) closeModal('loginModal');
+        
+        if (e && e.target && e.target.reset) {
+            e.target.reset();
+        } else {
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+    } else {
+        const errorEl = document.getElementById('authError');
+        if (errorEl) {
+            errorEl.textContent = result.error;
+        }
     }
 }
 
 // Handle signup
 async function handleSignup(e) {
-    e.preventDefault();
-    const username = document.getElementById('signupUsername').value;
+    if (e && e.preventDefault) {
+        e.preventDefault();
+    }
+    
+    const username = document.getElementById('signupName').value || document.getElementById('signupUsername').value;
     const email = document.getElementById('signupEmail').value;
     const password = document.getElementById('signupPassword').value;
     
     const result = await signup(username, email, password);
     if (result.success) {
-        closeModal('signupModal');
-        e.target.reset();
+        const modal = document.getElementById('signupModal');
+        if (modal) closeModal('signupModal');
+        
+        if (e && e.target && e.target.reset) {
+            e.target.reset();
+        } else {
+            if (document.getElementById('signupName')) document.getElementById('signupName').value = '';
+            if (document.getElementById('signupUsername')) document.getElementById('signupUsername').value = '';
+            document.getElementById('signupEmail').value = '';
+            document.getElementById('signupPassword').value = '';
+        }
+    } else {
+        const errorEl = document.getElementById('authError');
+        if (errorEl) {
+            errorEl.textContent = result.error;
+        }
     }
 }
 
@@ -491,31 +523,6 @@ function exportGlobalFunctions() {
     copyFunctionsFromComplete();
 }
 
-// Auth wrapper functions for HTML compatibility
-async function handleLogin() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    
-    const result = await login(email, password);
-    if (!result.success) {
-        document.getElementById('authError').textContent = result.error;
-    }
-}
-
-async function handleSignup() {
-    const email = document.getElementById('signupEmail').value;
-    const password = document.getElementById('signupPassword').value;
-    const displayName = document.getElementById('signupName').value;
-    
-    const result = await signup(displayName, email, password);
-    if (!result.success) {
-        document.getElementById('authError').textContent = result.error;
-    }
-}
-
-async function handleLogout() {
-    await logout();
-}
 
 // Basic page navigation
 function showPage(page) {
