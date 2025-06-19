@@ -15,7 +15,7 @@
             <div id="loginForm">
                 <input type="email" class="auth-input" id="loginEmail" placeholder="Email" required aria-label="Email">
                 <input type="password" class="auth-input" id="loginPassword" placeholder="Password" required aria-label="Password">
-                <button class="auth-btn" onclick="login()" aria-label="Sign In">Sign In</button>
+                <button class="auth-btn" onclick="handleLogin()" aria-label="Sign In">Sign In</button>
                 <div class="auth-switch">
                     Don't have an account? <a onclick="showSignup()">Sign up</a>
                 </div>
@@ -24,7 +24,7 @@
                 <input type="text" class="auth-input" id="signupName" placeholder="Display Name" required aria-label="Display Name">
                 <input type="email" class="auth-input" id="signupEmail" placeholder="Email" required aria-label="Email">
                 <input type="password" class="auth-input" id="signupPassword" placeholder="Password (min 6 chars)" required aria-label="Password">
-                <button class="auth-btn" onclick="signup()" aria-label="Create Account">Create Account</button>
+                <button class="auth-btn" onclick="handleSignup()" aria-label="Create Account">Create Account</button>
                 <div class="auth-switch">
                     Already have an account? <a onclick="showLogin()">Sign in</a>
                 </div>
@@ -65,7 +65,7 @@
                 <div class="sidebar-text">Profile</div>
             </button>
             
-            <button class="sidebar-item" onclick="logout()">
+            <button class="sidebar-item" onclick="handleLogout()">
                 <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
                 </svg>
@@ -141,7 +141,7 @@
             document.getElementById('signupForm').style.display = 'block';
         }
         
-        async function login() {
+        async function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
@@ -153,7 +153,7 @@
             }
         }
         
-        async function signup() {
+        async function handleSignup() {
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
             const displayName = document.getElementById('signupName').value;
@@ -166,7 +166,7 @@
             }
         }
         
-        async function logout() {
+        async function handleLogout() {
             if (window.logout) {
                 await window.logout();
             }
