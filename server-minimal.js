@@ -1,16 +1,24 @@
 const express = require('express');
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Absolute minimal server
+// Serve static files from www directory
+app.use(express.static(path.join(__dirname, 'www')));
+
+// Serve lightweight version by default
 app.get('/', (req, res) => {
-    res.send(`
-        <h1>VIB3 Test Server</h1>
-        <p>Server is running!</p>
-        <p>Environment: ${process.env.NODE_ENV}</p>
-        <p>Memory: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB</p>
-        <p>Time: ${new Date().toISOString()}</p>
-    `);
+    res.sendFile(path.join(__dirname, 'www', 'index-lite.html'));
+});
+
+// API endpoints for testing
+app.get('/api/info', (req, res) => {
+    res.json({
+        name: 'VIB3',
+        version: '1.0.0',
+        status: 'running',
+        memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB'
+    });
 });
 
 app.get('/health', (req, res) => {
