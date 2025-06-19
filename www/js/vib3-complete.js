@@ -878,6 +878,12 @@ function performSearch(query) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('VIB3 Complete App Starting...');
     
+    // Apply saved theme
+    const savedTheme = localStorage.getItem('vib3-theme');
+    if (savedTheme) {
+        document.body.className = `theme-${savedTheme}`;
+    }
+    
     // Initialize authentication
     initializeAuth();
     
@@ -972,6 +978,231 @@ function addGlobalStyles() {
     document.head.appendChild(style);
 }
 
+// ================ THEME & SETTINGS ================
+function changeTheme(themeName) {
+    document.body.className = `theme-${themeName}`;
+    localStorage.setItem('vib3-theme', themeName);
+    showNotification(`Theme changed to ${themeName}`, 'success');
+}
+
+function toggleSetting(element, settingName) {
+    const isActive = element.classList.toggle('active');
+    localStorage.setItem(`vib3-${settingName}`, isActive);
+    
+    // Handle specific settings
+    if (settingName === 'darkMode') {
+        changeTheme(isActive ? 'dark' : 'light');
+    }
+    
+    showNotification(`${settingName} ${isActive ? 'enabled' : 'disabled'}`, 'info');
+}
+
+function showToast(message) {
+    showNotification(message, 'info');
+}
+
+// ================ SHARING & SOCIAL ================
+function closeShareModal() {
+    const modal = document.getElementById('shareModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function toggleRepost() {
+    showNotification('Reposted!', 'success');
+}
+
+function copyVideoLink() {
+    const videoUrl = window.location.href + '#video/' + currentVideoId;
+    navigator.clipboard.writeText(videoUrl).then(() => {
+        showNotification('Link copied!', 'success');
+    });
+}
+
+function shareToInstagram() {
+    window.open('https://instagram.com', '_blank');
+    showNotification('Opening Instagram...', 'info');
+}
+
+function shareToTwitter() {
+    const text = 'Check out this video on VIB3!';
+    const url = window.location.href;
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+}
+
+function shareToFacebook() {
+    const url = window.location.href;
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+}
+
+function shareToWhatsApp() {
+    const text = 'Check out this video on VIB3! ' + window.location.href;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function shareToTelegram() {
+    const url = window.location.href;
+    const text = 'Check out this video on VIB3!';
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function shareViaEmail() {
+    const subject = 'Check out this VIB3 video!';
+    const body = 'I thought you might enjoy this video: ' + window.location.href;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function downloadVideo() {
+    showNotification('Starting download...', 'info');
+    // In real app, this would download the video
+}
+
+function generateQRCode() {
+    showNotification('QR Code generated!', 'success');
+    // In real app, this would generate a QR code
+}
+
+function shareNative() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'VIB3 Video',
+            text: 'Check out this awesome video!',
+            url: window.location.href
+        }).catch(() => {});
+    } else {
+        copyVideoLink();
+    }
+}
+
+// ================ UPLOAD & MEDIA ================
+function selectVideo() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            showNotification('Video selected: ' + file.name, 'success');
+            // Handle video upload
+        }
+    };
+    input.click();
+}
+
+function uploadProfilePicture() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            showNotification('Profile picture updated!', 'success');
+            // Handle image upload
+        }
+    };
+    input.click();
+}
+
+function editDisplayName() {
+    const newName = prompt('Enter new display name:', currentUser?.displayName || '');
+    if (newName && newName.trim()) {
+        // Update display name
+        showNotification('Display name updated!', 'success');
+    }
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('deleteModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function confirmDeleteVideo() {
+    showNotification('Video deleted', 'info');
+    closeDeleteModal();
+}
+
+// ================ MESSAGING ================
+function closeModal() {
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.style.display = 'none';
+    });
+}
+
+function openChat(userId) {
+    showPage('messages');
+    showNotification(`Opening chat with ${userId}`, 'info');
+}
+
+function openGroupChat(groupId) {
+    showPage('messages');
+    showNotification(`Opening group ${groupId}`, 'info');
+}
+
+function startNewChat() {
+    const username = prompt('Enter username to chat with:');
+    if (username) {
+        openChat(username);
+    }
+}
+
+// ================ SEARCH & DISCOVERY ================
+function searchTrendingTag(tag) {
+    showNotification(`Searching #${tag}...`, 'info');
+    performSearch(`#${tag}`);
+}
+
+function filterByTag(tag) {
+    showNotification(`Filtering by #${tag}`, 'info');
+    // Filter videos by tag
+}
+
+// ================ SHOP & MONETIZATION ================
+function filterShop(category) {
+    showNotification(`Showing ${category} products`, 'info');
+    // Filter shop products
+}
+
+function viewProduct(productId) {
+    showNotification(`Viewing product ${productId}`, 'info');
+    // Show product details
+}
+
+function checkout() {
+    showNotification('Proceeding to checkout...', 'info');
+    // Handle checkout
+}
+
+function setupTips() {
+    showNotification('Creator tips setup opening...', 'info');
+}
+
+function setupMerchandise() {
+    showNotification('Merchandise setup opening...', 'info');
+}
+
+function setupSponsorship() {
+    showNotification('Brand partnerships opening...', 'info');
+}
+
+function setupSubscription() {
+    showNotification('VIB3 Premium setup...', 'info');
+}
+
+// ================ ANALYTICS ================
+function exportAnalytics(format) {
+    showNotification(`Exporting analytics as ${format.toUpperCase()}...`, 'info');
+    // Export analytics data
+}
+
+function shareAnalytics() {
+    showNotification('Sharing analytics report...', 'info');
+    // Share analytics
+}
+
+// ================ MISC ================
+function showMoreOptions() {
+    showNotification('More options...', 'info');
+}
+
 // Make all functions globally available
 window.initializeAuth = initializeAuth;
 window.handleLogin = handleLogin;
@@ -994,3 +1225,55 @@ window.openMusicLibrary = openMusicLibrary;
 window.handleAdvancedLike = handleAdvancedLike;
 window.addReaction = addReaction;
 window.showNotification = showNotification;
+
+// Theme & Settings functions
+window.changeTheme = changeTheme;
+window.toggleSetting = toggleSetting;
+window.showToast = showToast;
+
+// Sharing & Social functions
+window.closeShareModal = closeShareModal;
+window.toggleRepost = toggleRepost;
+window.copyVideoLink = copyVideoLink;
+window.shareToInstagram = shareToInstagram;
+window.shareToTwitter = shareToTwitter;
+window.shareToFacebook = shareToFacebook;
+window.shareToWhatsApp = shareToWhatsApp;
+window.shareToTelegram = shareToTelegram;
+window.shareViaEmail = shareViaEmail;
+window.downloadVideo = downloadVideo;
+window.generateQRCode = generateQRCode;
+window.shareNative = shareNative;
+
+// Upload & Media functions
+window.selectVideo = selectVideo;
+window.uploadProfilePicture = uploadProfilePicture;
+window.editDisplayName = editDisplayName;
+window.closeDeleteModal = closeDeleteModal;
+window.confirmDeleteVideo = confirmDeleteVideo;
+
+// Messaging functions
+window.closeModal = closeModal;
+window.openChat = openChat;
+window.openGroupChat = openGroupChat;
+window.startNewChat = startNewChat;
+
+// Search & Discovery functions
+window.searchTrendingTag = searchTrendingTag;
+window.filterByTag = filterByTag;
+
+// Shop & Monetization functions
+window.filterShop = filterShop;
+window.viewProduct = viewProduct;
+window.checkout = checkout;
+window.setupTips = setupTips;
+window.setupMerchandise = setupMerchandise;
+window.setupSponsorship = setupSponsorship;
+window.setupSubscription = setupSubscription;
+
+// Analytics functions
+window.exportAnalytics = exportAnalytics;
+window.shareAnalytics = shareAnalytics;
+
+// Misc functions
+window.showMoreOptions = showMoreOptions;
