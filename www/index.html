@@ -813,9 +813,246 @@
         <div class="toast" id="toast"></div>
     </div>
 
-    <!-- Load MongoDB adapter and full VIB3 app modules -->
+    <!-- Load MongoDB adapter and simplified VIB3 app -->
     <script src="js/mongodb-adapter.js"></script>
-    <script type="module" src="js/app.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        // Simplified VIB3 app without problematic module imports
+        let currentUser = null;
+        let currentFeed = 'foryou';
+        
+        // Initialize auth
+        function initializeAuth() {
+            if (window.auth && window.auth.onAuthStateChanged) {
+                window.auth.onAuthStateChanged((user) => {
+                    currentUser = user;
+                    if (user) {
+                        hideAuthContainer();
+                        showMainApp();
+                        loadUserProfile();
+                    } else {
+                        showAuthContainer();
+                        hideMainApp();
+                    }
+                });
+            }
+        }
+        
+        function hideAuthContainer() {
+            const el = document.getElementById('authContainer');
+            if (el) el.style.display = 'none';
+        }
+        
+        function showAuthContainer() {
+            const el = document.getElementById('authContainer');
+            if (el) el.style.display = 'flex';
+        }
+        
+        function hideMainApp() {
+            const el = document.getElementById('mainApp');
+            if (el) el.style.display = 'none';
+        }
+        
+        function showMainApp() {
+            const el = document.getElementById('mainApp');
+            if (el) el.style.display = 'block';
+        }
+        
+        function showLogin() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('signupForm').style.display = 'none';
+        }
+        
+        function showSignup() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+        }
+        
+        // Auth functions
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (window.signInWithEmailAndPassword) {
+                try {
+                    const result = await window.signInWithEmailAndPassword(window.auth, email, password);
+                    showNotification('Login successful!', 'success');
+                } catch (error) {
+                    document.getElementById('authError').textContent = error.message;
+                }
+            }
+        }
+        
+        async function handleSignup() {
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const displayName = document.getElementById('signupName').value;
+            
+            if (window.createUserWithEmailAndPassword) {
+                try {
+                    const result = await window.createUserWithEmailAndPassword(window.auth, email, password);
+                    if (result.user && displayName) {
+                        await window.updateProfile(result.user, { displayName });
+                    }
+                    showNotification('Account created successfully!', 'success');
+                } catch (error) {
+                    document.getElementById('authError').textContent = error.message;
+                }
+            }
+        }
+        
+        async function handleLogout() {
+            if (window.signOut) {
+                await window.signOut(window.auth);
+                showNotification('Logged out successfully', 'info');
+            }
+        }
+        
+        // Navigation
+        function showPage(page) {
+            // Hide all pages
+            document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            const mainApp = document.getElementById('mainApp');
+            if (mainApp) mainApp.style.display = 'none';
+            
+            if (page === 'activity') {
+                createActivityPage();
+                return;
+            }
+            
+            if (page === 'friends') {
+                createFriendsPage();
+                return;
+            }
+            
+            const pageElement = document.getElementById(page + 'Page');
+            if (pageElement) {
+                pageElement.style.display = 'block';
+            } else {
+                if (mainApp) mainApp.style.display = 'block';
+                showNotification(`${page} page coming soon!`, 'info');
+            }
+        }
+        
+        function switchFeedTab(feedType) {
+            currentFeed = feedType;
+            document.querySelectorAll('.feed-tab').forEach(tab => tab.classList.remove('active'));
+            const activeTab = document.querySelector(`[onclick="switchFeedTab('${feedType}')"]`);
+            if (activeTab) activeTab.classList.add('active');
+            showNotification(`Switched to ${feedType} feed`, 'info');
+        }
+        
+        function refreshForYou() {
+            showNotification('Refreshing For You feed...', 'info');
+        }
+        
+        function performSearch(query) {
+            if (query) {
+                showNotification(`Searching for: ${query}`, 'info');
+            }
+        }
+        
+        // Theme functions
+        function changeTheme(themeName) {
+            document.body.className = `theme-${themeName}`;
+            localStorage.setItem('vib3-theme', themeName);
+            showNotification(`Theme changed to ${themeName}`, 'success');
+        }
+        
+        function toggleSetting(element, settingName) {
+            element.classList.toggle('active');
+            localStorage.setItem(`vib3-${settingName}`, element.classList.contains('active'));
+            showNotification(`${settingName} ${element.classList.contains('active') ? 'enabled' : 'disabled'}`, 'info');
+        }
+        
+        function showToast(message) {
+            showNotification(message, 'info');
+        }
+        
+        // Profile functions
+        function loadUserProfile() {
+            if (currentUser) {
+                document.querySelectorAll('.profile-username').forEach(el => {
+                    el.textContent = currentUser.username || currentUser.email?.split('@')[0] || 'User';
+                });
+            }
+        }
+        
+        // Activity and Friends pages
+        function createActivityPage() {
+            let activityPage = document.getElementById('activityPage');
+            if (!activityPage) {
+                activityPage = document.createElement('div');
+                activityPage.id = 'activityPage';
+                activityPage.className = 'activity-page';
+                activityPage.style.cssText = 'margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px;';
+                activityPage.innerHTML = '<h2>Activity</h2><p>Your recent activity will appear here.</p>';
+                document.body.appendChild(activityPage);
+            }
+            
+            document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .friends-page').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            activityPage.style.display = 'block';
+        }
+        
+        function createFriendsPage() {
+            let friendsPage = document.getElementById('friendsPage');
+            if (!friendsPage) {
+                friendsPage = document.createElement('div');
+                friendsPage.id = 'friendsPage';
+                friendsPage.className = 'friends-page';
+                friendsPage.style.cssText = 'margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px;';
+                friendsPage.innerHTML = '<h2>Friends</h2><p>Find and connect with friends.</p>';
+                document.body.appendChild(friendsPage);
+            }
+            
+            document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            friendsPage.style.display = 'block';
+        }
+        
+        // Stub functions for all other features
+        const stubFunctions = [
+            'showUploadModal', 'closeUploadModal', 'recordVideo', 'shareToInstagram', 'shareToTwitter',
+            'shareToFacebook', 'shareToWhatsApp', 'shareToTelegram', 'shareViaEmail', 'copyVideoLink',
+            'downloadVideo', 'generateQRCode', 'shareNative', 'toggleRepost', 'closeShareModal',
+            'selectVideo', 'uploadProfilePicture', 'editDisplayName', 'closeDeleteModal',
+            'confirmDeleteVideo', 'closeModal', 'openChat', 'openGroupChat', 'startNewChat',
+            'searchTrendingTag', 'filterByTag', 'filterShop', 'viewProduct', 'checkout',
+            'setupTips', 'setupMerchandise', 'setupSponsorship', 'setupSubscription',
+            'exportAnalytics', 'shareAnalytics', 'showMoreOptions', 'toggleVideoPlayback',
+            'openCommentsModal', 'openShareModal', 'viewProfile', 'showVideoOptions', 'saveVideo'
+        ];
+        
+        stubFunctions.forEach(funcName => {
+            window[funcName] = function(...args) {
+                showNotification(`${funcName} clicked`, 'info');
+            };
+        });
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('VIB3 App Starting...');
+            
+            // Apply saved theme
+            const savedTheme = localStorage.getItem('vib3-theme');
+            if (savedTheme) {
+                document.body.className = `theme-${savedTheme}`;
+            }
+            
+            // Initialize auth
+            initializeAuth();
+            
+            console.log('VIB3 App Ready!');
+        });
+    </script>
     
     <!-- Auto-testing and fixing scripts for development -->
     <script>
