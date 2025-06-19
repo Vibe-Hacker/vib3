@@ -46,8 +46,10 @@ www/
 
 ## User Preferences
 - Don't ask for confirmation during tasks - just complete them
+- Don't announce what you're going to do - just do it
 - Only pause when there are multiple options requiring a choice
 - Be proactive and complete the full task
+- Execute immediately without explanatory preambles
 
 ## Session Recovery
 When starting a new conversation, mention:
