@@ -41,7 +41,7 @@ www/
 
 ## Commands to Remember
 - Test locally: `npm start` or `node server.js`
-- Commit pattern: Use 🤖 emoji in commit messages (no co-author line needed)
+- Commit pattern: Standard commit messages from Team VIB3
 - Always run linting/testing before commits (when available)
 
 ## User Preferences
