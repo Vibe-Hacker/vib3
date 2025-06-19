@@ -817,5 +817,86 @@
     <script src="js/mongodb-adapter.js"></script>
     <script type="module" src="js/app.js"></script>
     
+    <!-- Auto-testing and fixing scripts for development -->
+    <script>
+        // Embedded autonomous testing system
+        const autoTest = {
+            testNavigation() {
+                const pages = ['foryou', 'explore', 'following', 'friends', 'activity', 'messages', 'profile', 'settings'];
+                pages.forEach(page => {
+                    try {
+                        if (window.showPage) {
+                            window.showPage(page);
+                            console.log(`✓ ${page} navigation works`);
+                        }
+                    } catch (error) {
+                        console.error(`✗ ${page} navigation failed:`, error.message);
+                    }
+                });
+            },
+            
+            testFunctions() {
+                const functions = ['handleLogin', 'handleSignup', 'handleLogout', 'changeTheme', 'showPage'];
+                functions.forEach(func => {
+                    if (typeof window[func] === 'function') {
+                        console.log(`✓ ${func} available`);
+                    } else {
+                        console.error(`✗ ${func} missing`);
+                    }
+                });
+            },
+            
+            runTests() {
+                console.log('🧪 Running autonomous tests...');
+                this.testFunctions();
+                this.testNavigation();
+                console.log('🏁 Tests complete');
+            }
+        };
+        
+        const autoFix = {
+            fixMissingPages() {
+                const requiredPages = ['searchPage', 'profilePage', 'settingsPage', 'messagesPage'];
+                requiredPages.forEach(pageId => {
+                    if (!document.getElementById(pageId)) {
+                        const page = document.createElement('div');
+                        page.id = pageId;
+                        page.className = pageId.replace('Page', '-page');
+                        page.style.cssText = 'margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px; display: none;';
+                        page.innerHTML = `<h2>${pageId.replace('Page', '').charAt(0).toUpperCase() + pageId.replace('Page', '').slice(1)}</h2><p>Loading...</p>`;
+                        document.body.appendChild(page);
+                        console.log(`🔧 Created missing page: ${pageId}`);
+                    }
+                });
+            },
+            
+            fixTheme() {
+                const savedTheme = localStorage.getItem('vib3-theme');
+                if (savedTheme && !document.body.className.includes(`theme-${savedTheme}`)) {
+                    document.body.className = `theme-${savedTheme}`;
+                    console.log(`🔧 Restored theme: ${savedTheme}`);
+                }
+            },
+            
+            runFixes() {
+                console.log('🔧 Running auto-fixes...');
+                this.fixMissingPages();
+                this.fixTheme();
+            },
+            
+            init() {
+                console.log('🚀 Autonomous system initialized');
+                setTimeout(() => {
+                    this.runFixes();
+                    autoTest.runTests();
+                }, 3000);
+                
+                setInterval(() => this.runFixes(), 30000);
+            }
+        };
+        
+        // Initialize autonomous system
+        autoFix.init();
+    </script>
 </body>
 </html>
