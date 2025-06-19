@@ -26,5 +26,6 @@ const appConfig = {
     keyboardShortcutsEnabled: true
 };
 
-// Export configurations
-export { firebaseConfig, appConfig };
+// Make configurations globally available
+window.firebaseConfig = firebaseConfig;
+window.appConfig = appConfig;

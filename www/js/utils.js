@@ -1,8 +1,7 @@
-// Utility functions module
-import { appConfig } from './config.js';
+// Utility functions - no modules
 
 // Show notification
-export function showNotification(message, type = 'info', duration = 3000) {
+function showNotification(message, type = 'info', duration = 3000) {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.textContent = message;
@@ -31,7 +30,7 @@ export function showNotification(message, type = 'info', duration = 3000) {
 }
 
 // Format date
-export function formatDate(date) {
+function formatDate(date) {
     if (!date) return 'Unknown date';
     
     const dateObj = date.toDate ? date.toDate() : new Date(date);
@@ -66,14 +65,14 @@ export function formatDate(date) {
 }
 
 // Format number (e.g., 1.2K, 1.5M)
-export function formatNumber(num) {
+function formatNumber(num) {
     if (num < 1000) return num.toString();
     if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
     return (num / 1000000).toFixed(1) + 'M';
 }
 
 // Debounce function
-export function debounce(func, wait) {
+function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
         const later = () => {
@@ -86,7 +85,7 @@ export function debounce(func, wait) {
 }
 
 // Throttle function
-export function throttle(func, limit) {
+function throttle(func, limit) {
     let inThrottle;
     return function(...args) {
         if (!inThrottle) {
@@ -98,24 +97,24 @@ export function throttle(func, limit) {
 }
 
 // Validate email
-export function isValidEmail(email) {
+function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 }
 
 // Validate username
-export function isValidUsername(username) {
+function isValidUsername(username) {
     const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
     return usernameRegex.test(username);
 }
 
 // Generate unique ID
-export function generateId() {
+function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
 // Show loading spinner
-export function showLoader(container, message = 'Loading...') {
+function showLoader(container, message = 'Loading...') {
     const loader = document.createElement('div');
     loader.className = 'loader-container';
     loader.innerHTML = `
@@ -138,14 +137,14 @@ export function showLoader(container, message = 'Loading...') {
 }
 
 // Hide loading spinner
-export function hideLoader(loader) {
+function hideLoader(loader) {
     if (loader && loader.parentNode) {
         loader.remove();
     }
 }
 
 // Create skeleton loader
-export function createSkeleton(count = 3) {
+function createSkeleton(count = 3) {
     const skeletons = [];
     for (let i = 0; i < count; i++) {
         const skeleton = document.createElement('div');
@@ -157,7 +156,7 @@ export function createSkeleton(count = 3) {
 }
 
 // Check if element is in viewport
-export function isInViewport(element) {
+function isInViewport(element) {
     const rect = element.getBoundingClientRect();
     return (
         rect.top >= 0 &&
@@ -168,14 +167,14 @@ export function isInViewport(element) {
 }
 
 // Log debug message (only in debug mode)
-export function debugLog(...args) {
-    if (appConfig.debug) {
+function debugLog(...args) {
+    if (window.appConfig && window.appConfig.debug) {
         console.log('[VIB3 Debug]:', ...args);
     }
 }
 
 // Handle async errors
-export async function handleAsync(asyncFunc) {
+async function handleAsync(asyncFunc) {
     try {
         const result = await asyncFunc();
         return { success: true, data: result };
@@ -186,7 +185,7 @@ export async function handleAsync(asyncFunc) {
 }
 
 // Add CSS animation styles
-export function addAnimationStyles() {
+function addAnimationStyles() {
     const style = document.createElement('style');
     style.textContent = `
         @keyframes slideIn {
@@ -229,3 +228,19 @@ export function addAnimationStyles() {
 
 // Initialize utility styles
 addAnimationStyles();
+
+// Make functions globally available
+window.showNotification = showNotification;
+window.formatDate = formatDate;
+window.formatNumber = formatNumber;
+window.debounce = debounce;
+window.throttle = throttle;
+window.isValidEmail = isValidEmail;
+window.isValidUsername = isValidUsername;
+window.generateId = generateId;
+window.showLoader = showLoader;
+window.hideLoader = hideLoader;
+window.createSkeleton = createSkeleton;
+window.isInViewport = isInViewport;
+window.debugLog = debugLog;
+window.handleAsync = handleAsync;

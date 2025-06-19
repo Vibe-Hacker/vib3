@@ -88,15 +88,15 @@
     <!-- Load MongoDB adapter first -->
     <script src="js/mongodb-adapter.js"></script>
     
-    <!-- Then load your existing video code -->
+    <!-- Then load simplified JavaScript files -->
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/video.js"></script>
-    <script src="js/user.js"></script>
-    <script src="js/feed.js"></script>
-    <script src="js/search.js"></script>
-    <script src="js/comments.js"></script>
+    <script src="js/auth-simple.js"></script>
+    <script src="js/video-simple.js"></script>
+    <script src="js/user-simple.js"></script>
+    <script src="js/feed-simple.js"></script>
+    <script src="js/search-simple.js"></script>
+    <script src="js/comments-simple.js"></script>
     
     <!-- Simple initialization -->
     <script>
@@ -104,23 +104,30 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('VIB3 with MongoDB starting...');
             
-            // Check authentication
-            auth.onAuthStateChanged(function(user) {
-                if (user) {
-                    // User is signed in
-                    document.getElementById('authContainer').style.display = 'none';
-                    document.getElementById('appContainer').classList.remove('hidden');
-                    
-                    // Load video feed
-                    if (window.loadVideoFeed) {
-                        window.loadVideoFeed('foryou');
+            // Initialize authentication
+            if (window.initAuth) {
+                window.initAuth(function(user) {
+                    if (user) {
+                        // User is signed in
+                        document.getElementById('authContainer').style.display = 'none';
+                        document.getElementById('appContainer').classList.remove('hidden');
+                        
+                        // Load video feed
+                        if (window.loadVideoFeed) {
+                            window.loadVideoFeed('foryou');
+                        }
+                        
+                        // Initialize video observer
+                        if (window.initVideoObserver) {
+                            window.initVideoObserver();
+                        }
+                    } else {
+                        // User is signed out
+                        document.getElementById('authContainer').style.display = 'flex';
+                        document.getElementById('appContainer').classList.add('hidden');
                     }
-                } else {
-                    // User is signed out
-                    document.getElementById('authContainer').style.display = 'flex';
-                    document.getElementById('appContainer').classList.add('hidden');
-                }
-            });
+                });
+            }
         });
         
         // Auth functions
@@ -138,10 +145,11 @@
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                document.getElementById('authError').textContent = error.message;
+            if (window.login) {
+                const result = await window.login(email, password);
+                if (!result.success) {
+                    document.getElementById('authError').textContent = result.error;
+                }
             }
         }
         
@@ -150,18 +158,18 @@
             const password = document.getElementById('signupPassword').value;
             const displayName = document.getElementById('signupName').value;
             
-            try {
-                const result = await createUserWithEmailAndPassword(auth, email, password);
-                if (result.user && displayName) {
-                    await updateProfile(result.user, { displayName });
+            if (window.signup) {
+                const result = await window.signup(displayName, email, password);
+                if (!result.success) {
+                    document.getElementById('authError').textContent = result.error;
                 }
-            } catch (error) {
-                document.getElementById('authError').textContent = error.message;
             }
         }
         
         async function logout() {
-            await signOut(auth);
+            if (window.logout) {
+                await window.logout();
+            }
         }
         
         // Placeholder functions for features
