@@ -101,6 +101,13 @@ async function updateProfile(user, updates) {
     return true;
 }
 
+// Make functions globally available
+window.auth = auth;
+window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+window.signOut = signOut;
+window.updateProfile = updateProfile;
+
 // Replace Firestore functions
 const db = {
     collection: function(name) {

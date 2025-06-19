@@ -65,7 +65,7 @@ function showSignup() {
     document.getElementById('signupForm').style.display = 'block';
 }
 
-async function login() {
+async function handleLogin() {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     
@@ -77,7 +77,7 @@ async function login() {
     }
 }
 
-async function signup() {
+async function handleSignup() {
     const email = document.getElementById('signupEmail').value;
     const password = document.getElementById('signupPassword').value;
     const displayName = document.getElementById('signupName').value;
@@ -90,7 +90,7 @@ async function signup() {
     }
 }
 
-async function logout() {
+async function handleLogout() {
     if (window.logout) {
         await window.logout();
     }

@@ -15,7 +15,7 @@
             <div id="loginForm">
                 <input type="email" class="auth-input" id="loginEmail" placeholder="Email" required aria-label="Email">
                 <input type="password" class="auth-input" id="loginPassword" placeholder="Password" required aria-label="Password">
-                <button class="auth-btn" onclick="login()" aria-label="Sign In">Sign In</button>
+                <button class="auth-btn" onclick="handleLogin()" aria-label="Sign In">Sign In</button>
                 <div class="auth-switch">
                     Don't have an account? <a onclick="showSignup()">Sign up</a>
                 </div>
@@ -24,7 +24,7 @@
                 <input type="text" class="auth-input" id="signupName" placeholder="Display Name" required aria-label="Display Name">
                 <input type="email" class="auth-input" id="signupEmail" placeholder="Email" required aria-label="Email">
                 <input type="password" class="auth-input" id="signupPassword" placeholder="Password (min 6 chars)" required aria-label="Password">
-                <button class="auth-btn" onclick="signup()" aria-label="Create Account">Create Account</button>
+                <button class="auth-btn" onclick="handleSignup()" aria-label="Create Account">Create Account</button>
                 <div class="auth-switch">
                     Already have an account? <a onclick="showLogin()">Sign in</a>
                 </div>
@@ -257,7 +257,7 @@
                         <!-- Action Buttons -->
                         <div style="display: flex; gap: 12px;">
                             <button onclick="showPage('settings')" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer;">Settings</button>
-                            <button onclick="logout()" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer;">Sign out</button>
+                            <button onclick="handleLogout()" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer;">Sign out</button>
                         </div>
                     </div>
                 </div>
@@ -815,6 +815,7 @@
 
     <!-- Load MongoDB adapter and complete VIB3 app -->
     <script src="js/mongodb-adapter.js"></script>
+    <script src="js/auth-simple.js"></script>
     <script src="js/vib3-complete.js"></script>
 </body>
 </html>
