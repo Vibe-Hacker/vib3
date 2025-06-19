@@ -6,7 +6,8 @@
   "author": "Tavis Chaney",
   "main": "server.js",
   "scripts": {
-    "start": "node --max-old-space-size=384 --gc-interval=100 server-optimized.js",
+    "start": "node server-mongodb.js",
+    "start:optimized": "node --max-old-space-size=384 --gc-interval=100 server-optimized.js",
     "start:normal": "node server.js",
     "start:minimal": "node server-minimal.js",
     "build": "echo 'No build needed for static files'",
