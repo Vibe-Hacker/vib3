@@ -113,7 +113,7 @@ app.get('/api/info', (req, res) => {
     res.json({
         name: 'VIB3',
         version: '1.0.0',
-        description: 'TikTok-style video social app',
+        description: 'Vertical video social app',
         database: 'MongoDB',
         storage: 'DigitalOcean Spaces',
         features: ['auth', 'videos', 'social']

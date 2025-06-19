@@ -33,7 +33,7 @@
     background: rgba(0,0,0,0.7);
 }
 
-/* TikTok-style action buttons */
+/* vertical video action buttons */
 .action-btn {
     width: 48px;
     height: 48px;
@@ -69,7 +69,7 @@
     line-height: 1;
 }
 
-/* TikTok avatar button styling */
+/* vertical video avatar button styling */
 .action-btn[data-user-id] {
     width: 48px;
     height: 48px;

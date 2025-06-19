@@ -1,4 +1,4 @@
-// Music Library - TikTok-style music and audio features
+// Music Library - vertical video music and audio features
 export class MusicLibrary {
     constructor() {
         this.tracks = [];
@@ -57,7 +57,7 @@ export class MusicLibrary {
             {
                 id: 'trend_1',
                 title: 'Viral Dance Beat',
-                artist: 'TikTok Star',
+                artist: 'VIB3 Star',
                 duration: 30,
                 category: 'Trending',
                 url: '/assets/music/viral-dance.mp3',

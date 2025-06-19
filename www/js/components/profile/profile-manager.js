@@ -80,7 +80,7 @@ class ProfileManager {
     }
 
     /**
-     * Create a video item for the profile grid (TikTok-style small thumbnails)
+     * Create a video item for the profile grid (vertical video small thumbnails)
      * @param {Object} videoData - Video data from Firestore
      * @param {string} videoId - Video document ID
      */
@@ -204,7 +204,7 @@ class ProfileManager {
     }
 
     /**
-     * Format view count like TikTok (1.2K, 15M, etc.)
+     * Format view count like VIB3 (1.2K, 15M, etc.)
      */
     formatViews(views) {
         if (views < 1000) return views.toString();

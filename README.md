@@ -1,4 +1,4 @@
-# VIB3 - TikTok-Style Video Social Platform
+# VIB3 - Vertical Video Social Platform
 
 A modern, full-stack video sharing platform built with Node.js, supporting web and mobile applications with cloud deployment options.
 

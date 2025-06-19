@@ -29,7 +29,7 @@ export function showPage(page) {
         sidebarButton.classList.add('active');
     }
     
-    // Handle TikTok-style navigation
+    // Handle vertical video navigation
     if (page === 'explore') {
         // Ensure video feed is shown first
         const pages = ['videoFeed', 'searchPage', 'messagesPage', 'profilePage', 'settingsPage'];

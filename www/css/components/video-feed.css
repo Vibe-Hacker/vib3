@@ -18,7 +18,7 @@
 }
 
 .feed-tabs {
-    display: none; /* TikTok-style - no tabs in feed */
+    display: none; /* vertical video - no tabs in feed */
 }
 
 @media (min-width: 768px) {

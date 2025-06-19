@@ -1,4 +1,4 @@
-// Video Editor Module - TikTok-style editing features
+// Video Editor Module - vertical video editing features
 export class VideoEditor {
     constructor() {
         this.currentVideo = null;

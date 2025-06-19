@@ -367,7 +367,7 @@ class VideoManager {
         }
     }
 
-    // Format count numbers like TikTok (1.2K, 15M, etc.)
+    // Format count numbers like VIB3 (1.2K, 15M, etc.)
     formatCount(count) {
         if (count < 1000) return count.toString();
         if (count < 1000000) return (count / 1000).toFixed(1).replace('.0', '') + 'K';
@@ -384,7 +384,7 @@ class VideoManager {
         
         videoItem.innerHTML = `
             <div class="video-container" style="position: relative; width: 100%; height: 100vh; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;">
-                <!-- Video content wrapper with max width like TikTok -->
+                <!-- Video content wrapper with max width like VIB3 -->
                 <div class="video-content-wrapper" style="position: relative; max-width: 600px; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
                     <video class="video-element" loop playsinline preload="metadata" data-video-url="${videoData.videoUrl}" onloadedmetadata="handleVideoMetadata(this)" style="width: 100%; height: 100%; object-fit: cover;"></video>
                     
@@ -394,7 +394,7 @@ class VideoManager {
                         <div class="video-title" style="font-size: 16px; line-height: 1.3; text-shadow: 0 0 12px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7);">${videoData.description || 'No title'}</div>
                     </div>
                     
-                    <!-- TikTok-style action buttons - positioned relative to video content -->
+                    <!-- vertical video action buttons - positioned relative to video content -->
                     <div class="video-actions" style="position: absolute; right: -10px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 24px; z-index: 10; align-items: center;">
                         <!-- Creator Profile Avatar -->
                         <div class="action-item" style="display: flex; flex-direction: column; align-items: center; position: relative;">

@@ -70,7 +70,7 @@ setup(
         'Programming Language :: Python :: 3.12',
         'Operating System :: OS Independent',
     ],
-    keywords='vib3 cli command-line aws s3 tiktok',
+    keywords='vib3 cli command-line aws s3 video social',
     project_urls={
         'Bug Reports': 'https://github.com/yourusername/vib3/issues',
         'Source': 'https://github.com/yourusername/vib3',

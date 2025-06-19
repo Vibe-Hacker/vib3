@@ -74,7 +74,7 @@ app.get('/api/info', (req, res) => {
     res.json({
         name: 'VIB3',
         version: '1.0.0',
-        description: 'TikTok-style video social app',
+        description: 'Vertical video social app',
         memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB'
     });
 });

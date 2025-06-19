@@ -1,4 +1,4 @@
-// Duet & Stitch Features - TikTok-style video collaboration
+// Duet & Stitch Features - vertical video video collaboration
 export class DuetStitch {
     constructor() {
         this.originalVideo = null;

@@ -335,7 +335,7 @@ export class EffectsEngine {
     // Preset effect combinations
     applyPreset(videoElement, presetName) {
         const presets = {
-            'tiktok-classic': ['vibrant', 'zoom'],
+            'video-classic': ['vibrant', 'zoom'],
             'retro-vibe': ['vintage', 'shake'],
             'neon-night': ['neon', 'bounce'],
             'glitch-art': ['glitch', 'spin'],

@@ -104,8 +104,8 @@
     margin: 10px 0;
 }
 
-/* TikTok-style video grid */
-.tiktok-videos-grid {
+/* vertical video video grid */
+.video-videos-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 8px;
@@ -114,13 +114,13 @@
 }
 
 @media (max-width: 768px) {
-    .tiktok-videos-grid {
+    .video-videos-grid {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         gap: 4px;
     }
 }
 
-/* Profile video items - TikTok style */
+/* Profile video items - vertical video style */
 .profile-video-item {
     position: relative;
     aspect-ratio: 9/16;

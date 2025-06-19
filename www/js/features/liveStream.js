@@ -1,4 +1,4 @@
-// Live Streaming Feature - TikTok-style live broadcasts
+// Live Streaming Feature - vertical video live broadcasts
 export class LiveStream {
     constructor() {
         this.isLive = false;
