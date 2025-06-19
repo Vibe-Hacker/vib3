@@ -51,6 +51,7 @@ www/
 - Be proactive and complete the full task
 - Execute immediately without explanatory preambles
 - USER CAN WALK AWAY AND RETURN TO COMPLETED WORK
+- Test functionality and fix issues autonomously when possible
 
 ## Session Recovery
 When starting a new conversation, mention:
