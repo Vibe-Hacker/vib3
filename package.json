@@ -6,7 +6,7 @@
   "author": "Tavis Chaney",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node server-minimal.js",
     "build": "echo 'No build needed for static files'",
     "test": "echo \"No tests specified\""
   },
