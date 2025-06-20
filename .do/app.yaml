@@ -5,8 +5,8 @@ services:
   github:
     repo: Vibe-Hacker/vib3
     branch: main
-  build_command: echo "No build needed"
-  run_command: node server-full.js
+  build_command: npm install
+  run_command: npm start
   environment_slug: node-js
   instance_count: 1
   instance_size_slug: basic-xxs
