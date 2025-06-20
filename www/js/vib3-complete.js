@@ -160,21 +160,114 @@ function createErrorMessage(feedType) {
 }
 
 function initializeVideoObserver() {
-    // Simple video observer for play/pause on scroll
+    // Enhanced video observer for play/pause on scroll with snap behavior
     const videos = document.querySelectorAll('.video-element');
     
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target;
-            if (entry.isIntersecting) {
+            if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
                 video.play().catch(e => console.log('Video play failed:', e));
+                video.currentTime = 0; // Restart video when it comes into view
             } else {
                 video.pause();
             }
         });
-    }, { threshold: 0.5 });
+    }, { threshold: [0.5, 0.7, 1.0] });
     
     videos.forEach(video => observer.observe(video));
+    
+    // Add smooth scroll snap behavior
+    initializeScrollSnap();
+}
+
+function initializeScrollSnap() {
+    const feedElement = document.querySelector('.feed-content.active') || document.querySelector('#foryouFeed');
+    if (!feedElement) return;
+    
+    let isScrolling = false;
+    let scrollTimeout;
+    
+    feedElement.addEventListener('scroll', () => {
+        isScrolling = true;
+        
+        // Clear timeout if it exists
+        clearTimeout(scrollTimeout);
+        
+        // Set timeout to detect when scrolling stops
+        scrollTimeout = setTimeout(() => {
+            isScrolling = false;
+            snapToNearestVideo();
+        }, 150);
+    });
+    
+    function snapToNearestVideo() {
+        const videoItems = document.querySelectorAll('.video-item');
+        if (videoItems.length === 0) return;
+        
+        const viewportHeight = window.innerHeight;
+        const scrollTop = feedElement.scrollTop;
+        
+        let closestVideo = null;
+        let closestDistance = Infinity;
+        
+        videoItems.forEach(video => {
+            const rect = video.getBoundingClientRect();
+            const videoCenter = rect.top + rect.height / 2;
+            const viewportCenter = viewportHeight / 2;
+            const distance = Math.abs(videoCenter - viewportCenter);
+            
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestVideo = video;
+            }
+        });
+        
+        if (closestVideo) {
+            closestVideo.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    }
+    
+    // Add keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const videoItems = Array.from(document.querySelectorAll('.video-item'));
+            const currentVideo = getCurrentVideo();
+            const currentIndex = videoItems.indexOf(currentVideo);
+            
+            let nextIndex;
+            if (e.key === 'ArrowDown') {
+                nextIndex = Math.min(currentIndex + 1, videoItems.length - 1);
+            } else {
+                nextIndex = Math.max(currentIndex - 1, 0);
+            }
+            
+            if (videoItems[nextIndex]) {
+                videoItems[nextIndex].scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }
+    });
+}
+
+function getCurrentVideo() {
+    const videoItems = document.querySelectorAll('.video-item');
+    const viewportHeight = window.innerHeight;
+    
+    for (const video of videoItems) {
+        const rect = video.getBoundingClientRect();
+        if (rect.top <= viewportHeight / 2 && rect.bottom >= viewportHeight / 2) {
+            return video;
+        }
+    }
+    
+    return videoItems[0]; // fallback to first video
 }
 
 function formatCount(count) {
@@ -233,7 +326,7 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
 
 function createAdvancedVideoCard(video) {
     const card = document.createElement('div');
-    card.className = 'video-card';
+    card.className = 'video-item';
     card.innerHTML = `
         <div class="video-container">
             <video 

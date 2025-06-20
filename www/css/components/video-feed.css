@@ -6,11 +6,13 @@
     width: calc(100vw - 240px);
     overflow-y: scroll;
     scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
     scrollbar-width: none;
     -ms-overflow-style: none;
     background: #000;
     transition: all 0.3s ease;
     box-sizing: border-box;
+    position: relative;
 }
 
 .video-feed::-webkit-scrollbar {
@@ -60,6 +62,16 @@
 }
 
 .feed-content {
+    display: none;
+    height: 100vh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.feed-content::-webkit-scrollbar {
     display: none;
 }
 

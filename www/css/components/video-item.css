@@ -3,10 +3,12 @@
     height: 100vh;
     position: relative;
     scroll-snap-align: start;
+    scroll-snap-stop: always;
     display: block;
     background: #000;
     margin: 0;
     padding: 0;
+    flex-shrink: 0;
 }
 
 .video-container {
