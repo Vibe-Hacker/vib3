@@ -175,33 +175,17 @@ let videoObserver = null;
 let lastFeedLoad = 0;
 
 function initializeVideoObserver() {
-    // Clean up existing observer first
-    if (videoObserver) {
-        videoObserver.disconnect();
-        videoObserver = null;
-    }
-    
+    // Temporarily disabled to debug video disappearing issue
+    console.log('Video observer disabled for debugging');
     const videos = document.querySelectorAll('.video-element');
+    console.log('Found', videos.length, 'videos, but observer disabled');
     
-    if (videos.length === 0) {
-        console.log('No videos found for observer');
-        return;
-    }
-    
-    videoObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const video = entry.target;
-            
-            if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
-                video.play().catch(e => console.log('Video play failed:', e));
-            } else {
-                video.pause();
-            }
-        });
-    }, { threshold: [0.3, 0.7] });
-    
-    videos.forEach(video => videoObserver.observe(video));
-    console.log('Video observer initialized for', videos.length, 'videos');
+    // For now, just auto-play all videos without observer
+    videos.forEach(video => {
+        video.muted = true;
+        video.loop = true;
+        video.play().catch(e => console.log('Video play failed:', e));
+    });
 }
 
 function formatCount(count) {
