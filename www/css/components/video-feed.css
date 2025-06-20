@@ -1,4 +1,4 @@
-/* Video Feed Styles */
+/* Video Feed Styles - TikTok Layout */
 .video-feed {
     height: 100vh;
     margin-top: 0;
@@ -9,6 +9,9 @@
     transition: all 0.3s ease;
     box-sizing: border-box;
     position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .video-feed::-webkit-scrollbar {
@@ -60,9 +63,13 @@
 .feed-content {
     display: none;
     height: 100vh;
+    width: 100%;
+    max-width: 400px;
     overflow-y: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
 }
 
 .feed-content::-webkit-scrollbar {

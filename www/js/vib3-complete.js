@@ -174,7 +174,7 @@ let videoObserver = null;
 let lastFeedLoad = 0;
 
 function initializeVideoObserver() {
-    console.log('🎬 ULTRA MINIMAL VIDEO INIT');
+    console.log('🎬 TIKTOK-STYLE VIDEO INIT WITH SCROLL SNAP');
     
     // Only target feed videos, not upload modal videos
     const videos = document.querySelectorAll('.feed-content video');
@@ -185,13 +185,37 @@ function initializeVideoObserver() {
         return;
     }
     
-    // Force all feed videos to be ready and visible
+    // Create intersection observer for TikTok-style video playback
+    if (videoObserver) {
+        videoObserver.disconnect();
+    }
+    
+    videoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const video = entry.target;
+            if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
+                // Play video when mostly visible
+                video.play().catch(e => console.log('Play failed:', e));
+                console.log('🎬 Playing video:', video.src.split('/').pop());
+            } else {
+                // Pause when not visible
+                video.pause();
+                console.log('⏸️ Pausing video:', video.src.split('/').pop());
+            }
+        });
+    }, {
+        threshold: [0, 0.7, 1],
+        rootMargin: '-10% 0px -10% 0px'
+    });
+    
+    // Setup all videos
     videos.forEach((video, index) => {
-        console.log(`🔧 Processing feed video ${index + 1}:`, video.src);
+        console.log(`🔧 Processing TikTok video ${index + 1}:`, video.src);
         
         // Force video properties
         video.muted = true;
         video.loop = true;
+        video.playsInline = true;
         video.preload = 'metadata';
         
         // Force style overrides
@@ -212,15 +236,18 @@ function initializeVideoObserver() {
             parent = parent.parentElement;
         }
         
-        // Try to play first video
-        if (index === 0) {
-            video.play().catch(e => console.log('▶️ Autoplay blocked:', e));
-        }
+        // Observe for intersection
+        videoObserver.observe(video);
         
-        console.log(`✅ Feed video ${index + 1} processed and forced visible`);
+        console.log(`✅ TikTok video ${index + 1} setup complete`);
     });
     
-    console.log('🏁 All feed videos processed with nuclear visibility');
+    // Auto-play first video
+    if (videos.length > 0) {
+        videos[0].play().catch(e => console.log('▶️ First video autoplay blocked:', e));
+    }
+    
+    console.log('🏁 TikTok-style video system initialized with scroll snap');
 }
 
 function formatCount(count) {
@@ -279,6 +306,8 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
                 if (validVideos.length > 0) {
                     feedElement.innerHTML = '';
                     feedElement.style.overflow = 'auto'; // Restore scrolling when videos present
+                    feedElement.style.scrollSnapType = 'y mandatory'; // Enable scroll snap
+                    feedElement.style.scrollBehavior = 'smooth'; // Smooth scrolling
                     validVideos.forEach(video => {
                         const videoCard = createAdvancedVideoCard(video);
                         feedElement.appendChild(videoCard);
@@ -307,14 +336,15 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
 }
 
 function createAdvancedVideoCard(video) {
-    console.log('🚀 Creating ULTRA MINIMAL video card for:', video.videoUrl);
+    console.log('🚀 Creating TikTok-style video card for:', video.videoUrl);
     
     const card = document.createElement('div');
     
-    // Apply styles directly to the element to bypass ALL CSS
+    // TikTok-style card with scroll snap
     card.style.cssText = `
         height: 100vh !important;
         width: 100% !important;
+        max-width: 400px !important;
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -323,6 +353,8 @@ function createAdvancedVideoCard(video) {
         margin: 0 !important;
         padding: 0 !important;
         overflow: hidden !important;
+        scroll-snap-align: start !important;
+        scroll-snap-stop: always !important;
     `;
     
     // Create video element directly
@@ -330,7 +362,7 @@ function createAdvancedVideoCard(video) {
     video_elem.src = video.videoUrl || '';
     video_elem.loop = true;
     video_elem.muted = true;
-    video_elem.controls = true;
+    video_elem.playsInline = true;
     video_elem.style.cssText = `
         position: absolute !important;
         top: 0 !important;
@@ -352,26 +384,57 @@ function createAdvancedVideoCard(video) {
     video_elem.onplay = () => console.log('▶️ PLAYING:', video_elem.src);
     video_elem.onpause = () => console.log('⏸️ PAUSED:', video_elem.src);
     
-    // Create simple overlay
+    // Create TikTok-style overlay with user info
     const overlay = document.createElement('div');
     overlay.style.cssText = `
         position: absolute !important;
-        bottom: 20px !important;
+        bottom: 60px !important;
         left: 20px !important;
+        right: 80px !important;
         color: white !important;
-        background: rgba(0,0,0,0.8) !important;
-        padding: 10px !important;
-        border-radius: 5px !important;
         z-index: 10 !important;
-        font-size: 14px !important;
         pointer-events: none !important;
     `;
-    overlay.textContent = `📹 ${video.title || 'Video'} by ${video.username || 'User'}`;
+    
+    overlay.innerHTML = `
+        <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
+            @${video.username || 'user'}
+        </div>
+        <div style="font-size: 14px; line-height: 1.3; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
+            ${video.description || video.title || 'Check out this video!'}
+        </div>
+    `;
+    
+    // Create TikTok-style action buttons on the right
+    const actions = document.createElement('div');
+    actions.style.cssText = `
+        position: absolute !important;
+        right: 15px !important;
+        bottom: 60px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 20px !important;
+        z-index: 10 !important;
+    `;
+    
+    actions.innerHTML = `
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            ❤️
+        </div>
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            💬
+        </div>
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            📤
+        </div>
+    `;
     
     card.appendChild(video_elem);
     card.appendChild(overlay);
+    card.appendChild(actions);
     
-    console.log('✅ MINIMAL CARD CREATED, bypassing all CSS classes');
+    console.log('✅ TikTok-style card created with scroll snap');
     return card;
 }
 

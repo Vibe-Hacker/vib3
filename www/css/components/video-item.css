@@ -1,6 +1,8 @@
-/* Video Item Components */
+/* Video Item Components - TikTok Style */
 .video-item {
     height: 100vh;
+    width: 100%;
+    max-width: 400px;
     position: relative;
     display: block !important;
     background: #000;
@@ -8,9 +10,10 @@
     padding: 0;
     flex-shrink: 0;
     min-height: 100vh;
-    width: 100%;
     opacity: 1 !important;
     visibility: visible !important;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
 }
 
 .video-container {
@@ -34,13 +37,13 @@
     visibility: visible !important;
 }
 
-/* Consistent video sizing across all feeds */
+/* Consistent video sizing across all feeds - TikTok Style */
 #foryouFeed .video-element,
 #followingFeed .video-element,
 #discoverFeed .video-element {
     width: 100% !important;
     height: 100vh !important;
-    max-width: 600px !important;
+    max-width: 400px !important;
     object-fit: cover !important;
 }
 
