@@ -180,11 +180,24 @@ function initializeVideoObserver() {
     const videos = document.querySelectorAll('.video-element');
     console.log('Found', videos.length, 'videos, but observer disabled');
     
-    // For now, just auto-play all videos without observer
-    videos.forEach(video => {
+    // Debug video sources
+    videos.forEach((video, index) => {
+        console.log(`Video ${index + 1}:`, {
+            src: video.src,
+            currentSrc: video.currentSrc,
+            readyState: video.readyState,
+            networkState: video.networkState
+        });
+        
         video.muted = true;
         video.loop = true;
-        video.play().catch(e => console.log('Video play failed:', e));
+        
+        // Only try to play if video has a valid source
+        if (video.src && video.src !== '') {
+            video.play().catch(e => console.log('Video play failed:', e, 'for URL:', video.src));
+        } else {
+            console.warn('Video has no source URL:', video);
+        }
     });
 }
 
@@ -258,6 +271,7 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
 }
 
 function createAdvancedVideoCard(video) {
+    console.log('Creating video card with URL:', video.videoUrl, 'for video:', video.title);
     const card = document.createElement('div');
     card.className = 'video-item';
     card.innerHTML = `
@@ -269,6 +283,9 @@ function createAdvancedVideoCard(video) {
                 loop
                 muted
                 onclick="toggleVideoPlayback(this.parentElement)"
+                onerror="console.error('Video load error for:', this.src)"
+                onloadstart="console.log('Video loading started:', this.src)"
+                oncanplay="console.log('Video can play:', this.src)"
             ></video>
             <div class="play-pause-indicator">▶️</div>
             
