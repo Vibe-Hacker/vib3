@@ -318,46 +318,60 @@ app.post('/api/auth/logout', requireAuth, (req, res) => {
 
 // Get all videos (feed)
 app.get('/api/videos', async (req, res) => {
+    console.log('API /videos called with query:', req.query);
+    console.log('Database connected:', !!db);
+    
+    // Always return sample data for now to debug
+    const sampleVideos = [
+        {
+            _id: 'sample1',
+            title: 'Welcome to VIB3!',
+            description: 'Your first video on the platform ✨',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            user: { 
+                username: 'vib3demo', 
+                displayName: 'VIB3 Demo',
+                _id: 'demo'
+            },
+            userAvatar: '👤',
+            username: 'vib3demo',
+            userId: 'demo',
+            likeCount: 42,
+            commentCount: 5,
+            views: 1250,
+            createdAt: new Date()
+        },
+        {
+            _id: 'sample2', 
+            title: 'Sample Dance Video',
+            description: 'Check out this dance trend! #dance #viral',
+            videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+            user: {
+                username: 'dancer123',
+                displayName: 'Dance Master',
+                _id: 'demo2'
+            },
+            userAvatar: '💃',
+            username: 'dancer123',
+            userId: 'demo2',
+            likeCount: 156,
+            commentCount: 23,
+            views: 3200,
+            createdAt: new Date()
+        }
+    ];
+    
     if (!db) {
-        // Return sample data if no database
-        return res.json({
-            videos: [
-                {
-                    _id: 'sample1',
-                    title: 'Welcome to VIB3!',
-                    description: 'Your first video on the platform ✨',
-                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-                    user: { 
-                        username: 'vib3demo', 
-                        displayName: 'VIB3 Demo',
-                        _id: 'demo'
-                    },
-                    likeCount: 42,
-                    commentCount: 5,
-                    views: 1250,
-                    createdAt: new Date()
-                },
-                {
-                    _id: 'sample2', 
-                    title: 'Sample Dance Video',
-                    description: 'Check out this dance trend! #dance #viral',
-                    videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-                    user: {
-                        username: 'dancer123',
-                        displayName: 'Dance Master',
-                        _id: 'demo2'
-                    },
-                    likeCount: 156,
-                    commentCount: 23,
-                    views: 3200,
-                    createdAt: new Date()
-                }
-            ]
-        });
+        console.log('No database connection, returning sample data');
+        return res.json({ videos: sampleVideos });
     }
     
     try {
         const { limit = 10, skip = 0, userId, feed } = req.query;
+        
+        // Test database connection first
+        await db.admin().ping();
+        console.log('Database ping successful');
         
         const query = userId ? { userId } : {};
         
@@ -368,49 +382,44 @@ app.get('/api/videos', async (req, res) => {
             .limit(parseInt(limit))
             .toArray();
         
+        console.log('Found videos in database:', videos.length);
+        
         // If no videos in database, return sample data
         if (videos.length === 0) {
-            return res.json({
-                videos: [
-                    {
-                        _id: 'sample1',
-                        title: 'Welcome to VIB3!',
-                        description: 'Your first video on the platform ✨',
-                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-                        user: { 
-                            username: 'vib3demo', 
-                            displayName: 'VIB3 Demo',
-                            _id: 'demo'
-                        },
-                        likeCount: 42,
-                        commentCount: 5,
-                        views: 1250,
-                        createdAt: new Date()
-                    }
-                ]
-            });
+            console.log('No videos in database, returning sample data');
+            return res.json({ videos: sampleVideos });
         }
         
         // Get user info for each video
         for (const video of videos) {
-            const user = await db.collection('users').findOne(
-                { _id: new ObjectId(video.userId) },
-                { projection: { password: 0 } }
-            );
-            video.user = user;
-            
-            // Get like count
-            video.likeCount = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
-            
-            // Get comment count
-            video.commentCount = await db.collection('comments').countDocuments({ videoId: video._id.toString() });
+            try {
+                const user = await db.collection('users').findOne(
+                    { _id: new ObjectId(video.userId) },
+                    { projection: { password: 0 } }
+                );
+                video.user = user;
+                
+                // Get like count
+                video.likeCount = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
+                
+                // Get comment count
+                video.commentCount = await db.collection('comments').countDocuments({ videoId: video._id.toString() });
+            } catch (userError) {
+                console.error('Error getting user info for video:', video._id, userError);
+                // Set default user info if error
+                video.user = { username: 'unknown', displayName: 'Unknown User', _id: 'unknown' };
+                video.likeCount = 0;
+                video.commentCount = 0;
+            }
         }
         
         res.json({ videos });
         
     } catch (error) {
         console.error('Get videos error:', error);
-        res.status(500).json({ error: 'Failed to get videos' });
+        console.log('Database error, falling back to sample data');
+        // Return sample data instead of error
+        res.json({ videos: sampleVideos });
     }
 });
 
