@@ -357,7 +357,7 @@ app.get('/api/videos', async (req, res) => {
     }
     
     try {
-        const { limit = 10, skip = 0, userId } = req.query;
+        const { limit = 10, skip = 0, userId, feed } = req.query;
         
         const query = userId ? { userId } : {};
         

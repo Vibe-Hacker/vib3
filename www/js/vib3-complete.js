@@ -136,6 +136,47 @@ async function loadUserProfile() {
     console.log('User profile loaded:', currentUser.email);
 }
 
+// ================ HELPER FUNCTIONS ================
+function createEmptyFeedMessage(feedType) {
+    return `
+        <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+            <div style="font-size: 72px; margin-bottom: 20px;">📹</div>
+            <h3 style="margin-bottom: 12px; color: var(--text-primary);">No videos yet</h3>
+            <p style="margin-bottom: 20px;">Be the first to share something amazing!</p>
+            <button onclick="showUploadModal()" style="padding: 12px 24px; background: var(--accent-primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Create Video</button>
+        </div>
+    `;
+}
+
+function createErrorMessage(feedType) {
+    return `
+        <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+            <div style="font-size: 72px; margin-bottom: 20px;">⚠️</div>
+            <h3 style="margin-bottom: 12px; color: var(--text-primary);">Oops! Something went wrong</h3>
+            <p style="margin-bottom: 20px;">Failed to load videos. Please try again.</p>
+            <button onclick="loadVideoFeed('${feedType}')" style="padding: 12px 24px; background: var(--accent-primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Retry</button>
+        </div>
+    `;
+}
+
+function initializeVideoObserver() {
+    // Simple video observer for play/pause on scroll
+    const videos = document.querySelectorAll('.video-element');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const video = entry.target;
+            if (entry.isIntersecting) {
+                video.play().catch(e => console.log('Video play failed:', e));
+            } else {
+                video.pause();
+            }
+        });
+    }, { threshold: 0.5 });
+    
+    videos.forEach(video => observer.observe(video));
+}
+
 // ================ VIDEO FEED MANAGEMENT ================
 async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
     currentFeed = feedType;
