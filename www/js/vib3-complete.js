@@ -175,30 +175,46 @@ let videoObserver = null;
 let lastFeedLoad = 0;
 
 function initializeVideoObserver() {
-    // Temporarily disabled to debug video disappearing issue
-    console.log('Video observer disabled for debugging');
-    const videos = document.querySelectorAll('.video-element');
-    console.log('Found', videos.length, 'videos, but observer disabled');
+    // Disconnect existing observer to prevent multiple instances
+    if (videoObserver) {
+        videoObserver.disconnect();
+        videoObserver = null;
+    }
     
-    // Debug video sources
-    videos.forEach((video, index) => {
-        console.log(`Video ${index + 1}:`, {
-            src: video.src,
-            currentSrc: video.currentSrc,
-            readyState: video.readyState,
-            networkState: video.networkState
+    const videos = document.querySelectorAll('.video-element');
+    console.log('Initializing video observer for', videos.length, 'videos');
+    
+    if (videos.length === 0) {
+        console.log('No videos found to observe');
+        return;
+    }
+    
+    // Create new intersection observer
+    videoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const video = entry.target;
+            if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+                video.muted = true;
+                video.play().catch(e => console.log('Video play failed:', e));
+            } else {
+                video.pause();
+            }
         });
-        
+    }, {
+        threshold: [0, 0.5, 1]
+    });
+    
+    // Observe all videos
+    videos.forEach(video => {
         video.muted = true;
         video.loop = true;
-        
-        // Only try to play if video has a valid source
-        if (video.src && video.src !== '') {
-            video.play().catch(e => console.log('Video play failed:', e, 'for URL:', video.src));
-        } else {
-            console.warn('Video has no source URL:', video);
-        }
+        videoObserver.observe(video);
     });
+    
+    // Auto-play first video
+    if (videos.length > 0 && videos[0].src) {
+        videos[0].play().catch(e => console.log('Auto-play failed:', e));
+    }
 }
 
 function formatCount(count) {
@@ -246,14 +262,28 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
             const data = await response.json();
             
             if (data.videos && data.videos.length > 0) {
-                feedElement.innerHTML = '';
-                feedElement.style.overflow = 'auto'; // Restore scrolling when videos present
-                data.videos.forEach(video => {
-                    const videoCard = createAdvancedVideoCard(video);
-                    feedElement.appendChild(videoCard);
+                // Filter out videos with invalid URLs
+                const validVideos = data.videos.filter(video => {
+                    return video.videoUrl && 
+                           !video.videoUrl.includes('example.com') && 
+                           video.videoUrl !== '' &&
+                           video.videoUrl.startsWith('http');
                 });
-                // Only initialize video observer if we have videos
-                setTimeout(() => initializeVideoObserver(), 200);
+                
+                if (validVideos.length > 0) {
+                    feedElement.innerHTML = '';
+                    feedElement.style.overflow = 'auto'; // Restore scrolling when videos present
+                    validVideos.forEach(video => {
+                        const videoCard = createAdvancedVideoCard(video);
+                        feedElement.appendChild(videoCard);
+                    });
+                    // Only initialize video observer if we have videos
+                    setTimeout(() => initializeVideoObserver(), 200);
+                } else {
+                    feedElement.innerHTML = createEmptyFeedMessage(feedType);
+                    feedElement.style.overflow = 'hidden';
+                    console.log('No valid videos after filtering, showing empty message for', feedType);
+                }
             } else {
                 feedElement.innerHTML = createEmptyFeedMessage(feedType);
                 feedElement.style.overflow = 'hidden'; // Prevent scrolling when empty

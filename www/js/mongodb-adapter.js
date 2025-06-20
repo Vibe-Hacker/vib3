@@ -162,7 +162,7 @@ const db = {
                                         data: () => ({
                                             ...video,
                                             userId: video.userId,
-                                            videoUrl: video.videoUrl || 'https://example.com/sample.mp4',
+                                            videoUrl: video.videoUrl,
                                             likes: video.likeCount || 0,
                                             comments: video.commentCount || 0,
                                             createdAt: { toDate: () => new Date(video.createdAt) }
@@ -186,7 +186,7 @@ const storage = {
                 // Upload to Spaces
                 return {
                     ref: {
-                        getDownloadURL: async () => 'https://example.com/video.mp4'
+                        getDownloadURL: async () => '/videos/placeholder.mp4'
                     }
                 };
             }
@@ -211,7 +211,7 @@ function deleteField() { return null; }
 function increment() { return 1; }
 function ref() { return storage.ref(...arguments); }
 function uploadBytesResumable() { return { on: () => {} }; }
-function getDownloadURL() { return Promise.resolve('https://example.com/url'); }
+function getDownloadURL() { return Promise.resolve('/videos/placeholder.mp4'); }
 function deleteObject() { return Promise.resolve(); }
 function onAuthStateChanged() { return auth.onAuthStateChanged(...arguments); }
 
