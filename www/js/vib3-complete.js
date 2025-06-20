@@ -139,7 +139,18 @@ async function loadUserProfile() {
 // ================ HELPER FUNCTIONS ================
 function createEmptyFeedMessage(feedType) {
     return `
-        <div class="empty-feed-message" style="text-align: center; padding: 60px 20px; color: var(--text-secondary); height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <div class="empty-feed-message" style="
+            text-align: center; 
+            padding: 60px 20px; 
+            color: var(--text-secondary); 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            background: var(--bg-primary);
+            overflow: hidden;
+        ">
             <div style="font-size: 72px; margin-bottom: 20px;">📹</div>
             <h3 style="margin-bottom: 12px; color: var(--text-primary);">No videos yet</h3>
             <p style="margin-bottom: 20px;">Be the first to share something amazing!</p>
@@ -218,6 +229,7 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
             
             if (data.videos && data.videos.length > 0) {
                 feedElement.innerHTML = '';
+                feedElement.style.overflow = 'auto'; // Restore scrolling when videos present
                 data.videos.forEach(video => {
                     const videoCard = createAdvancedVideoCard(video);
                     feedElement.appendChild(videoCard);
@@ -226,6 +238,7 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
                 setTimeout(() => initializeVideoObserver(), 100);
             } else {
                 feedElement.innerHTML = createEmptyFeedMessage(feedType);
+                feedElement.style.overflow = 'hidden'; // Prevent scrolling when empty
                 console.log('No videos to display, showing empty message for', feedType);
             }
         } catch (error) {
