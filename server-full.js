@@ -319,7 +319,41 @@ app.post('/api/auth/logout', requireAuth, (req, res) => {
 // Get all videos (feed)
 app.get('/api/videos', async (req, res) => {
     if (!db) {
-        return res.status(503).json({ error: 'Database not connected' });
+        // Return sample data if no database
+        return res.json({
+            videos: [
+                {
+                    _id: 'sample1',
+                    title: 'Welcome to VIB3!',
+                    description: 'Your first video on the platform ✨',
+                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                    user: { 
+                        username: 'vib3demo', 
+                        displayName: 'VIB3 Demo',
+                        _id: 'demo'
+                    },
+                    likeCount: 42,
+                    commentCount: 5,
+                    views: 1250,
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'sample2', 
+                    title: 'Sample Dance Video',
+                    description: 'Check out this dance trend! #dance #viral',
+                    videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+                    user: {
+                        username: 'dancer123',
+                        displayName: 'Dance Master',
+                        _id: 'demo2'
+                    },
+                    likeCount: 156,
+                    commentCount: 23,
+                    views: 3200,
+                    createdAt: new Date()
+                }
+            ]
+        });
     }
     
     try {
@@ -333,6 +367,29 @@ app.get('/api/videos', async (req, res) => {
             .skip(parseInt(skip))
             .limit(parseInt(limit))
             .toArray();
+        
+        // If no videos in database, return sample data
+        if (videos.length === 0) {
+            return res.json({
+                videos: [
+                    {
+                        _id: 'sample1',
+                        title: 'Welcome to VIB3!',
+                        description: 'Your first video on the platform ✨',
+                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                        user: { 
+                            username: 'vib3demo', 
+                            displayName: 'VIB3 Demo',
+                            _id: 'demo'
+                        },
+                        likeCount: 42,
+                        commentCount: 5,
+                        views: 1250,
+                        createdAt: new Date()
+                    }
+                ]
+            });
+        }
         
         // Get user info for each video
         for (const video of videos) {
