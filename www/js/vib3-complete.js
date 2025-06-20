@@ -175,47 +175,52 @@ let videoObserver = null;
 let lastFeedLoad = 0;
 
 function initializeVideoObserver() {
-    // Disconnect existing observer to prevent multiple instances
-    if (videoObserver) {
-        videoObserver.disconnect();
-        videoObserver = null;
-    }
+    console.log('🎬 ULTRA MINIMAL VIDEO INIT');
     
-    const videos = document.querySelectorAll('.video-element');
-    console.log('Initializing video observer for', videos.length, 'videos');
+    const videos = document.querySelectorAll('video');
+    console.log('📹 Found', videos.length, 'video elements');
     
     if (videos.length === 0) {
-        console.log('No videos found to observe');
+        console.log('❌ No videos found');
         return;
     }
     
-    // Mark videos as observed and force visibility
+    // Force all videos to be ready and visible
     videos.forEach((video, index) => {
-        video.setAttribute('data-observed', 'true');
+        console.log(`🔧 Processing video ${index + 1}:`, video.src);
+        
+        // Force video properties
         video.muted = true;
         video.loop = true;
-        video.style.display = 'block';
-        video.style.visibility = 'visible';
-        video.style.opacity = '1';
+        video.preload = 'metadata';
         
-        // Force parent containers to stay visible
-        const container = video.closest('.video-item');
-        if (container) {
-            container.style.display = 'block';
-            container.style.visibility = 'visible';
-            container.style.opacity = '1';
+        // Force style overrides
+        video.style.cssText += `
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        `;
+        
+        // Force parent visibility
+        let parent = video.parentElement;
+        while (parent && parent !== document.body) {
+            parent.style.cssText += `
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+            `;
+            parent = parent.parentElement;
         }
         
-        console.log(`Video ${index + 1} forced visible:`, video.src);
+        // Try to play first video
+        if (index === 0) {
+            video.play().catch(e => console.log('▶️ Autoplay blocked:', e));
+        }
+        
+        console.log(`✅ Video ${index + 1} processed and forced visible`);
     });
     
-    // Simple auto-play for first video without intersection observer for now
-    if (videos.length > 0 && videos[0].src) {
-        videos[0].play().catch(e => console.log('Auto-play failed:', e));
-        console.log('Started playing first video');
-    }
-    
-    console.log('Video observer setup complete - all videos should remain visible');
+    console.log('🏁 All videos processed with nuclear visibility');
 }
 
 function formatCount(count) {
@@ -302,93 +307,71 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
 }
 
 function createAdvancedVideoCard(video) {
-    console.log('Creating video card with URL:', video.videoUrl, 'for video:', video.title);
+    console.log('🚀 Creating ULTRA MINIMAL video card for:', video.videoUrl);
+    
     const card = document.createElement('div');
-    card.className = 'video-item';
-    card.innerHTML = `
-        <div class="video-container">
-            <video 
-                class="video-element" 
-                src="${video.videoUrl || ''}"
-                poster="${video.thumbnail || ''}"
-                loop
-                muted
-                onclick="toggleVideoPlayback(this.parentElement)"
-                onerror="console.error('Video load error for:', this.src)"
-                onloadstart="console.log('Video loading started:', this.src)"
-                oncanplay="console.log('Video can play:', this.src)"
-            ></video>
-            <div class="play-pause-indicator">▶️</div>
-            
-            <!-- Advanced Video Actions -->
-            <div class="video-actions-right">
-                <div class="action-group">
-                    <button class="action-btn like-btn" onclick="handleAdvancedLike('${video._id}', this)" data-count="${video.likeCount || 0}">
-                        <div class="action-icon">❤️</div>
-                        <span class="action-count">${formatCount(video.likeCount || 0)}</span>
-                    </button>
-                    <div class="reaction-buttons" style="display: none;">
-                        <button class="reaction-btn" onclick="addReaction('${video._id}', 'love')" title="Love">❤️</button>
-                        <button class="reaction-btn" onclick="addReaction('${video._id}', 'laugh')" title="Laugh">😂</button>
-                        <button class="reaction-btn" onclick="addReaction('${video._id}', 'surprise')" title="Surprise">😮</button>
-                        <button class="reaction-btn" onclick="addReaction('${video._id}', 'sad')" title="Sad">😢</button>
-                        <button class="reaction-btn" onclick="addReaction('${video._id}', 'angry')" title="Angry">😠</button>
-                    </div>
-                </div>
-                
-                <button class="action-btn comment-btn" onclick="openCommentsModal('${video._id}')">
-                    <div class="action-icon">💬</div>
-                    <span class="action-count">${formatCount(video.commentCount || 0)}</span>
-                </button>
-                
-                <button class="action-btn share-btn" onclick="openShareModal('${video._id}')">
-                    <div class="action-icon">📤</div>
-                    <span class="action-count">Share</span>
-                </button>
-                
-                <button class="action-btn duet-btn" onclick="startDuet('${video._id}')">
-                    <div class="action-icon">👥</div>
-                    <span class="action-count">Duet</span>
-                </button>
-                
-                <button class="action-btn stitch-btn" onclick="startStitch('${video._id}')">
-                    <div class="action-icon">✂️</div>
-                    <span class="action-count">Stitch</span>
-                </button>
-                
-                <button class="action-btn save-btn" onclick="saveVideo('${video._id}', this)">
-                    <div class="action-icon">🔖</div>
-                    <span class="action-count">Save</span>
-                </button>
-                
-                <button class="action-btn more-btn" onclick="showVideoOptions('${video._id}')">
-                    <div class="action-icon">⋯</div>
-                </button>
-            </div>
-            
-            <!-- Video Info Overlay -->
-            <div class="video-info-overlay">
-                <div class="user-info">
-                    <div class="user-avatar" onclick="viewProfile('${video.userId}')">${video.userAvatar || '👤'}</div>
-                    <div class="user-details">
-                        <div class="username" onclick="viewProfile('${video.userId}')">@${video.username || 'user'}</div>
-                        <div class="video-description">${video.description || ''}</div>
-                        <div class="video-sound" onclick="browseSound('${video.soundId || ''}')">
-                            🎵 ${video.soundName || 'Original sound'}
-                        </div>
-                    </div>
-                    <button class="follow-btn" onclick="toggleFollow('${video.userId}', this)">Follow</button>
-                </div>
-            </div>
-            
-            <!-- Video Effects Overlay -->
-            <div class="video-effects-overlay">
-                <div class="effect-tags">
-                    ${video.effects ? video.effects.map(effect => `<span class="effect-tag">${effect}</span>`).join('') : ''}
-                </div>
-            </div>
-        </div>
+    
+    // Apply styles directly to the element to bypass ALL CSS
+    card.style.cssText = `
+        height: 100vh !important;
+        width: 100% !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: relative !important;
+        background: #000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
     `;
+    
+    // Create video element directly
+    const video_elem = document.createElement('video');
+    video_elem.src = video.videoUrl || '';
+    video_elem.loop = true;
+    video_elem.muted = true;
+    video_elem.controls = true;
+    video_elem.style.cssText = `
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        background: #000 !important;
+        z-index: 1 !important;
+    `;
+    
+    // Add event listeners
+    video_elem.onerror = () => console.error('🚨 VIDEO ERROR:', video_elem.src);
+    video_elem.onloadstart = () => console.log('📹 VIDEO LOADING:', video_elem.src);
+    video_elem.oncanplay = () => console.log('✅ VIDEO READY:', video_elem.src);
+    video_elem.onplay = () => console.log('▶️ PLAYING:', video_elem.src);
+    video_elem.onpause = () => console.log('⏸️ PAUSED:', video_elem.src);
+    
+    // Create simple overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: absolute !important;
+        bottom: 20px !important;
+        left: 20px !important;
+        color: white !important;
+        background: rgba(0,0,0,0.8) !important;
+        padding: 10px !important;
+        border-radius: 5px !important;
+        z-index: 10 !important;
+        font-size: 14px !important;
+        pointer-events: none !important;
+    `;
+    overlay.textContent = `📹 ${video.title || 'Video'} by ${video.username || 'User'}`;
+    
+    card.appendChild(video_elem);
+    card.appendChild(overlay);
+    
+    console.log('✅ MINIMAL CARD CREATED, bypassing all CSS classes');
     return card;
 }
 
