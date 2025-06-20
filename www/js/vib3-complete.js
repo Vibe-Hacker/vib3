@@ -154,7 +154,6 @@ function createEmptyFeedMessage(feedType) {
             <div style="font-size: 72px; margin-bottom: 20px;">📹</div>
             <h3 style="margin-bottom: 12px; color: var(--text-primary);">No videos yet</h3>
             <p style="margin-bottom: 20px;">Be the first to share something amazing!</p>
-            <button onclick="showUploadModal()" style="padding: 12px 24px; background: var(--accent-primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Create Video</button>
         </div>
     `;
 }
@@ -177,17 +176,18 @@ let lastFeedLoad = 0;
 function initializeVideoObserver() {
     console.log('🎬 ULTRA MINIMAL VIDEO INIT');
     
-    const videos = document.querySelectorAll('video');
-    console.log('📹 Found', videos.length, 'video elements');
+    // Only target feed videos, not upload modal videos
+    const videos = document.querySelectorAll('.feed-content video');
+    console.log('📹 Found', videos.length, 'feed video elements');
     
     if (videos.length === 0) {
-        console.log('❌ No videos found');
+        console.log('❌ No feed videos found');
         return;
     }
     
-    // Force all videos to be ready and visible
+    // Force all feed videos to be ready and visible
     videos.forEach((video, index) => {
-        console.log(`🔧 Processing video ${index + 1}:`, video.src);
+        console.log(`🔧 Processing feed video ${index + 1}:`, video.src);
         
         // Force video properties
         video.muted = true;
@@ -217,10 +217,10 @@ function initializeVideoObserver() {
             video.play().catch(e => console.log('▶️ Autoplay blocked:', e));
         }
         
-        console.log(`✅ Video ${index + 1} processed and forced visible`);
+        console.log(`✅ Feed video ${index + 1} processed and forced visible`);
     });
     
-    console.log('🏁 All videos processed with nuclear visibility');
+    console.log('🏁 All feed videos processed with nuclear visibility');
 }
 
 function formatCount(count) {
