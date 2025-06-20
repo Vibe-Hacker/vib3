@@ -11,7 +11,7 @@
     position: relative;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .video-feed::-webkit-scrollbar {
@@ -70,6 +70,8 @@
     -ms-overflow-style: none;
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
+    margin: 0 auto;
+    position: relative;
 }
 
 .feed-content::-webkit-scrollbar {
