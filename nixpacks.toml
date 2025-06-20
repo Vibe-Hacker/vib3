@@ -1,11 +1,5 @@
-[phases.setup]
-nixPkgs = ["nodejs", "npm"]
-
 [phases.install]
-cmds = ["npm install --production=false"]
-
-[phases.build]
-cmds = ["echo 'No build step required'"]
+cmds = ["npm install"]
 
 [start]
 cmd = "node server-fresh.js"
