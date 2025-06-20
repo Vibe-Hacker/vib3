@@ -1,0 +1,18 @@
+name: vib3
+services:
+- name: web
+  source_dir: /
+  github:
+    repo: Vibe-Hacker/vib3
+    branch: main
+  build_command: echo "No build needed"
+  run_command: node server-full.js
+  environment_slug: node-js
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  http_port: 3000
+  envs:
+  - key: NODE_ENV
+    value: production
+  - key: PORT
+    value: "3000"
