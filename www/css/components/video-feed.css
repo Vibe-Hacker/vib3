@@ -64,7 +64,7 @@
 .feed-content {
     display: none;
     height: 100vh;
-    overflow-y: scroll;
+    overflow-y: auto;
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
     scrollbar-width: none;
