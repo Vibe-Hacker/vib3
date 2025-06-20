@@ -189,32 +189,33 @@ function initializeVideoObserver() {
         return;
     }
     
-    // Create new intersection observer
-    videoObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const video = entry.target;
-            if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-                video.muted = true;
-                video.play().catch(e => console.log('Video play failed:', e));
-            } else {
-                video.pause();
-            }
-        });
-    }, {
-        threshold: [0, 0.5, 1]
-    });
-    
-    // Observe all videos
-    videos.forEach(video => {
+    // Mark videos as observed and force visibility
+    videos.forEach((video, index) => {
+        video.setAttribute('data-observed', 'true');
         video.muted = true;
         video.loop = true;
-        videoObserver.observe(video);
+        video.style.display = 'block';
+        video.style.visibility = 'visible';
+        video.style.opacity = '1';
+        
+        // Force parent containers to stay visible
+        const container = video.closest('.video-item');
+        if (container) {
+            container.style.display = 'block';
+            container.style.visibility = 'visible';
+            container.style.opacity = '1';
+        }
+        
+        console.log(`Video ${index + 1} forced visible:`, video.src);
     });
     
-    // Auto-play first video
+    // Simple auto-play for first video without intersection observer for now
     if (videos.length > 0 && videos[0].src) {
         videos[0].play().catch(e => console.log('Auto-play failed:', e));
+        console.log('Started playing first video');
     }
+    
+    console.log('Video observer setup complete - all videos should remain visible');
 }
 
 function formatCount(count) {
