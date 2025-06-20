@@ -5,7 +5,7 @@ services:
   github:
     repo: Vibe-Hacker/vib3
     branch: main
-  run_command: node server.js
+  run_command: node server-upload.js
   environment_slug: node-js
   instance_count: 1
   instance_size_slug: basic-xxs
