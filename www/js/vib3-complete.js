@@ -182,13 +182,19 @@ function initializeVideoObserver() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target;
-            if (entry.isIntersecting) {
+            const videoItem = video.closest('.video-item');
+            
+            console.log('Video intersection:', entry.isIntersecting, entry.intersectionRatio);
+            
+            if (entry.isIntersecting && entry.intersectionRatio > 0.1) {
                 video.play().catch(e => console.log('Video play failed:', e));
+                if (videoItem) videoItem.style.opacity = '1';
             } else {
                 video.pause();
+                // Don't hide videos completely, just pause them
             }
         });
-    }, { threshold: 0.5 });
+    }, { threshold: [0.1, 0.5, 0.9] });
     
     videos.forEach(video => observer.observe(video));
     console.log('Video observer initialized for', videos.length, 'videos');
@@ -202,6 +208,7 @@ function formatCount(count) {
 
 // ================ VIDEO FEED MANAGEMENT ================
 async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
+    console.log('Loading video feed:', feedType);
     currentFeed = feedType;
     
     // Update UI to show correct feed
@@ -216,9 +223,12 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
     const feedElement = document.getElementById(feedType + 'Feed');
     const tabElement = document.getElementById(feedType + 'Tab');
     
+    console.log('Feed element found:', !!feedElement, feedElement);
+    
     if (feedElement) {
         feedElement.classList.add('active');
         feedElement.innerHTML = '<div class="loading-container"><div class="spinner"></div><p>Loading videos...</p></div>';
+        console.log('Set loading state for feed');
         
         try {
             const response = await fetch(`/api/videos?feed=${feedType}`, {

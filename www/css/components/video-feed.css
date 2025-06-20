@@ -4,9 +4,7 @@
     margin-top: 0;
     margin-left: 240px;
     width: calc(100vw - 240px);
-    overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    overflow: hidden;
     background: #000;
     transition: all 0.3s ease;
     box-sizing: border-box;
