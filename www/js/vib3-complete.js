@@ -177,6 +177,12 @@ function initializeVideoObserver() {
     videos.forEach(video => observer.observe(video));
 }
 
+function formatCount(count) {
+    if (count < 1000) return count.toString();
+    if (count < 1000000) return Math.floor(count / 100) / 10 + 'K';
+    return Math.floor(count / 100000) / 10 + 'M';
+}
+
 // ================ VIDEO FEED MANAGEMENT ================
 async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
     currentFeed = feedType;
@@ -232,7 +238,7 @@ function createAdvancedVideoCard(video) {
         <div class="video-container">
             <video 
                 class="video-element" 
-                src="${video.videoUrl || 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'}"
+                src="${video.videoUrl || ''}"
                 poster="${video.thumbnail || ''}"
                 loop
                 muted

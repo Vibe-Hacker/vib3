@@ -321,49 +321,9 @@ app.get('/api/videos', async (req, res) => {
     console.log('API /videos called with query:', req.query);
     console.log('Database connected:', !!db);
     
-    // Always return sample data for now to debug
-    const sampleVideos = [
-        {
-            _id: 'sample1',
-            title: 'Welcome to VIB3!',
-            description: 'Your first video on the platform ✨',
-            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-            user: { 
-                username: 'vib3demo', 
-                displayName: 'VIB3 Demo',
-                _id: 'demo'
-            },
-            userAvatar: '👤',
-            username: 'vib3demo',
-            userId: 'demo',
-            likeCount: 42,
-            commentCount: 5,
-            views: 1250,
-            createdAt: new Date()
-        },
-        {
-            _id: 'sample2', 
-            title: 'Sample Dance Video',
-            description: 'Check out this dance trend! #dance #viral',
-            videoUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-            user: {
-                username: 'dancer123',
-                displayName: 'Dance Master',
-                _id: 'demo2'
-            },
-            userAvatar: '💃',
-            username: 'dancer123',
-            userId: 'demo2',
-            likeCount: 156,
-            commentCount: 23,
-            views: 3200,
-            createdAt: new Date()
-        }
-    ];
-    
     if (!db) {
-        console.log('No database connection, returning sample data');
-        return res.json({ videos: sampleVideos });
+        console.log('No database connection, returning empty');
+        return res.json({ videos: [] });
     }
     
     try {
@@ -384,10 +344,10 @@ app.get('/api/videos', async (req, res) => {
         
         console.log('Found videos in database:', videos.length);
         
-        // If no videos in database, return sample data
+        // If no videos in database, return empty
         if (videos.length === 0) {
-            console.log('No videos in database, returning sample data');
-            return res.json({ videos: sampleVideos });
+            console.log('No videos in database, returning empty');
+            return res.json({ videos: [] });
         }
         
         // Get user info for each video
@@ -417,9 +377,9 @@ app.get('/api/videos', async (req, res) => {
         
     } catch (error) {
         console.error('Get videos error:', error);
-        console.log('Database error, falling back to sample data');
-        // Return sample data instead of error
-        res.json({ videos: sampleVideos });
+        console.log('Database error, returning empty');
+        // Return empty instead of sample data
+        res.json({ videos: [] });
     }
 });
 
