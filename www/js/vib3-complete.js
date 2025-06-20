@@ -170,8 +170,17 @@ function createErrorMessage(feedType) {
     `;
 }
 
+// Global video observer to prevent multiple instances
+let videoObserver = null;
+let lastFeedLoad = 0;
+
 function initializeVideoObserver() {
-    // Simple video observer for play/pause on scroll
+    // Clean up existing observer first
+    if (videoObserver) {
+        videoObserver.disconnect();
+        videoObserver = null;
+    }
+    
     const videos = document.querySelectorAll('.video-element');
     
     if (videos.length === 0) {
@@ -179,24 +188,19 @@ function initializeVideoObserver() {
         return;
     }
     
-    const observer = new IntersectionObserver((entries) => {
+    videoObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target;
-            const videoItem = video.closest('.video-item');
             
-            console.log('Video intersection:', entry.isIntersecting, entry.intersectionRatio);
-            
-            if (entry.isIntersecting && entry.intersectionRatio > 0.1) {
+            if (entry.isIntersecting && entry.intersectionRatio > 0.3) {
                 video.play().catch(e => console.log('Video play failed:', e));
-                if (videoItem) videoItem.style.opacity = '1';
             } else {
                 video.pause();
-                // Don't hide videos completely, just pause them
             }
         });
-    }, { threshold: [0.1, 0.5, 0.9] });
+    }, { threshold: [0.3, 0.7] });
     
-    videos.forEach(video => observer.observe(video));
+    videos.forEach(video => videoObserver.observe(video));
     console.log('Video observer initialized for', videos.length, 'videos');
 }
 
@@ -208,6 +212,13 @@ function formatCount(count) {
 
 // ================ VIDEO FEED MANAGEMENT ================
 async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
+    const now = Date.now();
+    if (!forceRefresh && now - lastFeedLoad < 1000) {
+        console.log('Debouncing feed load for', feedType);
+        return;
+    }
+    lastFeedLoad = now;
+    
     console.log('Loading video feed:', feedType);
     currentFeed = feedType;
     
@@ -245,7 +256,7 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
                     feedElement.appendChild(videoCard);
                 });
                 // Only initialize video observer if we have videos
-                setTimeout(() => initializeVideoObserver(), 100);
+                setTimeout(() => initializeVideoObserver(), 200);
             } else {
                 feedElement.innerHTML = createEmptyFeedMessage(feedType);
                 feedElement.style.overflow = 'hidden'; // Prevent scrolling when empty
