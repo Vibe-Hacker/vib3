@@ -1,4 +1,6 @@
 const express = require('express');
+const multer = require('multer');
+const AWS = require('aws-sdk');
 const path = require('path');
 const crypto = require('crypto');
 
@@ -6,8 +8,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Session management (simple in-memory for now)
 const sessions = new Map();
@@ -22,6 +24,33 @@ app.use((req, res, next) => {
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'www')));
+
+// DigitalOcean Spaces configuration
+const spacesEndpoint = new AWS.Endpoint(process.env.DO_SPACES_ENDPOINT || 'nyc3.digitaloceanspaces.com');
+const s3 = new AWS.S3({
+    endpoint: spacesEndpoint,
+    accessKeyId: process.env.DO_SPACES_KEY,
+    secretAccessKey: process.env.DO_SPACES_SECRET,
+    region: process.env.DO_SPACES_REGION || 'nyc3'
+});
+
+const BUCKET_NAME = process.env.DO_SPACES_BUCKET || 'vib3-videos';
+
+// Configure multer for video uploads
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 100 * 1024 * 1024 // 100MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only MP4, MOV, AVI, and WebM are allowed.'));
+        }
+    }
+});
 
 // MongoDB connection
 const { MongoClient, ObjectId } = require('mongodb');
@@ -98,13 +127,15 @@ function requireAuth(req, res, next) {
 // Health check
 app.get('/api/health', async (req, res) => {
     const dbConnected = db !== null;
+    const spacesConfigured = !!(process.env.DO_SPACES_KEY && process.env.DO_SPACES_SECRET);
     res.json({ 
         status: 'ok',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
         database: dbConnected ? 'connected' : 'not connected',
-        databaseUrl: process.env.DATABASE_URL ? 'configured' : 'not configured'
+        databaseUrl: process.env.DATABASE_URL ? 'configured' : 'not configured',
+        storage: spacesConfigured ? 'configured' : 'not configured'
     });
 });
 
@@ -326,7 +357,68 @@ app.get('/api/videos', async (req, res) => {
     }
 });
 
-// Upload video (metadata only - actual file would go to Spaces)
+// Upload video file to DigitalOcean Spaces
+app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No video file provided' });
+        }
+
+        const { title, description } = req.body;
+        if (!title) {
+            return res.status(400).json({ error: 'Video title is required' });
+        }
+
+        // Generate unique filename
+        const fileExtension = path.extname(req.file.originalname);
+        const fileName = `videos/${Date.now()}-${crypto.randomBytes(16).toString('hex')}${fileExtension}`;
+
+        // Upload to DigitalOcean Spaces
+        const uploadParams = {
+            Bucket: BUCKET_NAME,
+            Key: fileName,
+            Body: req.file.buffer,
+            ContentType: req.file.mimetype,
+            ACL: 'public-read'
+        };
+
+        const uploadResult = await s3.upload(uploadParams).promise();
+        const videoUrl = uploadResult.Location;
+
+        // Save to database if connected
+        let videoRecord = null;
+        if (db) {
+            const video = {
+                userId: req.user.userId,
+                title,
+                description: description || '',
+                videoUrl,
+                fileName,
+                fileSize: req.file.size,
+                mimeType: req.file.mimetype,
+                views: 0,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+
+            const result = await db.collection('videos').insertOne(video);
+            video._id = result.insertedId;
+            videoRecord = video;
+        }
+
+        res.json({
+            message: 'Video uploaded successfully',
+            videoUrl,
+            video: videoRecord
+        });
+
+    } catch (error) {
+        console.error('Upload error:', error);
+        res.status(500).json({ error: 'Upload failed: ' + error.message });
+    }
+});
+
+// Upload video (metadata only - for external URLs)
 app.post('/api/videos', requireAuth, async (req, res) => {
     if (!db) {
         return res.status(503).json({ error: 'Database not connected' });
