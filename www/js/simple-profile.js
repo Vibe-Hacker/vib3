@@ -318,7 +318,7 @@ function displayUserVideos(videos) {
                 <div style="font-size: 48px; margin-bottom: 20px;">📹</div>
                 <h3 style="margin-bottom: 10px;">No videos yet</h3>
                 <p>Upload your first video to get started!</p>
-                <button onclick="showUploadModal()" style="background: #fe2c55; color: white; border: none; padding: 12px 24px; border-radius: 8px; margin-top: 20px; cursor: pointer;">
+                <button onclick="openUploadFromProfile()" style="background: #fe2c55; color: white; border: none; padding: 12px 24px; border-radius: 8px; margin-top: 20px; cursor: pointer;">
                     Upload Video
                 </button>
             </div>
@@ -382,6 +382,25 @@ function goBackToFeed() {
     }
     
     showNotification('Back to video feed!', 'success');
+}
+
+// Open upload modal from profile page
+function openUploadFromProfile() {
+    console.log('🎬 Opening upload from profile page...');
+    
+    // First go back to main app
+    goBackToFeed();
+    
+    // Wait a moment for the transition, then open upload modal
+    setTimeout(() => {
+        if (window.showUploadModal && typeof window.showUploadModal === 'function') {
+            console.log('✅ Opening upload modal from profile');
+            window.showUploadModal();
+        } else {
+            console.error('❌ showUploadModal function not available');
+            showNotification('Upload feature temporarily unavailable', 'error');
+        }
+    }, 500);
 }
 
 // Profile interaction functions
