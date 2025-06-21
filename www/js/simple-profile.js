@@ -338,22 +338,90 @@ function displayUserVideos(videos) {
 }
 
 function createVideoCard(video) {
+    const videoId = video._id || video.id;
+    console.log('🎬 Creating video card for:', video.title || 'Untitled', video);
+    
+    // Use video preview with poster frame
+    const videoElement = video.videoUrl ? 
+        `<video 
+            style="width: 100%; height: 100%; object-fit: cover;" 
+            muted 
+            preload="metadata"
+            onloadedmetadata="this.currentTime=1"
+            poster=""
+            oncanplay="this.style.opacity='1'"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+        >
+            <source src="${video.videoUrl}#t=1" type="video/mp4">
+            <source src="${video.videoUrl}#t=1" type="video/webm">
+        </video>
+        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #333, #555); display: none; align-items: center; justify-content: center; flex-direction: column; position: absolute; top: 0; left: 0;">
+            <div style="font-size: 48px; margin-bottom: 10px;">🎬</div>
+            <div style="color: white; font-size: 14px; text-align: center; padding: 0 10px;">${video.title || 'Video'}</div>
+        </div>` :
+        `<div style="width: 100%; height: 100%; background: linear-gradient(135deg, #333, #555); display: flex; align-items: center; justify-content: center; flex-direction: column;">
+            <div style="font-size: 48px; margin-bottom: 10px;">🎬</div>
+            <div style="color: white; font-size: 14px; text-align: center; padding: 0 10px;">${video.title || 'Video'}</div>
+        </div>`;
+    
     return `
-        <div style="background: #222; border-radius: 8px; overflow: hidden; cursor: pointer; position: relative; aspect-ratio: 9/16;" onclick="playUserVideo('${video._id}')">
-            ${video.thumbnail ? 
-                `<img src="${video.thumbnail}" style="width: 100%; height: 100%; object-fit: cover;">` :
-                `<div style="width: 100%; height: 100%; background: linear-gradient(135deg, #333, #555); display: flex; align-items: center; justify-content: center; font-size: 48px;">
-                    🎵
-                </div>`
-            }
+        <div style="background: #222; border-radius: 8px; overflow: hidden; cursor: pointer; position: relative; aspect-ratio: 9/16;" onclick="playUserVideo('${videoId}')">
+            ${videoElement}
+            
+            <!-- Duration -->
             <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
                 ${formatDuration(video.duration)}
             </div>
+            
+            <!-- Views -->
             <div style="position: absolute; bottom: 8px; left: 8px; color: white; font-size: 12px; background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 4px;">
-                ${formatNumber(video.views || 0)}
+                👁️ ${formatNumber(video.views || 0)}
+            </div>
+            
+            <!-- Likes -->
+            <div style="position: absolute; top: 8px; right: 8px; color: white; font-size: 12px; background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 4px;">
+                ❤️ ${formatNumber(video.likeCount || video.likes || 0)}
+            </div>
+            
+            <!-- Play indicator -->
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; opacity: 0.8;">
+                <div style="color: white; font-size: 24px; margin-left: 4px;">▶️</div>
             </div>
         </div>
     `;
+}
+
+function playUserVideo(videoId) {
+    console.log('🎬 Playing user video:', videoId);
+    
+    // Close profile page
+    const profilePage = document.getElementById('profilePage');
+    if (profilePage) {
+        profilePage.remove();
+    }
+    
+    // Show main app
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'block';
+    }
+    
+    // Switch to For You feed and play the specific video
+    switchFeedTab('foryou');
+    
+    // Try to find and play the video in the feed
+    setTimeout(() => {
+        const videoCards = document.querySelectorAll('.video-card');
+        for (const card of videoCards) {
+            const video = card.querySelector('video');
+            if (video && video.src.includes(videoId)) {
+                // Scroll to this video and play it
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                video.play();
+                break;
+            }
+        }
+    }, 500);
 }
 
 function formatDuration(seconds) {
