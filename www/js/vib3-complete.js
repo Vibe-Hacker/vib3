@@ -1485,11 +1485,15 @@ function setupEditingPreview() {
     const videoPreview = document.getElementById('contentPreview');
     const photoSlideshow = document.getElementById('photoSlideshow');
     
-    if (uploadType === 'video' && selectedFiles.length > 0) {
-        videoPreview.src = URL.createObjectURL(selectedFiles[0]);
+    if (uploadType === 'video' && (selectedFiles.length > 0 || window.selectedVideoFile)) {
+        // Show video preview (either selected file or recorded video)
+        const videoFile = selectedFiles.length > 0 ? selectedFiles[0] : window.selectedVideoFile;
+        console.log('📹 Setting up video preview for:', videoFile.name);
+        
+        videoPreview.src = URL.createObjectURL(videoFile);
         videoPreview.style.display = 'block';
         photoSlideshow.style.display = 'none';
-        currentEditingFile = selectedFiles[0];
+        currentEditingFile = videoFile;
     } else if (uploadType === 'photos' && selectedFiles.length > 0) {
         setupPhotoSlideshow();
         videoPreview.style.display = 'none';
@@ -1631,10 +1635,20 @@ async function publishContent() {
     // Title is optional now
     const finalTitle = title || 'Untitled Video';
     
-    if (selectedFiles.length === 0) {
+    // Check if we have files to upload (either selected files or recorded video)
+    const hasFiles = selectedFiles.length > 0 || window.selectedVideoFile;
+    if (!hasFiles) {
         showNotification('No files selected for upload', 'error');
         return;
     }
+    
+    console.log('📤 Publishing content:', {
+        title: finalTitle,
+        description,
+        selectedFiles: selectedFiles.length,
+        recordedVideo: !!window.selectedVideoFile,
+        uploadType
+    });
     
     goToStep(5);
     
@@ -1654,9 +1668,12 @@ async function publishContent() {
         // Create FormData for file upload
         const formData = new FormData();
         
-        if (uploadType === 'video' && selectedFiles.length > 0) {
-            // Upload video file
-            formData.append('video', selectedFiles[0]);
+        if (uploadType === 'video' && (selectedFiles.length > 0 || window.selectedVideoFile)) {
+            // Upload video file (either selected or recorded)
+            const videoFile = selectedFiles.length > 0 ? selectedFiles[0] : window.selectedVideoFile;
+            console.log('📤 Uploading video file:', videoFile.name, 'Size:', videoFile.size);
+            
+            formData.append('video', videoFile);
             formData.append('title', finalTitle);
             formData.append('description', description);
             
@@ -1716,6 +1733,13 @@ async function publishContent() {
         // Success
         setTimeout(() => {
             showNotification('Content published successfully!', 'success');
+            
+            // Clear recorded video
+            if (window.selectedVideoFile) {
+                window.selectedVideoFile = null;
+                console.log('🗑️ Cleared recorded video from memory');
+            }
+            
             closeUploadModal();
             // Refresh feed to show new content
             loadVideoFeed('foryou', true);
