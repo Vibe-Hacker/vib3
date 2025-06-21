@@ -1,18 +1,18 @@
 /* Video Item Components - TikTok Style */
 .video-item {
-    height: calc(100vh - 60px);
+    height: calc(100vh - 40px);
     width: 100%;
     max-width: 500px;
     position: relative;
     display: block !important;
     background: #000;
-    margin: 0 auto 40px auto;
+    margin: 0 auto 20px auto;
     padding: 0;
     flex-shrink: 0;
-    min-height: calc(100vh - 60px);
+    min-height: calc(100vh - 40px);
     opacity: 1 !important;
     visibility: visible !important;
-    scroll-snap-align: start;
+    scroll-snap-align: center;
     scroll-snap-stop: always;
     border-radius: 12px;
     overflow: hidden;
