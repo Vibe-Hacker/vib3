@@ -30,6 +30,42 @@ let currentVideoId = null;
 let isRecording = false;
 let currentStep = 1;
 
+// Clean up any ghost audio on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Stop any playing audio/video elements
+    document.querySelectorAll('video, audio').forEach(media => {
+        media.pause();
+        media.muted = true;
+        media.currentTime = 0;
+        if (media.srcObject) {
+            media.srcObject = null;
+        }
+    });
+});
+
+// Tab visibility detection for auto pause/resume
+let wasPlayingBeforeHide = false;
+let currentlyPlayingVideo = null;
+
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        // Tab became hidden - pause all videos
+        console.log('📱 Tab hidden - pausing videos');
+        currentlyPlayingVideo = document.querySelector('video:not([paused])');
+        if (currentlyPlayingVideo && !currentlyPlayingVideo.paused) {
+            wasPlayingBeforeHide = true;
+            currentlyPlayingVideo.pause();
+        }
+    } else {
+        // Tab became visible - resume video if it was playing
+        console.log('📱 Tab visible - resuming video');
+        if (wasPlayingBeforeHide && currentlyPlayingVideo) {
+            currentlyPlayingVideo.play().catch(console.error);
+            wasPlayingBeforeHide = false;
+        }
+    }
+});
+
 // ================ AUTHENTICATION ================
 function initializeAuth() {
     if (window.auth && window.auth.onAuthStateChanged) {
@@ -143,6 +179,30 @@ async function loadUserProfile() {
     });
     
     console.log('User profile loaded:', currentUser.email);
+}
+
+// Clean up orphaned media elements that might cause ghost audio
+function cleanupOrphanedMedia() {
+    console.log('🧹 Cleaning up orphaned media elements');
+    
+    // Find and remove any video/audio elements not in active feeds
+    document.querySelectorAll('video, audio').forEach(media => {
+        const parentFeed = media.closest('.feed-content');
+        if (!parentFeed || !parentFeed.classList.contains('active')) {
+            // This media element is not in an active feed
+            media.pause();
+            media.muted = true;
+            media.currentTime = 0;
+            if (media.srcObject) {
+                media.srcObject = null;
+            }
+            if (media.src) {
+                media.removeAttribute('src');
+                media.load();
+            }
+            console.log('🗑️ Cleaned up orphaned media element');
+        }
+    });
 }
 
 // ================ HELPER FUNCTIONS ================
@@ -2991,16 +3051,28 @@ function switchFeedTab(feedType) {
     window.currentFeed = feedType;
     console.log(`🗑️ Clearing cached data for fresh ${feedType} feed load`);
     
-    // Pause all currently playing videos
+    // Stop all currently playing videos and clear their sources
     document.querySelectorAll('video').forEach(video => {
         video.pause();
-        console.log('⏸️ Paused video during feed switch:', video.src);
+        video.muted = true;
+        video.currentTime = 0;
+        // Clear the source to completely stop audio
+        if (video.srcObject) {
+            video.srcObject = null;
+        }
+        if (video.src && !video.src.includes('blob:')) {
+            video.removeAttribute('src');
+            video.load();
+        }
+        console.log('⏸️ Stopped video and audio during feed switch');
     });
     
-    // Hide all feed content containers
+    // Hide all feed content containers and clear their content
     document.querySelectorAll('.feed-content').forEach(feed => {
         feed.classList.remove('active');
         feed.style.display = 'none';
+        // Clear all content to prevent flicker
+        feed.innerHTML = '';
     });
     
     // Remove active class from all tabs
@@ -3030,6 +3102,9 @@ function switchFeedTab(feedType) {
     if (mainApp) {
         mainApp.style.display = 'block';
     }
+    
+    // Clean up any orphaned media elements
+    cleanupOrphanedMedia();
     
     // Load the feed content with fresh data
     loadVideoFeed(feedType, 1, false); // Force fresh load, no append
