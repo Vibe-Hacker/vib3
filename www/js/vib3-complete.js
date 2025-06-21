@@ -1718,11 +1718,7 @@ async function publishContent() {
         }
         
         // Debug current user info
-        console.log('👤 Current user info:', currentUser);
-        console.log('🔑 Auth token:', token ? 'Present' : 'Missing');
-        console.log('📧 User email:', currentUser?.email);
-        console.log('👨‍💼 User displayName:', currentUser?.displayName);
-        console.log('🏷️ User username:', currentUser?.username);
+        console.log('👤 Current user info:', { email: currentUser?.email, displayName: currentUser?.displayName, username: currentUser?.username });
         
         updatePublishProgress('Uploading content...', 20);
         
@@ -1740,11 +1736,9 @@ async function publishContent() {
             
             // Add user information for proper association
             if (currentUser) {
-                const username = currentUser.username || currentUser.displayName || currentUser.name || currentUser.email?.split('@')[0] || 'user';
+                const username = currentUser.displayName || currentUser.email?.split('@')[0] || 'user';
                 formData.append('username', username);
-                formData.append('userId', currentUser._id || currentUser.id || '');
                 console.log('📤 Adding username to upload:', username);
-                console.log('📤 Adding userId to upload:', currentUser._id || currentUser.id);
             }
             
             const response = await fetch(`${window.API_BASE_URL}/api/upload/video`, {
@@ -1764,7 +1758,6 @@ async function publishContent() {
             
             const result = await response.json();
             console.log('✅ Video uploaded:', result);
-            console.log('🔍 Server response video data:', result.video);
             
             updatePublishProgress('Finalizing...', 90);
             
@@ -1775,9 +1768,8 @@ async function publishContent() {
             
             // Add user information for proper association
             if (currentUser) {
-                const username = currentUser.username || currentUser.displayName || currentUser.name || currentUser.email?.split('@')[0] || 'user';
+                const username = currentUser.displayName || currentUser.email?.split('@')[0] || 'user';
                 formData.append('username', username);
-                formData.append('userId', currentUser._id || currentUser.id || '');
                 console.log('📤 Adding username to photo upload:', username);
             }
             
