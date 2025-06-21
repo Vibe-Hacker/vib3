@@ -44,7 +44,7 @@ function createSimpleProfilePage() {
         height: 100vh; 
         background: #161823;
         color: white;
-        z-index: 1000;
+        z-index: 100;
         display: block;
         overflow-y: auto;
     `;
@@ -169,6 +169,11 @@ function createSimpleProfilePage() {
                     <h3 style="margin-bottom: 10px;">Following Feed</h3>
                     <p>Posts from people you follow will appear here</p>
                 </div>
+            </div>
+            
+            <!-- Debug Upload Button -->
+            <div style="position: fixed; top: 20px; right: 300px; z-index: 9999;">
+                <button onclick="debugUploadModal()" style="padding: 8px 16px; background: red; color: white; border: none; border-radius: 4px; font-size: 12px;">TEST UPLOAD</button>
             </div>
         </div>
     `;
@@ -433,6 +438,39 @@ function openUploadFromProfile() {
             showNotification('Upload feature temporarily unavailable', 'error');
         }
     }, 100);
+}
+
+// Debug function to test modal visibility
+function debugUploadModal() {
+    console.log('🐛 DEBUG: Testing upload modal visibility...');
+    
+    const modal = document.getElementById('uploadModal');
+    if (!modal) {
+        console.error('❌ DEBUG: Modal not found!');
+        return;
+    }
+    
+    console.log('📍 DEBUG: Modal current styles:');
+    console.log('  display:', window.getComputedStyle(modal).display);
+    console.log('  z-index:', window.getComputedStyle(modal).zIndex);
+    console.log('  position:', window.getComputedStyle(modal).position);
+    console.log('  visibility:', window.getComputedStyle(modal).visibility);
+    console.log('  opacity:', window.getComputedStyle(modal).opacity);
+    
+    // Force modal to be visible with extreme values
+    modal.style.display = 'flex';
+    modal.style.zIndex = '999999';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.right = '0';
+    modal.style.bottom = '0';
+    modal.style.visibility = 'visible';
+    modal.style.opacity = '1';
+    modal.style.backgroundColor = 'rgba(255,0,0,0.9)'; // Red background to make it obvious
+    modal.classList.add('active');
+    
+    console.log('✅ DEBUG: Modal forced visible with red background');
 }
 
 // Profile interaction functions
