@@ -181,9 +181,20 @@ function createSimpleProfilePage() {
 }
 
 // Real-time profile data functions
+// Get the API base URL - use production if available, fallback to local
+function getAPIBaseURL() {
+    // Check if we're on production or if videos are loading from Railway
+    const feedVideos = document.querySelectorAll('video[src*="vib3-videos.nyc3.digitaloceanspaces.com"]');
+    if (feedVideos.length > 0 || window.location.hostname.includes('railway.app')) {
+        return 'https://vib3-production.up.railway.app';
+    }
+    return '';
+}
+
 async function loadUserProfileData() {
     try {
-        const response = await fetch('/api/user/profile', {
+        const baseURL = getAPIBaseURL();
+        const response = await fetch(`${baseURL}/api/user/profile`, {
             headers: { 'Authorization': `Bearer ${window.authToken}` }
         });
         
@@ -200,7 +211,8 @@ async function loadUserProfileData() {
 
 async function loadUserVideos() {
     try {
-        const response = await fetch('/api/user/videos', {
+        const baseURL = getAPIBaseURL();
+        const response = await fetch(`${baseURL}/api/user/videos`, {
             headers: { 'Authorization': `Bearer ${window.authToken}` }
         });
         
@@ -215,7 +227,8 @@ async function loadUserVideos() {
 
 async function loadUserStats() {
     try {
-        const response = await fetch('/api/user/stats', {
+        const baseURL = getAPIBaseURL();
+        const response = await fetch(`${baseURL}/api/user/stats`, {
             headers: { 'Authorization': `Bearer ${window.authToken}` }
         });
         
@@ -393,7 +406,8 @@ async function editBio() {
     const newBio = prompt('Edit your bio:', currentBio);
     if (newBio !== null && newBio.trim() !== '') {
         try {
-            const response = await fetch('/api/user/profile', {
+            const baseURL = getAPIBaseURL();
+            const response = await fetch(`${baseURL}/api/user/profile`, {
                 method: 'PUT',
                 headers: { 
                     'Authorization': `Bearer ${window.authToken}`,
@@ -424,7 +438,8 @@ async function editUsername() {
         const cleanUsername = newUsername.trim().replace('@', '').toLowerCase();
         
         try {
-            const response = await fetch('/api/user/profile', {
+            const baseURL = getAPIBaseURL();
+            const response = await fetch(`${baseURL}/api/user/profile`, {
                 method: 'PUT',
                 headers: { 
                     'Authorization': `Bearer ${window.authToken}`,
@@ -481,7 +496,8 @@ async function changeProfilePicture() {
     
     window.selectProfilePicture = async (emoji) => {
         try {
-            const response = await fetch('/api/user/profile', {
+            const baseURL = getAPIBaseURL();
+            const response = await fetch(`${baseURL}/api/user/profile`, {
                 method: 'PUT',
                 headers: { 
                     'Authorization': `Bearer ${window.authToken}`,
@@ -551,7 +567,8 @@ function openProfileSettings() {
 
 async function showFollowing() {
     try {
-        const response = await fetch('/api/user/following', {
+        const baseURL = getAPIBaseURL();
+        const response = await fetch(`${baseURL}/api/user/following`, {
             headers: { 'Authorization': `Bearer ${window.authToken}` }
         });
         
@@ -569,7 +586,8 @@ async function showFollowing() {
 
 async function showFollowers() {
     try {
-        const response = await fetch('/api/user/followers', {
+        const baseURL = getAPIBaseURL();
+        const response = await fetch(`${baseURL}/api/user/followers`, {
             headers: { 'Authorization': `Bearer ${window.authToken}` }
         });
         
@@ -674,7 +692,8 @@ async function toggleFollow(userId, button) {
     const isFollowing = button.textContent.trim() === 'Following';
     
     try {
-        const response = await fetch(`/api/user/${isFollowing ? 'unfollow' : 'follow'}/${userId}`, {
+        const baseURL = getAPIBaseURL();
+        const response = await fetch(`${baseURL}/api/user/${isFollowing ? 'unfollow' : 'follow'}/${userId}`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${window.authToken}` }
         });
@@ -705,7 +724,8 @@ function playUserVideo(videoId) {
 
 async function loadLikedVideos() {
     try {
-        const response = await fetch('/api/user/liked-videos', {
+        const baseURL = getAPIBaseURL();
+        const response = await fetch(`${baseURL}/api/user/liked-videos`, {
             headers: { 'Authorization': `Bearer ${window.authToken}` }
         });
         
@@ -749,7 +769,8 @@ function displayLikedVideos(videos) {
 
 async function loadFavoriteVideos() {
     try {
-        const response = await fetch('/api/user/favorites', {
+        const baseURL = getAPIBaseURL();
+        const response = await fetch(`${baseURL}/api/user/favorites`, {
             headers: { 'Authorization': `Bearer ${window.authToken}` }
         });
         
@@ -785,7 +806,8 @@ function displayFavoriteVideos(videos) {
 
 async function loadFollowingFeed() {
     try {
-        const response = await fetch('/api/feed/following', {
+        const baseURL = getAPIBaseURL();
+        const response = await fetch(`${baseURL}/api/feed/following`, {
             headers: { 'Authorization': `Bearer ${window.authToken}` }
         });
         

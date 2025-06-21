@@ -1,10 +1,6 @@
 // MongoDB Adapter for VIB3
 // This replaces Firebase functionality with MongoDB API calls
 
-// Set up fake auth token for development
-if (!localStorage.getItem('vib3_token')) {
-    localStorage.setItem('vib3_token', 'fake-dev-token-12345');
-}
 window.authToken = localStorage.getItem('vib3_token');
 window.currentUser = null;
 
