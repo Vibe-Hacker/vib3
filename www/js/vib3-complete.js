@@ -796,11 +796,16 @@ function showUploadModal() {
         console.log('🗑️ Removed blocking profile page');
     }
     
-    // Hide main app content to prevent background visibility
+    // Keep main app visible but hide specific content areas
     const mainApp = document.getElementById('mainApp');
     if (mainApp) {
-        mainApp.style.visibility = 'hidden'; // Hide but keep in DOM for modal
-        console.log('✅ Hidden main app content');
+        mainApp.style.display = 'block'; // Keep visible for modal to work
+        // Hide just the video feeds, not the entire app
+        const videoFeeds = mainApp.querySelectorAll('.video-feed, .feed-content');
+        videoFeeds.forEach(feed => {
+            feed.style.visibility = 'hidden';
+        });
+        console.log('✅ Hidden video feeds but kept main app');
     }
     
     const modal = document.getElementById('uploadModal');
@@ -815,24 +820,17 @@ function showUploadModal() {
     console.log('✅ Upload modal found, current display:', window.getComputedStyle(modal).display);
     console.log('📍 Current modal classes:', modal.className);
     
-    // Stop all videos first - enhanced version
-    console.log('🛑 Stopping all background videos...');
-    if (window.forceStopAllVideos && typeof window.forceStopAllVideos === 'function') {
-        window.forceStopAllVideos();
-    } else {
-        // Fallback: manually stop all videos
-        document.querySelectorAll('video').forEach((video, index) => {
-            try {
-                video.pause();
-                video.currentTime = 0;
-                video.muted = true;
-                video.volume = 0;
-                console.log(`🔇 Stopped video ${index}`);
-            } catch (error) {
-                console.log(`Failed to stop video ${index}:`, error.message);
-            }
-        });
-    }
+    // Gently pause all videos without permanent muting
+    console.log('⏸️ Pausing all background videos...');
+    document.querySelectorAll('video').forEach((video, index) => {
+        try {
+            video.pause();
+            // Don't reset time or mute permanently - just pause
+            console.log(`⏸️ Paused video ${index}`);
+        } catch (error) {
+            console.log(`Failed to pause video ${index}:`, error.message);
+        }
+    });
     
     // Also pause any intersection observer to prevent auto-play
     if (window.videoObserver) {
@@ -912,11 +910,16 @@ function closeUploadModal() {
         console.log('✅ Upload modal closed and hidden');
     }
     
-    // Restore main app visibility
+    // Restore video feeds visibility
     const mainApp = document.getElementById('mainApp');
     if (mainApp) {
-        mainApp.style.visibility = 'visible';
-        console.log('✅ Restored main app visibility');
+        mainApp.style.display = 'block';
+        // Restore video feeds visibility
+        const videoFeeds = mainApp.querySelectorAll('.video-feed, .feed-content');
+        videoFeeds.forEach(feed => {
+            feed.style.visibility = 'visible';
+        });
+        console.log('✅ Restored video feeds visibility');
     }
     
     // Reconnect video observer when modal closes
