@@ -1797,6 +1797,395 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'www', 'index.html'));
 });
 
+// ================ ADMIN CLEANUP ENDPOINTS ================
+
+// Cleanup all videos (database + storage)
+app.delete('/api/admin/cleanup/videos', async (req, res) => {
+    try {
+        console.log('🧹 ADMIN: Starting complete video cleanup...');
+        
+        let deletedVideos = 0;
+        let deletedFiles = 0;
+        let errors = [];
+        
+        if (db) {
+            // Get all videos from database
+            const videos = await db.collection('videos').find({}).toArray();
+            console.log(`Found ${videos.length} videos in database`);
+            
+            // Delete video files from Digital Ocean Spaces
+            for (const video of videos) {
+                if (video.fileName || video.videoUrl) {
+                    try {
+                        // Extract file path from URL or use fileName directly
+                        let filePath = video.fileName;
+                        if (!filePath && video.videoUrl) {
+                            const url = new URL(video.videoUrl);
+                            filePath = url.pathname.substring(1); // Remove leading slash
+                        }
+                        
+                        if (filePath) {
+                            console.log(`Deleting file: ${filePath}`);
+                            await s3.deleteObject({
+                                Bucket: BUCKET_NAME,
+                                Key: filePath
+                            }).promise();
+                            deletedFiles++;
+                        }
+                    } catch (fileError) {
+                        console.error(`Failed to delete file for video ${video._id}:`, fileError.message);
+                        errors.push(`File deletion failed for ${video._id}: ${fileError.message}`);
+                    }
+                }
+            }
+            
+            // Delete all video records from database
+            const deleteResult = await db.collection('videos').deleteMany({});
+            deletedVideos = deleteResult.deletedCount;
+            console.log(`Deleted ${deletedVideos} videos from database`);
+            
+            // Clean up related data
+            const likesResult = await db.collection('likes').deleteMany({});
+            const commentsResult = await db.collection('comments').deleteMany({});
+            const viewsResult = await db.collection('views').deleteMany({});
+            
+            console.log(`Cleaned up ${likesResult.deletedCount} likes, ${commentsResult.deletedCount} comments, ${viewsResult.deletedCount} views`);
+        }
+        
+        // Also cleanup orphaned files in videos/ directory
+        try {
+            console.log('🧹 Cleaning up orphaned files in videos/ directory...');
+            const listParams = {
+                Bucket: BUCKET_NAME,
+                Prefix: 'videos/'
+            };
+            
+            const objects = await s3.listObjectsV2(listParams).promise();
+            console.log(`Found ${objects.Contents?.length || 0} files in videos/ directory`);
+            
+            if (objects.Contents && objects.Contents.length > 0) {
+                const deleteParams = {
+                    Bucket: BUCKET_NAME,
+                    Delete: {
+                        Objects: objects.Contents.map(obj => ({ Key: obj.Key }))
+                    }
+                };
+                
+                const deleteResult = await s3.deleteObjects(deleteParams).promise();
+                const additionalDeleted = deleteResult.Deleted?.length || 0;
+                deletedFiles += additionalDeleted;
+                console.log(`Deleted ${additionalDeleted} additional orphaned files`);
+            }
+        } catch (cleanupError) {
+            console.error('Error cleaning up orphaned files:', cleanupError.message);
+            errors.push(`Orphaned file cleanup failed: ${cleanupError.message}`);
+        }
+        
+        const result = {
+            success: true,
+            message: 'Video cleanup completed',
+            statistics: {
+                videosDeleted: deletedVideos,
+                filesDeleted: deletedFiles,
+                errors: errors.length
+            },
+            errors: errors.length > 0 ? errors : undefined
+        };
+        
+        console.log('✅ Video cleanup completed:', result.statistics);
+        res.json(result);
+        
+    } catch (error) {
+        console.error('❌ Video cleanup failed:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Cleanup failed', 
+            details: error.message 
+        });
+    }
+});
+
+// Cleanup all posts/photos (database + storage)
+app.delete('/api/admin/cleanup/posts', async (req, res) => {
+    try {
+        console.log('🧹 ADMIN: Starting complete posts cleanup...');
+        
+        let deletedPosts = 0;
+        let deletedFiles = 0;
+        let errors = [];
+        
+        if (db) {
+            // Get all posts from database
+            const posts = await db.collection('posts').find({}).toArray();
+            console.log(`Found ${posts.length} posts in database`);
+            
+            // Delete image files from Digital Ocean Spaces
+            for (const post of posts) {
+                if (post.images && Array.isArray(post.images)) {
+                    for (const image of post.images) {
+                        try {
+                            let filePath = image.fileName;
+                            if (!filePath && image.url) {
+                                const url = new URL(image.url);
+                                filePath = url.pathname.substring(1);
+                            }
+                            
+                            if (filePath) {
+                                console.log(`Deleting image: ${filePath}`);
+                                await s3.deleteObject({
+                                    Bucket: BUCKET_NAME,
+                                    Key: filePath
+                                }).promise();
+                                deletedFiles++;
+                            }
+                        } catch (fileError) {
+                            console.error(`Failed to delete image for post ${post._id}:`, fileError.message);
+                            errors.push(`Image deletion failed for ${post._id}: ${fileError.message}`);
+                        }
+                    }
+                }
+            }
+            
+            // Delete all post records
+            const deleteResult = await db.collection('posts').deleteMany({});
+            deletedPosts = deleteResult.deletedCount;
+            console.log(`Deleted ${deletedPosts} posts from database`);
+        }
+        
+        const result = {
+            success: true,
+            message: 'Posts cleanup completed',
+            statistics: {
+                postsDeleted: deletedPosts,
+                filesDeleted: deletedFiles,
+                errors: errors.length
+            },
+            errors: errors.length > 0 ? errors : undefined
+        };
+        
+        console.log('✅ Posts cleanup completed:', result.statistics);
+        res.json(result);
+        
+    } catch (error) {
+        console.error('❌ Posts cleanup failed:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Posts cleanup failed', 
+            details: error.message 
+        });
+    }
+});
+
+// Complete system cleanup (everything)
+app.delete('/api/admin/cleanup/all', async (req, res) => {
+    try {
+        console.log('🧹 ADMIN: Starting COMPLETE system cleanup...');
+        
+        const results = {
+            videos: { deleted: 0, filesDeleted: 0, errors: [] },
+            posts: { deleted: 0, filesDeleted: 0, errors: [] },
+            storage: { totalFilesDeleted: 0, errors: [] }
+        };
+        
+        if (db) {
+            // Clean up videos
+            const videos = await db.collection('videos').find({}).toArray();
+            for (const video of videos) {
+                if (video.fileName || video.videoUrl) {
+                    try {
+                        let filePath = video.fileName;
+                        if (!filePath && video.videoUrl) {
+                            const url = new URL(video.videoUrl);
+                            filePath = url.pathname.substring(1);
+                        }
+                        if (filePath) {
+                            await s3.deleteObject({ Bucket: BUCKET_NAME, Key: filePath }).promise();
+                            results.videos.filesDeleted++;
+                        }
+                    } catch (error) {
+                        results.videos.errors.push(`Video file ${video._id}: ${error.message}`);
+                    }
+                }
+            }
+            const videoDeleteResult = await db.collection('videos').deleteMany({});
+            results.videos.deleted = videoDeleteResult.deletedCount;
+            
+            // Clean up posts
+            const posts = await db.collection('posts').find({}).toArray();
+            for (const post of posts) {
+                if (post.images && Array.isArray(post.images)) {
+                    for (const image of post.images) {
+                        try {
+                            let filePath = image.fileName;
+                            if (!filePath && image.url) {
+                                const url = new URL(image.url);
+                                filePath = url.pathname.substring(1);
+                            }
+                            if (filePath) {
+                                await s3.deleteObject({ Bucket: BUCKET_NAME, Key: filePath }).promise();
+                                results.posts.filesDeleted++;
+                            }
+                        } catch (error) {
+                            results.posts.errors.push(`Post image ${post._id}: ${error.message}`);
+                        }
+                    }
+                }
+            }
+            const postDeleteResult = await db.collection('posts').deleteMany({});
+            results.posts.deleted = postDeleteResult.deletedCount;
+            
+            // Clean up all related data
+            await Promise.all([
+                db.collection('likes').deleteMany({}),
+                db.collection('comments').deleteMany({}),
+                db.collection('views').deleteMany({}),
+                db.collection('follows').deleteMany({})
+            ]);
+            
+            console.log('✅ Database cleanup completed');
+        }
+        
+        // Nuclear cleanup: delete everything in the bucket
+        try {
+            console.log('🧹 Performing nuclear storage cleanup...');
+            const listParams = { Bucket: BUCKET_NAME };
+            let continuationToken = null;
+            let totalDeleted = 0;
+            
+            do {
+                if (continuationToken) {
+                    listParams.ContinuationToken = continuationToken;
+                }
+                
+                const objects = await s3.listObjectsV2(listParams).promise();
+                
+                if (objects.Contents && objects.Contents.length > 0) {
+                    const deleteParams = {
+                        Bucket: BUCKET_NAME,
+                        Delete: {
+                            Objects: objects.Contents.map(obj => ({ Key: obj.Key }))
+                        }
+                    };
+                    
+                    const deleteResult = await s3.deleteObjects(deleteParams).promise();
+                    const deleted = deleteResult.Deleted?.length || 0;
+                    totalDeleted += deleted;
+                    console.log(`Deleted batch of ${deleted} files (total: ${totalDeleted})`);
+                }
+                
+                continuationToken = objects.NextContinuationToken;
+            } while (continuationToken);
+            
+            results.storage.totalFilesDeleted = totalDeleted;
+            console.log(`✅ Nuclear cleanup: Deleted ${totalDeleted} total files from storage`);
+            
+        } catch (storageError) {
+            console.error('❌ Nuclear storage cleanup failed:', storageError);
+            results.storage.errors.push(`Nuclear cleanup failed: ${storageError.message}`);
+        }
+        
+        const summary = {
+            success: true,
+            message: 'Complete system cleanup finished',
+            results: results,
+            totalFiles: results.videos.filesDeleted + results.posts.filesDeleted + results.storage.totalFilesDeleted,
+            totalRecords: results.videos.deleted + results.posts.deleted
+        };
+        
+        console.log('✅ COMPLETE CLEANUP FINISHED:', summary);
+        res.json(summary);
+        
+    } catch (error) {
+        console.error('❌ Complete cleanup failed:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Complete cleanup failed', 
+            details: error.message 
+        });
+    }
+});
+
+// Get cleanup status/statistics
+app.get('/api/admin/cleanup/status', async (req, res) => {
+    try {
+        const stats = {
+            database: {},
+            storage: {}
+        };
+        
+        if (db) {
+            // Database statistics
+            const [videoCount, postCount, likeCount, commentCount, viewCount, userCount] = await Promise.all([
+                db.collection('videos').countDocuments(),
+                db.collection('posts').countDocuments(),
+                db.collection('likes').countDocuments(),
+                db.collection('comments').countDocuments(),
+                db.collection('views').countDocuments(),
+                db.collection('users').countDocuments()
+            ]);
+            
+            stats.database = {
+                videos: videoCount,
+                posts: postCount,
+                likes: likeCount,
+                comments: commentCount,
+                views: viewCount,
+                users: userCount
+            };
+        }
+        
+        // Storage statistics
+        try {
+            const listParams = { Bucket: BUCKET_NAME };
+            const objects = await s3.listObjectsV2(listParams).promise();
+            
+            let totalSize = 0;
+            let videoFiles = 0;
+            let imageFiles = 0;
+            let otherFiles = 0;
+            
+            if (objects.Contents) {
+                for (const obj of objects.Contents) {
+                    totalSize += obj.Size;
+                    
+                    if (obj.Key.startsWith('videos/')) {
+                        videoFiles++;
+                    } else if (obj.Key.startsWith('images/') || obj.Key.startsWith('profile-images/')) {
+                        imageFiles++;
+                    } else {
+                        otherFiles++;
+                    }
+                }
+            }
+            
+            stats.storage = {
+                totalFiles: objects.KeyCount || 0,
+                videoFiles,
+                imageFiles,
+                otherFiles,
+                totalSizeBytes: totalSize,
+                totalSizeMB: Math.round(totalSize / 1024 / 1024 * 100) / 100
+            };
+        } catch (storageError) {
+            stats.storage = { error: storageError.message };
+        }
+        
+        res.json({
+            success: true,
+            timestamp: new Date().toISOString(),
+            statistics: stats
+        });
+        
+    } catch (error) {
+        console.error('❌ Failed to get cleanup status:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Failed to get status', 
+            details: error.message 
+        });
+    }
+});
+
 // Error handling
 app.use((err, req, res, next) => {
     console.error(err.stack);
