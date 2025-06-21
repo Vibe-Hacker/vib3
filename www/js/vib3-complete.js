@@ -1237,7 +1237,58 @@ function showNotification(message, type = 'info', duration = 3000) {
 }
 
 function switchFeedTab(feedType) {
+    console.log(`🔄 Switching to ${feedType} feed`);
+    
+    // Pause all currently playing videos
+    document.querySelectorAll('video').forEach(video => {
+        video.pause();
+        console.log('⏸️ Paused video during feed switch:', video.src);
+    });
+    
+    // Hide all feed content containers
+    document.querySelectorAll('.feed-content').forEach(feed => {
+        feed.classList.remove('active');
+        feed.style.display = 'none';
+    });
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.feed-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Show the target feed container
+    const targetFeed = document.getElementById(feedType + 'Feed');
+    if (targetFeed) {
+        targetFeed.classList.add('active');
+        targetFeed.style.display = 'block';
+        console.log(`✅ Activated ${feedType} feed container`);
+    }
+    
+    // Activate the corresponding tab if it exists
+    const targetTab = document.getElementById(feedType + 'Tab');
+    if (targetTab) {
+        targetTab.classList.add('active');
+        console.log(`✅ Activated ${feedType} tab`);
+    }
+    
+    // Ensure main app is visible
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'block';
+    }
+    
+    // Load the feed content
     loadVideoFeed(feedType);
+    
+    // After a brief delay, ensure the first video starts playing
+    setTimeout(() => {
+        const firstVideo = targetFeed?.querySelector('video');
+        if (firstVideo) {
+            firstVideo.currentTime = 0;
+            firstVideo.play().catch(e => console.log('Auto-play prevented:', e));
+            console.log('🎬 Started first video in', feedType, 'feed');
+        }
+    }, 500);
 }
 
 function refreshForYou() {
