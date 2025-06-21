@@ -1,19 +1,21 @@
 /* Video Item Components - TikTok Style */
 .video-item {
-    height: 100vh;
+    height: calc(100vh - 40px);
     width: 100%;
-    max-width: 400px;
+    max-width: 500px;
     position: relative;
     display: block !important;
     background: #000;
-    margin: 0 auto;
+    margin: 20px auto;
     padding: 0;
     flex-shrink: 0;
-    min-height: 100vh;
+    min-height: calc(100vh - 40px);
     opacity: 1 !important;
     visibility: visible !important;
     scroll-snap-align: start;
     scroll-snap-stop: always;
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .video-container {
@@ -42,8 +44,8 @@
 #followingFeed .video-element,
 #discoverFeed .video-element {
     width: 100% !important;
-    height: 100vh !important;
-    max-width: 400px !important;
+    height: 100% !important;
+    max-width: 500px !important;
     object-fit: cover !important;
 }
 
