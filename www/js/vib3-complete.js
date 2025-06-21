@@ -1405,8 +1405,22 @@ function updatePublishProgress(status, percentage) {
 }
 
 async function recordVideo() {
-    // Show camera selection modal first
-    showCameraSelectionModal('video');
+    console.log('🎬 Record Video button clicked');
+    try {
+        // Request camera permission first to enumerate devices
+        console.log('📱 Requesting camera permissions...');
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        console.log('✅ Camera permissions granted');
+        
+        // Stop the temp stream immediately
+        tempStream.getTracks().forEach(track => track.stop());
+        
+        // Now show camera selection modal
+        showCameraSelectionModal('video');
+    } catch (error) {
+        console.error('❌ Camera permission denied:', error);
+        showNotification('Camera access is required to record videos. Please allow camera access and try again.', 'error');
+    }
 }
 
 async function showCameraSelectionModal(mode) {
@@ -1429,7 +1443,13 @@ async function showCameraSelectionModal(mode) {
                 
                 <div class="camera-options">
                     ${videoDevices.length === 0 ? 
-                        '<p>No cameras found. Please connect a camera and try again.</p>' :
+                        `<div class="camera-option" onclick="selectCamera('', '${mode}', 'Default Camera')">
+                            <div class="camera-icon">📷</div>
+                            <div class="camera-info">
+                                <div class="camera-name">Default Camera</div>
+                                <div class="camera-type">Use device camera</div>
+                            </div>
+                        </div>` :
                         videoDevices.map((device, index) => `
                             <div class="camera-option" onclick="selectCamera('${device.deviceId}', '${mode}', '${device.label || `Camera ${index + 1}`}')">
                                 <div class="camera-icon">📷</div>
@@ -1451,7 +1471,12 @@ async function showCameraSelectionModal(mode) {
         cameraModal.style.left = '0';
         cameraModal.style.right = '0';
         cameraModal.style.bottom = '0';
-        cameraModal.style.backgroundColor = 'rgba(0,0,0,0.9)';
+        cameraModal.style.backgroundColor = 'rgba(0,0,0,0.95)';
+        cameraModal.style.alignItems = 'center';
+        cameraModal.style.justifyContent = 'center';
+        
+        console.log('📱 Camera selection modal displayed with z-index:', cameraModal.style.zIndex);
+        console.log('📱 Available cameras:', videoDevices.length);
         
     } catch (error) {
         showNotification('Camera access required to record video', 'error');
