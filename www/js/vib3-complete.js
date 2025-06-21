@@ -3400,21 +3400,221 @@ function shareAnalytics() {
 }
 
 // ================ LIVE STREAMING FUNCTIONS ================
-function startLiveStream() {
-    showNotification('🔴 Starting live stream...', 'success');
-    // Initialize live stream
-    document.getElementById('liveChat').style.display = 'block';
+let isLiveStreaming = false;
+let liveStreamConnection = null;
+let liveViewers = 0;
+
+async function startLiveStream() {
+    if (isLiveStreaming) {
+        stopLiveStream();
+        return;
+    }
+
+    try {
+        console.log('🔴 Starting actual live stream...');
+        
+        const streamTitle = document.getElementById('streamTitle')?.value || 'Untitled Stream';
+        const streamCategory = document.getElementById('streamCategory')?.value || 'just-chatting';
+        const streamQuality = document.getElementById('streamQuality')?.value || '720p';
+        const privacy = document.querySelector('input[name="privacy"]:checked')?.value || 'public';
+        
+        // Get current camera stream
+        const stream = window.currentLiveStream;
+        if (!stream) {
+            throw new Error('No camera stream available');
+        }
+        
+        // Update UI to show streaming state
+        const goLiveBtn = document.querySelector('.go-live-btn');
+        if (goLiveBtn) {
+            goLiveBtn.textContent = '⏹️ Stop Stream';
+            goLiveBtn.style.background = '#dc3545';
+        }
+        
+        // Start the live stream broadcast
+        await initializeWebRTCBroadcast(stream, {
+            title: streamTitle,
+            category: streamCategory,
+            quality: streamQuality,
+            privacy: privacy
+        });
+        
+        isLiveStreaming = true;
+        
+        // Show live chat
+        document.getElementById('liveChat').style.display = 'block';
+        
+        // Update live indicator
+        const liveIndicator = document.querySelector('.live-indicator');
+        if (liveIndicator) {
+            liveIndicator.textContent = '🔴 LIVE';
+            liveIndicator.style.animation = 'pulse 2s infinite';
+        }
+        
+        // Start viewer count updates
+        startViewerCountUpdates();
+        
+        showNotification('🔴 Live stream started successfully!', 'success');
+        
+    } catch (error) {
+        console.error('❌ Failed to start live stream:', error);
+        showNotification('Failed to start live stream: ' + error.message, 'error');
+    }
+}
+
+async function initializeWebRTCBroadcast(stream, config) {
+    console.log('🌐 Initializing WebRTC broadcast with config:', config);
+    
+    // Create WebRTC peer connection for broadcasting
+    liveStreamConnection = new RTCPeerConnection({
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+    });
+    
+    // Add local stream to connection
+    stream.getTracks().forEach(track => {
+        liveStreamConnection.addTrack(track, stream);
+    });
+    
+    // Send stream info to server
+    const response = await fetch(`${window.API_BASE_URL}/api/live/start`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('vib3_token')}`
+        },
+        body: JSON.stringify({
+            title: config.title,
+            category: config.category,
+            quality: config.quality,
+            privacy: config.privacy,
+            username: currentUser?.username || currentUser?.displayName || 'streamer'
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error('Failed to register live stream with server');
+    }
+    
+    const streamData = await response.json();
+    console.log('✅ Live stream registered:', streamData);
+    
+    return streamData;
+}
+
+function stopLiveStream() {
+    console.log('⏹️ Stopping live stream...');
+    
+    isLiveStreaming = false;
+    
+    // Close WebRTC connection
+    if (liveStreamConnection) {
+        liveStreamConnection.close();
+        liveStreamConnection = null;
+    }
+    
+    // Update UI
+    const goLiveBtn = document.querySelector('.go-live-btn');
+    if (goLiveBtn) {
+        goLiveBtn.textContent = '🔴 Go Live';
+        goLiveBtn.style.background = '#fe2c55';
+    }
+    
+    // Hide live chat
+    document.getElementById('liveChat').style.display = 'none';
+    
+    // Update live indicator
+    const liveIndicator = document.querySelector('.live-indicator');
+    if (liveIndicator) {
+        liveIndicator.textContent = '⚫ OFFLINE';
+        liveIndicator.style.animation = 'none';
+    }
+    
+    // Notify server
+    fetch(`${window.API_BASE_URL}/api/live/stop`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('vib3_token')}`
+        }
+    }).catch(console.error);
+    
+    showNotification('⏹️ Live stream stopped', 'info');
+}
+
+function startViewerCountUpdates() {
+    const updateViewers = () => {
+        if (!isLiveStreaming) return;
+        
+        // Simulate viewer count updates (replace with real data from server)
+        liveViewers += Math.floor(Math.random() * 3) - 1; // Random change
+        liveViewers = Math.max(0, liveViewers);
+        
+        const viewerElement = document.querySelector('.viewer-count');
+        if (viewerElement) {
+            viewerElement.textContent = `${liveViewers} viewers`;
+        }
+        
+        setTimeout(updateViewers, 5000); // Update every 5 seconds
+    };
+    
+    liveViewers = Math.floor(Math.random() * 10) + 1; // Start with 1-10 viewers
+    updateViewers();
 }
 
 function scheduleLiveStream() {
     const time = prompt('Schedule for when? (e.g., "Tomorrow 8PM")');
     if (time) {
-        showNotification(`Live stream scheduled for ${time}`, 'success');
+        // Send to server for scheduling
+        fetch(`${window.API_BASE_URL}/api/live/schedule`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('vib3_token')}`
+            },
+            body: JSON.stringify({
+                scheduledTime: time,
+                title: document.getElementById('streamTitle')?.value || 'Scheduled Stream'
+            })
+        }).then(response => {
+            if (response.ok) {
+                showNotification(`Live stream scheduled for ${time}`, 'success');
+            } else {
+                showNotification('Failed to schedule stream', 'error');
+            }
+        }).catch(error => {
+            console.error('Scheduling error:', error);
+            showNotification('Failed to schedule stream', 'error');
+        });
     }
 }
 
 function closeLiveStream() {
-    document.querySelector('.live-stream-modal').remove();
+    console.log('🔴 Closing live stream modal...');
+    
+    // Stop live stream if it's running
+    if (isLiveStreaming) {
+        stopLiveStream();
+    }
+    
+    // Stop camera stream
+    if (window.currentLiveStream) {
+        console.log('📹 Stopping camera stream...');
+        window.currentLiveStream.getTracks().forEach(track => {
+            console.log('🛑 Stopping track:', track.kind);
+            track.stop();
+        });
+        window.currentLiveStream = null;
+    }
+    
+    // Remove modal
+    const modal = document.querySelector('.live-stream-modal');
+    if (modal) {
+        modal.remove();
+    }
+    
+    console.log('✅ Live stream modal closed and camera stopped');
 }
 
 function toggleChatSettings() {
@@ -5340,6 +5540,7 @@ window.showMoreOptions = showMoreOptions;
 
 // Live streaming functions
 window.startLiveStream = startLiveStream;
+window.stopLiveStream = stopLiveStream;
 window.scheduleLiveStream = scheduleLiveStream;
 window.closeLiveStream = closeLiveStream;
 window.toggleChatSettings = toggleChatSettings;
