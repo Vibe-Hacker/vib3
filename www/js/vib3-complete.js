@@ -1670,6 +1670,178 @@ function openAdvancedVideoEditor(stream) {
     initializeVideoEditor(stream);
 }
 
+// ================ VIDEO EDITOR INITIALIZATION ================
+function initializeVideoEditor(stream) {
+    console.log('🎬 Initializing video editor with camera stream');
+    
+    try {
+        // Find the editor modal
+        const editorModal = document.querySelector('.video-editor-modal');
+        if (!editorModal) {
+            console.error('❌ Video editor modal not found');
+            return;
+        }
+        
+        // Create or find the video preview element
+        let videoPreview = editorModal.querySelector('#videoEditorPreview');
+        if (!videoPreview) {
+            videoPreview = document.createElement('video');
+            videoPreview.id = 'videoEditorPreview';
+            videoPreview.style.cssText = `
+                width: 100%;
+                max-width: 400px;
+                height: 600px;
+                object-fit: cover;
+                border-radius: 12px;
+                background: #000;
+            `;
+            videoPreview.autoplay = true;
+            videoPreview.muted = true;
+            videoPreview.playsInline = true;
+            
+            // Add to modal content
+            const modalContent = editorModal.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.insertBefore(videoPreview, modalContent.firstChild);
+            }
+        }
+        
+        // Set the stream
+        if (stream) {
+            console.log('📹 Setting camera stream to video element');
+            videoPreview.srcObject = stream;
+            
+            // Add recording controls
+            if (!editorModal.querySelector('.recording-controls')) {
+                const controlsHTML = `
+                    <div class="recording-controls" style="text-align: center; margin: 20px 0;">
+                        <button id="startRecordingBtn" onclick="startVideoRecording()" style="background: #fe2c55; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 18px; cursor: pointer; margin: 0 10px;">
+                            🔴 Start Recording
+                        </button>
+                        <button id="stopRecordingBtn" onclick="stopVideoRecording()" style="background: #666; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 18px; cursor: pointer; margin: 0 10px; display: none;">
+                            ⏹️ Stop Recording
+                        </button>
+                        <button onclick="closeVideoEditor()" style="background: #333; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 18px; cursor: pointer; margin: 0 10px;">
+                            ❌ Cancel
+                        </button>
+                    </div>
+                `;
+                
+                const modalContent = editorModal.querySelector('.modal-content');
+                if (modalContent) {
+                    modalContent.insertAdjacentHTML('beforeend', controlsHTML);
+                }
+            }
+            
+            console.log('✅ Video editor initialized successfully');
+        } else {
+            console.error('❌ No camera stream provided to video editor');
+        }
+        
+    } catch (error) {
+        console.error('❌ Failed to initialize video editor:', error);
+    }
+}
+
+// Video recording functions
+let mediaRecorder = null;
+let recordedChunks = [];
+
+function startVideoRecording() {
+    console.log('🎬 Starting video recording');
+    
+    try {
+        const videoPreview = document.getElementById('videoEditorPreview');
+        const stream = videoPreview.srcObject;
+        
+        if (stream) {
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'video/webm;codecs=vp9'
+            });
+            
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = () => {
+                console.log('📹 Recording stopped, processing video');
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const videoFile = new File([blob], 'recorded-video.webm', { type: 'video/webm' });
+                
+                // Process the recorded video
+                processRecordedVideo(videoFile);
+            };
+            
+            mediaRecorder.start();
+            
+            // Update UI
+            document.getElementById('startRecordingBtn').style.display = 'none';
+            document.getElementById('stopRecordingBtn').style.display = 'inline-block';
+            
+            console.log('✅ Recording started');
+        }
+    } catch (error) {
+        console.error('❌ Failed to start recording:', error);
+    }
+}
+
+function stopVideoRecording() {
+    console.log('🛑 Stopping video recording');
+    
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        
+        // Update UI
+        document.getElementById('startRecordingBtn').style.display = 'inline-block';
+        document.getElementById('stopRecordingBtn').style.display = 'none';
+    }
+}
+
+function processRecordedVideo(videoFile) {
+    console.log('🎞️ Processing recorded video:', videoFile);
+    
+    // Close video editor
+    closeVideoEditor();
+    
+    // Continue with upload process
+    if (window.selectedVideoFile !== videoFile) {
+        window.selectedVideoFile = videoFile;
+        goToStep(3); // Go to details step
+    }
+}
+
+function closeVideoEditor() {
+    console.log('❌ Closing video editor');
+    
+    try {
+        // Stop any recording
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+        
+        // Stop camera stream
+        const videoPreview = document.getElementById('videoEditorPreview');
+        if (videoPreview && videoPreview.srcObject) {
+            const tracks = videoPreview.srcObject.getTracks();
+            tracks.forEach(track => track.stop());
+            videoPreview.srcObject = null;
+        }
+        
+        // Hide editor modal
+        const editorModal = document.querySelector('.video-editor-modal');
+        if (editorModal) {
+            editorModal.remove();
+        }
+        
+        console.log('✅ Video editor closed');
+    } catch (error) {
+        console.error('❌ Error closing video editor:', error);
+    }
+}
+
 // ================ MUSIC LIBRARY ================
 function openMusicLibrary() {
     const musicModal = document.createElement('div');
