@@ -458,6 +458,7 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
 
 function createAdvancedVideoCard(video) {
     console.log('🚀 Creating TikTok-style video card for:', video.videoUrl);
+    console.log('📝 Video data:', { title: video.title, username: video.username, user: video.user });
     
     const card = document.createElement('div');
     
@@ -521,7 +522,7 @@ function createAdvancedVideoCard(video) {
     
     overlay.innerHTML = `
         <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-            @${video.username || 'user'}
+            @${video.username || video.user?.username || video.user?.displayName || 'unknown'}
         </div>
         <div style="font-size: 14px; line-height: 1.3; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
             ${video.description || video.title || 'Check out this video!'}

@@ -482,6 +482,12 @@ async function deleteUserVideo(videoId, videoTitle) {
             // Reload user videos to update the display
             setTimeout(() => {
                 loadUserVideos();
+                
+                // Also refresh the main video feed to remove the deleted video
+                if (window.loadVideoFeed) {
+                    console.log('🔄 Refreshing main video feed after deletion');
+                    window.loadVideoFeed(window.currentFeed || 'foryou', 1, false);
+                }
             }, 1000);
             
         } else {
