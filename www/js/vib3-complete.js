@@ -2157,7 +2157,7 @@ function createMessagesPage() {
                             width: 40px;
                             height: 40px;
                             border-radius: 50%;
-                            background: linear-gradient(135deg, var(--accent-color), #ff006e);
+                            background: linear-gradient(135deg, #fe2c55, #ff006e);
                             display: flex;
                             align-items: center;
                             justify-content: center;
@@ -2218,7 +2218,7 @@ function createMessagesPage() {
                                 border: 1px solid var(--border-primary);
                                 border-radius: 20px;
                                 background: var(--bg-primary);
-                                color: var(--text-primary);
+                                color: white;
                                 font-size: 14px;
                                 outline: none;
                             "
@@ -2639,12 +2639,16 @@ function createProfilePage() {
         profilePage.id = 'profilePage';
         profilePage.className = 'profile-page';
         profilePage.style.cssText = `
+            position: fixed;
+            top: 0;
             margin-left: 240px; 
             width: calc(100vw - 240px); 
             height: 100vh; 
             overflow-y: auto;
-            background: var(--bg-primary);
+            background: #161823;
+            color: white;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            z-index: 10;
         `;
         
         profilePage.innerHTML = `
@@ -2655,7 +2659,7 @@ function createProfilePage() {
                     align-items: center;
                     gap: 40px;
                     padding: 40px 0;
-                    border-bottom: 1px solid var(--border-primary);
+                    border-bottom: 1px solid #333;
                     margin-bottom: 30px;
                 ">
                     <!-- Profile Picture -->
@@ -2664,7 +2668,7 @@ function createProfilePage() {
                             width: 150px;
                             height: 150px;
                             border-radius: 50%;
-                            background: linear-gradient(135deg, var(--accent-color), #ff006e);
+                            background: linear-gradient(135deg, #fe2c55, #ff006e);
                             display: flex;
                             align-items: center;
                             justify-content: center;
@@ -2680,7 +2684,7 @@ function createProfilePage() {
                                 right: 8px;
                                 width: 32px;
                                 height: 32px;
-                                background: var(--accent-color);
+                                background: #fe2c55;
                                 border-radius: 50%;
                                 display: flex;
                                 align-items: center;
@@ -2699,7 +2703,7 @@ function createProfilePage() {
                             <h1 class="profile-username" style="
                                 font-size: 28px;
                                 font-weight: 300;
-                                color: var(--text-primary);
+                                color: white;
                                 margin: 0;
                             " id="profileUsername">@vib3user</h1>
                             
@@ -2708,7 +2712,7 @@ function createProfilePage() {
                                 background: none;
                                 border: 1px solid var(--border-primary);
                                 border-radius: 8px;
-                                color: var(--text-primary);
+                                color: white;
                                 font-weight: 600;
                                 cursor: pointer;
                                 transition: all 0.2s ease;
@@ -2762,7 +2766,7 @@ function createProfilePage() {
                         <div style="display: flex; gap: 12px;">
                             <button onclick="shareProfile()" style="
                                 padding: 12px 24px;
-                                background: var(--accent-color);
+                                background: #fe2c55;
                                 color: white;
                                 border: none;
                                 border-radius: 8px;
@@ -2775,7 +2779,7 @@ function createProfilePage() {
                             <button onclick="openCreatorTools()" style="
                                 padding: 12px 24px;
                                 background: var(--bg-tertiary);
-                                color: var(--text-primary);
+                                color: white;
                                 border: none;
                                 border-radius: 8px;
                                 font-weight: 600;
@@ -2867,9 +2871,15 @@ function createProfilePage() {
         setTimeout(() => loadProfileData(), 300);
     }
     
-    // Hide all other pages
-    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
+    // Hide all other pages except this profile page
+    document.querySelectorAll('.video-feed, .search-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
         el.style.display = 'none';
+    });
+    // Hide other profile pages but not this one
+    document.querySelectorAll('.profile-page').forEach(el => {
+        if (el !== profilePage) {
+            el.style.display = 'none';
+        }
     });
     const mainApp = document.getElementById('mainApp');
     if (mainApp) mainApp.style.display = 'none';
