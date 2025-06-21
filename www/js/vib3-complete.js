@@ -815,9 +815,29 @@ function showUploadModal() {
     console.log('✅ Upload modal found, current display:', window.getComputedStyle(modal).display);
     console.log('📍 Current modal classes:', modal.className);
     
-    // Stop all videos first
+    // Stop all videos first - enhanced version
+    console.log('🛑 Stopping all background videos...');
     if (window.forceStopAllVideos && typeof window.forceStopAllVideos === 'function') {
         window.forceStopAllVideos();
+    } else {
+        // Fallback: manually stop all videos
+        document.querySelectorAll('video').forEach((video, index) => {
+            try {
+                video.pause();
+                video.currentTime = 0;
+                video.muted = true;
+                video.volume = 0;
+                console.log(`🔇 Stopped video ${index}`);
+            } catch (error) {
+                console.log(`Failed to stop video ${index}:`, error.message);
+            }
+        });
+    }
+    
+    // Also pause any intersection observer to prevent auto-play
+    if (window.videoObserver) {
+        window.videoObserver.disconnect();
+        console.log('🔇 Disconnected video observer');
     }
     
     // Force modal to appear above everything
@@ -891,6 +911,13 @@ function closeUploadModal() {
         modal.style.display = 'none';  // Ensure modal is hidden
         console.log('✅ Upload modal closed and hidden');
     }
+    
+    // Reconnect video observer when modal closes
+    if (window.initializeTikTokVideoObserver && typeof window.initializeTikTokVideoObserver === 'function') {
+        window.initializeTikTokVideoObserver();
+        console.log('🔄 Reconnected video observer');
+    }
+    
     resetUploadState();
 }
 
