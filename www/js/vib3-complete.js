@@ -1137,39 +1137,41 @@ async function startSimpleVideoRecording() {
         `;
         
         recordingModal.innerHTML = `
-            <div style="text-align: center; color: white;">
-                <h3>🎬 Recording Video</h3>
+            <div style="text-align: center; color: white; max-width: 375px; margin: 0 auto;">
+                <h3 style="margin: 0 0 15px 0; font-size: 18px;">🎬 Recording Video</h3>
                 <video id="simpleRecordingPreview" autoplay muted playsinline style="
-                    width: 300px;
-                    height: 533px;
+                    width: 270px;
+                    height: 480px;
                     object-fit: cover;
                     border-radius: 12px;
                     background: #000;
-                    margin: 20px 0;
+                    margin: 0 0 15px 0;
                 "></video>
                 
-                <div style="margin: 20px 0;">
-                    <div id="simpleTimer" style="font-size: 24px; color: white; margin-bottom: 20px;">00:00</div>
-                    <button id="simpleRecordBtn" onclick="toggleSimpleRecording()" style="
-                        background: #fe2c55;
-                        color: white;
-                        border: none;
-                        padding: 15px 30px;
-                        border-radius: 50px;
-                        font-size: 18px;
-                        cursor: pointer;
-                        margin: 0 10px;
-                    ">🔴 Start Recording</button>
-                    <button onclick="cancelSimpleRecording()" style="
-                        background: #666;
-                        color: white;
-                        border: none;
-                        padding: 15px 30px;
-                        border-radius: 50px;
-                        font-size: 18px;
-                        cursor: pointer;
-                        margin: 0 10px;
-                    ">❌ Cancel</button>
+                <div style="margin: 0;">
+                    <div id="simpleTimer" style="font-size: 20px; color: white; margin-bottom: 15px;">00:00</div>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button id="simpleRecordBtn" onclick="toggleSimpleRecording()" style="
+                            background: #fe2c55;
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 25px;
+                            font-size: 16px;
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">🔴 Start Recording</button>
+                        <button onclick="cancelSimpleRecording()" style="
+                            background: #666;
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 25px;
+                            font-size: 16px;
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">❌ Cancel</button>
+                    </div>
                 </div>
             </div>
         `;
