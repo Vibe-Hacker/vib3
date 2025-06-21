@@ -1104,8 +1104,272 @@ function recordNewVideo() {
         uploadModal.style.display = 'none';
     }
     
-    // Start video recording flow
-    recordVideo();
+    // Start simplified recording directly
+    startSimpleVideoRecording();
+}
+
+async function startSimpleVideoRecording() {
+    console.log('🎬 Starting simple video recording');
+    
+    try {
+        // Get camera stream directly
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { width: 720, height: 1280 }, 
+            audio: true 
+        });
+        
+        console.log('✅ Camera stream obtained for simple recording');
+        
+        // Create simple recording modal
+        const recordingModal = document.createElement('div');
+        recordingModal.className = 'modal simple-recording-modal';
+        recordingModal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100000;
+        `;
+        
+        recordingModal.innerHTML = `
+            <div style="text-align: center; color: white;">
+                <h3>🎬 Recording Video</h3>
+                <video id="simpleRecordingPreview" autoplay muted playsinline style="
+                    width: 300px;
+                    height: 533px;
+                    object-fit: cover;
+                    border-radius: 12px;
+                    background: #000;
+                    margin: 20px 0;
+                "></video>
+                
+                <div style="margin: 20px 0;">
+                    <div id="simpleTimer" style="font-size: 24px; color: white; margin-bottom: 20px;">00:00</div>
+                    <button id="simpleRecordBtn" onclick="toggleSimpleRecording()" style="
+                        background: #fe2c55;
+                        color: white;
+                        border: none;
+                        padding: 15px 30px;
+                        border-radius: 50px;
+                        font-size: 18px;
+                        cursor: pointer;
+                        margin: 0 10px;
+                    ">🔴 Start Recording</button>
+                    <button onclick="cancelSimpleRecording()" style="
+                        background: #666;
+                        color: white;
+                        border: none;
+                        padding: 15px 30px;
+                        border-radius: 50px;
+                        font-size: 18px;
+                        cursor: pointer;
+                        margin: 0 10px;
+                    ">❌ Cancel</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(recordingModal);
+        
+        // Set up video preview
+        const video = document.getElementById('simpleRecordingPreview');
+        video.srcObject = stream;
+        window.currentCameraStream = stream;
+        
+        console.log('✅ Simple recording modal created and displayed');
+        
+    } catch (error) {
+        console.error('❌ Failed to start simple recording:', error);
+        showNotification('Failed to access camera. Please check permissions.', 'error');
+        
+        // Show upload modal again
+        const uploadModal = document.getElementById('uploadModal');
+        if (uploadModal) {
+            uploadModal.style.display = 'flex';
+        }
+    }
+}
+
+// Simple recording functions
+let simpleMediaRecorder = null;
+let simpleRecordedChunks = [];
+let simpleRecordingTimer = null;
+let simpleRecordingStartTime = null;
+let isSimpleRecording = false;
+
+function toggleSimpleRecording() {
+    console.log('🎬 Toggle simple recording called, current state:', isSimpleRecording);
+    
+    if (isSimpleRecording) {
+        stopSimpleRecording();
+    } else {
+        startSimpleRecording();
+    }
+}
+
+function startSimpleRecording() {
+    console.log('🎬 Starting simple recording');
+    
+    try {
+        const stream = window.currentCameraStream;
+        if (!stream) {
+            console.error('❌ No camera stream available');
+            return;
+        }
+        
+        simpleRecordedChunks = [];
+        simpleMediaRecorder = new MediaRecorder(stream, {
+            mimeType: 'video/webm;codecs=vp9'
+        });
+        
+        simpleMediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                simpleRecordedChunks.push(event.data);
+            }
+        };
+        
+        simpleMediaRecorder.onstop = () => {
+            console.log('📹 Simple recording stopped, processing video');
+            const blob = new Blob(simpleRecordedChunks, { type: 'video/webm' });
+            const videoFile = new File([blob], 'recorded-video.webm', { type: 'video/webm' });
+            
+            // Process the recorded video
+            processSimpleRecordedVideo(videoFile);
+        };
+        
+        simpleMediaRecorder.start();
+        isSimpleRecording = true;
+        
+        // Start timer
+        simpleRecordingStartTime = Date.now();
+        startSimpleRecordingTimer();
+        
+        // Update UI
+        const recordBtn = document.getElementById('simpleRecordBtn');
+        if (recordBtn) {
+            recordBtn.textContent = '⏹️ Stop Recording';
+            recordBtn.style.background = '#666';
+        }
+        
+        console.log('✅ Simple recording started');
+        
+    } catch (error) {
+        console.error('❌ Failed to start simple recording:', error);
+    }
+}
+
+function stopSimpleRecording() {
+    console.log('🛑 Stopping simple recording');
+    
+    if (simpleMediaRecorder && simpleMediaRecorder.state === 'recording') {
+        simpleMediaRecorder.stop();
+        isSimpleRecording = false;
+        
+        // Stop timer
+        stopSimpleRecordingTimer();
+        
+        // Update UI
+        const recordBtn = document.getElementById('simpleRecordBtn');
+        if (recordBtn) {
+            recordBtn.textContent = '🔴 Start Recording';
+            recordBtn.style.background = '#fe2c55';
+        }
+    }
+}
+
+function startSimpleRecordingTimer() {
+    simpleRecordingTimer = setInterval(() => {
+        if (simpleRecordingStartTime) {
+            const elapsed = Date.now() - simpleRecordingStartTime;
+            const seconds = Math.floor(elapsed / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const displaySeconds = seconds % 60;
+            
+            const timeDisplay = document.getElementById('simpleTimer');
+            if (timeDisplay) {
+                timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${displaySeconds.toString().padStart(2, '0')}`;
+                timeDisplay.style.color = '#fe2c55';
+            }
+        }
+    }, 1000);
+}
+
+function stopSimpleRecordingTimer() {
+    if (simpleRecordingTimer) {
+        clearInterval(simpleRecordingTimer);
+        simpleRecordingTimer = null;
+        simpleRecordingStartTime = null;
+        
+        const timeDisplay = document.getElementById('simpleTimer');
+        if (timeDisplay) {
+            timeDisplay.textContent = '00:00';
+            timeDisplay.style.color = 'white';
+        }
+    }
+}
+
+function processSimpleRecordedVideo(videoFile) {
+    console.log('🎞️ Processing simple recorded video:', videoFile);
+    
+    // Close simple recording modal
+    cancelSimpleRecording();
+    
+    // Set the recorded video and continue to upload process
+    window.selectedVideoFile = videoFile;
+    
+    // Show upload modal and go to step 3
+    const uploadModal = document.getElementById('uploadModal');
+    if (uploadModal) {
+        uploadModal.style.display = 'flex';
+        goToStep(3); // Go to details step
+    }
+}
+
+function cancelSimpleRecording() {
+    console.log('❌ Canceling simple recording');
+    
+    try {
+        // Stop any recording
+        if (simpleMediaRecorder && simpleMediaRecorder.state === 'recording') {
+            simpleMediaRecorder.stop();
+        }
+        
+        // Stop timer
+        stopSimpleRecordingTimer();
+        
+        // Stop camera stream
+        if (window.currentCameraStream) {
+            console.log('🛑 Stopping camera stream');
+            const tracks = window.currentCameraStream.getTracks();
+            tracks.forEach(track => {
+                console.log(`🛑 Stopping track: ${track.kind}`);
+                track.stop();
+            });
+            window.currentCameraStream = null;
+        }
+        
+        // Remove modal
+        const modal = document.querySelector('.simple-recording-modal');
+        if (modal) {
+            modal.remove();
+        }
+        
+        // Show upload modal again
+        const uploadModal = document.getElementById('uploadModal');
+        if (uploadModal) {
+            uploadModal.style.display = 'flex';
+        }
+        
+        console.log('✅ Simple recording canceled and cleaned up');
+        
+    } catch (error) {
+        console.error('❌ Error canceling simple recording:', error);
+    }
 }
 
 function selectPhotos() {
@@ -1475,18 +1739,30 @@ function updatePublishProgress(status, percentage) {
 }
 
 async function recordVideo() {
-    console.log('🎬 Record Video button clicked');
+    console.log('🎬 Record Video button clicked - starting debug');
+    
+    // Add detailed debugging
+    console.log('📱 Current document.body children:', document.body.children.length);
+    console.log('📱 Existing modals:', document.querySelectorAll('.modal').length);
+    
     try {
         // Request camera permission first to enumerate devices
         console.log('📱 Requesting camera permissions...');
         const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        console.log('✅ Camera permissions granted');
+        console.log('✅ Camera permissions granted, tracks:', tempStream.getTracks().length);
         
         // Stop the temp stream immediately
-        tempStream.getTracks().forEach(track => track.stop());
+        tempStream.getTracks().forEach(track => {
+            console.log(`🛑 Stopping track: ${track.kind} - ${track.label}`);
+            track.stop();
+        });
         
-        // Now show camera selection modal
-        showCameraSelectionModal('video');
+        // Add a small delay to ensure permission state is updated
+        setTimeout(() => {
+            console.log('📱 Now showing camera selection modal...');
+            showCameraSelectionModal('video');
+        }, 500);
+        
     } catch (error) {
         console.error('❌ Camera permission denied:', error);
         showNotification('Camera access is required to record videos. Please allow camera access and try again.', 'error');
@@ -1498,8 +1774,16 @@ async function showCameraSelectionModal(mode) {
     try {
         // Get available video devices
         const devices = await navigator.mediaDevices.enumerateDevices();
+        console.log(`📱 All devices found:`, devices.length);
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         console.log(`📷 Found ${videoDevices.length} video devices:`, videoDevices);
+        
+        // Check if modal already exists and remove it
+        const existingModal = document.querySelector('.camera-selection-modal');
+        if (existingModal) {
+            console.log('🗑️ Removing existing camera modal');
+            existingModal.remove();
+        }
         
         const cameraModal = document.createElement('div');
         cameraModal.className = 'modal camera-selection-modal';
@@ -1547,6 +1831,21 @@ async function showCameraSelectionModal(mode) {
         
         console.log('📱 Camera selection modal displayed with z-index:', cameraModal.style.zIndex);
         console.log('📱 Available cameras:', videoDevices.length);
+        console.log('📱 Modal added to body, total modals now:', document.querySelectorAll('.modal').length);
+        console.log('📱 Modal element:', cameraModal);
+        console.log('📱 Modal computed display:', window.getComputedStyle(cameraModal).display);
+        
+        // Force a visual test
+        setTimeout(() => {
+            console.log('📱 Modal still visible after 2s?', cameraModal.parentNode ? 'YES' : 'NO');
+            if (cameraModal.parentNode) {
+                console.log('📱 Modal computed styles after 2s:', {
+                    display: window.getComputedStyle(cameraModal).display,
+                    zIndex: window.getComputedStyle(cameraModal).zIndex,
+                    position: window.getComputedStyle(cameraModal).position
+                });
+            }
+        }, 2000);
         
     } catch (error) {
         showNotification('Camera access required to record video', 'error');
@@ -1567,9 +1866,41 @@ function getCameraType(label) {
 }
 
 function closeCameraSelection() {
+    console.log('❌ Closing camera selection modal');
+    
+    // Stop any active camera streams
+    if (window.currentCameraStream) {
+        console.log('🛑 Stopping camera stream from selection');
+        const tracks = window.currentCameraStream.getTracks();
+        tracks.forEach(track => {
+            console.log(`🛑 Stopping track: ${track.kind} - ${track.label}`);
+            track.stop();
+        });
+        window.currentCameraStream = null;
+    }
+    
+    // Also check for any video elements that might have streams
+    const videoElements = document.querySelectorAll('video');
+    videoElements.forEach((video, index) => {
+        if (video.srcObject) {
+            console.log(`🛑 Stopping stream from video element ${index}`);
+            const tracks = video.srcObject.getTracks();
+            tracks.forEach(track => track.stop());
+            video.srcObject = null;
+        }
+    });
+    
     const modal = document.querySelector('.camera-selection-modal');
     if (modal) {
         modal.remove();
+        console.log('✅ Camera selection modal removed');
+    }
+    
+    // Show upload modal again
+    const uploadModal = document.getElementById('uploadModal');
+    if (uploadModal) {
+        uploadModal.style.display = 'flex';
+        console.log('✅ Upload modal restored');
     }
 }
 
