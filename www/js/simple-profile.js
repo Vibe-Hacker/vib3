@@ -188,7 +188,11 @@ function createSimpleProfilePage() {
 // Real-time profile data functions
 // Get the API base URL - use same server as main feed
 function getAPIBaseURL() {
-    // Use Railway URL for production, empty for local development
+    // Use shared API_BASE_URL from window if available
+    if (window.API_BASE_URL) {
+        return window.API_BASE_URL;
+    }
+    // Fallback: Use Railway URL for production, empty for local development
     return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
         ? '' 
         : 'https://vib3-production.up.railway.app';

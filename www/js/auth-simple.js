@@ -69,9 +69,90 @@ async function logout() {
     }
 }
 
+// UI Handler functions (called from HTML)
+async function handleLogin() {
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    
+    if (!emailInput || !passwordInput) {
+        console.error('Login form elements not found');
+        return;
+    }
+    
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    
+    if (!email || !password) {
+        if (window.showNotification) {
+            window.showNotification('Please enter email and password', 'error');
+        }
+        return;
+    }
+    
+    const result = await login(email, password);
+    if (result.success) {
+        // Clear form
+        emailInput.value = '';
+        passwordInput.value = '';
+        
+        // Close modal if it exists
+        const loginModal = document.getElementById('loginModal');
+        if (loginModal) {
+            loginModal.style.display = 'none';
+        }
+    }
+}
+
+async function handleSignup() {
+    const usernameInput = document.getElementById('signupUsername');
+    const emailInput = document.getElementById('signupEmail');
+    const passwordInput = document.getElementById('signupPassword');
+    
+    if (!usernameInput || !emailInput || !passwordInput) {
+        console.error('Signup form elements not found');
+        return;
+    }
+    
+    const username = usernameInput.value.trim();
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    
+    if (!username || !email || !password) {
+        if (window.showNotification) {
+            window.showNotification('Please fill in all fields', 'error');
+        }
+        return;
+    }
+    
+    const result = await signup(username, email, password);
+    if (result.success) {
+        // Clear form
+        usernameInput.value = '';
+        emailInput.value = '';
+        passwordInput.value = '';
+        
+        // Close modal if it exists
+        const signupModal = document.getElementById('signupModal');
+        if (signupModal) {
+            signupModal.style.display = 'none';
+        }
+    }
+}
+
+async function handleLogout() {
+    const result = await logout();
+    if (result.success) {
+        // Redirect to login or refresh page
+        window.location.reload();
+    }
+}
+
 // Make functions globally available
 window.initAuth = initAuth;
 window.getCurrentUser = getCurrentUser;
 window.login = login;
 window.signup = signup;
 window.logout = logout;
+window.handleLogin = handleLogin;
+window.handleSignup = handleSignup;
+window.handleLogout = handleLogout;
