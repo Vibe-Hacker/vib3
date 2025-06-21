@@ -238,9 +238,9 @@ async function loadUserVideos() {
         console.log('📡 Videos API response:', { status: response.status, ok: response.ok });
         
         if (response.ok) {
-            const videos = await response.json();
-            console.log('✅ User videos loaded:', videos);
-            displayUserVideos(videos);
+            const data = await response.json();
+            console.log('✅ User videos loaded:', data);
+            displayUserVideos(data.videos || []);
         } else {
             const text = await response.text();
             console.error('❌ Videos API failed:', { status: response.status, text: text.substring(0, 200) });
