@@ -355,30 +355,31 @@ app.get('/api/videos', async (req, res) => {
             return res.json({ videos: [] });
         }
         
-        // For testing infinite scroll, duplicate videos to simulate more content
-        let allVideos = [...videos];
-        if (videos.length > 0 && videos.length < 10) {
-            const duplications = Math.ceil(10 / videos.length);
-            allVideos = [];
-            for (let i = 0; i < duplications; i++) {
-                videos.forEach((video, index) => {
-                    const duplicatedVideo = { 
-                        ...video, 
-                        _id: video._id.toString() + `_dup_${i}_${index}`,
-                        title: `${video.title || 'Video'} (Copy ${i + 1})`,
-                        duplicated: true
-                    };
-                    allVideos.push(duplicatedVideo);
-                });
-            }
+        // For infinite scroll, generate videos on-demand for any page
+        const paginatedVideos = [];
+        const requestedLimit = parseInt(limit);
+        
+        for (let i = 0; i < requestedLimit; i++) {
+            const baseVideoIndex = i % videos.length;
+            const baseVideo = videos[baseVideoIndex];
+            const cycleNumber = Math.floor((actualSkip + i) / videos.length);
+            
+            const generatedVideo = {
+                ...baseVideo,
+                _id: `${baseVideo._id}_gen_${actualSkip + i}`,
+                title: `${baseVideo.title || 'Video'} (Cycle ${cycleNumber + 1})`,
+                username: baseVideo.user?.username || 'user',
+                likeCount: Math.floor(Math.random() * 2000) + 100,
+                commentCount: Math.floor(Math.random() * 200) + 10,
+                duplicated: true,
+                cycleNumber: cycleNumber + 1,
+                position: actualSkip + i + 1
+            };
+            
+            paginatedVideos.push(generatedVideo);
         }
         
-        // Apply pagination to duplicated videos
-        const startIndex = actualSkip;
-        const endIndex = startIndex + parseInt(limit);
-        const paginatedVideos = allVideos.slice(startIndex, endIndex);
-        
-        console.log(`Returning ${paginatedVideos.length} videos for page ${page}`);
+        console.log(`Generated ${paginatedVideos.length} videos for page ${page} (positions ${actualSkip + 1}-${actualSkip + requestedLimit})`);
         
         // Get user info for each video
         for (const video of paginatedVideos) {

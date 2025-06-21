@@ -392,8 +392,8 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                         feedElement.appendChild(videoCard);
                     });
                     
-                    // Check if we have more videos
-                    hasMoreVideos = validVideos.length >= 10; // Assuming 10 is our page size
+                    // For infinite scroll testing, always assume there are more videos
+                    hasMoreVideos = true;
                     
                     // Setup infinite scroll listener
                     if (!append) {
@@ -501,6 +501,7 @@ function createAdvancedVideoCard(video) {
         </div>
         <div style="font-size: 14px; line-height: 1.3; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
             ${video.description || video.title || 'Check out this video!'}
+            ${video.position ? `<span style="opacity: 0.7; font-size: 12px;"> • Video #${video.position}</span>` : ''}
         </div>
     `;
     
