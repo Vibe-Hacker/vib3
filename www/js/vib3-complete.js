@@ -1063,6 +1063,11 @@ function showPage(page) {
         return;
     }
     
+    if (page === 'profile') {
+        createProfilePage();
+        return;
+    }
+    
     if (page === 'friends') {
         createFriendsPage();
         return;
@@ -2621,6 +2626,255 @@ function openChatOptions() {
     showNotification('Chat options coming soon!', 'info');
 }
 
+// Profile page creation and management
+let currentProfileTab = 'videos';
+let currentUserProfile = null;
+
+function createProfilePage() {
+    let profilePage = document.getElementById('profilePage');
+    if (!profilePage) {
+        profilePage = document.createElement('div');
+        profilePage.id = 'profilePage';
+        profilePage.className = 'profile-page';
+        profilePage.style.cssText = `
+            margin-left: 240px; 
+            width: calc(100vw - 240px); 
+            height: 100vh; 
+            overflow-y: auto;
+            background: var(--bg-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+        
+        profilePage.innerHTML = `
+            <div style="max-width: 975px; margin: 0 auto; padding: 20px;">
+                <!-- Profile Header -->
+                <div class="profile-header" style="
+                    display: flex;
+                    align-items: center;
+                    gap: 40px;
+                    padding: 40px 0;
+                    border-bottom: 1px solid var(--border-primary);
+                    margin-bottom: 30px;
+                ">
+                    <!-- Profile Picture -->
+                    <div class="profile-picture-container" style="position: relative;">
+                        <div class="profile-picture" style="
+                            width: 150px;
+                            height: 150px;
+                            border-radius: 50%;
+                            background: linear-gradient(135deg, var(--accent-color), #ff006e);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 60px;
+                            cursor: pointer;
+                            position: relative;
+                            border: 4px solid var(--bg-secondary);
+                        " onclick="changeProfilePicture()">
+                            👤
+                            <div style="
+                                position: absolute;
+                                bottom: 8px;
+                                right: 8px;
+                                width: 32px;
+                                height: 32px;
+                                background: var(--accent-color);
+                                border-radius: 50%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                color: white;
+                                font-size: 16px;
+                                border: 2px solid var(--bg-primary);
+                                cursor: pointer;
+                            ">📷</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile Info -->
+                    <div class="profile-info" style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                            <h1 class="profile-username" style="
+                                font-size: 28px;
+                                font-weight: 300;
+                                color: var(--text-primary);
+                                margin: 0;
+                            " id="profileUsername">@vib3user</h1>
+                            
+                            <button onclick="editProfile()" style="
+                                padding: 8px 24px;
+                                background: none;
+                                border: 1px solid var(--border-primary);
+                                border-radius: 8px;
+                                color: var(--text-primary);
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                            " onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='none'">
+                                Edit Profile
+                            </button>
+                            
+                            <button onclick="showProfileSettings()" style="
+                                padding: 8px 12px;
+                                background: none;
+                                border: none;
+                                color: var(--text-secondary);
+                                font-size: 20px;
+                                cursor: pointer;
+                            ">⚙️</button>
+                        </div>
+                        
+                        <!-- Stats -->
+                        <div class="profile-stats" style="
+                            display: flex;
+                            gap: 40px;
+                            margin-bottom: 20px;
+                        ">
+                            <div onclick="showFollowing()" style="cursor: pointer;">
+                                <span style="font-weight: 600; color: var(--text-primary);" id="followingCount">0</span>
+                                <span style="color: var(--text-secondary); margin-left: 4px;">following</span>
+                            </div>
+                            <div onclick="showFollowers()" style="cursor: pointer;">
+                                <span style="font-weight: 600; color: var(--text-primary);" id="followersCount">0</span>
+                                <span style="color: var(--text-secondary); margin-left: 4px;">followers</span>
+                            </div>
+                            <div>
+                                <span style="font-weight: 600; color: var(--text-primary);" id="likesCount">0</span>
+                                <span style="color: var(--text-secondary); margin-left: 4px;">likes</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Bio -->
+                        <div class="profile-bio" style="
+                            color: var(--text-primary);
+                            line-height: 1.5;
+                            margin-bottom: 20px;
+                            max-width: 500px;
+                        " id="profileBio">
+                            Welcome to my VIB3 profile! 🎵✨<br>
+                            Creator | Dancer | Music Lover<br>
+                            📧 Contact: hello@vib3.com
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 12px;">
+                            <button onclick="shareProfile()" style="
+                                padding: 12px 24px;
+                                background: var(--accent-color);
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: opacity 0.2s ease;
+                            " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                Share Profile
+                            </button>
+                            <button onclick="openCreatorTools()" style="
+                                padding: 12px 24px;
+                                background: var(--bg-tertiary);
+                                color: var(--text-primary);
+                                border: none;
+                                border-radius: 8px;
+                                font-weight: 600;
+                                cursor: pointer;
+                            ">
+                                Creator Tools
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Profile Navigation Tabs -->
+                <div class="profile-tabs" style="
+                    display: flex;
+                    border-bottom: 1px solid var(--border-primary);
+                    margin-bottom: 20px;
+                ">
+                    <button class="profile-tab active" data-tab="videos" style="
+                        padding: 12px 24px;
+                        background: none;
+                        border: none;
+                        color: var(--text-primary);
+                        font-weight: 600;
+                        cursor: pointer;
+                        border-bottom: 2px solid var(--accent-color);
+                        position: relative;
+                    ">
+                        📹 Videos
+                    </button>
+                    <button class="profile-tab" data-tab="liked" style="
+                        padding: 12px 24px;
+                        background: none;
+                        border: none;
+                        color: var(--text-secondary);
+                        font-weight: 600;
+                        cursor: pointer;
+                        border-bottom: 2px solid transparent;
+                    ">
+                        ❤️ Liked
+                    </button>
+                    <button class="profile-tab" data-tab="following-feed" style="
+                        padding: 12px 24px;
+                        background: none;
+                        border: none;
+                        color: var(--text-secondary);
+                        font-weight: 600;
+                        cursor: pointer;
+                        border-bottom: 2px solid transparent;
+                    ">
+                        👥 Following
+                    </button>
+                    <button class="profile-tab" data-tab="analytics" style="
+                        padding: 12px 24px;
+                        background: none;
+                        border: none;
+                        color: var(--text-secondary);
+                        font-weight: 600;
+                        cursor: pointer;
+                        border-bottom: 2px solid transparent;
+                    ">
+                        📊 Analytics
+                    </button>
+                </div>
+                
+                <!-- Profile Content Area -->
+                <div class="profile-content" id="profileContent">
+                    <div class="loading-profile" style="
+                        text-align: center;
+                        padding: 60px 20px;
+                        color: var(--text-secondary);
+                    ">
+                        ⏳ Loading profile content...
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(profilePage);
+        
+        // Add tab click handlers
+        profilePage.querySelectorAll('.profile-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabType = tab.dataset.tab;
+                switchProfileTab(tabType);
+            });
+        });
+        
+        // Load initial profile data
+        setTimeout(() => loadProfileData(), 300);
+    }
+    
+    // Hide all other pages
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
+        el.style.display = 'none';
+    });
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) mainApp.style.display = 'none';
+    
+    profilePage.style.display = 'block';
+}
+
 function createFriendsPage() {
     let friendsPage = document.getElementById('friendsPage');
     if (!friendsPage) {
@@ -3377,3 +3631,689 @@ window.searchChats = searchChats;
 window.startNewChat = startNewChat;
 window.attachMedia = attachMedia;
 window.openChatOptions = openChatOptions;
+
+// Profile functions
+window.createProfilePage = createProfilePage;
+window.loadProfileData = loadProfileData;
+window.switchProfileTab = switchProfileTab;
+window.editProfile = editProfile;
+window.changeProfilePicture = changeProfilePicture;
+window.showProfileSettings = showProfileSettings;
+window.showFollowing = showFollowing;
+window.showFollowers = showFollowers;
+window.shareProfile = shareProfile;
+window.openCreatorTools = openCreatorTools;
+
+// ================ PROFILE FUNCTIONS ================
+function loadProfileData() {
+    // Simulate loading user profile data
+    setTimeout(() => {
+        if (currentUser) {
+            document.getElementById('profileUsername').textContent = `@${currentUser.username || 'vib3user'}`;
+            document.getElementById('profileBio').innerHTML = `
+                Welcome to my VIB3 profile! 🎵✨<br>
+                Creator | Dancer | Music Lover<br>
+                📧 Contact: ${currentUser.email || 'hello@vib3.com'}
+            `;
+            
+            // Load stats
+            document.getElementById('followingCount').textContent = Math.floor(Math.random() * 500);
+            document.getElementById('followersCount').textContent = Math.floor(Math.random() * 10000);
+            document.getElementById('likesCount').textContent = Math.floor(Math.random() * 50000);
+        }
+        
+        // Load initial tab content
+        switchProfileTab('videos');
+    }, 500);
+}
+
+function switchProfileTab(tabType) {
+    // Update tab styles
+    document.querySelectorAll('.profile-tab').forEach(tab => {
+        tab.classList.remove('active');
+        tab.style.color = 'var(--text-secondary)';
+        tab.style.borderBottom = '2px solid transparent';
+    });
+    
+    const activeTab = document.querySelector(`[data-tab="${tabType}"]`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+        activeTab.style.color = 'var(--text-primary)';
+        activeTab.style.borderBottom = '2px solid var(--accent-color)';
+    }
+    
+    currentProfileTab = tabType;
+    
+    // Load content based on tab
+    const profileContent = document.getElementById('profileContent');
+    if (profileContent) {
+        switch(tabType) {
+            case 'videos':
+                profileContent.innerHTML = createVideosGrid();
+                break;
+            case 'liked':
+                profileContent.innerHTML = createLikedVideosGrid();
+                break;
+            case 'following-feed':
+                profileContent.innerHTML = createFollowingFeed();
+                break;
+            case 'analytics':
+                profileContent.innerHTML = createAnalyticsView();
+                break;
+        }
+    }
+}
+
+function createVideosGrid() {
+    return `
+        <div class="videos-grid" style="
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            padding: 20px 0;
+        ">
+            ${Array(12).fill(0).map((_, i) => `
+                <div class="video-grid-item" style="
+                    aspect-ratio: 9/16;
+                    background: linear-gradient(135deg, 
+                        ${['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'][i % 6]} 0%, 
+                        ${['#764ba2', '#667eea', '#f5576c', '#f093fb', '#00f2fe', '#4facfe'][i % 6]} 100%);
+                    border-radius: 12px;
+                    position: relative;
+                    cursor: pointer;
+                    overflow: hidden;
+                    transition: transform 0.2s ease;
+                " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    <div style="
+                        position: absolute;
+                        bottom: 8px;
+                        left: 8px;
+                        color: white;
+                        font-size: 12px;
+                        font-weight: 600;
+                        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+                    ">${Math.floor(Math.random() * 1000)}K</div>
+                </div>
+            `).join('')}
+        </div>
+        ${Array(12).fill(0).length === 0 ? `
+            <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                <div style="font-size: 48px; margin-bottom: 16px;">📹</div>
+                <h3 style="margin-bottom: 8px;">No videos yet</h3>
+                <p>Upload your first video to get started!</p>
+                <button onclick="showUploadModal()" style="
+                    margin-top: 16px;
+                    padding: 12px 24px;
+                    background: var(--accent-color);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                ">Upload Video</button>
+            </div>
+        ` : ''}
+    `;
+}
+
+function createLikedVideosGrid() {
+    return `
+        <div class="liked-videos-grid" style="
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            padding: 20px 0;
+        ">
+            ${Array(8).fill(0).map((_, i) => `
+                <div class="video-grid-item" style="
+                    aspect-ratio: 9/16;
+                    background: linear-gradient(135deg, 
+                        ${['#ff6b6b', '#ffa726', '#66bb6a', '#42a5f5', '#ab47bc', '#ef5350'][i % 6]} 0%, 
+                        ${['#ffa726', '#ff6b6b', '#42a5f5', '#66bb6a', '#ef5350', '#ab47bc'][i % 6]} 100%);
+                    border-radius: 12px;
+                    position: relative;
+                    cursor: pointer;
+                    overflow: hidden;
+                    transition: transform 0.2s ease;
+                " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    <div style="
+                        position: absolute;
+                        top: 8px;
+                        right: 8px;
+                        color: white;
+                        font-size: 16px;
+                    ">❤️</div>
+                    <div style="
+                        position: absolute;
+                        bottom: 8px;
+                        left: 8px;
+                        color: white;
+                        font-size: 12px;
+                        font-weight: 600;
+                        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+                    ">${Math.floor(Math.random() * 500)}K</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function createFollowingFeed() {
+    return `
+        <div class="following-list" style="padding: 20px 0;">
+            ${Array(6).fill(0).map((_, i) => `
+                <div class="following-item" style="
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                    padding: 16px;
+                    border-radius: 12px;
+                    background: var(--bg-secondary);
+                    margin-bottom: 12px;
+                    transition: background 0.2s ease;
+                " onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='var(--bg-secondary)'">
+                    <div style="
+                        width: 48px;
+                        height: 48px;
+                        border-radius: 50%;
+                        background: linear-gradient(135deg, var(--accent-color), #ff006e);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 20px;
+                    ">👤</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                            @user${i + 1}_creator
+                        </div>
+                        <div style="font-size: 14px; color: var(--text-secondary);">
+                            ${Math.floor(Math.random() * 1000)}K followers
+                        </div>
+                    </div>
+                    <button onclick="toggleFollow('user${i + 1}_creator')" style="
+                        padding: 8px 16px;
+                        background: var(--bg-tertiary);
+                        color: var(--text-primary);
+                        border: 1px solid var(--border-primary);
+                        border-radius: 6px;
+                        font-weight: 600;
+                        cursor: pointer;
+                    ">Following</button>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function createAnalyticsView() {
+    return `
+        <div class="analytics-dashboard" style="padding: 20px 0;">
+            <div class="analytics-grid" style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
+            ">
+                <div class="analytics-card" style="
+                    background: var(--bg-secondary);
+                    padding: 24px;
+                    border-radius: 12px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">👁️</div>
+                    <div style="font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                        ${Math.floor(Math.random() * 100000).toLocaleString()}
+                    </div>
+                    <div style="color: var(--text-secondary);">Total Views</div>
+                </div>
+                
+                <div class="analytics-card" style="
+                    background: var(--bg-secondary);
+                    padding: 24px;
+                    border-radius: 12px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">❤️</div>
+                    <div style="font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                        ${Math.floor(Math.random() * 10000).toLocaleString()}
+                    </div>
+                    <div style="color: var(--text-secondary);">Total Likes</div>
+                </div>
+                
+                <div class="analytics-card" style="
+                    background: var(--bg-secondary);
+                    padding: 24px;
+                    border-radius: 12px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">💬</div>
+                    <div style="font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                        ${Math.floor(Math.random() * 5000).toLocaleString()}
+                    </div>
+                    <div style="color: var(--text-secondary);">Total Comments</div>
+                </div>
+                
+                <div class="analytics-card" style="
+                    background: var(--bg-secondary);
+                    padding: 24px;
+                    border-radius: 12px;
+                    text-align: center;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📤</div>
+                    <div style="font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                        ${Math.floor(Math.random() * 2000).toLocaleString()}
+                    </div>
+                    <div style="color: var(--text-secondary);">Total Shares</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                <div style="font-size: 32px; margin-bottom: 16px;">📊</div>
+                <h3 style="margin-bottom: 8px;">Detailed Analytics Coming Soon</h3>
+                <p>Advanced analytics dashboard with charts and insights will be available soon!</p>
+            </div>
+        </div>
+    `;
+}
+
+function editProfile() {
+    const modal = document.createElement('div');
+    modal.className = 'modal edit-profile-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="color: var(--text-primary); margin: 0;">Edit Profile</h2>
+                <button onclick="this.closest('.modal').remove()" style="
+                    background: none;
+                    border: none;
+                    color: var(--text-secondary);
+                    font-size: 24px;
+                    cursor: pointer;
+                ">×</button>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">
+                    Profile Picture
+                </label>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="
+                        width: 80px;
+                        height: 80px;
+                        border-radius: 50%;
+                        background: linear-gradient(135deg, var(--accent-color), #ff006e);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 32px;
+                    ">👤</div>
+                    <button onclick="changeProfilePicture()" style="
+                        padding: 8px 16px;
+                        background: var(--accent-color);
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                    ">Change Photo</button>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">
+                    Username
+                </label>
+                <input type="text" value="${currentUser?.username || 'vib3user'}" style="
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid var(--border-primary);
+                    border-radius: 8px;
+                    background: var(--bg-secondary);
+                    color: var(--text-primary);
+                    font-size: 16px;
+                ">
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">
+                    Bio
+                </label>
+                <textarea placeholder="Tell us about yourself..." style="
+                    width: 100%;
+                    height: 100px;
+                    padding: 12px;
+                    border: 1px solid var(--border-primary);
+                    border-radius: 8px;
+                    background: var(--bg-secondary);
+                    color: var(--text-primary);
+                    font-size: 16px;
+                    resize: vertical;
+                ">Welcome to my VIB3 profile! 🎵✨
+Creator | Dancer | Music Lover
+📧 Contact: hello@vib3.com</textarea>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button onclick="this.closest('.modal').remove()" style="
+                    padding: 12px 24px;
+                    background: var(--bg-tertiary);
+                    color: var(--text-primary);
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                ">Cancel</button>
+                <button onclick="saveProfile(); this.closest('.modal').remove();" style="
+                    padding: 12px 24px;
+                    background: var(--accent-color);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                ">Save Changes</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function saveProfile() {
+    showNotification('Profile updated successfully!', 'success');
+}
+
+function changeProfilePicture() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                // Update profile picture in UI
+                document.querySelectorAll('.profile-picture').forEach(pic => {
+                    pic.style.backgroundImage = `url(${e.target.result})`;
+                    pic.textContent = '';
+                });
+                showNotification('Profile picture updated!', 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+}
+
+function showProfileSettings() {
+    const modal = document.createElement('div');
+    modal.className = 'modal settings-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="color: var(--text-primary); margin: 0;">Settings & Privacy</h2>
+                <button onclick="this.closest('.modal').remove()" style="
+                    background: none;
+                    border: none;
+                    color: var(--text-secondary);
+                    font-size: 24px;
+                    cursor: pointer;
+                ">×</button>
+            </div>
+            
+            <div class="settings-list">
+                <button onclick="showNotification('Account settings', 'info')" style="
+                    width: 100%;
+                    text-align: left;
+                    padding: 16px;
+                    background: none;
+                    border: none;
+                    color: var(--text-primary);
+                    font-size: 16px;
+                    cursor: pointer;
+                    border-bottom: 1px solid var(--border-primary);
+                ">👤 Account Settings</button>
+                
+                <button onclick="showNotification('Privacy settings', 'info')" style="
+                    width: 100%;
+                    text-align: left;
+                    padding: 16px;
+                    background: none;
+                    border: none;
+                    color: var(--text-primary);
+                    font-size: 16px;
+                    cursor: pointer;
+                    border-bottom: 1px solid var(--border-primary);
+                ">🔒 Privacy & Safety</button>
+                
+                <button onclick="showNotification('Notifications', 'info')" style="
+                    width: 100%;
+                    text-align: left;
+                    padding: 16px;
+                    background: none;
+                    border: none;
+                    color: var(--text-primary);
+                    font-size: 16px;
+                    cursor: pointer;
+                    border-bottom: 1px solid var(--border-primary);
+                ">🔔 Notifications</button>
+                
+                <button onclick="showNotification('Content preferences', 'info')" style="
+                    width: 100%;
+                    text-align: left;
+                    padding: 16px;
+                    background: none;
+                    border: none;
+                    color: var(--text-primary);
+                    font-size: 16px;
+                    cursor: pointer;
+                    border-bottom: 1px solid var(--border-primary);
+                ">📺 Content Preferences</button>
+                
+                <button onclick="handleLogout(); this.closest('.modal').remove();" style="
+                    width: 100%;
+                    text-align: left;
+                    padding: 16px;
+                    background: none;
+                    border: none;
+                    color: #ff6b6b;
+                    font-size: 16px;
+                    cursor: pointer;
+                ">🚪 Log Out</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function showFollowing() {
+    showNotification('Following list feature coming soon!', 'info');
+}
+
+function showFollowers() {
+    showNotification('Followers list feature coming soon!', 'info');
+}
+
+function shareProfile() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Check out my VIB3 profile!',
+            text: 'Follow me on VIB3 for awesome videos!',
+            url: window.location.href
+        });
+    } else {
+        // Fallback to copy link
+        navigator.clipboard.writeText(window.location.href);
+        showNotification('Profile link copied to clipboard!', 'success');
+    }
+}
+
+function openCreatorTools() {
+    const modal = document.createElement('div');
+    modal.className = 'modal creator-tools-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="color: var(--text-primary); margin: 0;">Creator Tools</h2>
+                <button onclick="this.closest('.modal').remove()" style="
+                    background: none;
+                    border: none;
+                    color: var(--text-secondary);
+                    font-size: 24px;
+                    cursor: pointer;
+                ">×</button>
+            </div>
+            
+            <div class="creator-tools-grid" style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 16px;
+            ">
+                <button onclick="showNotification('Analytics dashboard', 'info')" style="
+                    padding: 24px;
+                    background: var(--bg-secondary);
+                    border: none;
+                    border-radius: 12px;
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    text-align: center;
+                    transition: background 0.2s ease;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📊</div>
+                    <div style="font-weight: 600;">Analytics</div>
+                </button>
+                
+                <button onclick="showNotification('Live streaming setup', 'info')" style="
+                    padding: 24px;
+                    background: var(--bg-secondary);
+                    border: none;
+                    border-radius: 12px;
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    text-align: center;
+                    transition: background 0.2s ease;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📺</div>
+                    <div style="font-weight: 600;">Live Stream</div>
+                </button>
+                
+                <button onclick="showNotification('Monetization options', 'info')" style="
+                    padding: 24px;
+                    background: var(--bg-secondary);
+                    border: none;
+                    border-radius: 12px;
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    text-align: center;
+                    transition: background 0.2s ease;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">💰</div>
+                    <div style="font-weight: 600;">Monetization</div>
+                </button>
+                
+                <button onclick="showNotification('Creator fund info', 'info')" style="
+                    padding: 24px;
+                    background: var(--bg-secondary);
+                    border: none;
+                    border-radius: 12px;
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    text-align: center;
+                    transition: background 0.2s ease;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">🏆</div>
+                    <div style="font-weight: 600;">Creator Fund</div>
+                </button>
+                
+                <button onclick="showNotification('Brand partnerships', 'info')" style="
+                    padding: 24px;
+                    background: var(--bg-secondary);
+                    border: none;
+                    border-radius: 12px;
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    text-align: center;
+                    transition: background 0.2s ease;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">🤝</div>
+                    <div style="font-weight: 600;">Partnerships</div>
+                </button>
+                
+                <button onclick="showNotification('Account verification', 'info')" style="
+                    padding: 24px;
+                    background: var(--bg-secondary);
+                    border: none;
+                    border-radius: 12px;
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    text-align: center;
+                    transition: background 0.2s ease;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">✅</div>
+                    <div style="font-weight: 600;">Verification</div>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
