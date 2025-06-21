@@ -560,9 +560,46 @@ function createAdvancedVideoCard(video) {
         }
     });
     
+    // Create pause indicator overlay
+    const pauseIndicator = document.createElement('div');
+    pauseIndicator.style.cssText = `
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 80px !important;
+        height: 80px !important;
+        background: rgba(0,0,0,0.7) !important;
+        border-radius: 50% !important;
+        display: none !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 40px !important;
+        color: white !important;
+        z-index: 15 !important;
+        pointer-events: none !important;
+    `;
+    pauseIndicator.textContent = '⏸️';
+    
+    // Add pause/play functionality when clicking video
+    video_elem.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent event bubbling
+        
+        if (video_elem.paused) {
+            video_elem.play();
+            pauseIndicator.style.display = 'none';
+            console.log('▶️ RESUMED VIDEO:', video_elem.src);
+        } else {
+            video_elem.pause();
+            pauseIndicator.style.display = 'flex';
+            console.log('⏸️ PAUSED VIDEO:', video_elem.src);
+        }
+    });
+    
     card.appendChild(video_elem);
     card.appendChild(overlay);
     card.appendChild(actions);
+    card.appendChild(pauseIndicator);
     
     console.log('✅ TikTok-style card created with scroll snap');
     return card;
