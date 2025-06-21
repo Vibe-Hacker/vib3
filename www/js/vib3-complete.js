@@ -363,6 +363,7 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
             });
             
             const data = await response.json();
+            console.log(`📦 Received data for page ${page}:`, data.videos?.length, 'videos');
             
             // Remove loading indicator
             if (append) {
@@ -387,13 +388,16 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                         feedElement.style.scrollBehavior = 'smooth';
                     }
                     
-                    validVideos.forEach(video => {
+                    console.log(`➕ Adding ${validVideos.length} videos to feed (append: ${append})`);
+                    validVideos.forEach((video, index) => {
                         const videoCard = createAdvancedVideoCard(video);
                         feedElement.appendChild(videoCard);
+                        console.log(`  ✅ Added video ${index + 1}: ${video.title || 'Untitled'}`);
                     });
                     
                     // For infinite scroll testing, always assume there are more videos
                     hasMoreVideos = true;
+                    console.log(`🔄 Feed now has ${feedElement.children.length} video elements total`);
                     
                     // Setup infinite scroll listener
                     if (!append) {
@@ -408,23 +412,32 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                         feedElement.innerHTML = createEmptyFeedMessage(feedType);
                         feedElement.style.overflow = 'hidden';
                         console.log('No valid videos after filtering, showing empty message for', feedType);
+                        hasMoreVideos = false;
+                    } else {
+                        console.log('No valid videos in append mode, but keeping hasMoreVideos true');
+                        hasMoreVideos = true; // Keep trying for infinite scroll
                     }
-                    hasMoreVideos = false;
                 }
             } else {
                 if (!append) {
                     feedElement.innerHTML = createEmptyFeedMessage(feedType);
                     feedElement.style.overflow = 'hidden';
                     console.log('No videos to display, showing empty message for', feedType);
+                    hasMoreVideos = false;
+                } else {
+                    console.log('No videos returned in append mode, but keeping hasMoreVideos true');
+                    hasMoreVideos = true; // Keep trying for infinite scroll
                 }
-                hasMoreVideos = false;
             }
         } catch (error) {
             console.error('Load feed error:', error);
             if (!append) {
                 feedElement.innerHTML = createErrorMessage(feedType);
+                hasMoreVideos = false;
+            } else {
+                console.log('Error in append mode, but keeping hasMoreVideos true');
+                hasMoreVideos = true; // Keep trying for infinite scroll
             }
-            hasMoreVideos = false;
         }
     }
     
