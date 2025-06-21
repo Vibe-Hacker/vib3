@@ -2681,7 +2681,9 @@ function createProfilePage() {
                         Edit Profile
                     </button>
                 </div>
-            </div>`
+            </div>`;
+        
+        /* Commented out broken HTML template
             <div style="max-width: 975px; margin: 0 auto; padding: 20px;">
                 <!-- Profile Header -->
                 <div class="profile-header" style="
@@ -2885,7 +2887,7 @@ function createProfilePage() {
                     </div>
                 </div>
             </div>
-        `;
+        */
         
         document.body.appendChild(profilePage);
         console.log('✅ Profile page added to DOM');
