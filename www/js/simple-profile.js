@@ -388,19 +388,38 @@ function goBackToFeed() {
 function openUploadFromProfile() {
     console.log('🎬 Opening upload from profile page...');
     
-    // First go back to main app
-    goBackToFeed();
+    // Hide the profile page first
+    const profilePage = document.getElementById('profilePageContainer');
+    if (profilePage) {
+        profilePage.style.display = 'none';
+        console.log('✅ Profile page hidden');
+    }
     
-    // Wait a moment for the transition, then open upload modal
+    // Show the main app
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'block';
+        console.log('✅ Main app shown');
+    }
+    
+    // Wait a moment, then open upload modal
     setTimeout(() => {
         if (window.showUploadModal && typeof window.showUploadModal === 'function') {
             console.log('✅ Opening upload modal from profile');
             window.showUploadModal();
+            
+            // Ensure modal is on top
+            const modal = document.getElementById('uploadModal');
+            if (modal) {
+                modal.style.zIndex = '10000';
+                modal.style.position = 'fixed';
+                console.log('✅ Upload modal z-index set');
+            }
         } else {
             console.error('❌ showUploadModal function not available');
             showNotification('Upload feature temporarily unavailable', 'error');
         }
-    }, 500);
+    }, 200);
 }
 
 // Profile interaction functions
