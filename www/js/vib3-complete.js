@@ -1410,10 +1410,12 @@ async function recordVideo() {
 }
 
 async function showCameraSelectionModal(mode) {
+    console.log(`📹 Showing camera selection for mode: ${mode}`);
     try {
         // Get available video devices
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        console.log(`📷 Found ${videoDevices.length} video devices:`, videoDevices);
         
         const cameraModal = document.createElement('div');
         cameraModal.className = 'modal camera-selection-modal';
@@ -1477,6 +1479,7 @@ function closeCameraSelection() {
 }
 
 async function selectCamera(deviceId, mode, cameraName) {
+    console.log(`📷 Selecting camera: ${cameraName} (${deviceId}) for mode: ${mode}`);
     closeCameraSelection();
     
     try {
@@ -1489,15 +1492,25 @@ async function selectCamera(deviceId, mode, cameraName) {
             audio: true 
         };
         
+        console.log('📡 Requesting camera access with constraints:', constraints);
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log('✅ Camera stream obtained:', stream);
+        console.log(`📡 Stream tracks: ${stream.getTracks().length}`);
+        stream.getTracks().forEach((track, i) => {
+            console.log(`  Track ${i}: ${track.kind} - ${track.label} - enabled: ${track.enabled}`);
+        });
+        
         showNotification(`Using ${cameraName}`, 'success');
         
         if (mode === 'video') {
+            console.log('🎬 Opening video editor with stream');
             openAdvancedVideoEditor(stream);
         } else if (mode === 'live') {
+            console.log('🔴 Opening live stream with camera');
             openLiveStreamWithCamera(stream);
         }
     } catch (error) {
+        console.error('❌ Camera access failed:', error);
         showNotification(`Failed to access ${cameraName}`, 'error');
     }
 }
@@ -1819,6 +1832,7 @@ function openLiveStreamSetup() {
 }
 
 function openLiveStreamWithCamera(stream) {
+    console.log('🔴 Opening live stream with camera stream:', stream);
     const liveModal = document.createElement('div');
     liveModal.className = 'modal live-stream-modal';
     liveModal.style.zIndex = '100000';
@@ -1946,10 +1960,30 @@ function openLiveStreamWithCamera(stream) {
     
     // Set up camera stream for live preview - wait for DOM to be ready
     setTimeout(() => {
+        console.log('🎥 Setting up live preview video element...');
         const livePreview = document.getElementById('livePreview');
+        console.log('📺 Live preview element:', livePreview);
+        console.log('📡 Stream for preview:', stream);
+        
         if (livePreview && stream) {
+            console.log('🔗 Connecting stream to video element...');
             livePreview.srcObject = stream;
-            livePreview.play().catch(console.error);
+            livePreview.muted = false; // Allow audio for live preview
+            
+            // Add load event listener
+            livePreview.addEventListener('loadedmetadata', () => {
+                console.log('📹 Video metadata loaded, playing...');
+                livePreview.play().then(() => {
+                    console.log('✅ Live preview playing successfully');
+                }).catch(error => {
+                    console.error('❌ Failed to play live preview:', error);
+                });
+            });
+            
+            livePreview.addEventListener('error', (error) => {
+                console.error('❌ Video element error:', error);
+            });
+            
             console.log('📹 Camera stream connected to live preview');
             
             // Store stream globally to prevent it from being garbage collected
@@ -1961,10 +1995,12 @@ function openLiveStreamWithCamera(stream) {
             });
         } else {
             console.error('❌ Live preview element not found or no stream');
+            console.log('Debug - livePreview:', livePreview);
+            console.log('Debug - stream:', stream);
         }
         
         initializeLiveStream(stream);
-    }, 100);
+    }, 500); // Increased timeout to ensure DOM is ready
 }
 
 function initializeLiveStream(stream) {
