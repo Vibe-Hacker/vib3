@@ -951,6 +951,121 @@ app.get('/api/user/videos', async (req, res) => {
     }
 });
 
+// Get user profile data
+app.get('/api/user/profile', async (req, res) => {
+    if (!db) {
+        return res.json({ 
+            user: {
+                _id: 'default',
+                username: 'user',
+                displayName: 'VIB3 User',
+                email: 'user@vib3.com',
+                bio: 'Welcome to VIB3!',
+                profilePicture: '👤'
+            }
+        });
+    }
+    
+    try {
+        const { userId } = req.query;
+        
+        // Get current user from auth token if no userId provided
+        let targetUserId = userId;
+        if (!targetUserId && req.headers.authorization) {
+            const token = req.headers.authorization.replace('Bearer ', '');
+            const session = sessions.get(token);
+            if (session) {
+                targetUserId = session.userId;
+            }
+        }
+        
+        if (!targetUserId) {
+            return res.status(400).json({ error: 'User ID required' });
+        }
+        
+        const user = await db.collection('users').findOne(
+            { _id: new ObjectId(targetUserId) },
+            { projection: { password: 0 } }
+        );
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({ user });
+        
+    } catch (error) {
+        console.error('Get user profile error:', error);
+        res.status(500).json({ error: 'Failed to get user profile' });
+    }
+});
+
+// Get user stats (followers, following, likes)
+app.get('/api/user/stats', async (req, res) => {
+    if (!db) {
+        return res.json({ 
+            stats: {
+                followers: 0,
+                following: 0,
+                likes: 0,
+                videoCount: 0
+            }
+        });
+    }
+    
+    try {
+        const { userId } = req.query;
+        
+        // Get current user from auth token if no userId provided
+        let targetUserId = userId;
+        if (!targetUserId && req.headers.authorization) {
+            const token = req.headers.authorization.replace('Bearer ', '');
+            const session = sessions.get(token);
+            if (session) {
+                targetUserId = session.userId;
+            }
+        }
+        
+        if (!targetUserId) {
+            return res.status(400).json({ error: 'User ID required' });
+        }
+        
+        // Get stats from different collections
+        const [followers, following, userVideos] = await Promise.all([
+            db.collection('follows').countDocuments({ followingId: targetUserId }),
+            db.collection('follows').countDocuments({ followerId: targetUserId }),
+            db.collection('videos').find({ userId: targetUserId, status: { $ne: 'deleted' } }).toArray()
+        ]);
+        
+        // Count total likes on user's videos
+        let totalLikes = 0;
+        for (const video of userVideos) {
+            const likes = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
+            totalLikes += likes;
+        }
+        
+        const stats = {
+            followers,
+            following,
+            likes: totalLikes,
+            videoCount: userVideos.length
+        };
+        
+        res.json({ stats });
+        
+    } catch (error) {
+        console.error('Get user stats error:', error);
+        res.json({ 
+            stats: {
+                followers: 0,
+                following: 0,
+                likes: 0,
+                videoCount: 0
+            }
+        });
+    }
+});
+
 // Get combined feed (videos and posts)
 app.get('/api/feed/combined', async (req, res) => {
     if (!db) {
