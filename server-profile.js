@@ -28,6 +28,9 @@ let db = null;
 let client = null;
 
 async function connectDB() {
+    console.log('🔌 Attempting MongoDB connection...');
+    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    
     if (process.env.DATABASE_URL) {
         try {
             client = new MongoClient(process.env.DATABASE_URL);
@@ -43,9 +46,13 @@ async function connectDB() {
             
             return true;
         } catch (error) {
-            console.error('MongoDB connection error:', error.message);
+            console.error('❌ MongoDB connection error:', error.message);
+            console.error('Connection string format should be: mongodb+srv://username:password@cluster.mongodb.net/');
             return false;
         }
+    } else {
+        console.error('❌ DATABASE_URL environment variable not set');
+        console.error('Please set DATABASE_URL in Railway environment variables');
     }
     return false;
 }
@@ -80,6 +87,10 @@ const authMiddleware = async (req, res, next) => {
 // === AUTH ENDPOINTS ===
 
 app.post('/api/auth/register', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected. Please check server logs.' });
+    }
+    
     try {
         const { email, password, username } = req.body;
         
@@ -130,6 +141,10 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 app.post('/api/auth/login', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected. Please check server logs.' });
+    }
+    
     try {
         const { email, password } = req.body;
         
