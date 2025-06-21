@@ -9,6 +9,11 @@ function createSimpleProfilePage() {
         existingProfile.remove();
     }
     
+    // Pause all videos when opening profile
+    document.querySelectorAll('video').forEach(video => {
+        video.pause();
+    });
+    
     // Get current user data
     const user = window.currentUser || { 
         email: 'user@example.com',

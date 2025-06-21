@@ -1031,6 +1031,13 @@ function loadMusicTracks(category) {
 
 // ================ LIVE STREAMING ================
 function showPage(page) {
+    // CRITICAL FIX: Remove profile page if it exists when navigating to any other page
+    const profilePage = document.getElementById('profilePage');
+    if (profilePage && page !== 'profile') {
+        profilePage.remove();
+        console.log('✅ Removed profile page for navigation');
+    }
+    
     // Handle feed tabs - don't show "coming soon" for these
     if (page === 'foryou' || page === 'following' || page === 'explore' || page === 'friends') {
         switchFeedTab(page);
@@ -1254,6 +1261,13 @@ function showNotification(message, type = 'info', duration = 3000) {
 
 function switchFeedTab(feedType) {
     console.log(`🔄 Switching to ${feedType} feed`);
+    
+    // CRITICAL FIX: Remove profile page when switching feeds
+    const profilePage = document.getElementById('profilePage');
+    if (profilePage) {
+        profilePage.remove();
+        console.log('✅ Removed profile page when switching to feed');
+    }
     
     // Pause all currently playing videos
     document.querySelectorAll('video').forEach(video => {
