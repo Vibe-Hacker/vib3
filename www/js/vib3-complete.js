@@ -1975,6 +1975,12 @@ async function selectCamera(deviceId, mode, cameraName) {
 }
 
 function openAdvancedVideoEditor(stream) {
+    console.log('🚀 Opening Advanced Video Editor with compact layout');
+    
+    // Force close any existing modals first
+    document.querySelectorAll('.video-editor-modal, .editor-tool-modal').forEach(modal => {
+        modal.remove();
+    });
     const editorModal = document.createElement('div');
     editorModal.className = 'modal video-editor-modal';
     editorModal.style.zIndex = '100000'; // Higher than upload modal (99999)
