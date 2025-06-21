@@ -659,7 +659,7 @@ app.get('/api/videos', async (req, res) => {
                 _id: `${baseVideo._id}_gen_${actualSkip + i}`,
                 title: feedTitle,
                 description: feedDescription,
-                username: baseVideo.user?.username || 'user',
+                username: baseVideo.user?.username || baseVideo.username || 'anonymous',
                 likeCount: Math.floor(Math.random() * 1000 * engagementMultiplier) + 50,
                 commentCount: Math.floor(Math.random() * 100 * engagementMultiplier) + 5,
                 shareCount: Math.floor(Math.random() * 50 * engagementMultiplier) + 2,
@@ -687,7 +687,7 @@ app.get('/api/videos', async (req, res) => {
         for (const video of paginatedVideos) {
             // Skip user lookup for duplicated videos
             if (video.duplicated) {
-                video.username = video.user?.username || 'user';
+                video.username = video.user?.username || video.username || 'anonymous';
                 video.likeCount = Math.floor(Math.random() * 1000);
                 video.commentCount = Math.floor(Math.random() * 100);
                 continue;
@@ -697,7 +697,20 @@ app.get('/api/videos', async (req, res) => {
                     { _id: new ObjectId(video.userId) },
                     { projection: { password: 0 } }
                 );
-                video.user = user;
+                
+                if (user) {
+                    video.user = user;
+                    video.username = user.username || user.displayName || 'anonymous';
+                } else {
+                    // User not found in database
+                    video.user = { 
+                        username: 'deleted_user', 
+                        displayName: 'Deleted User', 
+                        _id: video.userId,
+                        profilePicture: '👤'
+                    };
+                    video.username = 'deleted_user';
+                }
                 
                 // Get like count
                 video.likeCount = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
@@ -707,7 +720,13 @@ app.get('/api/videos', async (req, res) => {
             } catch (userError) {
                 console.error('Error getting user info for video:', video._id, userError);
                 // Set default user info if error
-                video.user = { username: 'unknown', displayName: 'Unknown User', _id: 'unknown' };
+                video.user = { 
+                    username: 'anonymous', 
+                    displayName: 'Anonymous User', 
+                    _id: 'unknown',
+                    profilePicture: '👤'
+                };
+                video.username = 'anonymous';
                 video.likeCount = 0;
                 video.commentCount = 0;
             }
@@ -865,14 +884,33 @@ app.get('/api/posts', async (req, res) => {
                     { _id: new ObjectId(post.userId) },
                     { projection: { password: 0 } }
                 );
-                post.user = user;
+                
+                if (user) {
+                    post.user = user;
+                    post.username = user.username || user.displayName || 'anonymous';
+                } else {
+                    // User not found in database
+                    post.user = { 
+                        username: 'deleted_user', 
+                        displayName: 'Deleted User', 
+                        _id: post.userId,
+                        profilePicture: '👤'
+                    };
+                    post.username = 'deleted_user';
+                }
                 
                 // Get engagement counts
                 post.likeCount = await db.collection('likes').countDocuments({ postId: post._id.toString() });
                 post.commentCount = await db.collection('comments').countDocuments({ postId: post._id.toString() });
             } catch (userError) {
                 console.error('Error getting user info for post:', post._id, userError);
-                post.user = { username: 'unknown', displayName: 'Unknown User', _id: 'unknown' };
+                post.user = { 
+                    username: 'anonymous', 
+                    displayName: 'Anonymous User', 
+                    _id: 'unknown',
+                    profilePicture: '👤'
+                };
+                post.username = 'anonymous';
                 post.likeCount = 0;
                 post.commentCount = 0;
             }
@@ -928,7 +966,20 @@ app.get('/api/user/videos', async (req, res) => {
                     { _id: new ObjectId(video.userId) },
                     { projection: { password: 0 } }
                 );
-                video.user = user;
+                
+                if (user) {
+                    video.user = user;
+                    video.username = user.username || user.displayName || 'anonymous';
+                } else {
+                    // User not found in database
+                    video.user = { 
+                        username: 'deleted_user', 
+                        displayName: 'Deleted User', 
+                        _id: video.userId,
+                        profilePicture: '👤'
+                    };
+                    video.username = 'deleted_user';
+                }
                 
                 // Get engagement counts
                 video.likeCount = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
@@ -936,7 +987,13 @@ app.get('/api/user/videos', async (req, res) => {
                 video.views = video.views || 0;
             } catch (userError) {
                 console.error('Error getting user info for video:', video._id, userError);
-                video.user = { username: 'unknown', displayName: 'Unknown User', _id: 'unknown' };
+                video.user = { 
+                    username: 'anonymous', 
+                    displayName: 'Anonymous User', 
+                    _id: 'unknown',
+                    profilePicture: '👤'
+                };
+                video.username = 'anonymous';
                 video.likeCount = 0;
                 video.commentCount = 0;
                 video.views = 0;
@@ -1018,7 +1075,7 @@ app.get('/api/user/profile', async (req, res) => {
         return res.json({ 
             user: {
                 _id: 'default',
-                username: 'user',
+                username: 'anonymous',
                 displayName: 'VIB3 User',
                 email: 'user@vib3.com',
                 bio: 'Welcome to VIB3!',
@@ -1296,7 +1353,20 @@ app.get('/api/feed/combined', async (req, res) => {
                     { _id: new ObjectId(item.userId) },
                     { projection: { password: 0 } }
                 );
-                item.user = user;
+                
+                if (user) {
+                    item.user = user;
+                    item.username = user.username || user.displayName || 'anonymous';
+                } else {
+                    // User not found in database
+                    item.user = { 
+                        username: 'deleted_user', 
+                        displayName: 'Deleted User', 
+                        _id: item.userId,
+                        profilePicture: '👤'
+                    };
+                    item.username = 'deleted_user';
+                }
                 
                 // Get engagement counts
                 const collection = item.contentType === 'video' ? 'videos' : 'posts';
@@ -1305,7 +1375,13 @@ app.get('/api/feed/combined', async (req, res) => {
                 item.commentCount = await db.collection('comments').countDocuments({ [idField]: item._id.toString() });
             } catch (userError) {
                 console.error('Error getting user info for feed item:', item._id, userError);
-                item.user = { username: 'unknown', displayName: 'Unknown User', _id: 'unknown' };
+                item.user = { 
+                    username: 'anonymous', 
+                    displayName: 'Anonymous User', 
+                    _id: 'unknown',
+                    profilePicture: '👤'
+                };
+                item.username = 'anonymous';
                 item.likeCount = 0;
                 item.commentCount = 0;
             }
@@ -1716,9 +1792,28 @@ app.get('/api/search/content', async (req, res) => {
                     { _id: new ObjectId(item.userId) },
                     { projection: { password: 0 } }
                 );
-                item.user = user;
+                
+                if (user) {
+                    item.user = user;
+                    item.username = user.username || user.displayName || 'anonymous';
+                } else {
+                    // User not found in database
+                    item.user = { 
+                        username: 'deleted_user', 
+                        displayName: 'Deleted User', 
+                        _id: item.userId,
+                        profilePicture: '👤'
+                    };
+                    item.username = 'deleted_user';
+                }
             } catch (userError) {
-                item.user = { username: 'unknown', displayName: 'Unknown User' };
+                item.user = { 
+                    username: 'anonymous', 
+                    displayName: 'Anonymous User',
+                    _id: 'unknown',
+                    profilePicture: '👤'
+                };
+                item.username = 'anonymous';
             }
         }
         
