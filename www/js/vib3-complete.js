@@ -1176,6 +1176,7 @@ async function startSimpleVideoRecording() {
                     border-radius: 12px;
                     background: #000;
                     margin: 0 0 15px 0;
+                    transform: scaleX(-1);
                 "></video>
                 
                 <div style="margin: 0;">
@@ -1255,9 +1256,19 @@ function startSimpleRecording() {
         }
         
         simpleRecordedChunks = [];
-        simpleMediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'video/webm;codecs=vp9'
-        });
+        // Try different MediaRecorder options for better browser compatibility
+        let options = { mimeType: 'video/webm;codecs=vp9,opus' };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: 'video/webm;codecs=vp8,opus' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: 'video/webm' };
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options = {}; // Use default
+                }
+            }
+        }
+        
+        simpleMediaRecorder = new MediaRecorder(stream, options);
         
         simpleMediaRecorder.ondataavailable = (event) => {
             if (event.data.size > 0) {
@@ -4947,8 +4958,36 @@ function closeVideoEditor() {
 }
 
 function saveEditedVideo() {
-    showNotification('Video saved successfully!', 'success');
+    console.log('💾 Saving edited video');
+    
+    // Close video editor first
     closeVideoEditor();
+    
+    // Get the recorded video file
+    const videoFile = window.selectedVideoFile || window.currentVideoFile;
+    
+    if (videoFile) {
+        console.log('📤 Proceeding to upload with video file:', videoFile.name);
+        
+        // Show upload modal with the video ready for publishing
+        showUploadModal();
+        
+        // Go directly to step 3 (publish step) with the video loaded
+        goToStep(3);
+        
+        // Set up video preview for publishing
+        const preview = document.getElementById('videoPreview');
+        if (preview) {
+            const videoUrl = URL.createObjectURL(videoFile);
+            preview.src = videoUrl;
+            preview.style.display = 'block';
+        }
+        
+        showNotification('Ready to publish your video!', 'success');
+    } else {
+        console.error('❌ No video file found to save');
+        showNotification('No video to save', 'error');
+    }
 }
 
 // ================ PROFILE AND UPLOAD FUNCTIONS ================
