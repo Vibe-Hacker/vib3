@@ -358,26 +358,26 @@ app.get('/api/videos', async (req, res) => {
         // If no videos but page > 1, we need real data to generate from
         if (videos.length === 0 && page > 1) {
             console.log('No videos in database but generating for page', page);
-            // Create real video structures for generation using working DigitalOcean URLs
+            // Create real video structures for generation using current working DigitalOcean URLs
             videos = [
                 {
                     _id: 'gen_video_1',
-                    title: 'VIB3 Video 1',
-                    videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/1734658772629-b47c123e4c6b8a789c3e2d1f5a6b9c8d.mp4',
+                    title: 'Untitled Video',
+                    videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/c375c631-24b9-428c-aa84-3ce7ed64aa10.mp4',
                     user: { username: 'vib3user1' },
                     createdAt: new Date()
                 },
                 {
                     _id: 'gen_video_2', 
-                    title: 'VIB3 Video 2',
-                    videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/1734658808237-e8f2a1b4c7d9e6f3a2b5c8d1e4f7a0b3.mp4',
+                    title: 'Untitled Video',
+                    videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/aa32b9a1-1c55-4748-b0dd-e40058ffdf3f.mp4',
                     user: { username: 'vib3user2' },
                     createdAt: new Date()
                 },
                 {
                     _id: 'gen_video_3',
-                    title: 'VIB3 Video 3', 
-                    videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/1734658835146-f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6.mp4',
+                    title: 'Untitled Video', 
+                    videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/5eaa3855-51d1-4d65-84bd-b667460ab0f3.mp4',
                     user: { username: 'vib3user3' },
                     createdAt: new Date()
                 }
