@@ -801,7 +801,13 @@ function showUploadModal() {
 }
 
 function closeUploadModal() {
-    document.getElementById('uploadModal').classList.remove('show');
+    console.log('🔒 Closing upload modal...');
+    const modal = document.getElementById('uploadModal');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';  // Ensure modal is hidden
+        console.log('✅ Upload modal closed and hidden');
+    }
     resetUploadState();
 }
 
@@ -809,6 +815,33 @@ function resetUploadState() {
     uploadType = null;
     selectedFiles = [];
     currentEditingFile = null;
+    
+    // Clear all form inputs
+    const titleInput = document.getElementById('contentTitle');
+    const descInput = document.getElementById('contentDescription');
+    const hashtagInput = document.getElementById('hashtagInput');
+    const videoInput = document.getElementById('videoInput');
+    const photoInput = document.getElementById('photoInput');
+    
+    if (titleInput) titleInput.value = '';
+    if (descInput) descInput.value = '';
+    if (hashtagInput) hashtagInput.value = '';
+    if (videoInput) videoInput.value = '';
+    if (photoInput) photoInput.value = '';
+    
+    // Clear preview container
+    const previewContainer = document.getElementById('previewContainer');
+    if (previewContainer) {
+        previewContainer.innerHTML = `
+            <div class="drop-zone" onclick="triggerFileSelect()">
+                <div class="drop-icon">📎</div>
+                <div>Click to select files or drag and drop</div>
+                <small id="formatHint">Supported: MP4, MOV, AVI</small>
+            </div>
+        `;
+    }
+    
+    console.log('🔄 Upload form reset');
     goToStep(1);
 }
 
@@ -1103,10 +1136,8 @@ async function publishContent() {
     const scheduleType = document.querySelector('input[name="schedule"]:checked').value;
     const scheduleTime = document.getElementById('scheduleTime').value;
     
-    if (!title) {
-        showNotification('Please add a title for your content', 'error');
-        return;
-    }
+    // Title is optional now
+    const finalTitle = title || 'Untitled Video';
     
     if (selectedFiles.length === 0) {
         showNotification('No files selected for upload', 'error');
