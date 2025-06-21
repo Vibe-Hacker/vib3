@@ -340,9 +340,9 @@ function createAdvancedVideoCard(video) {
     
     const card = document.createElement('div');
     
-    // TikTok-style card with scroll snap and spacing
+    // TikTok-style card with scroll snap and proper spacing
     card.style.cssText = `
-        height: calc(100vh - 40px) !important;
+        height: calc(100vh - 60px) !important;
         width: 100% !important;
         max-width: 500px !important;
         display: block !important;
@@ -350,7 +350,7 @@ function createAdvancedVideoCard(video) {
         opacity: 1 !important;
         position: relative !important;
         background: #000 !important;
-        margin: 20px auto !important;
+        margin: 0 auto 40px auto !important;
         padding: 0 !important;
         overflow: hidden !important;
         scroll-snap-align: start !important;
