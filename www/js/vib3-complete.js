@@ -1098,6 +1098,12 @@ function recordNewVideo() {
     console.log('🎬 User chose to record new video');
     closeVideoSourceModal();
     
+    // Hide the upload modal completely to prevent flickering
+    const uploadModal = document.getElementById('uploadModal');
+    if (uploadModal) {
+        uploadModal.style.display = 'none';
+    }
+    
     // Start video recording flow
     recordVideo();
 }
@@ -1569,7 +1575,6 @@ function closeCameraSelection() {
 
 async function selectCamera(deviceId, mode, cameraName) {
     console.log(`📷 Selecting camera: ${cameraName} (${deviceId}) for mode: ${mode}`);
-    closeCameraSelection();
     
     try {
         const constraints = {
@@ -1589,6 +1594,8 @@ async function selectCamera(deviceId, mode, cameraName) {
             console.log(`  Track ${i}: ${track.kind} - ${track.label} - enabled: ${track.enabled}`);
         });
         
+        // Close camera selection modal only after successful stream
+        closeCameraSelection();
         showNotification(`Using ${cameraName}`, 'success');
         
         if (mode === 'video') {
@@ -1601,6 +1608,12 @@ async function selectCamera(deviceId, mode, cameraName) {
     } catch (error) {
         console.error('❌ Camera access failed:', error);
         showNotification(`Failed to access ${cameraName}`, 'error');
+        
+        // Show upload modal again on failure
+        const uploadModal = document.getElementById('uploadModal');
+        if (uploadModal) {
+            uploadModal.style.display = 'flex';
+        }
     }
 }
 
@@ -1771,28 +1784,11 @@ function initializeVideoEditor(stream) {
             return;
         }
         
-        // Create or find the video preview element
-        let videoPreview = editorModal.querySelector('#videoEditorPreview');
+        // Find the video preview element (created in openAdvancedVideoEditor)
+        let videoPreview = editorModal.querySelector('#editorPreview');
         if (!videoPreview) {
-            videoPreview = document.createElement('video');
-            videoPreview.id = 'videoEditorPreview';
-            videoPreview.style.cssText = `
-                width: 100%;
-                max-width: 400px;
-                height: 600px;
-                object-fit: cover;
-                border-radius: 12px;
-                background: #000;
-            `;
-            videoPreview.autoplay = true;
-            videoPreview.muted = true;
-            videoPreview.playsInline = true;
-            
-            // Add to modal content
-            const modalContent = editorModal.querySelector('.modal-content');
-            if (modalContent) {
-                modalContent.insertBefore(videoPreview, modalContent.firstChild);
-            }
+            console.error('❌ Video preview element not found in editor modal');
+            return;
         }
         
         // Set the stream
@@ -1800,29 +1796,10 @@ function initializeVideoEditor(stream) {
             console.log('📹 Setting camera stream to video element');
             videoPreview.srcObject = stream;
             
-            // Add recording controls
-            if (!editorModal.querySelector('.recording-controls')) {
-                const controlsHTML = `
-                    <div class="recording-controls" style="text-align: center; margin: 20px 0;">
-                        <button id="startRecordingBtn" onclick="startVideoRecording()" style="background: #fe2c55; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 18px; cursor: pointer; margin: 0 10px;">
-                            🔴 Start Recording
-                        </button>
-                        <button id="stopRecordingBtn" onclick="stopVideoRecording()" style="background: #666; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 18px; cursor: pointer; margin: 0 10px; display: none;">
-                            ⏹️ Stop Recording
-                        </button>
-                        <button onclick="closeVideoEditor()" style="background: #333; color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 18px; cursor: pointer; margin: 0 10px;">
-                            ❌ Cancel
-                        </button>
-                    </div>
-                `;
-                
-                const modalContent = editorModal.querySelector('.modal-content');
-                if (modalContent) {
-                    modalContent.insertAdjacentHTML('beforeend', controlsHTML);
-                }
-            }
+            // Store the stream globally for recording
+            window.currentCameraStream = stream;
             
-            console.log('✅ Video editor initialized successfully');
+            console.log('✅ Video editor initialized successfully with stream');
         } else {
             console.error('❌ No camera stream provided to video editor');
         }
@@ -1835,13 +1812,26 @@ function initializeVideoEditor(stream) {
 // Video recording functions
 let mediaRecorder = null;
 let recordedChunks = [];
+let recordingTimer = null;
+let recordingStartTime = null;
+
+// Main recording toggle function (called by the record button)
+function toggleRecording() {
+    console.log('🎬 Toggle recording called');
+    
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        stopVideoRecording();
+    } else {
+        startVideoRecording();
+    }
+}
 
 function startVideoRecording() {
     console.log('🎬 Starting video recording');
     
     try {
-        const videoPreview = document.getElementById('videoEditorPreview');
-        const stream = videoPreview.srcObject;
+        // Use the stored stream instead of trying to get it from video element
+        const stream = window.currentCameraStream;
         
         if (stream) {
             recordedChunks = [];
@@ -1866,14 +1856,52 @@ function startVideoRecording() {
             
             mediaRecorder.start();
             
+            // Start timer
+            recordingStartTime = Date.now();
+            startRecordingTimer();
+            
             // Update UI
-            document.getElementById('startRecordingBtn').style.display = 'none';
-            document.getElementById('stopRecordingBtn').style.display = 'inline-block';
+            const recordButton = document.getElementById('recordButton');
+            if (recordButton) {
+                recordButton.textContent = '⏹️';
+                recordButton.style.background = '#666';
+            }
             
             console.log('✅ Recording started');
         }
     } catch (error) {
         console.error('❌ Failed to start recording:', error);
+    }
+}
+
+function startRecordingTimer() {
+    recordingTimer = setInterval(() => {
+        if (recordingStartTime) {
+            const elapsed = Date.now() - recordingStartTime;
+            const seconds = Math.floor(elapsed / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const displaySeconds = seconds % 60;
+            
+            const timeDisplay = document.querySelector('.timer-display');
+            if (timeDisplay) {
+                timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${displaySeconds.toString().padStart(2, '0')}`;
+                timeDisplay.style.color = '#fe2c55';
+            }
+        }
+    }, 1000);
+}
+
+function stopRecordingTimer() {
+    if (recordingTimer) {
+        clearInterval(recordingTimer);
+        recordingTimer = null;
+        recordingStartTime = null;
+        
+        const timeDisplay = document.querySelector('.timer-display');
+        if (timeDisplay) {
+            timeDisplay.textContent = '00:00';
+            timeDisplay.style.color = 'white';
+        }
     }
 }
 
@@ -1883,9 +1911,15 @@ function stopVideoRecording() {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
         
+        // Stop timer
+        stopRecordingTimer();
+        
         // Update UI
-        document.getElementById('startRecordingBtn').style.display = 'inline-block';
-        document.getElementById('stopRecordingBtn').style.display = 'none';
+        const recordButton = document.getElementById('recordButton');
+        if (recordButton) {
+            recordButton.textContent = '🔴';
+            recordButton.style.background = '#fe2c55';
+        }
     }
 }
 
@@ -1911,18 +1945,26 @@ function closeVideoEditor() {
             mediaRecorder.stop();
         }
         
+        // Stop timer
+        stopRecordingTimer();
+        
         // Stop camera stream
-        const videoPreview = document.getElementById('videoEditorPreview');
-        if (videoPreview && videoPreview.srcObject) {
-            const tracks = videoPreview.srcObject.getTracks();
+        if (window.currentCameraStream) {
+            const tracks = window.currentCameraStream.getTracks();
             tracks.forEach(track => track.stop());
-            videoPreview.srcObject = null;
+            window.currentCameraStream = null;
         }
         
         // Hide editor modal
         const editorModal = document.querySelector('.video-editor-modal');
         if (editorModal) {
             editorModal.remove();
+        }
+        
+        // Show upload modal again
+        const uploadModal = document.getElementById('uploadModal');
+        if (uploadModal) {
+            uploadModal.style.display = 'flex';
         }
         
         console.log('✅ Video editor closed');
