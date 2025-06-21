@@ -1147,21 +1147,77 @@ async function publishContent() {
     goToStep(5);
     
     try {
-        // Simulate upload progress
-        updatePublishProgress('Preparing files...', 0);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        updatePublishProgress('Preparing upload...', 0);
         
-        updatePublishProgress('Uploading content...', 25);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Get auth token
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            showNotification('Please log in to upload content', 'error');
+            goToStep(4);
+            return;
+        }
         
-        updatePublishProgress('Processing media...', 50);
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        updatePublishProgress('Uploading content...', 20);
         
-        updatePublishProgress('Adding metadata...', 75);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Create FormData for file upload
+        const formData = new FormData();
         
-        updatePublishProgress('Publishing...', 90);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (uploadType === 'video' && selectedFiles.length > 0) {
+            // Upload video file
+            formData.append('video', selectedFiles[0]);
+            formData.append('title', finalTitle);
+            formData.append('description', description);
+            
+            const response = await fetch(`${window.API_BASE_URL}/api/upload/video`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+            
+            updatePublishProgress('Processing video...', 60);
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Upload failed');
+            }
+            
+            const result = await response.json();
+            console.log('✅ Video uploaded:', result);
+            
+            updatePublishProgress('Finalizing...', 90);
+            
+        } else if (uploadType === 'photos' && selectedFiles.length > 0) {
+            // Handle photo slideshow upload
+            formData.append('title', finalTitle);
+            formData.append('description', description);
+            
+            // Add all photos
+            selectedFiles.forEach((file, index) => {
+                formData.append(`photos`, file);
+            });
+            
+            const response = await fetch(`${window.API_BASE_URL}/api/upload/slideshow`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+            
+            updatePublishProgress('Creating slideshow...', 60);
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Upload failed');
+            }
+            
+            const result = await response.json();
+            console.log('✅ Slideshow created:', result);
+            
+            updatePublishProgress('Finalizing...', 90);
+        }
         
         updatePublishProgress('Complete!', 100);
         
@@ -1171,11 +1227,15 @@ async function publishContent() {
             closeUploadModal();
             // Refresh feed to show new content
             loadVideoFeed('foryou', true);
+            // Also refresh user's profile if they're viewing it
+            if (document.getElementById('profilePage')?.style.display === 'block') {
+                loadUserVideos();
+            }
         }, 1000);
         
     } catch (error) {
-        console.error('Publish error:', error);
-        showNotification('Failed to publish content. Please try again.', 'error');
+        console.error('❌ Upload error:', error);
+        showNotification(error.message || 'Failed to upload content. Please try again.', 'error');
         goToStep(4);
     }
 }
