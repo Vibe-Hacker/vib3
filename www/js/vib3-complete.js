@@ -790,21 +790,69 @@ function showUploadModal() {
     console.log('🎬 Opening upload modal...');
     const modal = document.getElementById('uploadModal');
     if (!modal) {
-        console.error('❌ Upload modal not found!');
+        console.error('❌ Upload modal not found in DOM!');
+        // Debug: List all modal elements
+        const allModals = document.querySelectorAll('[id*="modal"], [class*="modal"]');
+        console.log('📋 Found modal-related elements:', allModals);
         return;
     }
     
-    console.log('✅ Upload modal found, showing...');
-    modal.classList.add('show');
-    modal.style.display = 'flex';  // Ensure modal is visible
+    console.log('✅ Upload modal found, current display:', window.getComputedStyle(modal).display);
+    console.log('📍 Current modal classes:', modal.className);
+    
+    // Remove any existing classes and add active
+    modal.classList.remove('active', 'show');
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '10001';  // Force high z-index
+    
+    console.log('✅ Modal classes after update:', modal.className);
+    console.log('✅ Modal display after update:', window.getComputedStyle(modal).display);
+    console.log('✅ Modal z-index:', window.getComputedStyle(modal).zIndex);
+    
     goToStep(1);
+}
+
+// Open upload modal from profile page
+function openUploadFromProfile() {
+    console.log('🎬 Opening upload from profile page...');
+    
+    // Stop all videos first
+    console.log('🛑 Stopping all background videos...');
+    if (window.forceStopAllVideos && typeof window.forceStopAllVideos === 'function') {
+        window.forceStopAllVideos();
+    } else {
+        // Fallback method
+        document.querySelectorAll('video').forEach(video => {
+            video.pause();
+            video.currentTime = 0;
+            video.muted = true;
+        });
+    }
+    
+    // Hide profile page if it exists
+    const profilePage = document.getElementById('profilePage');
+    if (profilePage) {
+        profilePage.remove();
+        console.log('✅ Profile page removed');
+    }
+    
+    // Show main app
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'block';
+        console.log('✅ Main app shown');
+    }
+    
+    // Open upload modal
+    showUploadModal();
 }
 
 function closeUploadModal() {
     console.log('🔒 Closing upload modal...');
     const modal = document.getElementById('uploadModal');
     if (modal) {
-        modal.classList.remove('show');
+        modal.classList.remove('active');  // Changed from 'show' to 'active' to match CSS
         modal.style.display = 'none';  // Ensure modal is hidden
         console.log('✅ Upload modal closed and hidden');
     }

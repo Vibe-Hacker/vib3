@@ -258,6 +258,7 @@
                         
                         <!-- Action Buttons -->
                         <div style="display: flex; gap: 12px;">
+                            <button onclick="openUploadFromProfile()" style="padding: 10px 20px; background: var(--accent-primary); color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer;">📹 Upload</button>
                             <button onclick="showPage('settings')" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer;">Settings</button>
                             <button onclick="handleLogout()" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer;">Sign out</button>
                         </div>
@@ -289,6 +290,8 @@
                     <h3 style="font-size: 24px; margin-bottom: 8px; color: var(--text-primary);">Upload your first video</h3>
                     <p style="font-size: 16px; margin-bottom: 24px;">Your videos will appear here</p>
                     <button onclick="showUploadModal()" style="padding: 12px 24px; background: var(--accent-primary); color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer;">Upload video</button>
+                    <!-- Temporary debug button -->
+                    <button onclick="console.log('Debug: Testing modal...'); const modal = document.getElementById('uploadModal'); if(modal) { modal.style.display='flex'; modal.style.zIndex='99999'; modal.classList.add('active'); console.log('Debug: Modal should be visible now'); } else { console.log('Debug: Modal not found!'); }" style="padding: 8px 16px; background: red; color: white; border: none; border-radius: 4px; font-size: 12px; margin-left: 10px;">DEBUG TEST</button>
                 </div>
             </div>
         </div>
