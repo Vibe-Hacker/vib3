@@ -88,10 +88,21 @@ async function createIndexes() {
         // Video indexes
         await db.collection('videos').createIndex({ userId: 1 });
         await db.collection('videos').createIndex({ createdAt: -1 });
+        await db.collection('videos').createIndex({ hashtags: 1 });
+        await db.collection('videos').createIndex({ status: 1 });
+        
+        // Posts indexes (for photos and slideshows)
+        await db.collection('posts').createIndex({ userId: 1 });
+        await db.collection('posts').createIndex({ createdAt: -1 });
+        await db.collection('posts').createIndex({ type: 1 });
+        await db.collection('posts').createIndex({ hashtags: 1 });
+        await db.collection('posts').createIndex({ status: 1 });
         
         // Social indexes
         await db.collection('likes').createIndex({ videoId: 1, userId: 1 }, { unique: true });
+        await db.collection('likes').createIndex({ postId: 1, userId: 1 }, { unique: true });
         await db.collection('comments').createIndex({ videoId: 1, createdAt: -1 });
+        await db.collection('comments').createIndex({ postId: 1, createdAt: -1 });
         await db.collection('follows').createIndex({ followerId: 1, followingId: 1 }, { unique: true });
         
         console.log('✅ Database indexes created');
@@ -780,13 +791,23 @@ app.post('/api/videos', requireAuth, async (req, res) => {
         return res.status(503).json({ error: 'Database not connected' });
     }
     
-    const { title, description, videoUrl, thumbnailUrl, duration } = req.body;
+    const { title, description, videoUrl, thumbnailUrl, duration, hashtags, privacy = 'public' } = req.body;
     
     if (!title || !videoUrl) {
         return res.status(400).json({ error: 'Title and video URL required' });
     }
     
     try {
+        // Parse hashtags
+        let parsedHashtags = [];
+        if (hashtags) {
+            if (typeof hashtags === 'string') {
+                parsedHashtags = hashtags.split(',').map(tag => tag.trim()).filter(tag => tag);
+            } else if (Array.isArray(hashtags)) {
+                parsedHashtags = hashtags;
+            }
+        }
+
         const video = {
             userId: req.user.userId,
             title,
@@ -794,7 +815,10 @@ app.post('/api/videos', requireAuth, async (req, res) => {
             videoUrl,
             thumbnailUrl: thumbnailUrl || '',
             duration: duration || 0,
+            hashtags: parsedHashtags,
+            privacy,
             views: 0,
+            status: 'published',
             createdAt: new Date(),
             updatedAt: new Date()
         };
@@ -810,6 +834,221 @@ app.post('/api/videos', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Upload video error:', error);
         res.status(500).json({ error: 'Failed to upload video' });
+    }
+});
+
+// Get posts (photos, slideshows, mixed content)
+app.get('/api/posts', async (req, res) => {
+    if (!db) {
+        return res.json({ posts: [] });
+    }
+    
+    try {
+        const { limit = 10, skip = 0, page = 1, userId, type } = req.query;
+        const actualSkip = page > 1 ? (parseInt(page) - 1) * parseInt(limit) : parseInt(skip);
+        
+        let query = { status: 'published' };
+        if (userId) query.userId = userId;
+        if (type) query.type = type;
+        
+        const posts = await db.collection('posts')
+            .find(query)
+            .sort({ createdAt: -1 })
+            .skip(actualSkip)
+            .limit(parseInt(limit))
+            .toArray();
+        
+        // Get user info for each post
+        for (const post of posts) {
+            try {
+                const user = await db.collection('users').findOne(
+                    { _id: new ObjectId(post.userId) },
+                    { projection: { password: 0 } }
+                );
+                post.user = user;
+                
+                // Get engagement counts
+                post.likeCount = await db.collection('likes').countDocuments({ postId: post._id.toString() });
+                post.commentCount = await db.collection('comments').countDocuments({ postId: post._id.toString() });
+            } catch (userError) {
+                console.error('Error getting user info for post:', post._id, userError);
+                post.user = { username: 'unknown', displayName: 'Unknown User', _id: 'unknown' };
+                post.likeCount = 0;
+                post.commentCount = 0;
+            }
+        }
+        
+        res.json({ posts });
+        
+    } catch (error) {
+        console.error('Get posts error:', error);
+        res.json({ posts: [] });
+    }
+});
+
+// Get combined feed (videos and posts)
+app.get('/api/feed/combined', async (req, res) => {
+    if (!db) {
+        return res.json({ feed: [] });
+    }
+    
+    try {
+        const { limit = 10, skip = 0, page = 1, userId } = req.query;
+        const actualSkip = page > 1 ? (parseInt(page) - 1) * parseInt(limit) : parseInt(skip);
+        
+        let query = { status: 'published' };
+        if (userId) query.userId = userId;
+        
+        // Get videos and posts separately, then combine
+        const [videos, posts] = await Promise.all([
+            db.collection('videos').find(query).sort({ createdAt: -1 }).toArray(),
+            db.collection('posts').find(query).sort({ createdAt: -1 }).toArray()
+        ]);
+        
+        // Combine and sort by creation date
+        const combined = [...videos.map(v => ({ ...v, contentType: 'video' })), 
+                          ...posts.map(p => ({ ...p, contentType: 'post' }))]
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(actualSkip, actualSkip + parseInt(limit));
+        
+        // Get user info for each item
+        for (const item of combined) {
+            try {
+                const user = await db.collection('users').findOne(
+                    { _id: new ObjectId(item.userId) },
+                    { projection: { password: 0 } }
+                );
+                item.user = user;
+                
+                // Get engagement counts
+                const collection = item.contentType === 'video' ? 'videos' : 'posts';
+                const idField = item.contentType === 'video' ? 'videoId' : 'postId';
+                item.likeCount = await db.collection('likes').countDocuments({ [idField]: item._id.toString() });
+                item.commentCount = await db.collection('comments').countDocuments({ [idField]: item._id.toString() });
+            } catch (userError) {
+                console.error('Error getting user info for feed item:', item._id, userError);
+                item.user = { username: 'unknown', displayName: 'Unknown User', _id: 'unknown' };
+                item.likeCount = 0;
+                item.commentCount = 0;
+            }
+        }
+        
+        res.json({ feed: combined });
+        
+    } catch (error) {
+        console.error('Get combined feed error:', error);
+        res.json({ feed: [] });
+    }
+});
+
+// Like/unlike post (photos, slideshows, mixed content)
+app.post('/api/posts/:postId/like', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { postId } = req.params;
+    
+    try {
+        const like = {
+            postId,
+            userId: req.user.userId,
+            createdAt: new Date()
+        };
+        
+        // Try to insert like
+        try {
+            await db.collection('likes').insertOne(like);
+            res.json({ message: 'Post liked', liked: true });
+        } catch (error) {
+            // If duplicate key error, remove the like
+            if (error.code === 11000) {
+                await db.collection('likes').deleteOne({ 
+                    postId, 
+                    userId: req.user.userId 
+                });
+                res.json({ message: 'Post unliked', liked: false });
+            } else {
+                throw error;
+            }
+        }
+        
+    } catch (error) {
+        console.error('Like post error:', error);
+        res.status(500).json({ error: 'Failed to like post' });
+    }
+});
+
+// Add comment to post
+app.post('/api/posts/:postId/comments', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { postId } = req.params;
+    const { text } = req.body;
+    
+    if (!text) {
+        return res.status(400).json({ error: 'Comment text required' });
+    }
+    
+    try {
+        const comment = {
+            postId,
+            userId: req.user.userId,
+            text,
+            createdAt: new Date()
+        };
+        
+        const result = await db.collection('comments').insertOne(comment);
+        comment._id = result.insertedId;
+        
+        // Get user info
+        const user = await db.collection('users').findOne(
+            { _id: new ObjectId(req.user.userId) },
+            { projection: { password: 0 } }
+        );
+        comment.user = user;
+        
+        res.json({ 
+            message: 'Comment added',
+            comment
+        });
+        
+    } catch (error) {
+        console.error('Add comment to post error:', error);
+        res.status(500).json({ error: 'Failed to add comment' });
+    }
+});
+
+// Get comments for post
+app.get('/api/posts/:postId/comments', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { postId } = req.params;
+    
+    try {
+        const comments = await db.collection('comments')
+            .find({ postId })
+            .sort({ createdAt: -1 })
+            .toArray();
+        
+        // Get user info for each comment
+        for (const comment of comments) {
+            const user = await db.collection('users').findOne(
+                { _id: new ObjectId(comment.userId) },
+                { projection: { password: 0 } }
+            );
+            comment.user = user;
+        }
+        
+        res.json({ comments });
+        
+    } catch (error) {
+        console.error('Get post comments error:', error);
+        res.status(500).json({ error: 'Failed to get comments' });
     }
 });
 
@@ -1046,6 +1285,122 @@ app.get('/api/search/users', async (req, res) => {
     } catch (error) {
         console.error('Search users error:', error);
         res.status(500).json({ error: 'Search failed' });
+    }
+});
+
+// Search posts and videos
+app.get('/api/search/content', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { q, type = 'all' } = req.query;
+    
+    if (!q) {
+        return res.status(400).json({ error: 'Search query required' });
+    }
+    
+    try {
+        const searchQuery = {
+            $or: [
+                { title: { $regex: q, $options: 'i' } },
+                { description: { $regex: q, $options: 'i' } },
+                { hashtags: { $regex: q, $options: 'i' } }
+            ],
+            status: 'published'
+        };
+        
+        let results = [];
+        
+        if (type === 'all' || type === 'videos') {
+            const videos = await db.collection('videos')
+                .find(searchQuery)
+                .limit(10)
+                .toArray();
+            results.push(...videos.map(v => ({ ...v, contentType: 'video' })));
+        }
+        
+        if (type === 'all' || type === 'posts') {
+            const posts = await db.collection('posts')
+                .find(searchQuery)
+                .limit(10)
+                .toArray();
+            results.push(...posts.map(p => ({ ...p, contentType: 'post' })));
+        }
+        
+        // Sort by relevance and date
+        results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        // Get user info for each result
+        for (const item of results) {
+            try {
+                const user = await db.collection('users').findOne(
+                    { _id: new ObjectId(item.userId) },
+                    { projection: { password: 0 } }
+                );
+                item.user = user;
+            } catch (userError) {
+                item.user = { username: 'unknown', displayName: 'Unknown User' };
+            }
+        }
+        
+        res.json({ content: results.slice(0, 20) });
+        
+    } catch (error) {
+        console.error('Search content error:', error);
+        res.status(500).json({ error: 'Search failed' });
+    }
+});
+
+// Validate uploaded files
+app.post('/api/upload/validate', requireAuth, uploadMixed.array('files', 35), async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No files provided for validation' });
+        }
+        
+        const videoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/mov'];
+        const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff'];
+        
+        const validationResults = req.files.map((file, index) => {
+            const isVideo = videoTypes.includes(file.mimetype);
+            const isImage = imageTypes.includes(file.mimetype);
+            const isValid = isVideo || isImage;
+            
+            // Check file size limits
+            const maxVideoSize = 100 * 1024 * 1024; // 100MB
+            const maxImageSize = 25 * 1024 * 1024;  // 25MB
+            const sizeValid = isVideo ? file.size <= maxVideoSize : file.size <= maxImageSize;
+            
+            return {
+                index,
+                originalName: file.originalname,
+                mimeType: file.mimetype,
+                size: file.size,
+                type: isVideo ? 'video' : isImage ? 'image' : 'unknown',
+                valid: isValid && sizeValid,
+                errors: [
+                    ...(!isValid ? ['Invalid file type'] : []),
+                    ...(!sizeValid ? ['File size exceeds limit'] : [])
+                ]
+            };
+        });
+        
+        const validFiles = validationResults.filter(f => f.valid);
+        const invalidFiles = validationResults.filter(f => !f.valid);
+        
+        res.json({
+            message: 'File validation complete',
+            totalFiles: req.files.length,
+            validFiles: validFiles.length,
+            invalidFiles: invalidFiles.length,
+            results: validationResults,
+            canProceed: invalidFiles.length === 0
+        });
+        
+    } catch (error) {
+        console.error('File validation error:', error);
+        res.status(500).json({ error: 'Validation failed: ' + error.message });
     }
 });
 
