@@ -216,7 +216,8 @@ function initializeVideoObserver() {
         console.log(`🔧 Processing TikTok video ${index + 1}:`, video.src);
         
         // Force video properties
-        video.muted = true;
+        video.muted = false;  // Enable audio
+        video.volume = 0.8;   // Set reasonable volume
         video.loop = true;
         video.playsInline = true;
         video.preload = 'metadata';
@@ -473,7 +474,8 @@ function createAdvancedVideoCard(video) {
     const video_elem = document.createElement('video');
     video_elem.src = video.videoUrl || '';
     video_elem.loop = true;
-    video_elem.muted = true;
+    video_elem.muted = false;  // Enable audio by default
+    video_elem.volume = 0.8;   // Set reasonable volume
     video_elem.playsInline = true;
     video_elem.style.cssText = `
         position: absolute !important;
@@ -541,7 +543,22 @@ function createAdvancedVideoCard(video) {
         <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer;">
             📤
         </div>
+        <div class="volume-btn" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            🔊
+        </div>
     `;
+    
+    // Add volume control functionality
+    const volumeBtn = actions.querySelector('.volume-btn');
+    volumeBtn.addEventListener('click', () => {
+        if (video_elem.muted) {
+            video_elem.muted = false;
+            volumeBtn.textContent = '🔊';
+        } else {
+            video_elem.muted = true;
+            volumeBtn.textContent = '🔇';
+        }
+    });
     
     card.appendChild(video_elem);
     card.appendChild(overlay);
