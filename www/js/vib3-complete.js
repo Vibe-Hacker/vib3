@@ -1096,12 +1096,16 @@ function selectVideoFile() {
 
 function recordNewVideo() {
     console.log('🎬 User chose to record new video');
-    closeVideoSourceModal();
     
-    // Hide the upload modal completely to prevent flickering
+    // Immediately hide ALL modals to prevent flicker
     const uploadModal = document.getElementById('uploadModal');
     if (uploadModal) {
         uploadModal.style.display = 'none';
+    }
+    
+    const videoSourceModal = document.querySelector('.video-source-modal');
+    if (videoSourceModal) {
+        videoSourceModal.remove();
     }
     
     // Start simplified recording directly
@@ -1110,6 +1114,31 @@ function recordNewVideo() {
 
 async function startSimpleVideoRecording() {
     console.log('🎬 Starting simple video recording');
+    
+    // Create loading modal immediately to prevent flicker
+    const loadingModal = document.createElement('div');
+    loadingModal.className = 'modal simple-recording-modal';
+    loadingModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100000;
+    `;
+    
+    loadingModal.innerHTML = `
+        <div style="text-align: center; color: white;">
+            <h3 style="margin: 0 0 15px 0; font-size: 18px;">🎬 Starting Camera...</h3>
+            <div style="font-size: 14px; opacity: 0.8;">Please allow camera access</div>
+        </div>
+    `;
+    
+    document.body.appendChild(loadingModal);
     
     try {
         // Get camera stream directly
@@ -1120,7 +1149,8 @@ async function startSimpleVideoRecording() {
         
         console.log('✅ Camera stream obtained for simple recording');
         
-        // Create simple recording modal
+        // Replace loading modal with recording modal
+        loadingModal.remove();
         const recordingModal = document.createElement('div');
         recordingModal.className = 'modal simple-recording-modal';
         recordingModal.style.cssText = `
@@ -1188,6 +1218,9 @@ async function startSimpleVideoRecording() {
     } catch (error) {
         console.error('❌ Failed to start simple recording:', error);
         showNotification('Failed to access camera. Please check permissions and try again.', 'error');
+        
+        // Remove loading modal
+        loadingModal.remove();
         
         // Don't reshow upload modal to prevent flicker
         // User can click upload button again if needed
