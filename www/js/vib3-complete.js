@@ -788,6 +788,14 @@ let currentEditingFile = null;
 
 function showUploadModal() {
     console.log('🎬 Opening upload modal...');
+    
+    // CRITICAL: Remove profile page if it exists (this is blocking the modal)
+    const profilePage = document.getElementById('profilePage');
+    if (profilePage) {
+        profilePage.remove();
+        console.log('🗑️ Removed blocking profile page');
+    }
+    
     const modal = document.getElementById('uploadModal');
     if (!modal) {
         console.error('❌ Upload modal not found in DOM!');
