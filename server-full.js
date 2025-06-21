@@ -951,6 +951,67 @@ app.get('/api/user/videos', async (req, res) => {
     }
 });
 
+// Delete user video
+app.delete('/api/videos/:videoId', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { videoId } = req.params;
+    const userId = req.user.userId;
+    
+    try {
+        console.log(`User ${userId} requesting to delete video ${videoId}`);
+        
+        // First, verify the video exists and belongs to the user
+        const video = await db.collection('videos').findOne({ 
+            _id: new ObjectId(videoId),
+            userId: userId
+        });
+        
+        if (!video) {
+            return res.status(404).json({ error: 'Video not found or you do not have permission to delete it' });
+        }
+        
+        console.log(`Deleting video: ${video.title || 'Untitled'} by user ${userId}`);
+        
+        // Soft delete - mark as deleted instead of removing completely
+        const result = await db.collection('videos').updateOne(
+            { _id: new ObjectId(videoId) },
+            { 
+                $set: { 
+                    status: 'deleted',
+                    deletedAt: new Date()
+                }
+            }
+        );
+        
+        if (result.modifiedCount === 1) {
+            console.log(`✅ Video ${videoId} marked as deleted`);
+            
+            // Also delete related data (likes, comments, etc.)
+            await Promise.all([
+                db.collection('likes').deleteMany({ videoId: videoId }),
+                db.collection('comments').deleteMany({ videoId: videoId }),
+                db.collection('views').deleteMany({ videoId: videoId })
+            ]);
+            
+            console.log(`✅ Deleted related data for video ${videoId}`);
+            
+            res.json({ 
+                message: 'Video deleted successfully',
+                videoId: videoId
+            });
+        } else {
+            res.status(500).json({ error: 'Failed to delete video' });
+        }
+        
+    } catch (error) {
+        console.error('Delete video error:', error);
+        res.status(500).json({ error: 'Failed to delete video' });
+    }
+});
+
 // Get user profile data
 app.get('/api/user/profile', async (req, res) => {
     if (!db) {

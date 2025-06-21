@@ -387,6 +387,15 @@ function createVideoCard(video) {
             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; opacity: 0.8;">
                 <div style="color: white; font-size: 24px; margin-left: 4px;">▶️</div>
             </div>
+            
+            <!-- Delete button -->
+            <div style="position: absolute; top: 8px; left: 8px; background: rgba(255,0,0,0.8); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; opacity: 0.9; transition: all 0.3s ease;" 
+                 onclick="event.stopPropagation(); deleteUserVideo('${videoId}', '${video.title || 'this video'}')" 
+                 onmouseover="this.style.opacity='1'; this.style.transform='scale(1.1)'" 
+                 onmouseout="this.style.opacity='0.9'; this.style.transform='scale(1)'"
+                 title="Delete video">
+                🗑️
+            </div>
         </div>
     `;
 }
@@ -422,6 +431,140 @@ function playUserVideo(videoId) {
             }
         }
     }, 500);
+}
+
+async function deleteUserVideo(videoId, videoTitle) {
+    console.log('🗑️ Delete video requested:', videoId, videoTitle);
+    
+    // Show confirmation modal
+    const confirmed = await showDeleteConfirmation(videoTitle);
+    if (!confirmed) {
+        console.log('❌ Video deletion cancelled by user');
+        return;
+    }
+    
+    try {
+        const baseURL = getAPIBaseURL();
+        const token = localStorage.getItem('vib3_token');
+        
+        if (!token) {
+            showNotification('Please log in to delete videos', 'error');
+            return;
+        }
+        
+        console.log('🗑️ Deleting video from server...');
+        const response = await fetch(`${baseURL}/api/videos/${videoId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            console.log('✅ Video deleted successfully');
+            showNotification('Video deleted successfully', 'success');
+            
+            // Remove the video card from the UI immediately
+            const videoCards = document.querySelectorAll(`[onclick*="${videoId}"]`);
+            videoCards.forEach(card => {
+                if (card.closest('[style*="aspect-ratio"]')) {
+                    card.closest('[style*="aspect-ratio"]').remove();
+                }
+            });
+            
+            // Reload user videos to update the display
+            setTimeout(() => {
+                loadUserVideos();
+            }, 1000);
+            
+        } else {
+            const error = await response.json();
+            console.error('❌ Failed to delete video:', error);
+            showNotification(error.error || 'Failed to delete video', 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error deleting video:', error);
+        showNotification('Failed to delete video. Please try again.', 'error');
+    }
+}
+
+function showDeleteConfirmation(videoTitle) {
+    return new Promise((resolve) => {
+        // Create confirmation modal
+        const modal = document.createElement('div');
+        modal.className = 'modal delete-confirmation-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100001;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: #1a1a1a; padding: 30px; border-radius: 15px; max-width: 400px; text-align: center; color: white;">
+                <div style="font-size: 48px; margin-bottom: 20px; color: #ff4757;">🗑️</div>
+                <h3 style="margin-bottom: 15px; color: white;">Delete Video?</h3>
+                <p style="margin-bottom: 25px; color: #ccc; line-height: 1.5;">
+                    Are you sure you want to delete "<strong>${videoTitle}</strong>"?<br>
+                    This action cannot be undone.
+                </p>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button id="cancelDelete" style="
+                        padding: 12px 24px;
+                        background: #666;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 16px;
+                        font-weight: 600;
+                    ">Cancel</button>
+                    <button id="confirmDelete" style="
+                        padding: 12px 24px;
+                        background: #ff4757;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 16px;
+                        font-weight: 600;
+                    ">Delete</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Handle button clicks
+        const cancelBtn = modal.querySelector('#cancelDelete');
+        const confirmBtn = modal.querySelector('#confirmDelete');
+        
+        cancelBtn.onclick = () => {
+            modal.remove();
+            resolve(false);
+        };
+        
+        confirmBtn.onclick = () => {
+            modal.remove();
+            resolve(true);
+        };
+        
+        // Close on outside click
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                resolve(false);
+            }
+        };
+    });
 }
 
 function formatDuration(seconds) {
