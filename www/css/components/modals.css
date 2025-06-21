@@ -5,7 +5,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.9);
+    background: rgba(0,0,0,1); /* Completely opaque to hide background */
     z-index: 99999;  /* Very high z-index to ensure modal appears above profile page */
     display: none;
     align-items: center;

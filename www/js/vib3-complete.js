@@ -796,11 +796,11 @@ function showUploadModal() {
         console.log('🗑️ Removed blocking profile page');
     }
     
-    // Ensure main app is visible
+    // Hide main app content to prevent background visibility
     const mainApp = document.getElementById('mainApp');
     if (mainApp) {
-        mainApp.style.display = 'block';
-        console.log('✅ Made main app visible');
+        mainApp.style.visibility = 'hidden'; // Hide but keep in DOM for modal
+        console.log('✅ Hidden main app content');
     }
     
     const modal = document.getElementById('uploadModal');
@@ -850,7 +850,7 @@ function showUploadModal() {
     modal.style.left = '0';
     modal.style.right = '0';
     modal.style.bottom = '0';
-    modal.style.backgroundColor = 'rgba(0,0,0,0.9)'; // Ensure background is visible
+    modal.style.backgroundColor = 'rgba(0,0,0,1)'; // Completely opaque to hide background videos
     
     // Also ensure modal content is visible
     const modalContent = modal.querySelector('.modal-content');
@@ -910,6 +910,13 @@ function closeUploadModal() {
         modal.classList.remove('active');  // Changed from 'show' to 'active' to match CSS
         modal.style.display = 'none';  // Ensure modal is hidden
         console.log('✅ Upload modal closed and hidden');
+    }
+    
+    // Restore main app visibility
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.visibility = 'visible';
+        console.log('✅ Restored main app visibility');
     }
     
     // Reconnect video observer when modal closes
