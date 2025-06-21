@@ -2995,6 +2995,10 @@ function switchFeedTab(feedType) {
         console.log('✅ Removed profile page when switching to feed');
     }
     
+    // Clear any cached feed data to prevent deleted video flicker
+    window.currentFeed = feedType;
+    console.log(`🗑️ Clearing cached data for fresh ${feedType} feed load`);
+    
     // Pause all currently playing videos
     document.querySelectorAll('video').forEach(video => {
         video.pause();
@@ -3015,9 +3019,11 @@ function switchFeedTab(feedType) {
     // Show the target feed container
     const targetFeed = document.getElementById(feedType + 'Feed');
     if (targetFeed) {
+        // Clear existing content immediately to prevent flicker
+        targetFeed.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;">Loading...</div>';
         targetFeed.classList.add('active');
         targetFeed.style.display = 'block';
-        console.log(`✅ Activated ${feedType} feed container`);
+        console.log(`✅ Activated ${feedType} feed container and cleared content`);
     }
     
     // Activate the corresponding tab if it exists
@@ -3033,8 +3039,8 @@ function switchFeedTab(feedType) {
         mainApp.style.display = 'block';
     }
     
-    // Load the feed content
-    loadVideoFeed(feedType);
+    // Load the feed content with fresh data
+    loadVideoFeed(feedType, 1, false); // Force fresh load, no append
     
     // After a brief delay, ensure the first video starts playing
     setTimeout(() => {
