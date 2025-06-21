@@ -48,7 +48,7 @@ function createSimpleProfilePage() {
             <button onclick="alert('Edit Profile clicked!')" style="background: #fe2c55; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; margin: 10px;">
                 Edit Profile
             </button>
-            <button onclick="showNotification('Going back to For You feed', 'info'); switchFeedTab('foryou');" style="background: #333; color: white; border: 1px solid #666; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; margin: 10px;">
+            <button onclick="goBackToFeed();" style="background: #333; color: white; border: 1px solid #666; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; margin: 10px;">
                 Back to Feed
             </button>
         </div>
@@ -66,5 +66,32 @@ function createSimpleProfilePage() {
     return profilePage;
 }
 
-// Make it globally available
+function goBackToFeed() {
+    console.log('🔙 Going back to video feed...');
+    
+    // Remove the profile page
+    const profilePage = document.getElementById('profilePage');
+    if (profilePage) {
+        profilePage.remove();
+        console.log('✅ Profile page removed');
+    }
+    
+    // Show the main app
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'block';
+        console.log('✅ Main app shown');
+    }
+    
+    // Switch to For You feed
+    if (window.switchFeedTab) {
+        switchFeedTab('foryou');
+        console.log('✅ Switched to For You feed');
+    }
+    
+    showNotification('Back to video feed!', 'success');
+}
+
+// Make functions globally available
 window.createSimpleProfilePage = createSimpleProfilePage;
+window.goBackToFeed = goBackToFeed;

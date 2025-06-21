@@ -833,6 +833,14 @@
                         if (window.showPage) {
                             window.showPage(page);
                             console.log(`✓ ${page} navigation works`);
+                            
+                            // If we just tested profile, go back to the main feed
+                            if (page === 'profile' && window.goBackToFeed) {
+                                setTimeout(() => {
+                                    goBackToFeed();
+                                    console.log('✓ Auto-returned to main feed after profile test');
+                                }, 100);
+                            }
                         }
                     } catch (error) {
                         console.error(`✗ ${page} navigation failed:`, error.message);
