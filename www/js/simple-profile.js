@@ -202,15 +202,23 @@ async function loadUserProfileData() {
     try {
         const baseURL = getAPIBaseURL();
         const token = localStorage.getItem('vib3_token');
+        console.log('🔍 Loading profile data:', { baseURL, hasToken: !!token });
+        
         const response = await fetch(`${baseURL}/api/user/profile`, {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         
+        console.log('📡 Profile API response:', { status: response.status, ok: response.ok });
+        
         if (response.ok) {
             const data = await response.json();
+            console.log('✅ Profile data loaded:', data);
             updateProfileDisplay(data);
             loadUserVideos();
             loadUserStats();
+        } else {
+            const text = await response.text();
+            console.error('❌ Profile API failed:', { status: response.status, text: text.substring(0, 200) });
         }
     } catch (error) {
         console.error('Error loading profile data:', error);
@@ -221,13 +229,21 @@ async function loadUserVideos() {
     try {
         const baseURL = getAPIBaseURL();
         const token = localStorage.getItem('vib3_token');
+        console.log('🎬 Loading user videos:', { baseURL, hasToken: !!token });
+        
         const response = await fetch(`${baseURL}/api/user/videos`, {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         
+        console.log('📡 Videos API response:', { status: response.status, ok: response.ok });
+        
         if (response.ok) {
             const videos = await response.json();
+            console.log('✅ User videos loaded:', videos);
             displayUserVideos(videos);
+        } else {
+            const text = await response.text();
+            console.error('❌ Videos API failed:', { status: response.status, text: text.substring(0, 200) });
         }
     } catch (error) {
         console.error('Error loading user videos:', error);
