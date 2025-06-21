@@ -181,13 +181,10 @@ function createSimpleProfilePage() {
 }
 
 // Real-time profile data functions
-// Get the API base URL - use production if available, fallback to local
+// Get the API base URL - use same server as main feed
 function getAPIBaseURL() {
-    // Check if we're on production or if videos are loading from Railway
-    const feedVideos = document.querySelectorAll('video[src*="vib3-videos.nyc3.digitaloceanspaces.com"]');
-    if (feedVideos.length > 0 || window.location.hostname.includes('railway.app')) {
-        return 'https://vib3-production.up.railway.app';
-    }
+    // Use current server (same as main feed) instead of hard-coded Railway URL
+    // This ensures we authenticate with the same MongoDB server that issued our token
     return '';
 }
 
@@ -195,7 +192,7 @@ async function loadUserProfileData() {
     try {
         const baseURL = getAPIBaseURL();
         const response = await fetch(`${baseURL}/api/user/profile`, {
-            headers: { 'Authorization': `Bearer ${window.authToken}` }
+            headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
         });
         
         if (response.ok) {
@@ -213,7 +210,7 @@ async function loadUserVideos() {
     try {
         const baseURL = getAPIBaseURL();
         const response = await fetch(`${baseURL}/api/user/videos`, {
-            headers: { 'Authorization': `Bearer ${window.authToken}` }
+            headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
         });
         
         if (response.ok) {
@@ -229,7 +226,7 @@ async function loadUserStats() {
     try {
         const baseURL = getAPIBaseURL();
         const response = await fetch(`${baseURL}/api/user/stats`, {
-            headers: { 'Authorization': `Bearer ${window.authToken}` }
+            headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
         });
         
         if (response.ok) {

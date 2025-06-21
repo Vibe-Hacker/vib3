@@ -99,22 +99,44 @@ const mockVideos = [
     }
 ];
 
-// Simple auth middleware (no real auth for now)
+// Simple auth middleware (simulates being logged in as the video uploader)
 const authMiddleware = (req, res, next) => {
-    // For now, just pass through - we'll add real auth later
+    // Simulate being logged in as the user who uploaded the videos we see in the feed
     req.userId = '55502f40';
     req.user = mockUser;
+    console.log(`🔐 Auth: Simulating user ${req.userId} for ${req.method} ${req.path}`);
     next();
 };
+
+// === MAIN API ENDPOINTS ===
+
+// Get videos for feed (this is what the main feed uses)
+app.get('/api/videos', (req, res) => {
+    const feed = req.query.feed || 'foryou';
+    const limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+    
+    console.log(`📹 Video feed request: ${feed}, page ${page}, limit ${limit}`);
+    
+    // Return all videos for the feed
+    res.json({
+        videos: mockVideos,
+        page: page,
+        hasMore: false,
+        totalCount: mockVideos.length
+    });
+});
 
 // === PROFILE API ENDPOINTS ===
 
 // Get current user profile
 app.get('/api/auth/me', (req, res) => {
+    console.log('🔐 Auth check: Returning mock user profile');
     res.json({ user: mockUser });
 });
 
-app.get('/api/user/profile', authMiddleware, (req, res) => {
+app.get('/api/user/profile', (req, res) => {
+    console.log('👤 Profile request: Returning mock user profile');
     res.json(mockUser);
 });
 
@@ -131,33 +153,45 @@ app.put('/api/user/profile', authMiddleware, (req, res) => {
 });
 
 // Get user stats
-app.get('/api/user/stats', authMiddleware, (req, res) => {
+app.get('/api/user/stats', (req, res) => {
+    console.log('📊 Stats request: Returning mock user stats');
     res.json(mockUser.stats);
 });
 
 // Get user videos
-app.get('/api/user/videos', authMiddleware, (req, res) => {
-    const userVideos = mockVideos.filter(video => video.userId === req.userId);
+app.get('/api/user/videos', (req, res) => {
+    // Extract the actual user ID from the video URLs in the console logs
+    // From the logs, we can see the user ID is 55502f40
+    const actualUserId = '55502f40';
+    
+    // Return the actual videos for this user
+    const userVideos = mockVideos.filter(video => video.userId === actualUserId);
+    
+    console.log(`📹 Profile request: Returning ${userVideos.length} videos for user ${actualUserId}`);
     res.json(userVideos);
 });
 
 // Get liked videos (empty for now)
-app.get('/api/user/liked-videos', authMiddleware, (req, res) => {
+app.get('/api/user/liked-videos', (req, res) => {
+    console.log('❤️ Liked videos request: Returning empty array');
     res.json([]);
 });
 
 // Get favorites (empty for now)
-app.get('/api/user/favorites', authMiddleware, (req, res) => {
+app.get('/api/user/favorites', (req, res) => {
+    console.log('⭐ Favorites request: Returning empty array');
     res.json([]);
 });
 
 // Get following list (empty for now)
-app.get('/api/user/following', authMiddleware, (req, res) => {
+app.get('/api/user/following', (req, res) => {
+    console.log('👥 Following request: Returning empty array');
     res.json([]);
 });
 
 // Get followers list (empty for now)
-app.get('/api/user/followers', authMiddleware, (req, res) => {
+app.get('/api/user/followers', (req, res) => {
+    console.log('👥 Followers request: Returning empty array');
     res.json([]);
 });
 
@@ -171,7 +205,8 @@ app.post('/api/user/unfollow/:userId', authMiddleware, (req, res) => {
 });
 
 // Get following feed (empty for now)
-app.get('/api/feed/following', authMiddleware, (req, res) => {
+app.get('/api/feed/following', (req, res) => {
+    console.log('📱 Following feed request: Returning empty array');
     res.json([]);
 });
 
