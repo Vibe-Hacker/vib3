@@ -51,10 +51,12 @@ function showAuthContainer() {
 
 function hideMainApp() {
     document.getElementById('mainApp').style.display = 'none';
+    document.body.classList.remove('authenticated');
 }
 
 function showMainApp() {
     document.getElementById('mainApp').style.display = 'block';
+    document.body.classList.add('authenticated');
 }
 
 function showLogin() {
