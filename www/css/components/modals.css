@@ -6,14 +6,15 @@
     right: 0;
     bottom: 0;
     background: rgba(0,0,0,0.9);
-    z-index: 100;
+    z-index: 99999;  /* Very high z-index to ensure modal appears above profile page */
     display: none;
     align-items: center;
     justify-content: center;
 }
 
-.modal.active {
-    display: flex;
+.modal.active,
+.modal.show {  /* Added .show class as fallback */
+    display: flex !important;
 }
 
 .modal-content {

@@ -800,11 +800,21 @@ function showUploadModal() {
     console.log('✅ Upload modal found, current display:', window.getComputedStyle(modal).display);
     console.log('📍 Current modal classes:', modal.className);
     
-    // Remove any existing classes and add active
+    // Stop all videos first
+    if (window.forceStopAllVideos && typeof window.forceStopAllVideos === 'function') {
+        window.forceStopAllVideos();
+    }
+    
+    // Force modal to appear above everything
     modal.classList.remove('active', 'show');
     modal.classList.add('active');
     modal.style.display = 'flex';
-    modal.style.zIndex = '10001';  // Force high z-index
+    modal.style.zIndex = '99999';  // Force very high z-index to appear above profile
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.right = '0';
+    modal.style.bottom = '0';
     
     console.log('✅ Modal classes after update:', modal.className);
     console.log('✅ Modal display after update:', window.getComputedStyle(modal).display);
