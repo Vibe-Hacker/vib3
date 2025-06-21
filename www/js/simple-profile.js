@@ -201,8 +201,9 @@ function getAPIBaseURL() {
 async function loadUserProfileData() {
     try {
         const baseURL = getAPIBaseURL();
+        const token = localStorage.getItem('vib3_token');
         const response = await fetch(`${baseURL}/api/user/profile`, {
-            headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         
         if (response.ok) {
@@ -219,8 +220,9 @@ async function loadUserProfileData() {
 async function loadUserVideos() {
     try {
         const baseURL = getAPIBaseURL();
+        const token = localStorage.getItem('vib3_token');
         const response = await fetch(`${baseURL}/api/user/videos`, {
-            headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         
         if (response.ok) {
@@ -235,8 +237,9 @@ async function loadUserVideos() {
 async function loadUserStats() {
     try {
         const baseURL = getAPIBaseURL();
+        const token = localStorage.getItem('vib3_token');
         const response = await fetch(`${baseURL}/api/user/stats`, {
-            headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         
         if (response.ok) {
