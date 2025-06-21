@@ -1058,6 +1058,11 @@ function showPage(page) {
         return;
     }
     
+    if (page === 'messages') {
+        createMessagesPage();
+        return;
+    }
+    
     if (page === 'friends') {
         createFriendsPage();
         return;
@@ -1718,41 +1723,60 @@ function createActivityPage() {
         activityPage = document.createElement('div');
         activityPage.id = 'activityPage';
         activityPage.className = 'activity-page';
-        activityPage.style.cssText = 'margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px;';
+        activityPage.style.cssText = `
+            margin-left: 240px; 
+            width: calc(100vw - 240px); 
+            height: 100vh; 
+            overflow-y: auto; 
+            background: var(--bg-primary); 
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+        
         activityPage.innerHTML = `
-            <h2>Activity</h2>
-            <div class="activity-tabs">
-                <button class="tab-btn active" onclick="filterActivity('all')">All</button>
-                <button class="tab-btn" onclick="filterActivity('likes')">Likes</button>
-                <button class="tab-btn" onclick="filterActivity('comments')">Comments</button>
-                <button class="tab-btn" onclick="filterActivity('follows')">Follows</button>
-                <button class="tab-btn" onclick="filterActivity('mentions')">Mentions</button>
-            </div>
-            <div class="activity-list">
-                <div class="activity-item">
-                    <div class="activity-avatar">👤</div>
-                    <div class="activity-content">
-                        <div class="activity-text"><strong>user123</strong> liked your video</div>
-                        <div class="activity-time">2 hours ago</div>
-                    </div>
+            <div style="max-width: 600px; margin: 0 auto;">
+                <h2 style="color: var(--text-primary); margin-bottom: 20px; font-size: 24px; font-weight: 700;">
+                    🔔 Activity
+                </h2>
+                
+                <div class="activity-tabs" style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 1px solid var(--border-primary); padding-bottom: 15px;">
+                    <button class="activity-tab-btn active" data-filter="all" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600;">All</button>
+                    <button class="activity-tab-btn" data-filter="likes" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-secondary); border: none; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600;">Likes</button>
+                    <button class="activity-tab-btn" data-filter="comments" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-secondary); border: none; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600;">Comments</button>
+                    <button class="activity-tab-btn" data-filter="follows" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-secondary); border: none; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600;">Follows</button>
+                    <button class="activity-tab-btn" data-filter="mentions" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-secondary); border: none; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600;">Mentions</button>
                 </div>
-                <div class="activity-item">
-                    <div class="activity-avatar">👤</div>
-                    <div class="activity-content">
-                        <div class="activity-text"><strong>jane_doe</strong> commented: "Amazing content!"</div>
-                        <div class="activity-time">5 hours ago</div>
-                    </div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-avatar">👤</div>
-                    <div class="activity-content">
-                        <div class="activity-text"><strong>musiclover</strong> started following you</div>
-                        <div class="activity-time">1 day ago</div>
+                
+                <div class="activity-list" id="activityList">
+                    <div class="loading-activities" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        ⏳ Loading your activity...
                     </div>
                 </div>
             </div>
         `;
+        
         document.body.appendChild(activityPage);
+        
+        // Add click handlers for tabs
+        activityPage.querySelectorAll('.activity-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filter = btn.dataset.filter;
+                filterActivity(filter);
+                
+                // Update active tab
+                activityPage.querySelectorAll('.activity-tab-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.style.background = 'var(--bg-tertiary)';
+                    b.style.color = 'var(--text-secondary)';
+                });
+                btn.classList.add('active');
+                btn.style.background = 'var(--accent-color)';
+                btn.style.color = 'white';
+            });
+        });
+        
+        // Load initial activity
+        setTimeout(() => loadActivity('all'), 300);
     }
     
     // Hide all other pages including activity and friends
@@ -1763,6 +1787,838 @@ function createActivityPage() {
     if (mainApp) mainApp.style.display = 'none';
     
     activityPage.style.display = 'block';
+}
+
+// Activity management functions
+async function loadActivity(filter = 'all') {
+    console.log(`📝 Loading ${filter} activity`);
+    const activityList = document.getElementById('activityList');
+    
+    if (!activityList) return;
+    
+    // Show loading
+    activityList.innerHTML = `
+        <div class="loading-activities" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+            ⏳ Loading ${filter} activity...
+        </div>
+    `;
+    
+    try {
+        // Simulate API call for now - in real app would fetch from /api/activity
+        const activities = generateSampleActivity(filter);
+        
+        setTimeout(() => {
+            if (activities.length === 0) {
+                activityList.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
+                        <h3 style="margin-bottom: 8px; color: var(--text-primary);">No ${filter === 'all' ? '' : filter} activity yet</h3>
+                        <p>When people interact with your content, you'll see it here</p>
+                    </div>
+                `;
+            } else {
+                activityList.innerHTML = activities.map(createActivityItem).join('');
+                
+                // Add click handlers for activity items
+                activityList.querySelectorAll('.activity-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const activityId = item.dataset.activityId;
+                        handleActivityClick(activityId);
+                    });
+                });
+            }
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error loading activity:', error);
+        activityList.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                ❌ Failed to load activity. Please try again.
+            </div>
+        `;
+    }
+}
+
+function generateSampleActivity(filter) {
+    const allActivities = [
+        {
+            id: '1',
+            type: 'like',
+            user: { username: 'musiclover22', avatar: '🎵' },
+            action: 'liked your video',
+            target: 'Aesthetic Morning Routine',
+            time: '2 minutes ago',
+            timestamp: Date.now() - 2 * 60 * 1000
+        },
+        {
+            id: '2', 
+            type: 'comment',
+            user: { username: 'jane_creates', avatar: '✨' },
+            action: 'commented',
+            comment: 'This is amazing! How did you do that effect?',
+            target: 'Dance Challenge',
+            time: '15 minutes ago',
+            timestamp: Date.now() - 15 * 60 * 1000
+        },
+        {
+            id: '3',
+            type: 'follow',
+            user: { username: 'trendsetter_vibes', avatar: '🔥' },
+            action: 'started following you',
+            time: '1 hour ago',
+            timestamp: Date.now() - 60 * 60 * 1000
+        },
+        {
+            id: '4',
+            type: 'mention',
+            user: { username: 'bestfriend_sara', avatar: '💕' },
+            action: 'mentioned you in a comment',
+            comment: '@you check this out!',
+            target: 'Cooking Hack Video',
+            time: '3 hours ago',
+            timestamp: Date.now() - 3 * 60 * 60 * 1000
+        },
+        {
+            id: '5',
+            type: 'like',
+            user: { username: 'fitness_guru', avatar: '💪' },
+            action: 'liked your video',
+            target: 'Workout Routine',
+            time: '5 hours ago',
+            timestamp: Date.now() - 5 * 60 * 60 * 1000
+        },
+        {
+            id: '6',
+            type: 'comment',
+            user: { username: 'artist_soul', avatar: '🎨' },
+            action: 'commented',
+            comment: 'Your creativity is inspiring! 🙌',
+            target: 'Art Process Video',
+            time: '1 day ago',
+            timestamp: Date.now() - 24 * 60 * 60 * 1000
+        },
+        {
+            id: '7',
+            type: 'follow',
+            user: { username: 'content_creator', avatar: '📹' },
+            action: 'started following you',
+            time: '2 days ago',
+            timestamp: Date.now() - 2 * 24 * 60 * 60 * 1000
+        }
+    ];
+    
+    if (filter === 'all') return allActivities;
+    return allActivities.filter(activity => activity.type === filter);
+}
+
+function createActivityItem(activity) {
+    const getActionIcon = (type) => {
+        switch(type) {
+            case 'like': return '❤️';
+            case 'comment': return '💬';
+            case 'follow': return '👥';
+            case 'mention': return '📢';
+            default: return '🔔';
+        }
+    };
+    
+    return `
+        <div class="activity-item" data-activity-id="${activity.id}" style="
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            margin-bottom: 1px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            border-left: 3px solid var(--accent-color);
+        " onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='var(--bg-secondary)'">
+            
+            <div style="
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, var(--accent-color), #ff006e);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                margin-right: 16px;
+                position: relative;
+            ">
+                ${activity.user.avatar}
+                <div style="
+                    position: absolute;
+                    bottom: -2px;
+                    right: -2px;
+                    width: 20px;
+                    height: 20px;
+                    background: var(--bg-primary);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 12px;
+                ">
+                    ${getActionIcon(activity.type)}
+                </div>
+            </div>
+            
+            <div style="flex: 1; min-width: 0;">
+                <div style="
+                    color: var(--text-primary);
+                    font-size: 14px;
+                    line-height: 1.4;
+                    margin-bottom: 4px;
+                ">
+                    <strong style="color: var(--accent-color);">@${activity.user.username}</strong> 
+                    ${activity.action}
+                    ${activity.target ? `<span style="color: var(--text-secondary);">"${activity.target}"</span>` : ''}
+                </div>
+                
+                ${activity.comment ? `
+                    <div style="
+                        color: var(--text-secondary);
+                        font-size: 13px;
+                        font-style: italic;
+                        margin: 6px 0;
+                        padding: 8px 12px;
+                        background: var(--bg-tertiary);
+                        border-radius: 12px;
+                    ">
+                        "${activity.comment}"
+                    </div>
+                ` : ''}
+                
+                <div style="
+                    color: var(--text-secondary);
+                    font-size: 12px;
+                    margin-top: 4px;
+                ">
+                    ${activity.time}
+                </div>
+            </div>
+            
+            <div style="
+                color: var(--text-secondary);
+                font-size: 18px;
+                margin-left: 12px;
+            ">
+                →
+            </div>
+        </div>
+    `;
+}
+
+function filterActivity(filter) {
+    console.log(`🔍 Filtering activity: ${filter}`);
+    loadActivity(filter);
+}
+
+function handleActivityClick(activityId) {
+    console.log(`🔗 Clicked activity: ${activityId}`);
+    // In a real app, this would navigate to the relevant video/profile/etc
+    showNotification(`Opening activity ${activityId}`, 'info');
+}
+
+// Messages page creation and management
+function createMessagesPage() {
+    let messagesPage = document.getElementById('messagesPage');
+    if (!messagesPage) {
+        messagesPage = document.createElement('div');
+        messagesPage.id = 'messagesPage';
+        messagesPage.className = 'messages-page';
+        messagesPage.style.cssText = `
+            margin-left: 240px; 
+            width: calc(100vw - 240px); 
+            height: 100vh; 
+            background: var(--bg-primary);
+            display: flex;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+        
+        messagesPage.innerHTML = `
+            <!-- Chat List Sidebar -->
+            <div class="chat-list" style="
+                width: 320px;
+                height: 100vh;
+                background: var(--bg-secondary);
+                border-right: 1px solid var(--border-primary);
+                display: flex;
+                flex-direction: column;
+            ">
+                <div style="
+                    padding: 20px;
+                    border-bottom: 1px solid var(--border-primary);
+                    background: var(--bg-primary);
+                ">
+                    <h2 style="
+                        color: var(--text-primary);
+                        margin: 0 0 16px 0;
+                        font-size: 20px;
+                        font-weight: 700;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    ">
+                        💬 Messages
+                    </h2>
+                    <input 
+                        type="text" 
+                        placeholder="Search conversations..." 
+                        id="chatSearch"
+                        style="
+                            width: 100%;
+                            padding: 10px 12px;
+                            border: 1px solid var(--border-primary);
+                            border-radius: 20px;
+                            background: var(--bg-tertiary);
+                            color: var(--text-primary);
+                            font-size: 14px;
+                            outline: none;
+                        "
+                        oninput="searchChats(this.value)"
+                    >
+                </div>
+                
+                <div class="chat-list-content" id="chatListContent" style="
+                    flex: 1;
+                    overflow-y: auto;
+                    padding: 8px 0;
+                ">
+                    <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                        ⏳ Loading conversations...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chat Window -->
+            <div class="chat-window" id="chatWindow" style="
+                flex: 1;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                background: var(--bg-primary);
+            ">
+                <div class="no-chat-selected" id="noChatSelected" style="
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    color: var(--text-secondary);
+                    text-align: center;
+                ">
+                    <div style="font-size: 64px; margin-bottom: 24px;">💬</div>
+                    <h3 style="margin-bottom: 12px; color: var(--text-primary);">Your Messages</h3>
+                    <p style="max-width: 300px; line-height: 1.5;">
+                        Send private messages to friends and creators. Share videos, photos, and your thoughts.
+                    </p>
+                    <button 
+                        onclick="startNewChat()" 
+                        style="
+                            margin-top: 24px;
+                            padding: 12px 24px;
+                            background: var(--accent-color);
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: opacity 0.2s ease;
+                        "
+                        onmouseover="this.style.opacity='0.9'"
+                        onmouseout="this.style.opacity='1'"
+                    >
+                        Start New Chat
+                    </button>
+                </div>
+                
+                <!-- Active Chat Interface (hidden by default) -->
+                <div class="active-chat" id="activeChat" style="display: none; flex: 1; flex-direction: column;">
+                    <!-- Chat Header -->
+                    <div class="chat-header" style="
+                        padding: 16px 20px;
+                        border-bottom: 1px solid var(--border-primary);
+                        background: var(--bg-secondary);
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                    ">
+                        <div class="chat-avatar" style="
+                            width: 40px;
+                            height: 40px;
+                            border-radius: 50%;
+                            background: linear-gradient(135deg, var(--accent-color), #ff006e);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 18px;
+                        ">
+                            👤
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--text-primary);" id="chatUsername">Select a chat</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);" id="chatStatus">Online</div>
+                        </div>
+                        <button onclick="openChatOptions()" style="
+                            padding: 8px;
+                            background: none;
+                            border: none;
+                            color: var(--text-secondary);
+                            cursor: pointer;
+                            border-radius: 4px;
+                        ">⋮</button>
+                    </div>
+                    
+                    <!-- Messages Area -->
+                    <div class="messages-area" id="messagesArea" style="
+                        flex: 1;
+                        overflow-y: auto;
+                        padding: 16px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 12px;
+                    ">
+                    </div>
+                    
+                    <!-- Message Input -->
+                    <div class="message-input-area" style="
+                        padding: 16px 20px;
+                        border-top: 1px solid var(--border-primary);
+                        background: var(--bg-secondary);
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                    ">
+                        <button onclick="attachMedia()" style="
+                            padding: 8px;
+                            background: none;
+                            border: none;
+                            color: var(--text-secondary);
+                            cursor: pointer;
+                            font-size: 18px;
+                        ">📎</button>
+                        
+                        <input 
+                            type="text" 
+                            placeholder="Type a message..."
+                            id="messageInput"
+                            style="
+                                flex: 1;
+                                padding: 12px 16px;
+                                border: 1px solid var(--border-primary);
+                                border-radius: 20px;
+                                background: var(--bg-primary);
+                                color: var(--text-primary);
+                                font-size: 14px;
+                                outline: none;
+                            "
+                            onkeypress="if(event.key==='Enter') sendMessage()"
+                        >
+                        
+                        <button onclick="sendMessage()" style="
+                            padding: 10px;
+                            background: var(--accent-color);
+                            border: none;
+                            border-radius: 50%;
+                            color: white;
+                            cursor: pointer;
+                            font-size: 16px;
+                            width: 40px;
+                            height: 40px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        ">➤</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(messagesPage);
+        
+        // Load initial chat list
+        setTimeout(() => loadChatList(), 300);
+    }
+    
+    // Hide all other pages
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
+        el.style.display = 'none';
+    });
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) mainApp.style.display = 'none';
+    
+    messagesPage.style.display = 'flex';
+}
+
+// Messages functionality
+let currentChatId = null;
+let allChats = [];
+
+async function loadChatList() {
+    console.log('💬 Loading chat list');
+    const chatListContent = document.getElementById('chatListContent');
+    
+    if (!chatListContent) return;
+    
+    try {
+        // Simulate loading sample chats
+        const chats = generateSampleChats();
+        allChats = chats;
+        
+        setTimeout(() => {
+            if (chats.length === 0) {
+                chatListContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                        <div style="font-size: 32px; margin-bottom: 16px;">💭</div>
+                        <p>No conversations yet</p>
+                        <p style="font-size: 12px; margin-top: 8px;">Start messaging your friends and creators!</p>
+                    </div>
+                `;
+            } else {
+                chatListContent.innerHTML = chats.map(createChatListItem).join('');
+                
+                // Add click handlers
+                chatListContent.querySelectorAll('.chat-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const chatId = item.dataset.chatId;
+                        openChat(chatId);
+                    });
+                });
+            }
+        }, 400);
+        
+    } catch (error) {
+        console.error('Error loading chats:', error);
+        chatListContent.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                ❌ Failed to load conversations
+            </div>
+        `;
+    }
+}
+
+function generateSampleChats() {
+    return [
+        {
+            id: '1',
+            user: { username: 'bestfriend_sara', avatar: '💕', name: 'Sara Johnson' },
+            lastMessage: 'Hey! Did you see that new dance trend?',
+            time: '2m ago',
+            unread: 2,
+            online: true,
+            timestamp: Date.now() - 2 * 60 * 1000
+        },
+        {
+            id: '2',
+            user: { username: 'musiclover22', avatar: '🎵', name: 'Alex Music' },
+            lastMessage: 'That video was fire! 🔥',
+            time: '1h ago',
+            unread: 0,
+            online: false,
+            timestamp: Date.now() - 60 * 60 * 1000
+        },
+        {
+            id: '3',
+            user: { username: 'fitness_guru', avatar: '💪', name: 'Mike Fitness' },
+            lastMessage: 'Want to collab on a workout video?',
+            time: '3h ago',
+            unread: 1,
+            online: true,
+            timestamp: Date.now() - 3 * 60 * 60 * 1000
+        },
+        {
+            id: '4',
+            user: { username: 'artist_soul', avatar: '🎨', name: 'Emma Art' },
+            lastMessage: 'Love your latest content! So creative ✨',
+            time: '1d ago',
+            unread: 0,
+            online: false,
+            timestamp: Date.now() - 24 * 60 * 60 * 1000
+        },
+        {
+            id: '5',
+            user: { username: 'food_blogger', avatar: '🍜', name: 'Chef Tony' },
+            lastMessage: 'Recipe coming soon!',
+            time: '2d ago',
+            unread: 0,
+            online: true,
+            timestamp: Date.now() - 2 * 24 * 60 * 60 * 1000
+        }
+    ];
+}
+
+function createChatListItem(chat) {
+    return `
+        <div class="chat-item" data-chat-id="${chat.id}" style="
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            border-bottom: 1px solid var(--border-primary);
+            position: relative;
+        " onmouseover="this.style.background='var(--bg-tertiary)'" onmouseout="this.style.background='transparent'">
+            
+            <div style="
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, var(--accent-color), #ff006e);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                margin-right: 12px;
+                position: relative;
+            ">
+                ${chat.user.avatar}
+                ${chat.online ? `
+                    <div style="
+                        position: absolute;
+                        bottom: 2px;
+                        right: 2px;
+                        width: 12px;
+                        height: 12px;
+                        background: #00ff88;
+                        border: 2px solid var(--bg-secondary);
+                        border-radius: 50%;
+                    "></div>
+                ` : ''}
+            </div>
+            
+            <div style="flex: 1; min-width: 0;">
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 4px;
+                ">
+                    <div style="
+                        font-weight: 600;
+                        color: var(--text-primary);
+                        font-size: 14px;
+                        truncate;
+                    ">${chat.user.name}</div>
+                    <div style="
+                        font-size: 11px;
+                        color: var(--text-secondary);
+                    ">${chat.time}</div>
+                </div>
+                
+                <div style="
+                    font-size: 13px;
+                    color: var(--text-secondary);
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    ${chat.unread > 0 ? 'font-weight: 600; color: var(--text-primary);' : ''}
+                ">${chat.lastMessage}</div>
+            </div>
+            
+            ${chat.unread > 0 ? `
+                <div style="
+                    min-width: 20px;
+                    height: 20px;
+                    background: var(--accent-color);
+                    color: white;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 11px;
+                    font-weight: 600;
+                    margin-left: 8px;
+                ">${chat.unread}</div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function openChat(chatId) {
+    console.log(`📱 Opening chat: ${chatId}`);
+    currentChatId = chatId;
+    
+    const chat = allChats.find(c => c.id === chatId);
+    if (!chat) return;
+    
+    // Update active chat in list
+    document.querySelectorAll('.chat-item').forEach(item => {
+        item.style.background = 'transparent';
+    });
+    document.querySelector(`[data-chat-id="${chatId}"]`).style.background = 'var(--bg-tertiary)';
+    
+    // Show chat interface
+    document.getElementById('noChatSelected').style.display = 'none';
+    document.getElementById('activeChat').style.display = 'flex';
+    
+    // Update chat header
+    document.getElementById('chatUsername').textContent = `@${chat.user.username}`;
+    document.getElementById('chatStatus').textContent = chat.online ? 'Online' : 'Last seen recently';
+    
+    // Load messages
+    loadChatMessages(chatId);
+}
+
+function loadChatMessages(chatId) {
+    console.log(`📨 Loading messages for chat: ${chatId}`);
+    const messagesArea = document.getElementById('messagesArea');
+    
+    // Generate sample messages
+    const messages = generateSampleMessages(chatId);
+    
+    messagesArea.innerHTML = messages.map(createMessageBubble).join('');
+    
+    // Scroll to bottom
+    messagesArea.scrollTop = messagesArea.scrollHeight;
+}
+
+function generateSampleMessages(chatId) {
+    const messagesByChat = {
+        '1': [
+            { id: '1', text: 'Hey! How are you doing?', sent: false, time: '10:30 AM' },
+            { id: '2', text: 'I\'m great! Just posted a new video', sent: true, time: '10:32 AM' },
+            { id: '3', text: 'Awesome! Can\'t wait to see it 😍', sent: false, time: '10:33 AM' },
+            { id: '4', text: 'Did you see that new dance trend?', sent: false, time: '2m ago' }
+        ],
+        '2': [
+            { id: '1', text: 'Your latest video is amazing!', sent: false, time: 'Yesterday' },
+            { id: '2', text: 'Thank you so much! 🙏', sent: true, time: 'Yesterday' },
+            { id: '3', text: 'That video was fire! 🔥', sent: false, time: '1h ago' }
+        ]
+    };
+    
+    return messagesByChat[chatId] || [];
+}
+
+function createMessageBubble(message) {
+    return `
+        <div style="
+            display: flex;
+            ${message.sent ? 'justify-content: flex-end;' : 'justify-content: flex-start;'}
+            margin-bottom: 8px;
+        ">
+            <div style="
+                max-width: 70%;
+                padding: 12px 16px;
+                border-radius: ${message.sent ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
+                background: ${message.sent ? 'var(--accent-color)' : 'var(--bg-tertiary)'};
+                color: ${message.sent ? 'white' : 'var(--text-primary)'};
+                font-size: 14px;
+                line-height: 1.4;
+                position: relative;
+            ">
+                ${message.text}
+                <div style="
+                    font-size: 11px;
+                    opacity: 0.7;
+                    margin-top: 4px;
+                    text-align: right;
+                ">${message.time}</div>
+            </div>
+        </div>
+    `;
+}
+
+function sendMessage() {
+    const messageInput = document.getElementById('messageInput');
+    const messageText = messageInput.value.trim();
+    
+    if (!messageText || !currentChatId) return;
+    
+    console.log(`📤 Sending message: ${messageText}`);
+    
+    const messagesArea = document.getElementById('messagesArea');
+    const newMessage = {
+        id: Date.now().toString(),
+        text: messageText,
+        sent: true,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    
+    // Add message to chat
+    const messageBubble = createMessageBubble(newMessage);
+    messagesArea.insertAdjacentHTML('beforeend', messageBubble);
+    
+    // Clear input
+    messageInput.value = '';
+    
+    // Scroll to bottom
+    messagesArea.scrollTop = messagesArea.scrollHeight;
+    
+    // Simulate response after delay
+    setTimeout(() => {
+        const responseMessage = {
+            id: (Date.now() + 1).toString(),
+            text: getRandomResponse(),
+            sent: false,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        
+        const responseBubble = createMessageBubble(responseMessage);
+        messagesArea.insertAdjacentHTML('beforeend', responseBubble);
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    }, 1500);
+}
+
+function getRandomResponse() {
+    const responses = [
+        'That\'s awesome! 😄',
+        'I totally agree!',
+        'Haha that\'s so funny 😂',
+        'Really? Tell me more!',
+        'That sounds amazing!',
+        'I love that! ❤️',
+        'So cool! 🔥',
+        'Absolutely! 💯'
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+}
+
+function searchChats(query) {
+    console.log(`🔍 Searching chats: ${query}`);
+    const filteredChats = allChats.filter(chat => 
+        chat.user.name.toLowerCase().includes(query.toLowerCase()) ||
+        chat.user.username.toLowerCase().includes(query.toLowerCase()) ||
+        chat.lastMessage.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    const chatListContent = document.getElementById('chatListContent');
+    if (filteredChats.length === 0 && query) {
+        chatListContent.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                <div style="font-size: 32px; margin-bottom: 16px;">🔍</div>
+                <p>No conversations found</p>
+            </div>
+        `;
+    } else {
+        chatListContent.innerHTML = filteredChats.map(createChatListItem).join('');
+        
+        // Re-add click handlers
+        chatListContent.querySelectorAll('.chat-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const chatId = item.dataset.chatId;
+                openChat(chatId);
+            });
+        });
+    }
+}
+
+function startNewChat() {
+    console.log('💬 Starting new chat');
+    showNotification('New chat feature coming soon!', 'info');
+}
+
+function attachMedia() {
+    console.log('📎 Attach media');
+    showNotification('Media sharing coming soon!', 'info');
+}
+
+function openChatOptions() {
+    console.log('⋮ Chat options');
+    showNotification('Chat options coming soon!', 'info');
 }
 
 function createFriendsPage() {
@@ -2505,3 +3361,19 @@ window.shareVideo = shareVideo;
 window.useSound = useSound;
 window.favoriteSound = favoriteSound;
 window.playVideo = playVideo;
+
+// Activity functions
+window.createActivityPage = createActivityPage;
+window.loadActivity = loadActivity;
+window.filterActivity = filterActivity;
+window.handleActivityClick = handleActivityClick;
+
+// Messages functions
+window.createMessagesPage = createMessagesPage;
+window.loadChatList = loadChatList;
+window.openChat = openChat;
+window.sendMessage = sendMessage;
+window.searchChats = searchChats;
+window.startNewChat = startNewChat;
+window.attachMedia = attachMedia;
+window.openChatOptions = openChatOptions;
