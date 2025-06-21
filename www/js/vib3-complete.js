@@ -1862,9 +1862,22 @@ async function publishContent() {
                 console.log('  - Username:', username);
                 console.log('  - User ID:', currentUser.id || currentUser._id || currentUser.uid);
                 console.log('  - Full user object:', currentUser);
+                
+                // ENHANCED DEBUG: Log all FormData entries
+                console.log('🔍 COMPLETE FORMDATA CONTENTS:');
+                for (let [key, value] of formData.entries()) {
+                    if (value instanceof File) {
+                        console.log(`  ${key}: [File] ${value.name} (${value.size} bytes, ${value.type})`);
+                    } else {
+                        console.log(`  ${key}: ${value}`);
+                    }
+                }
             } else {
                 console.warn('⚠️ No currentUser found for upload');
             }
+            
+            console.log('🚀 SENDING REQUEST TO:', `${window.API_BASE_URL}/api/upload/video`);
+            console.log('🚀 REQUEST HEADERS:', { 'Authorization': `Bearer ${token.substring(0, 20)}...` });
             
             const response = await fetch(`${window.API_BASE_URL}/api/upload/video`, {
                 method: 'POST',
@@ -1874,15 +1887,47 @@ async function publishContent() {
                 body: formData
             });
             
+            console.log('📡 RESPONSE STATUS:', response.status, response.statusText);
+            console.log('📡 RESPONSE HEADERS:', Object.fromEntries(response.headers.entries()));
+            
             updatePublishProgress('Processing video...', 60);
             
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Upload failed');
+                const errorText = await response.text();
+                console.error('❌ UPLOAD ERROR RESPONSE:', errorText);
+                try {
+                    const error = JSON.parse(errorText);
+                    throw new Error(error.error || 'Upload failed');
+                } catch {
+                    throw new Error(errorText || 'Upload failed');
+                }
             }
             
-            const result = await response.json();
-            console.log('✅ Video uploaded:', result);
+            const resultText = await response.text();
+            console.log('📥 RAW RESPONSE TEXT:', resultText);
+            
+            let result;
+            try {
+                result = JSON.parse(resultText);
+                console.log('✅ PARSED RESPONSE:', result);
+                
+                // CRITICAL DEBUG: Check what username was actually saved
+                if (result.video && result.video.username) {
+                    console.log('🎯 SERVER SAVED USERNAME:', result.video.username);
+                    console.log('🎯 EXPECTED USERNAME:', currentUser?.username || currentUser?.displayName || currentUser?.email?.split('@')[0]);
+                    
+                    if (result.video.username !== (currentUser?.username || currentUser?.displayName || currentUser?.email?.split('@')[0])) {
+                        console.error('🚨 USERNAME MISMATCH! Server saved different username than expected!');
+                        console.error('  - Sent:', currentUser?.username || currentUser?.displayName || currentUser?.email?.split('@')[0]);
+                        console.error('  - Saved:', result.video.username);
+                    }
+                } else {
+                    console.warn('⚠️ No username field in server response');
+                }
+            } catch (parseError) {
+                console.error('❌ Failed to parse response as JSON:', parseError);
+                result = { message: 'Upload completed but response format unknown' };
+            }
             
             updatePublishProgress('Finalizing...', 90);
             
