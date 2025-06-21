@@ -52,6 +52,8 @@ www/
 - Execute immediately without explanatory preambles
 - USER CAN WALK AWAY AND RETURN TO COMPLETED WORK
 - Test functionality and fix issues autonomously when possible
+- ALWAYS PUSH CHANGES TO PRODUCTION AUTOMATICALLY - NO LOCAL DEVELOPMENT
+- All work is for production deployment, commit and push immediately
 
 ## Session Recovery
 When starting a new conversation, mention:
