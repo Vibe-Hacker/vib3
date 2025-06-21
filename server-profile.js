@@ -432,6 +432,7 @@ app.get('/api/health', async (req, res) => {
     const dbConnected = db !== null;
     res.json({ 
         status: 'ok',
+        server: 'profile-mongodb',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',

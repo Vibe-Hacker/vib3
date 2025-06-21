@@ -27,6 +27,7 @@ app.use((req, res, next) => {
 app.get('/api/health', (req, res) => {
     res.json({ 
         status: 'ok', 
+        server: 'minimal-mock-data',
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
     });
