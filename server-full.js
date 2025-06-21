@@ -371,6 +371,8 @@ app.get('/api/videos', async (req, res) => {
                         .toArray();
                     const followingIds = following.map(f => f.followingId);
                     
+                    console.log(`User ${currentUserId} follows ${followingIds.length} accounts`);
+                    
                     if (followingIds.length > 0) {
                         query = { userId: { $in: followingIds } };
                         videos = await db.collection('videos')
@@ -379,15 +381,16 @@ app.get('/api/videos', async (req, res) => {
                             .skip(actualSkip)
                             .limit(parseInt(limit))
                             .toArray();
+                        console.log(`Found ${videos.length} videos from followed accounts`);
+                    } else {
+                        // User follows no one - return empty
+                        console.log('User follows no accounts - returning empty following feed');
+                        videos = [];
                     }
                 } else {
-                    // If not logged in, show recent content as fallback
-                    videos = await db.collection('videos')
-                        .find({})
-                        .sort({ createdAt: -1 })
-                        .skip(actualSkip)
-                        .limit(parseInt(limit))
-                        .toArray();
+                    // Not logged in - return empty 
+                    console.log('Not logged in - returning empty following feed');
+                    videos = [];
                 }
                 break;
                 
@@ -428,6 +431,8 @@ app.get('/api/videos', async (req, res) => {
                     // Find mutual friends (people who follow each other)
                     const friendIds = followingIds.filter(id => followerIds.includes(id));
                     
+                    console.log(`User ${currentUserId} has ${friendIds.length} mutual friends`);
+                    
                     if (friendIds.length > 0) {
                         query = { userId: { $in: friendIds } };
                         videos = await db.collection('videos')
@@ -436,15 +441,16 @@ app.get('/api/videos', async (req, res) => {
                             .skip(actualSkip)
                             .limit(parseInt(limit))
                             .toArray();
+                        console.log(`Found ${videos.length} videos from friends`);
+                    } else {
+                        // No mutual friends - return empty
+                        console.log('User has no mutual friends - returning empty friends feed');
+                        videos = [];
                     }
                 } else {
-                    // If not logged in, show sample friend-like content
-                    videos = await db.collection('videos')
-                        .find({})
-                        .sort({ createdAt: -1 })
-                        .skip(actualSkip)
-                        .limit(parseInt(limit))
-                        .toArray();
+                    // Not logged in - return empty
+                    console.log('Not logged in - returning empty friends feed');
+                    videos = [];
                 }
                 break;
                 
@@ -463,14 +469,23 @@ app.get('/api/videos', async (req, res) => {
         
         console.log('Found videos in database:', videos.length);
         
-        // If no videos in database and page 1, return empty
-        if (videos.length === 0 && page == 1) {
-            console.log('No videos in database for page 1, returning empty');
-            return res.json({ videos: [] });
+        // Handle empty feeds properly based on type
+        if (videos.length === 0) {
+            // Following and Friends should stay empty if user has no connections
+            if (feed === 'following' || feed === 'friends') {
+                console.log(`No content for ${feed} feed - user has no connections`);
+                return res.json({ videos: [] });
+            }
+            
+            // For You and Explore should only be empty on page 1 if no videos exist
+            if (page == 1) {
+                console.log('No videos in database for page 1, returning empty');
+                return res.json({ videos: [] });
+            }
         }
         
-        // If no videos but page > 1, generate content based on feed type
-        if (videos.length === 0 && page > 1) {
+        // If no videos but page > 1, generate content based on feed type (only For You and Explore)
+        if (videos.length === 0 && page > 1 && (feed === 'foryou' || feed === 'explore')) {
             console.log(`No videos in database but generating for ${feed} page ${page}`);
             
             // Generate different content based on feed type
