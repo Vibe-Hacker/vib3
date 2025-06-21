@@ -1150,7 +1150,7 @@ async function publishContent() {
         updatePublishProgress('Preparing upload...', 0);
         
         // Get auth token
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('vib3_token');
         if (!token) {
             showNotification('Please log in to upload content', 'error');
             goToStep(4);
