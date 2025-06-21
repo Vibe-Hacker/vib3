@@ -328,3 +328,72 @@
 .share-more .share-option-icon {
     background: #888;
 }
+
+/* Camera Selection Modal */
+.camera-selection-modal .modal-content {
+    max-width: 500px;
+    padding: 25px;
+}
+
+.camera-header {
+    text-align: center;
+    margin-bottom: 25px;
+    position: relative;
+}
+
+.camera-header h3 {
+    color: white;
+    font-size: 20px;
+    margin: 0;
+}
+
+.camera-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.camera-option {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background: #333;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.camera-option:hover {
+    background: #444;
+    border-color: #fe2c55;
+    transform: translateY(-2px);
+}
+
+.camera-icon {
+    font-size: 24px;
+    margin-right: 15px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(254, 44, 85, 0.2);
+    border-radius: 50%;
+}
+
+.camera-info {
+    flex: 1;
+}
+
+.camera-name {
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.camera-type {
+    color: #999;
+    font-size: 14px;
+}

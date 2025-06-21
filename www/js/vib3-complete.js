@@ -1405,16 +1405,100 @@ function updatePublishProgress(status, percentage) {
 }
 
 async function recordVideo() {
+    // Show camera selection modal first
+    showCameraSelectionModal('video');
+}
+
+async function showCameraSelectionModal(mode) {
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: 'user', width: 720, height: 1280 }, 
-            audio: true 
-        });
+        // Get available video devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
         
-        // Open advanced video editor
-        openAdvancedVideoEditor(stream);
+        const cameraModal = document.createElement('div');
+        cameraModal.className = 'modal camera-selection-modal';
+        cameraModal.style.zIndex = '100001'; // Higher than other modals
+        cameraModal.innerHTML = `
+            <div class="modal-content camera-content">
+                <div class="camera-header">
+                    <button onclick="closeCameraSelection()" class="close-btn">&times;</button>
+                    <h3>📹 Select Camera</h3>
+                </div>
+                
+                <div class="camera-options">
+                    ${videoDevices.length === 0 ? 
+                        '<p>No cameras found. Please connect a camera and try again.</p>' :
+                        videoDevices.map((device, index) => `
+                            <div class="camera-option" onclick="selectCamera('${device.deviceId}', '${mode}', '${device.label || `Camera ${index + 1}`}')">
+                                <div class="camera-icon">📷</div>
+                                <div class="camera-info">
+                                    <div class="camera-name">${device.label || `Camera ${index + 1}`}</div>
+                                    <div class="camera-type">${getCameraType(device.label || '')}</div>
+                                </div>
+                            </div>
+                        `).join('')
+                    }
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(cameraModal);
+        cameraModal.style.display = 'flex';
+        cameraModal.style.position = 'fixed';
+        cameraModal.style.top = '0';
+        cameraModal.style.left = '0';
+        cameraModal.style.right = '0';
+        cameraModal.style.bottom = '0';
+        cameraModal.style.backgroundColor = 'rgba(0,0,0,0.9)';
+        
     } catch (error) {
         showNotification('Camera access required to record video', 'error');
+    }
+}
+
+function getCameraType(label) {
+    const lowerLabel = label.toLowerCase();
+    if (lowerLabel.includes('front') || lowerLabel.includes('facetime') || lowerLabel.includes('user')) {
+        return 'Front Camera';
+    } else if (lowerLabel.includes('back') || lowerLabel.includes('rear') || lowerLabel.includes('environment')) {
+        return 'Back Camera';
+    } else if (lowerLabel.includes('usb') || lowerLabel.includes('external')) {
+        return 'External Camera';
+    } else {
+        return 'Camera';
+    }
+}
+
+function closeCameraSelection() {
+    const modal = document.querySelector('.camera-selection-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function selectCamera(deviceId, mode, cameraName) {
+    closeCameraSelection();
+    
+    try {
+        const constraints = {
+            video: { 
+                deviceId: deviceId ? { exact: deviceId } : undefined,
+                width: 720, 
+                height: 1280 
+            }, 
+            audio: true 
+        };
+        
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        showNotification(`Using ${cameraName}`, 'success');
+        
+        if (mode === 'video') {
+            openAdvancedVideoEditor(stream);
+        } else if (mode === 'live') {
+            openLiveStreamWithCamera(stream);
+        }
+    } catch (error) {
+        showNotification(`Failed to access ${cameraName}`, 'error');
     }
 }
 
@@ -1730,8 +1814,14 @@ function showPage(page) {
 }
 
 function openLiveStreamSetup() {
+    // Show camera selection modal first for live streaming
+    showCameraSelectionModal('live');
+}
+
+function openLiveStreamWithCamera(stream) {
     const liveModal = document.createElement('div');
     liveModal.className = 'modal live-stream-modal';
+    liveModal.style.zIndex = '100000';
     liveModal.innerHTML = `
         <div class="modal-content live-content">
             <div class="live-header">
@@ -1846,8 +1936,22 @@ function openLiveStreamSetup() {
     
     document.body.appendChild(liveModal);
     liveModal.classList.add('show');
+    liveModal.style.display = 'flex';
+    liveModal.style.position = 'fixed';
+    liveModal.style.top = '0';
+    liveModal.style.left = '0';
+    liveModal.style.right = '0';
+    liveModal.style.bottom = '0';
+    liveModal.style.backgroundColor = 'rgba(0,0,0,0.95)';
     
-    initializeLiveStream();
+    // Set up camera stream for live preview
+    const livePreview = document.getElementById('livePreview');
+    if (livePreview && stream) {
+        livePreview.srcObject = stream;
+        console.log('📹 Camera stream connected to live preview');
+    }
+    
+    initializeLiveStream(stream);
 }
 
 // ================ UTILITY FUNCTIONS ================
