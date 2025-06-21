@@ -781,24 +781,363 @@ async function startStitch(videoId) {
 }
 
 // ================ ADVANCED UPLOAD AND EDITING ================
+// Upload Modal State
+let uploadType = null; // 'video' or 'photos'
+let selectedFiles = [];
+let currentEditingFile = null;
+
 function showUploadModal() {
     document.getElementById('uploadModal').classList.add('show');
-    currentStep = 1;
-    showUploadStep(1);
+    goToStep(1);
 }
 
 function closeUploadModal() {
     document.getElementById('uploadModal').classList.remove('show');
+    resetUploadState();
 }
 
-function showUploadStep(step) {
+function resetUploadState() {
+    uploadType = null;
+    selectedFiles = [];
+    currentEditingFile = null;
+    goToStep(1);
+}
+
+function goToStep(step) {
     // Hide all steps
-    for (let i = 1; i <= 3; i++) {
-        document.getElementById(`uploadStep${i}`).style.display = 'none';
+    for (let i = 1; i <= 5; i++) {
+        const stepElement = document.getElementById(`uploadStep${i}`);
+        if (stepElement) {
+            stepElement.style.display = 'none';
+        }
     }
     // Show current step
-    document.getElementById(`uploadStep${step}`).style.display = 'block';
+    const currentStepElement = document.getElementById(`uploadStep${step}`);
+    if (currentStepElement) {
+        currentStepElement.style.display = 'block';
+    }
     currentStep = step;
+    
+    // Setup step-specific functionality
+    if (step === 3) {
+        setupEditingPreview();
+    }
+}
+
+// Step 1: Upload Type Selection
+function selectVideo() {
+    uploadType = 'video';
+    document.getElementById('step2Title').textContent = '🎥 Select Video';
+    document.getElementById('formatHint').textContent = 'Supported: MP4, MOV, AVI (up to 1080p)';
+    goToStep(2);
+}
+
+function selectPhotos() {
+    uploadType = 'photos';
+    document.getElementById('step2Title').textContent = '📸 Select Photos';
+    document.getElementById('formatHint').textContent = 'Select up to 35 images for slideshow';
+    goToStep(2);
+}
+
+// Step 2: File Selection Functions
+function triggerFileSelect() {
+    if (uploadType === 'video') {
+        document.getElementById('videoInput').click();
+    } else if (uploadType === 'photos') {
+        document.getElementById('photoInput').click();
+    }
+}
+
+function handleVideoSelect(event) {
+    const files = Array.from(event.target.files);
+    
+    if (files.length === 0) return;
+    
+    // Validate video files
+    const validFiles = files.filter(file => {
+        const validTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/quicktime'];
+        return validTypes.includes(file.type) && file.size <= 100 * 1024 * 1024; // 100MB limit
+    });
+    
+    if (validFiles.length === 0) {
+        showNotification('Please select valid video files (MP4, MOV, AVI under 100MB)', 'error');
+        return;
+    }
+    
+    selectedFiles = validFiles;
+    displayFilePreview();
+    document.querySelector('.continue-btn').disabled = false;
+}
+
+function handlePhotoSelect(event) {
+    const files = Array.from(event.target.files);
+    
+    if (files.length === 0) return;
+    
+    if (files.length > 35) {
+        showNotification('Maximum 35 photos allowed for slideshow', 'error');
+        return;
+    }
+    
+    // Validate image files
+    const validFiles = files.filter(file => {
+        return file.type.startsWith('image/') && file.size <= 10 * 1024 * 1024; // 10MB limit per image
+    });
+    
+    if (validFiles.length === 0) {
+        showNotification('Please select valid image files under 10MB each', 'error');
+        return;
+    }
+    
+    selectedFiles = validFiles;
+    displayFilePreview();
+    document.querySelector('.continue-btn').disabled = false;
+}
+
+function displayFilePreview() {
+    const container = document.getElementById('previewContainer');
+    container.innerHTML = '';
+    
+    if (uploadType === 'video') {
+        selectedFiles.forEach((file, index) => {
+            const preview = document.createElement('div');
+            preview.className = 'file-preview';
+            preview.innerHTML = `
+                <video controls style="width: 200px; height: 150px; object-fit: cover;">
+                    <source src="${URL.createObjectURL(file)}" type="${file.type}">
+                </video>
+                <div class="file-info">
+                    <div>${file.name}</div>
+                    <div>${(file.size / 1024 / 1024).toFixed(1)}MB</div>
+                </div>
+                <button onclick="removeFile(${index})" class="remove-file">×</button>
+            `;
+            container.appendChild(preview);
+        });
+    } else if (uploadType === 'photos') {
+        selectedFiles.forEach((file, index) => {
+            const preview = document.createElement('div');
+            preview.className = 'file-preview';
+            preview.innerHTML = `
+                <img src="${URL.createObjectURL(file)}" style="width: 150px; height: 150px; object-fit: cover;">
+                <div class="file-info">
+                    <div>${file.name}</div>
+                    <div>${(file.size / 1024 / 1024).toFixed(1)}MB</div>
+                </div>
+                <button onclick="removeFile(${index})" class="remove-file">×</button>
+            `;
+            container.appendChild(preview);
+        });
+    }
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    displayFilePreview();
+    
+    if (selectedFiles.length === 0) {
+        document.querySelector('.continue-btn').disabled = true;
+    }
+}
+
+// Step 3: Editing Functions
+function setupEditingPreview() {
+    const videoPreview = document.getElementById('contentPreview');
+    const photoSlideshow = document.getElementById('photoSlideshow');
+    
+    if (uploadType === 'video' && selectedFiles.length > 0) {
+        videoPreview.src = URL.createObjectURL(selectedFiles[0]);
+        videoPreview.style.display = 'block';
+        photoSlideshow.style.display = 'none';
+        currentEditingFile = selectedFiles[0];
+    } else if (uploadType === 'photos' && selectedFiles.length > 0) {
+        setupPhotoSlideshow();
+        videoPreview.style.display = 'none';
+        photoSlideshow.style.display = 'block';
+    }
+}
+
+function setupPhotoSlideshow() {
+    const slideshow = document.getElementById('photoSlideshow');
+    slideshow.innerHTML = '';
+    
+    selectedFiles.forEach((file, index) => {
+        const slide = document.createElement('div');
+        slide.className = 'slide' + (index === 0 ? ' active' : '');
+        slide.innerHTML = `<img src="${URL.createObjectURL(file)}" style="width: 100%; height: 300px; object-fit: cover;">`;
+        slideshow.appendChild(slide);
+    });
+    
+    // Add slideshow controls
+    const controls = document.createElement('div');
+    controls.className = 'slideshow-controls';
+    controls.innerHTML = `
+        <button onclick="previousSlide()">◀️</button>
+        <span id="slideCounter">1 / ${selectedFiles.length}</span>
+        <button onclick="nextSlide()">▶️</button>
+    `;
+    slideshow.appendChild(controls);
+}
+
+let currentSlide = 0;
+
+function nextSlide() {
+    const slides = document.querySelectorAll('.slide');
+    slides[currentSlide].classList.remove('active');
+    currentSlide = (currentSlide + 1) % slides.length;
+    slides[currentSlide].classList.add('active');
+    document.getElementById('slideCounter').textContent = `${currentSlide + 1} / ${slides.length}`;
+}
+
+function previousSlide() {
+    const slides = document.querySelectorAll('.slide');
+    slides[currentSlide].classList.remove('active');
+    currentSlide = currentSlide === 0 ? slides.length - 1 : currentSlide - 1;
+    slides[currentSlide].classList.add('active');
+    document.getElementById('slideCounter').textContent = `${currentSlide + 1} / ${slides.length}`;
+}
+
+// Editing Tool Functions (Basic implementations)
+function trimVideo() {
+    showNotification('Video trimming tool - Feature coming soon!', 'info');
+}
+
+function addFilter() {
+    showNotification('Filter selection - Feature coming soon!', 'info');
+}
+
+function adjustSpeed() {
+    showNotification('Speed adjustment - Feature coming soon!', 'info');
+}
+
+function addTransition() {
+    showNotification('Transition effects - Feature coming soon!', 'info');
+}
+
+function addMusic() {
+    showNotification('Music library - Feature coming soon!', 'info');
+}
+
+function recordVoiceover() {
+    showNotification('Voiceover recording - Feature coming soon!', 'info');
+}
+
+function adjustVolume() {
+    showNotification('Volume control - Feature coming soon!', 'info');
+}
+
+function selectTemplate() {
+    showNotification('Photo templates - Feature coming soon!', 'info');
+}
+
+function addPhotoEffects() {
+    showNotification('Photo effects - Feature coming soon!', 'info');
+}
+
+function setTiming() {
+    showNotification('Slide timing - Feature coming soon!', 'info');
+}
+
+// Step 4: Hashtag and Publishing Functions
+function handleHashtagInput(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        const input = event.target;
+        const hashtag = input.value.trim().replace(/^#+/, '');
+        if (hashtag) {
+            addHashtag(hashtag);
+            input.value = '';
+        }
+    }
+}
+
+function addHashtag(tag) {
+    const description = document.getElementById('contentDescription');
+    const currentText = description.value;
+    const hashtagText = `#${tag}`;
+    
+    if (!currentText.includes(hashtagText)) {
+        description.value = currentText + (currentText ? ' ' : '') + hashtagText;
+    }
+}
+
+// Schedule handling
+document.addEventListener('DOMContentLoaded', function() {
+    const scheduleRadios = document.querySelectorAll('input[name="schedule"]');
+    const scheduleTime = document.getElementById('scheduleTime');
+    
+    scheduleRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'later') {
+                scheduleTime.style.display = 'block';
+            } else {
+                scheduleTime.style.display = 'none';
+            }
+        });
+    });
+});
+
+async function publishContent() {
+    const title = document.getElementById('contentTitle').value.trim();
+    const description = document.getElementById('contentDescription').value.trim();
+    const privacy = document.getElementById('privacySettings').value;
+    const allowComments = document.getElementById('allowComments').checked;
+    const allowDownloads = document.getElementById('allowDownloads').checked;
+    const allowDuets = document.getElementById('allowDuets').checked;
+    const allowStitch = document.getElementById('allowStitch').checked;
+    const scheduleType = document.querySelector('input[name="schedule"]:checked').value;
+    const scheduleTime = document.getElementById('scheduleTime').value;
+    
+    if (!title) {
+        showNotification('Please add a title for your content', 'error');
+        return;
+    }
+    
+    if (selectedFiles.length === 0) {
+        showNotification('No files selected for upload', 'error');
+        return;
+    }
+    
+    goToStep(5);
+    
+    try {
+        // Simulate upload progress
+        updatePublishProgress('Preparing files...', 0);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        updatePublishProgress('Uploading content...', 25);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        updatePublishProgress('Processing media...', 50);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        updatePublishProgress('Adding metadata...', 75);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        updatePublishProgress('Publishing...', 90);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        updatePublishProgress('Complete!', 100);
+        
+        // Success
+        setTimeout(() => {
+            showNotification('Content published successfully!', 'success');
+            closeUploadModal();
+            // Refresh feed to show new content
+            loadVideoFeed('foryou', true);
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Publish error:', error);
+        showNotification('Failed to publish content. Please try again.', 'error');
+        goToStep(4);
+    }
+}
+
+function updatePublishProgress(status, percentage) {
+    document.getElementById('publishStatus').textContent = status;
+    document.getElementById('publishProgress').textContent = `${percentage}% complete`;
+    document.getElementById('progressFill').style.width = `${percentage}%`;
 }
 
 async function recordVideo() {
@@ -1579,19 +1918,7 @@ function shareNative() {
 }
 
 // ================ UPLOAD & MEDIA ================
-function selectVideo() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'video/*';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            showNotification('Video selected: ' + file.name, 'success');
-            // Handle video upload
-        }
-    };
-    input.click();
-}
+// Note: Main selectVideo function is now in upload modal section above
 
 function uploadProfilePicture() {
     const input = document.createElement('input');
@@ -3540,6 +3867,29 @@ window.showPage = showPage;
 window.showUploadModal = showUploadModal;
 window.closeUploadModal = closeUploadModal;
 window.recordVideo = recordVideo;
+window.selectVideo = selectVideo;
+window.selectPhotos = selectPhotos;
+window.triggerFileSelect = triggerFileSelect;
+window.handleVideoSelect = handleVideoSelect;
+window.handlePhotoSelect = handlePhotoSelect;
+window.removeFile = removeFile;
+window.goToStep = goToStep;
+window.setupEditingPreview = setupEditingPreview;
+window.nextSlide = nextSlide;
+window.previousSlide = previousSlide;
+window.trimVideo = trimVideo;
+window.addFilter = addFilter;
+window.adjustSpeed = adjustSpeed;
+window.addTransition = addTransition;
+window.addMusic = addMusic;
+window.recordVoiceover = recordVoiceover;
+window.adjustVolume = adjustVolume;
+window.selectTemplate = selectTemplate;
+window.addPhotoEffects = addPhotoEffects;
+window.setTiming = setTiming;
+window.handleHashtagInput = handleHashtagInput;
+window.addHashtag = addHashtag;
+window.publishContent = publishContent;
 window.startDuet = startDuet;
 window.startStitch = startStitch;
 window.openMusicLibrary = openMusicLibrary;

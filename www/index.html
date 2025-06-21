@@ -679,47 +679,185 @@
         <div class="modal upload-modal" id="uploadModal">
             <div class="modal-content">
                 <button class="close-btn" onclick="closeUploadModal()" aria-label="Close upload modal">×</button>
+                
+                <!-- Step 1: Upload Type Selection -->
                 <div id="uploadStep1">
-                    <h3>Create New Video</h3>
+                    <h3>🎬 Create New Content</h3>
                     <div class="upload-options">
+                        <div class="upload-option" onclick="selectVideo()" aria-label="Upload video">
+                            <div class="upload-option-icon">🎥</div>
+                            <div class="upload-option-text">
+                                <div>Upload Video</div>
+                                <small>MP4, MOV, AVI up to 1080p</small>
+                            </div>
+                        </div>
+                        <div class="upload-option" onclick="selectPhotos()" aria-label="Upload photos">
+                            <div class="upload-option-icon">📸</div>
+                            <div class="upload-option-text">
+                                <div>Upload Photos</div>
+                                <small>Create slideshow (up to 35 images)</small>
+                            </div>
+                        </div>
                         <div class="upload-option" onclick="recordVideo()" aria-label="Record video">
                             <div class="upload-option-icon">📹</div>
-                            <div>Record Video</div>
+                            <div class="upload-option-text">
+                                <div>Record Live</div>
+                                <small>Use device camera</small>
+                            </div>
                         </div>
-                        <div class="upload-option" onclick="selectVideo()" aria-label="Choose from gallery">
-                            <div class="upload-option-icon">📁</div>
-                            <div>Choose from Gallery</div>
+                    </div>
+                    
+                    <!-- Quality Settings -->
+                    <div class="quality-settings">
+                        <h4>⚙️ Quality Settings</h4>
+                        <div class="setting-item">
+                            <label class="switch">
+                                <input type="checkbox" id="highQuality" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>High-quality uploads (1080p)</span>
+                        </div>
+                        <div class="setting-item">
+                            <label class="switch">
+                                <input type="checkbox" id="dataSaver">
+                                <span class="slider"></span>
+                            </label>
+                            <span>Data saver mode</span>
                         </div>
                     </div>
                 </div>
+
+                <!-- Step 2: File Selection & Preview -->
                 <div id="uploadStep2" style="display: none;">
-                    <h3>Add Details</h3>
-                    <video class="video-preview" id="videoPreview" controls aria-label="Video preview"></video>
-                    <div class="upload-form">
-                        <input type="text" id="videoTitle" placeholder="Video title..." maxlength="100" aria-label="Video title">
-                        <textarea id="videoDescription" placeholder="Describe your video... #hashtags" aria-label="Video description"></textarea>
-                        <button class="trending-sounds-btn" style="width: 100%; padding: 12px; background: #333; color: white; border: none; border-radius: 10px; margin: 10px 0; text-align: left; display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 20px;">🎵</span>
-                            <div><span id="selectedSound">Choose trending sound</span><br><small style="color: #888;">Add popular audio to your video</small></div>
-                        </button>
+                    <h3 id="step2Title">📁 Select Files</h3>
+                    <div class="file-selection">
+                        <input type="file" id="videoInput" accept="video/mp4,video/mov,video/avi,video/quicktime" style="display: none;" onchange="handleVideoSelect(event)" multiple>
+                        <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoSelect(event)" multiple>
+                        
+                        <div class="preview-container" id="previewContainer">
+                            <div class="drop-zone" onclick="triggerFileSelect()">
+                                <div class="drop-icon">📎</div>
+                                <div>Click to select files or drag and drop</div>
+                                <small id="formatHint">Supported: MP4, MOV, AVI</small>
+                            </div>
+                        </div>
                     </div>
+                    
                     <div class="upload-buttons">
-                        <button class="cancel-btn" aria-label="Back to upload options">Back</button>
-                        <button class="publish-btn" aria-label="Publish video" 
-                                onmousedown="console.log('=== PUBLISH BUTTON MOUSEDOWN (HTML) ==='); console.log('Button element:', this); console.log('Event timestamp:', Date.now());"
-                                onmouseup="console.log('=== PUBLISH BUTTON MOUSEUP (HTML) ==='); console.log('Button element:', this);"
-                                onpointerdown="console.log('=== PUBLISH BUTTON POINTERDOWN (HTML) ==='); console.log('Button element:', this);"
-                                onpointerup="console.log('=== PUBLISH BUTTON POINTERUP (HTML) ==='); console.log('Button element:', this);"
-                                ontouchstart="console.log('=== PUBLISH BUTTON TOUCHSTART (HTML) ==='); console.log('Button element:', this);"
-                                ontouchend="console.log('=== PUBLISH BUTTON TOUCHEND (HTML) ==='); console.log('Button element:', this);"
-                                onfocus="console.log('=== PUBLISH BUTTON FOCUS (HTML) ==='); console.log('Button element:', this);"
-                                onblur="console.log('=== PUBLISH BUTTON BLUR (HTML) ==='); console.log('Button element:', this);">Publish</button>
+                        <button class="cancel-btn" onclick="goToStep(1)">Back</button>
+                        <button class="continue-btn" onclick="goToStep(3)" disabled>Continue</button>
                     </div>
                 </div>
-                <div id="uploadStep3" class="loading-state">
+
+                <!-- Step 3: Editing & Effects -->
+                <div id="uploadStep3" style="display: none;">
+                    <h3>✨ Edit Your Content</h3>
+                    <div class="editing-container">
+                        <div class="preview-section">
+                            <video class="content-preview" id="contentPreview" controls style="display: none;"></video>
+                            <div class="photo-slideshow" id="photoSlideshow" style="display: none;"></div>
+                        </div>
+                        
+                        <div class="editing-tools">
+                            <div class="tool-group">
+                                <h4>🎬 Video Tools</h4>
+                                <button class="tool-btn" onclick="trimVideo()">✂️ Trim</button>
+                                <button class="tool-btn" onclick="addFilter()">🎨 Filters</button>
+                                <button class="tool-btn" onclick="adjustSpeed()">⚡ Speed</button>
+                                <button class="tool-btn" onclick="addTransition()">🔄 Transitions</button>
+                            </div>
+                            
+                            <div class="tool-group">
+                                <h4>🎵 Audio</h4>
+                                <button class="tool-btn" onclick="addMusic()">🎵 Add Music</button>
+                                <button class="tool-btn" onclick="recordVoiceover()">🎤 Voiceover</button>
+                                <button class="tool-btn" onclick="adjustVolume()">🔊 Volume</button>
+                            </div>
+                            
+                            <div class="tool-group">
+                                <h4>📸 Photo Tools</h4>
+                                <button class="tool-btn" onclick="selectTemplate()">📋 Templates</button>
+                                <button class="tool-btn" onclick="addPhotoEffects()">✨ Effects</button>
+                                <button class="tool-btn" onclick="setTiming()">⏱️ Timing</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="upload-buttons">
+                        <button class="cancel-btn" onclick="goToStep(2)">Back</button>
+                        <button class="continue-btn" onclick="goToStep(4)">Next</button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Details & Customization -->
+                <div id="uploadStep4" style="display: none;">
+                    <h3>📝 Add Details</h3>
+                    <div class="details-form">
+                        <div class="form-group">
+                            <label>Title</label>
+                            <input type="text" id="contentTitle" placeholder="Give your content a catchy title..." maxlength="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="contentDescription" placeholder="Tell your story... Use #hashtags to reach more people" rows="4"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Hashtags</label>
+                            <div class="hashtag-input">
+                                <input type="text" id="hashtagInput" placeholder="Add hashtags..." onkeypress="handleHashtagInput(event)">
+                                <div class="suggested-hashtags">
+                                    <span class="hashtag-suggestion" onclick="addHashtag('fyp')">#fyp</span>
+                                    <span class="hashtag-suggestion" onclick="addHashtag('viral')">#viral</span>
+                                    <span class="hashtag-suggestion" onclick="addHashtag('trending')">#trending</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Privacy Settings</label>
+                            <select id="privacySettings">
+                                <option value="public">🌍 Public - Anyone can see</option>
+                                <option value="friends">👥 Friends - Only friends can see</option>
+                                <option value="private">🔒 Private - Only you can see</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Additional Options</label>
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" id="allowComments" checked> Allow comments</label>
+                                <label><input type="checkbox" id="allowDownloads"> Allow downloads</label>
+                                <label><input type="checkbox" id="allowDuets" checked> Allow duets</label>
+                                <label><input type="checkbox" id="allowStitch" checked> Allow stitch</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Schedule</label>
+                            <div class="schedule-options">
+                                <label><input type="radio" name="schedule" value="now" checked> Post now</label>
+                                <label><input type="radio" name="schedule" value="later"> Schedule for later</label>
+                            </div>
+                            <input type="datetime-local" id="scheduleTime" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="upload-buttons">
+                        <button class="cancel-btn" onclick="goToStep(3)">Back</button>
+                        <button class="publish-btn" onclick="publishContent()">🚀 Publish</button>
+                    </div>
+                </div>
+
+                <!-- Step 5: Publishing Progress -->
+                <div id="uploadStep5" class="loading-state" style="display: none;">
                     <div class="spinner"></div>
-                    <div>Uploading your video...</div>
-                    <div id="uploadStatus">0% complete</div>
+                    <div id="publishStatus">Preparing your content...</div>
+                    <div id="publishProgress">0% complete</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
                 </div>
             </div>
         </div>
