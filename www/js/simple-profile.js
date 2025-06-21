@@ -388,11 +388,24 @@ function goBackToFeed() {
 function openUploadFromProfile() {
     console.log('🎬 Opening upload from profile page...');
     
-    // Hide the profile page first
-    const profilePage = document.getElementById('profilePageContainer');
+    // Stop all videos first
+    console.log('🛑 Stopping all background videos...');
+    if (window.forceStopAllVideos && typeof window.forceStopAllVideos === 'function') {
+        window.forceStopAllVideos();
+    } else {
+        // Fallback method
+        document.querySelectorAll('video').forEach(video => {
+            video.pause();
+            video.currentTime = 0;
+            video.muted = true;
+        });
+    }
+    
+    // Remove the profile page completely (use correct ID)
+    const profilePage = document.getElementById('profilePage');
     if (profilePage) {
-        profilePage.style.display = 'none';
-        console.log('✅ Profile page hidden');
+        profilePage.remove();
+        console.log('✅ Profile page removed');
     }
     
     // Show the main app
@@ -419,7 +432,7 @@ function openUploadFromProfile() {
             console.error('❌ showUploadModal function not available');
             showNotification('Upload feature temporarily unavailable', 'error');
         }
-    }, 200);
+    }, 100);
 }
 
 // Profile interaction functions
