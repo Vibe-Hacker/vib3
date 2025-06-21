@@ -1831,7 +1831,7 @@ function openLiveStreamWithCamera(stream) {
             
             <div class="live-setup">
                 <div class="live-preview">
-                    <video id="livePreview" autoplay muted></video>
+                    <video id="livePreview" autoplay muted playsinline webkit-playsinline></video>
                     <div class="live-overlay">
                         <div class="live-indicator">🔴 LIVE</div>
                         <div class="viewer-count">0 viewers</div>
@@ -1944,14 +1944,77 @@ function openLiveStreamWithCamera(stream) {
     liveModal.style.bottom = '0';
     liveModal.style.backgroundColor = 'rgba(0,0,0,0.95)';
     
-    // Set up camera stream for live preview
-    const livePreview = document.getElementById('livePreview');
-    if (livePreview && stream) {
-        livePreview.srcObject = stream;
-        console.log('📹 Camera stream connected to live preview');
+    // Set up camera stream for live preview - wait for DOM to be ready
+    setTimeout(() => {
+        const livePreview = document.getElementById('livePreview');
+        if (livePreview && stream) {
+            livePreview.srcObject = stream;
+            livePreview.play().catch(console.error);
+            console.log('📹 Camera stream connected to live preview');
+            
+            // Store stream globally to prevent it from being garbage collected
+            window.currentLiveStream = stream;
+            
+            // Ensure stream stays active
+            stream.getTracks().forEach(track => {
+                console.log(`📡 Track: ${track.kind} - ${track.label} - Active: ${track.enabled}`);
+            });
+        } else {
+            console.error('❌ Live preview element not found or no stream');
+        }
+        
+        initializeLiveStream(stream);
+    }, 100);
+}
+
+function initializeLiveStream(stream) {
+    console.log('🔴 Initializing live stream...');
+    
+    if (!stream) {
+        console.error('❌ No stream provided to initializeLiveStream');
+        return;
     }
     
-    initializeLiveStream(stream);
+    // Keep the stream active and prevent it from stopping
+    stream.getTracks().forEach(track => {
+        track.enabled = true;
+        console.log(`✅ Track ${track.kind} enabled: ${track.enabled}`);
+        
+        // Listen for track ending
+        track.addEventListener('ended', () => {
+            console.warn(`⚠️ Track ${track.kind} ended unexpectedly`);
+        });
+    });
+    
+    // Add stream event listeners
+    stream.addEventListener('addtrack', (event) => {
+        console.log('📡 Track added to stream:', event.track.kind);
+    });
+    
+    stream.addEventListener('removetrack', (event) => {
+        console.log('📡 Track removed from stream:', event.track.kind);
+    });
+    
+    console.log('✅ Live stream initialized successfully');
+}
+
+function closeLiveStream() {
+    console.log('🔴 Closing live stream...');
+    
+    // Stop all tracks in the current stream
+    if (window.currentLiveStream) {
+        window.currentLiveStream.getTracks().forEach(track => {
+            track.stop();
+            console.log(`🛑 Stopped ${track.kind} track`);
+        });
+        window.currentLiveStream = null;
+    }
+    
+    // Remove the modal
+    const modal = document.querySelector('.live-stream-modal');
+    if (modal) {
+        modal.remove();
+    }
 }
 
 // ================ UTILITY FUNCTIONS ================
