@@ -1,1 +1,1 @@
-web: node server-profile.js
+web: node server-profile.js to web: node server-full.js
