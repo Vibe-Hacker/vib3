@@ -796,6 +796,13 @@ function showUploadModal() {
         console.log('🗑️ Removed blocking profile page');
     }
     
+    // Ensure main app is visible
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'block';
+        console.log('✅ Made main app visible');
+    }
+    
     const modal = document.getElementById('uploadModal');
     if (!modal) {
         console.error('❌ Upload modal not found in DOM!');
@@ -823,6 +830,16 @@ function showUploadModal() {
     modal.style.left = '0';
     modal.style.right = '0';
     modal.style.bottom = '0';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.9)'; // Ensure background is visible
+    
+    // Also ensure modal content is visible
+    const modalContent = modal.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.style.visibility = 'visible';
+        modalContent.style.opacity = '1';
+        modalContent.style.display = 'block';
+        console.log('✅ Made modal content visible');
+    }
     
     console.log('✅ Modal classes after update:', modal.className);
     console.log('✅ Modal display after update:', window.getComputedStyle(modal).display);
@@ -914,6 +931,16 @@ function resetUploadState() {
 function goToStep(step) {
     console.log(`📋 Going to upload step ${step}...`);
     
+    // Debug: Check if modal exists and is visible
+    const modal = document.getElementById('uploadModal');
+    if (modal) {
+        console.log('🔍 Modal found, current styles:', {
+            display: window.getComputedStyle(modal).display,
+            visibility: window.getComputedStyle(modal).visibility,
+            opacity: window.getComputedStyle(modal).opacity
+        });
+    }
+    
     // Hide all steps
     for (let i = 1; i <= 5; i++) {
         const stepElement = document.getElementById(`uploadStep${i}`);
@@ -927,8 +954,12 @@ function goToStep(step) {
     if (currentStepElement) {
         currentStepElement.style.display = 'block';
         console.log(`✅ Showing upload step ${step}`);
+        console.log('🔍 Step content:', currentStepElement.innerHTML.substring(0, 200) + '...');
     } else {
         console.error(`❌ Upload step ${step} element not found!`);
+        // Debug: List all upload step elements
+        const allSteps = document.querySelectorAll('[id^="uploadStep"]');
+        console.log('📋 Found upload step elements:', allSteps);
     }
     currentStep = step;
     
