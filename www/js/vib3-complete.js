@@ -1066,7 +1066,11 @@ function showPage(page) {
     }
     
     if (page === 'profile') {
-        createProfilePage();
+        if (window.createSimpleProfilePage) {
+            createSimpleProfilePage();
+        } else {
+            createProfilePage();
+        }
         return;
     }
     
@@ -2633,25 +2637,51 @@ let currentProfileTab = 'videos';
 let currentUserProfile = null;
 
 function createProfilePage() {
+    console.log('🔧 Creating profile page...');
     let profilePage = document.getElementById('profilePage');
     if (!profilePage) {
+        console.log('📝 Profile page does not exist, creating new one...');
         profilePage = document.createElement('div');
         profilePage.id = 'profilePage';
         profilePage.className = 'profile-page';
         profilePage.style.cssText = `
             position: fixed;
             top: 0;
-            margin-left: 240px; 
+            left: 240px; 
             width: calc(100vw - 240px); 
             height: 100vh; 
             overflow-y: auto;
             background: #161823;
             color: white;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            z-index: 10;
+            z-index: 1000;
+            display: block;
         `;
         
         profilePage.innerHTML = `
+            <div style="padding: 50px; text-align: center; color: white;">
+                <h1 style="color: #fe2c55; font-size: 48px; margin-bottom: 20px;">
+                    🎵 VIB3 PROFILE 🎵
+                </h1>
+                <p style="color: white; font-size: 24px; margin-bottom: 30px;">
+                    Welcome to your profile page!
+                </p>
+                <div style="background: #333; padding: 30px; border-radius: 15px; margin: 20px auto; max-width: 600px;">
+                    <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #fe2c55, #ff006e); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 48px;">
+                        👤
+                    </div>
+                    <h2 style="color: white; margin-bottom: 10px;">@${currentUser?.username || 'vib3user'}</h2>
+                    <p style="color: #ccc; margin-bottom: 20px;">Creator | Dancer | Music Lover</p>
+                    <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 20px;">
+                        <div><strong style="color: white;">123</strong> <span style="color: #ccc;">following</span></div>
+                        <div><strong style="color: white;">1.2K</strong> <span style="color: #ccc;">followers</span></div>
+                        <div><strong style="color: white;">5.6K</strong> <span style="color: #ccc;">likes</span></div>
+                    </div>
+                    <button onclick="editProfile()" style="background: #fe2c55; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        Edit Profile
+                    </button>
+                </div>
+            </div>`
             <div style="max-width: 975px; margin: 0 auto; padding: 20px;">
                 <!-- Profile Header -->
                 <div class="profile-header" style="
@@ -2858,6 +2888,7 @@ function createProfilePage() {
         `;
         
         document.body.appendChild(profilePage);
+        console.log('✅ Profile page added to DOM');
         
         // Add tab click handlers
         profilePage.querySelectorAll('.profile-tab').forEach(tab => {
@@ -2869,6 +2900,8 @@ function createProfilePage() {
         
         // Load initial profile data
         setTimeout(() => loadProfileData(), 300);
+    } else {
+        console.log('📄 Profile page already exists, showing it...');
     }
     
     // Hide all other pages except this profile page
@@ -2885,6 +2918,7 @@ function createProfilePage() {
     if (mainApp) mainApp.style.display = 'none';
     
     profilePage.style.display = 'block';
+    console.log('🎯 Profile page display set to block. Final styles:', profilePage.style.cssText);
 }
 
 function createFriendsPage() {
