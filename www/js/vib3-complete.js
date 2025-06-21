@@ -1979,135 +1979,61 @@ function openAdvancedVideoEditor(stream) {
     editorModal.className = 'modal video-editor-modal';
     editorModal.style.zIndex = '100000'; // Higher than upload modal (99999)
     editorModal.innerHTML = `
-        <div class="modal-content editor-content">
-            <div class="editor-header">
-                <button onclick="closeVideoEditor()" class="close-btn">&times;</button>
-                <div class="editor-title">Video Editor</div>
-                <button onclick="saveEditedVideo()" class="save-btn">Save</button>
+        <div class="modal-content editor-content" style="max-width: 375px; height: 85vh; max-height: none; padding: 0; border-radius: 20px; overflow: hidden;">
+            <!-- Top Header -->
+            <div class="editor-header" style="padding: 15px 20px; background: #000; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333;">
+                <button onclick="closeVideoEditor()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+                <div style="color: white; font-weight: 600; font-size: 16px;">Video Editor</div>
+                <button onclick="saveEditedVideo()" style="background: #fe2c55; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 600; cursor: pointer;">Next</button>
             </div>
             
-            <div class="editor-main">
-                <div class="video-preview-area">
-                    <video id="editorPreview" autoplay muted></video>
-                    <canvas id="editorCanvas" style="display: none;"></canvas>
-                    
-                    <!-- Real-time Effects Overlay -->
-                    <div class="effects-overlay">
-                        <div class="effect-buttons">
-                            <button onclick="toggleEffect('beauty')" class="effect-btn">✨ Beauty</button>
-                            <button onclick="toggleEffect('blur')" class="effect-btn">🌫️ Blur BG</button>
-                            <button onclick="toggleEffect('greenscreen')" class="effect-btn">🟢 Green Screen</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Recording Controls -->
-                    <div class="recording-controls">
-                        <button id="recordButton" onclick="toggleRecording()" class="record-btn">🔴</button>
-                        <button onclick="flipCamera()" class="flip-btn">🔄</button>
-                        <button onclick="toggleFlash()" class="flash-btn">⚡</button>
-                        <div class="timer-display">00:00</div>
-                    </div>
+            <!-- Video Preview Area -->
+            <div class="video-preview-container" style="flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; height: 450px;">
+                <video id="editorPreview" autoplay muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                <canvas id="editorCanvas" style="display: none;"></canvas>
+                
+                <!-- Recording Controls Overlay -->
+                <div class="recording-controls" style="position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 15px;">
+                    <button onclick="flipCamera()" style="width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: white; font-size: 20px; cursor: pointer;">🔄</button>
+                    <button onclick="toggleFlash()" style="width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: white; font-size: 20px; cursor: pointer;">⚡</button>
+                    <button onclick="toggleGridLines()" style="width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: white; font-size: 20px; cursor: pointer;">⚏</button>
                 </div>
                 
-                <div class="editor-sidebar">
-                    <!-- Filters -->
-                    <div class="editor-section">
-                        <h4>🎨 Filters</h4>
-                        <div class="filter-grid">
-                            <button onclick="applyFilter('normal')" class="filter-btn active">Normal</button>
-                            <button onclick="applyFilter('vibrant')" class="filter-btn">Vibrant</button>
-                            <button onclick="applyFilter('vintage')" class="filter-btn">Vintage</button>
-                            <button onclick="applyFilter('bw')" class="filter-btn">B&W</button>
-                            <button onclick="applyFilter('warm')" class="filter-btn">Warm</button>
-                            <button onclick="applyFilter('cold')" class="filter-btn">Cold</button>
-                            <button onclick="applyFilter('dramatic')" class="filter-btn">Dramatic</button>
-                            <button onclick="applyFilter('film')" class="filter-btn">Film</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Effects -->
-                    <div class="editor-section">
-                        <h4>✨ Effects</h4>
-                        <div class="effects-grid">
-                            <button onclick="addEffect('sparkle')" class="effect-btn">✨ Sparkle</button>
-                            <button onclick="addEffect('hearts')" class="effect-btn">💕 Hearts</button>
-                            <button onclick="addEffect('confetti')" class="effect-btn">🎉 Confetti</button>
-                            <button onclick="addEffect('snow')" class="effect-btn">❄️ Snow</button>
-                            <button onclick="addEffect('fire')" class="effect-btn">🔥 Fire</button>
-                            <button onclick="addEffect('neon')" class="effect-btn">💡 Neon</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Speed -->
-                    <div class="editor-section">
-                        <h4>⚡ Speed</h4>
-                        <div class="speed-controls">
-                            <button onclick="setSpeed(0.3)" class="speed-btn">0.3x</button>
-                            <button onclick="setSpeed(0.5)" class="speed-btn">0.5x</button>
-                            <button onclick="setSpeed(1)" class="speed-btn active">1x</button>
-                            <button onclick="setSpeed(1.5)" class="speed-btn">1.5x</button>
-                            <button onclick="setSpeed(2)" class="speed-btn">2x</button>
-                            <button onclick="setSpeed(3)" class="speed-btn">3x</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Text -->
-                    <div class="editor-section">
-                        <h4>📝 Text</h4>
-                        <button onclick="addTextOverlay()" class="add-text-btn">+ Add Text</button>
-                        <div class="text-styles">
-                            <button onclick="setTextStyle('classic')" class="text-style-btn">Classic</button>
-                            <button onclick="setTextStyle('bold')" class="text-style-btn">Bold</button>
-                            <button onclick="setTextStyle('neon')" class="text-style-btn">Neon</button>
-                            <button onclick="setTextStyle('handwritten')" class="text-style-btn">Handwritten</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Music -->
-                    <div class="editor-section">
-                        <h4>🎵 Music</h4>
-                        <button onclick="openMusicLibrary()" class="music-btn">Browse Sounds</button>
-                        <button onclick="recordVoiceover()" class="voiceover-btn">🎤 Voice Over</button>
-                        <div class="volume-controls">
-                            <label>Original: </label>
-                            <input type="range" min="0" max="100" value="50" onchange="setOriginalVolume(this.value)">
-                            <label>Music: </label>
-                            <input type="range" min="0" max="100" value="50" onchange="setMusicVolume(this.value)">
-                        </div>
-                    </div>
-                    
-                    <!-- Timer & Tools -->
-                    <div class="editor-section">
-                        <h4>⏰ Timer & Tools</h4>
-                        <button onclick="setRecordingTimer(3)" class="timer-btn">3s Timer</button>
-                        <button onclick="setRecordingTimer(10)" class="timer-btn">10s Timer</button>
-                        <button onclick="toggleCountdown()" class="countdown-btn">Countdown</button>
-                        <button onclick="toggleGridLines()" class="grid-btn">Grid Lines</button>
-                    </div>
+                <!-- Timer Display -->
+                <div class="timer-display" style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.6); color: white; padding: 8px 12px; border-radius: 20px; font-weight: 600;">00:00</div>
+                
+                <!-- Record Button -->
+                <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);">
+                    <button id="recordButton" onclick="toggleRecording()" style="width: 70px; height: 70px; border-radius: 50%; background: #fe2c55; border: 4px solid white; color: white; font-size: 30px; cursor: pointer; box-shadow: 0 4px 15px rgba(254, 44, 85, 0.4);">⬤</button>
                 </div>
             </div>
             
-            <!-- Timeline Editor -->
-            <div class="timeline-editor">
-                <div class="timeline-tracks">
-                    <div class="track video-track">
-                        <label>Video</label>
-                        <div class="track-content"></div>
-                    </div>
-                    <div class="track audio-track">
-                        <label>Audio</label>
-                        <div class="track-content"></div>
-                    </div>
-                    <div class="track effects-track">
-                        <label>Effects</label>
-                        <div class="track-content"></div>
-                    </div>
-                </div>
-                <div class="timeline-controls">
-                    <button onclick="trimVideo()" class="trim-btn">✂️ Trim</button>
-                    <button onclick="splitVideo()" class="split-btn">🔪 Split</button>
-                    <button onclick="mergeClips()" class="merge-btn">🔗 Merge</button>
-                </div>
+            <!-- TikTok-Style Bottom Toolbar -->
+            <div class="editor-toolbar" style="background: #000; border-top: 1px solid #333; padding: 15px 10px; display: flex; justify-content: space-around; align-items: center;">
+                <button onclick="openEditorTool('filters')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 12px; gap: 5px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px;">🎨</div>
+                    <span>Filters</span>
+                </button>
+                <button onclick="openEditorTool('effects')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 12px; gap: 5px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px;">✨</div>
+                    <span>Effects</span>
+                </button>
+                <button onclick="openEditorTool('speed')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 12px; gap: 5px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px;">⚡</div>
+                    <span>Speed</span>
+                </button>
+                <button onclick="openEditorTool('text')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 12px; gap: 5px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px;">📝</div>
+                    <span>Text</span>
+                </button>
+                <button onclick="openEditorTool('music')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 12px; gap: 5px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px;">🎵</div>
+                    <span>Music</span>
+                </button>
+                <button onclick="openEditorTool('timer')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 12px; gap: 5px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px;">⏰</div>
+                    <span>Timer</span>
+                </button>
             </div>
         </div>
     `;
@@ -2127,6 +2053,198 @@ function openAdvancedVideoEditor(stream) {
     
     // Initialize video editor
     initializeVideoEditor(stream);
+}
+
+// ================ TIKTOK-STYLE EDITOR TOOL MODALS ================
+function openEditorTool(toolType) {
+    // Remove any existing tool modal
+    const existingModal = document.querySelector('.editor-tool-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Create tool modal
+    const toolModal = document.createElement('div');
+    toolModal.className = 'modal editor-tool-modal';
+    toolModal.style.zIndex = '100001'; // Higher than video editor
+    
+    let toolContent = '';
+    
+    switch(toolType) {
+        case 'filters':
+            toolContent = `
+                <div class="modal-content" style="max-width: 375px; height: 60vh; padding: 20px; border-radius: 20px; background: #1a1a1a;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="color: white; margin: 0;">🎨 Filters</h3>
+                        <button onclick="closeEditorTool()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; overflow-y: auto; max-height: 400px;">
+                        <button onclick="applyFilter('normal')" class="filter-option" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <div style="width: 50px; height: 50px; border-radius: 8px; background: linear-gradient(45deg, #ff6b6b, #4ecdc4);"></div>
+                            <span style="font-size: 12px;">Normal</span>
+                        </button>
+                        <button onclick="applyFilter('vibrant')" class="filter-option" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <div style="width: 50px; height: 50px; border-radius: 8px; background: linear-gradient(45deg, #ff9a56, #ff6b6b);"></div>
+                            <span style="font-size: 12px;">Vibrant</span>
+                        </button>
+                        <button onclick="applyFilter('vintage')" class="filter-option" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <div style="width: 50px; height: 50px; border-radius: 8px; background: linear-gradient(45deg, #8b4513, #daa520);"></div>
+                            <span style="font-size: 12px;">Vintage</span>
+                        </button>
+                        <button onclick="applyFilter('bw')" class="filter-option" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <div style="width: 50px; height: 50px; border-radius: 8px; background: linear-gradient(45deg, #333, #ccc);"></div>
+                            <span style="font-size: 12px;">B&W</span>
+                        </button>
+                        <button onclick="applyFilter('warm')" class="filter-option" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <div style="width: 50px; height: 50px; border-radius: 8px; background: linear-gradient(45deg, #ff8a80, #ffab40);"></div>
+                            <span style="font-size: 12px;">Warm</span>
+                        </button>
+                        <button onclick="applyFilter('cold')" class="filter-option" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <div style="width: 50px; height: 50px; border-radius: 8px; background: linear-gradient(45deg, #64b5f6, #81c784);"></div>
+                            <span style="font-size: 12px;">Cold</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'effects':
+            toolContent = `
+                <div class="modal-content" style="max-width: 375px; height: 60vh; padding: 20px; border-radius: 20px; background: #1a1a1a;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="color: white; margin: 0;">✨ Effects</h3>
+                        <button onclick="closeEditorTool()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; overflow-y: auto; max-height: 400px;">
+                        <button onclick="addEffect('sparkle')" class="effect-option" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <div style="font-size: 30px;">✨</div>
+                            <span style="font-size: 12px;">Sparkle</span>
+                        </button>
+                        <button onclick="addEffect('hearts')" class="effect-option" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <div style="font-size: 30px;">💕</div>
+                            <span style="font-size: 12px;">Hearts</span>
+                        </button>
+                        <button onclick="addEffect('confetti')" class="effect-option" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <div style="font-size: 30px;">🎉</div>
+                            <span style="font-size: 12px;">Confetti</span>
+                        </button>
+                        <button onclick="addEffect('snow')" class="effect-option" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <div style="font-size: 30px;">❄️</div>
+                            <span style="font-size: 12px;">Snow</span>
+                        </button>
+                        <button onclick="addEffect('fire')" class="effect-option" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <div style="font-size: 30px;">🔥</div>
+                            <span style="font-size: 12px;">Fire</span>
+                        </button>
+                        <button onclick="addEffect('neon')" class="effect-option" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                            <div style="font-size: 30px;">💡</div>
+                            <span style="font-size: 12px;">Neon</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'speed':
+            toolContent = `
+                <div class="modal-content" style="max-width: 375px; height: 40vh; padding: 20px; border-radius: 20px; background: #1a1a1a;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="color: white; margin: 0;">⚡ Speed</h3>
+                        <button onclick="closeEditorTool()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                        <button onclick="setSpeed(0.3)" class="speed-btn" style="padding: 15px 20px; background: #333; border: none; border-radius: 25px; color: white; cursor: pointer; font-weight: 600;">0.3x</button>
+                        <button onclick="setSpeed(0.5)" class="speed-btn" style="padding: 15px 20px; background: #333; border: none; border-radius: 25px; color: white; cursor: pointer; font-weight: 600;">0.5x</button>
+                        <button onclick="setSpeed(1)" class="speed-btn active" style="padding: 15px 20px; background: #fe2c55; border: none; border-radius: 25px; color: white; cursor: pointer; font-weight: 600;">1x</button>
+                        <button onclick="setSpeed(1.5)" class="speed-btn" style="padding: 15px 20px; background: #333; border: none; border-radius: 25px; color: white; cursor: pointer; font-weight: 600;">1.5x</button>
+                        <button onclick="setSpeed(2)" class="speed-btn" style="padding: 15px 20px; background: #333; border: none; border-radius: 25px; color: white; cursor: pointer; font-weight: 600;">2x</button>
+                        <button onclick="setSpeed(3)" class="speed-btn" style="padding: 15px 20px; background: #333; border: none; border-radius: 25px; color: white; cursor: pointer; font-weight: 600;">3x</button>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'text':
+            toolContent = `
+                <div class="modal-content" style="max-width: 375px; height: 50vh; padding: 20px; border-radius: 20px; background: #1a1a1a;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="color: white; margin: 0;">📝 Text</h3>
+                        <button onclick="closeEditorTool()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <button onclick="addTextOverlay()" style="width: 100%; padding: 15px; background: #fe2c55; border: none; border-radius: 12px; color: white; font-weight: 600; cursor: pointer;">+ Add Text</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                        <button onclick="setTextStyle('classic')" class="text-style-btn" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer;">Classic</button>
+                        <button onclick="setTextStyle('bold')" class="text-style-btn" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; font-weight: bold;">Bold</button>
+                        <button onclick="setTextStyle('neon')" class="text-style-btn" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: #00ffff; cursor: pointer; text-shadow: 0 0 10px #00ffff;">Neon</button>
+                        <button onclick="setTextStyle('handwritten')" class="text-style-btn" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; font-family: cursive;">Handwritten</button>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'music':
+            toolContent = `
+                <div class="modal-content" style="max-width: 375px; height: 50vh; padding: 20px; border-radius: 20px; background: #1a1a1a;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="color: white; margin: 0;">🎵 Music</h3>
+                        <button onclick="closeEditorTool()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <button onclick="openMusicLibrary()" style="width: 100%; padding: 15px; background: #fe2c55; border: none; border-radius: 12px; color: white; font-weight: 600; cursor: pointer;">Browse Sounds</button>
+                        <button onclick="recordVoiceover()" style="width: 100%; padding: 15px; background: #333; border: none; border-radius: 12px; color: white; font-weight: 600; cursor: pointer;">🎤 Voice Over</button>
+                        <div style="background: #333; padding: 15px; border-radius: 12px;">
+                            <div style="margin-bottom: 10px; color: white; font-size: 14px;">Volume Controls</div>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <label style="color: white; min-width: 60px; font-size: 12px;">Original:</label>
+                                <input type="range" min="0" max="100" value="50" onchange="setOriginalVolume(this.value)" style="flex: 1;">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <label style="color: white; min-width: 60px; font-size: 12px;">Music:</label>
+                                <input type="range" min="0" max="100" value="50" onchange="setMusicVolume(this.value)" style="flex: 1;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'timer':
+            toolContent = `
+                <div class="modal-content" style="max-width: 375px; height: 40vh; padding: 20px; border-radius: 20px; background: #1a1a1a;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="color: white; margin: 0;">⏰ Timer & Tools</h3>
+                        <button onclick="closeEditorTool()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                        <button onclick="setRecordingTimer(3)" class="timer-btn" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; font-weight: 600;">3s Timer</button>
+                        <button onclick="setRecordingTimer(10)" class="timer-btn" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; font-weight: 600;">10s Timer</button>
+                        <button onclick="toggleCountdown()" class="countdown-btn" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; font-weight: 600;">Countdown</button>
+                        <button onclick="toggleGridLines()" class="grid-btn" style="background: #333; border: none; border-radius: 12px; padding: 15px; color: white; cursor: pointer; font-weight: 600;">Grid Lines</button>
+                    </div>
+                </div>
+            `;
+            break;
+    }
+    
+    toolModal.innerHTML = toolContent;
+    document.body.appendChild(toolModal);
+    toolModal.style.display = 'flex';
+    
+    // Add click outside to close
+    toolModal.addEventListener('click', (e) => {
+        if (e.target === toolModal) {
+            closeEditorTool();
+        }
+    });
+}
+
+function closeEditorTool() {
+    const toolModal = document.querySelector('.editor-tool-modal');
+    if (toolModal) {
+        toolModal.remove();
+    }
 }
 
 // ================ VIDEO EDITOR INITIALIZATION ================
