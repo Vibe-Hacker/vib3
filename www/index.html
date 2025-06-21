@@ -751,44 +751,41 @@
                     </div>
                 </div>
 
-                <!-- Step 3: Editing & Effects -->
+                <!-- Step 3: Compact Video Editor -->
                 <div id="uploadStep3" style="display: none;">
-                    <h3>✨ Edit Your Content</h3>
-                    <div class="editing-container">
-                        <div class="preview-section">
-                            <video class="content-preview" id="contentPreview" controls style="display: none;"></video>
-                            <div class="photo-slideshow" id="photoSlideshow" style="display: none;"></div>
+                    <h3>🚀 TikTok-Style Editor</h3>
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <div style="margin-bottom: 30px;">
+                            <div style="font-size: 60px; margin-bottom: 20px;">🎬</div>
+                            <h2 style="color: white; margin-bottom: 15px;">Ready to edit your video?</h2>
+                            <p style="color: #888; margin-bottom: 30px;">Our compact editor gives you all the tools you need without scrolling!</p>
                         </div>
                         
-                        <div class="editing-tools">
-                            <div class="tool-group">
-                                <h4>🎬 Video Tools</h4>
-                                <button class="tool-btn advanced-editor-btn" onclick="openAdvancedVideoEditor()" style="background: linear-gradient(45deg, #fe2c55, #ff006e); color: white; font-weight: 600;">🚀 Advanced Editor</button>
-                                <button class="tool-btn" onclick="trimVideo()">✂️ Trim</button>
-                                <button class="tool-btn" onclick="addFilter()">🎨 Filters</button>
-                                <button class="tool-btn" onclick="adjustSpeed()">⚡ Speed</button>
-                                <button class="tool-btn" onclick="addTransition()">🔄 Transitions</button>
-                            </div>
-                            
-                            <div class="tool-group">
-                                <h4>🎵 Audio</h4>
-                                <button class="tool-btn" onclick="addMusic()">🎵 Add Music</button>
-                                <button class="tool-btn" onclick="recordVoiceover()">🎤 Voiceover</button>
-                                <button class="tool-btn" onclick="adjustVolume()">🔊 Volume</button>
-                            </div>
-                            
-                            <div class="tool-group">
-                                <h4>📸 Photo Tools</h4>
-                                <button class="tool-btn" onclick="selectTemplate()">📋 Templates</button>
-                                <button class="tool-btn" onclick="addPhotoEffects()">✨ Effects</button>
-                                <button class="tool-btn" onclick="setTiming()">⏱️ Timing</button>
-                            </div>
+                        <button onclick="openAdvancedVideoEditor(); closeUploadModal();" style="
+                            background: linear-gradient(45deg, #fe2c55, #ff006e); 
+                            color: white; 
+                            border: none; 
+                            padding: 15px 40px; 
+                            border-radius: 25px; 
+                            font-size: 18px; 
+                            font-weight: 600; 
+                            cursor: pointer; 
+                            box-shadow: 0 4px 15px rgba(254, 44, 85, 0.4);
+                            margin-bottom: 20px;
+                        ">
+                            🚀 Open Compact Editor
+                        </button>
+                        
+                        <div style="color: #666; font-size: 14px;">
+                            ✓ No scrolling needed<br>
+                            ✓ All tools in bottom toolbar<br>
+                            ✓ TikTok-style interface
                         </div>
                     </div>
                     
                     <div class="upload-buttons">
                         <button class="cancel-btn" onclick="goToStep(2)">Back</button>
-                        <button class="continue-btn" onclick="goToStep(4)">Next</button>
+                        <button class="continue-btn" onclick="goToStep(4)">Skip Editing</button>
                     </div>
                 </div>
 

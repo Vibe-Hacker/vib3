@@ -1324,12 +1324,16 @@ function processSimpleRecordedVideo(videoFile) {
     // Set the recorded video and continue to upload process
     window.selectedVideoFile = videoFile;
     
-    // Show upload modal and go to step 3
+    // Close upload modal and open compact editor directly
     const uploadModal = document.getElementById('uploadModal');
     if (uploadModal) {
-        uploadModal.style.display = 'flex';
-        goToStep(3); // Go to details step
+        uploadModal.style.display = 'none';
+        uploadModal.classList.remove('active');
     }
+    
+    // Open the compact video editor directly
+    console.log('🚀 Opening compact editor after recording');
+    openAdvancedVideoEditor();
 }
 
 function cancelSimpleRecording() {
