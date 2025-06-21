@@ -156,8 +156,9 @@ const db = {
                     limit: function(n) {
                         return {
                             get: async function() {
-                                // Get videos from API
-                                const response = await fetch(`${window.API_BASE_URL}/api/videos?limit=` + n, {
+                                // Get videos from API with cache busting
+                                const cacheBuster = Date.now();
+                                const response = await fetch(`${window.API_BASE_URL}/api/videos?limit=${n}&_t=${cacheBuster}`, {
                                     headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
                                 });
                                 const data = await response.json();

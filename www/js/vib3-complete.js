@@ -428,7 +428,9 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
         }
         
         try {
-            const response = await fetch(`${window.API_BASE_URL}/api/videos?feed=${feedType}&page=${page}&limit=10`, {
+            // Add cache busting to prevent stale data
+            const timestamp = Date.now();
+            const response = await fetch(`${window.API_BASE_URL}/api/videos?feed=${feedType}&page=${page}&limit=10&_t=${timestamp}`, {
                 headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
             });
             
@@ -1796,9 +1798,20 @@ async function publishContent() {
             
             // Add user information for proper association
             if (currentUser) {
-                const username = currentUser.displayName || currentUser.email?.split('@')[0] || 'user';
+                // Try multiple possible username sources
+                const username = currentUser.username || 
+                               currentUser.displayName || 
+                               currentUser.name ||
+                               currentUser.email?.split('@')[0] || 
+                               'user';
                 formData.append('username', username);
-                console.log('📤 Adding username to upload:', username);
+                formData.append('userId', currentUser.id || currentUser._id || currentUser.uid || '');
+                console.log('📤 Adding user info to upload:');
+                console.log('  - Username:', username);
+                console.log('  - User ID:', currentUser.id || currentUser._id || currentUser.uid);
+                console.log('  - Full user object:', currentUser);
+            } else {
+                console.warn('⚠️ No currentUser found for upload');
             }
             
             const response = await fetch(`${window.API_BASE_URL}/api/upload/video`, {
@@ -1828,9 +1841,19 @@ async function publishContent() {
             
             // Add user information for proper association
             if (currentUser) {
-                const username = currentUser.displayName || currentUser.email?.split('@')[0] || 'user';
+                // Try multiple possible username sources
+                const username = currentUser.username || 
+                               currentUser.displayName || 
+                               currentUser.name ||
+                               currentUser.email?.split('@')[0] || 
+                               'user';
                 formData.append('username', username);
-                console.log('📤 Adding username to photo upload:', username);
+                formData.append('userId', currentUser.id || currentUser._id || currentUser.uid || '');
+                console.log('📤 Adding user info to photo upload:');
+                console.log('  - Username:', username);
+                console.log('  - User ID:', currentUser.id || currentUser._id || currentUser.uid);
+            } else {
+                console.warn('⚠️ No currentUser found for photo upload');
             }
             
             // Add all photos
@@ -3106,8 +3129,11 @@ function switchFeedTab(feedType) {
     // Clean up any orphaned media elements
     cleanupOrphanedMedia();
     
-    // Load the feed content with fresh data
-    loadVideoFeed(feedType, 1, false); // Force fresh load, no append
+    // Add a small delay to ensure cleanup is complete before loading new content
+    setTimeout(() => {
+        // Load the feed content with fresh data
+        loadVideoFeed(feedType, 1, false); // Force fresh load, no append
+    }, 100);
     
     // After a brief delay, ensure the first video starts playing
     setTimeout(() => {
@@ -3513,6 +3539,7 @@ async function startLiveStream() {
         if (goLiveBtn) {
             goLiveBtn.textContent = '⏹️ Stop Stream';
             goLiveBtn.style.background = '#dc3545';
+            goLiveBtn.onclick = stopLiveStream;
         }
         
         // Start the live stream broadcast
@@ -3604,6 +3631,7 @@ function stopLiveStream() {
     if (goLiveBtn) {
         goLiveBtn.textContent = '🔴 Go Live';
         goLiveBtn.style.background = '#fe2c55';
+        goLiveBtn.onclick = startLiveStream;
     }
     
     // Hide live chat
