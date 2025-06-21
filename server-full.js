@@ -1061,6 +1061,143 @@ app.get('/api/user/profile', async (req, res) => {
     }
 });
 
+// Configure multer for profile image uploads
+const profileImageUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit for profile images
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.'));
+        }
+    }
+});
+
+// Upload profile image
+app.post('/api/user/profile-image', requireAuth, profileImageUpload.single('profileImage'), async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+
+    try {
+        const userId = req.user.userId;
+        const file = req.file;
+
+        if (!file) {
+            return res.status(400).json({ error: 'No image file provided' });
+        }
+
+        console.log(`🖼️ Uploading profile image for user ${userId}:`, {
+            filename: file.originalname,
+            size: file.size,
+            mimetype: file.mimetype
+        });
+
+        // Generate unique filename
+        const fileExtension = path.extname(file.originalname);
+        const fileName = `profile-${userId}-${Date.now()}${fileExtension}`;
+        const key = `profile-images/${fileName}`;
+
+        // Upload to DigitalOcean Spaces
+        const uploadParams = {
+            Bucket: BUCKET_NAME,
+            Key: key,
+            Body: file.buffer,
+            ContentType: file.mimetype,
+            ACL: 'public-read'
+        };
+
+        const uploadResult = await s3.upload(uploadParams).promise();
+        const profileImageUrl = uploadResult.Location;
+
+        console.log(`✅ Profile image uploaded successfully:`, profileImageUrl);
+
+        // Update user profile in database
+        const updateResult = await db.collection('users').updateOne(
+            { _id: new ObjectId(userId) },
+            { 
+                $set: { 
+                    profileImage: profileImageUrl,
+                    profilePicture: null, // Clear emoji if switching to image
+                    updatedAt: new Date()
+                }
+            }
+        );
+
+        if (updateResult.matchedCount === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({ 
+            success: true,
+            profilePictureUrl: profileImageUrl,
+            message: 'Profile image updated successfully'
+        });
+
+    } catch (error) {
+        console.error('Profile image upload error:', error);
+        res.status(500).json({ error: 'Failed to upload profile image' });
+    }
+});
+
+// Update user profile (for text fields like bio, username, emoji profile pictures)
+app.put('/api/user/profile', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+
+    try {
+        const userId = req.user.userId;
+        const updates = req.body;
+
+        // Validate allowed fields
+        const allowedFields = ['bio', 'username', 'displayName', 'profilePicture'];
+        const validUpdates = {};
+
+        for (const field of allowedFields) {
+            if (updates[field] !== undefined) {
+                validUpdates[field] = updates[field];
+            }
+        }
+
+        // If setting emoji profile picture, clear the image
+        if (validUpdates.profilePicture) {
+            validUpdates.profileImage = null;
+        }
+
+        if (Object.keys(validUpdates).length === 0) {
+            return res.status(400).json({ error: 'No valid fields to update' });
+        }
+
+        validUpdates.updatedAt = new Date();
+
+        console.log(`👤 Updating profile for user ${userId}:`, validUpdates);
+
+        const updateResult = await db.collection('users').updateOne(
+            { _id: new ObjectId(userId) },
+            { $set: validUpdates }
+        );
+
+        if (updateResult.matchedCount === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({ 
+            success: true,
+            updates: validUpdates,
+            message: 'Profile updated successfully'
+        });
+
+    } catch (error) {
+        console.error('Profile update error:', error);
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
+
 // Get user stats (followers, following, likes)
 app.get('/api/user/stats', async (req, res) => {
     if (!db) {

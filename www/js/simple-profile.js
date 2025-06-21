@@ -171,10 +171,6 @@ function createSimpleProfilePage() {
                 </div>
             </div>
             
-            <!-- Debug Upload Button -->
-            <div style="position: fixed; top: 20px; right: 300px; z-index: 9999;">
-                <button onclick="debugUploadModal()" style="padding: 8px 16px; background: red; color: white; border: none; border-radius: 4px; font-size: 12px;">TEST UPLOAD</button>
-            </div>
         </div>
     `;
     
@@ -287,8 +283,18 @@ function updateProfileDisplay(userData) {
     
     // Update profile picture
     const profilePicEl = document.getElementById('profilePicture');
-    if (profilePicEl && userData.profilePicture) {
-        profilePicEl.textContent = userData.profilePicture;
+    if (profilePicEl) {
+        if (userData.profileImage) {
+            // Show uploaded image
+            profilePicEl.style.backgroundImage = `url(${userData.profileImage})`;
+            profilePicEl.style.backgroundSize = 'cover';
+            profilePicEl.style.backgroundPosition = 'center';
+            profilePicEl.textContent = '';
+        } else if (userData.profilePicture) {
+            // Show emoji
+            profilePicEl.style.backgroundImage = '';
+            profilePicEl.textContent = userData.profilePicture;
+        }
     }
 }
 
@@ -790,9 +796,10 @@ async function editUsername() {
 
 async function changeProfilePicture() {
     const emojis = ['👤', '😀', '😎', '🤩', '🥳', '🦄', '🌟', '💫', '🎵', '🎭', '🎨', '🏆'];
-    const currentEmoji = document.getElementById('profilePicture').textContent;
+    const currentPicture = document.getElementById('profilePicture');
+    const currentEmoji = currentPicture.textContent;
     
-    // Create emoji picker modal
+    // Create profile picture picker modal
     const modal = document.createElement('div');
     modal.style.cssText = `
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -803,13 +810,28 @@ async function changeProfilePicture() {
     modal.innerHTML = `
         <div style="background: #222; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%;">
             <h3 style="color: white; margin-bottom: 20px;">Choose Profile Picture</h3>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
-                ${emojis.map(emoji => `
-                    <button onclick="selectProfilePicture('${emoji}')" style="width: 60px; height: 60px; font-size: 30px; background: ${emoji === currentEmoji ? '#fe2c55' : '#333'}; border: none; border-radius: 12px; cursor: pointer; color: white;">
-                        ${emoji}
-                    </button>
-                `).join('')}
+            
+            <!-- Upload Image Option -->
+            <div style="margin-bottom: 20px;">
+                <input type="file" id="profileImageUpload" accept="image/*" style="display: none;">
+                <button onclick="document.getElementById('profileImageUpload').click()" style="width: 100%; padding: 15px; background: #fe2c55; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 10px;">
+                    📷 Upload Photo
+                </button>
+                <div style="color: #888; font-size: 12px; text-align: center;">JPG, PNG, GIF up to 5MB</div>
             </div>
+            
+            <!-- Emoji Options -->
+            <div style="border-top: 1px solid #444; padding-top: 20px;">
+                <h4 style="color: white; margin-bottom: 15px; font-size: 16px;">Or choose an emoji:</h4>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                    ${emojis.map(emoji => `
+                        <button onclick="selectProfilePicture('${emoji}')" style="width: 60px; height: 60px; font-size: 30px; background: ${emoji === currentEmoji ? '#fe2c55' : '#333'}; border: none; border-radius: 12px; cursor: pointer; color: white;">
+                            ${emoji}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+            
             <button onclick="closePictureModal()" style="background: #666; color: white; border: none; padding: 12px 24px; border-radius: 8px; width: 100%; margin-top: 20px; cursor: pointer;">
                 Cancel
             </button>
@@ -818,22 +840,74 @@ async function changeProfilePicture() {
     
     document.body.appendChild(modal);
     
+    // Handle file upload
+    modal.querySelector('#profileImageUpload').onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('Image too large. Maximum size is 5MB.', 'error');
+                return;
+            }
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showNotification('Please select a valid image file.', 'error');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('profileImage', file);
+                
+                const baseURL = getAPIBaseURL();
+                const token = localStorage.getItem('vib3_token');
+                
+                showNotification('Uploading profile picture...', 'info');
+                
+                const response = await fetch(`${baseURL}/api/user/profile-image`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // Update profile picture display
+                    updateProfilePictureDisplay(data.profilePictureUrl, null);
+                    showNotification('Profile picture updated!', 'success');
+                    modal.remove();
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Failed to upload profile picture', 'error');
+                }
+            } catch (error) {
+                console.error('Error uploading profile picture:', error);
+                showNotification('Error uploading profile picture', 'error');
+            }
+        }
+    };
+    
     window.closePictureModal = () => modal.remove();
     
     window.selectProfilePicture = async (emoji) => {
         try {
             const baseURL = getAPIBaseURL();
+            const token = localStorage.getItem('vib3_token');
+            
             const response = await fetch(`${baseURL}/api/user/profile`, {
                 method: 'PUT',
                 headers: { 
-                    'Authorization': `Bearer ${window.authToken}`,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ profilePicture: emoji })
             });
             
             if (response.ok) {
-                document.getElementById('profilePicture').textContent = emoji;
+                updateProfilePictureDisplay(null, emoji);
                 showNotification('Profile picture updated!', 'success');
                 modal.remove();
             } else {
@@ -844,6 +918,24 @@ async function changeProfilePicture() {
             showNotification('Error updating profile picture', 'error');
         }
     };
+}
+
+// Helper function to update profile picture display
+function updateProfilePictureDisplay(imageUrl, emoji) {
+    const profilePicture = document.getElementById('profilePicture');
+    if (profilePicture) {
+        if (imageUrl) {
+            // Show uploaded image
+            profilePicture.style.backgroundImage = `url(${imageUrl})`;
+            profilePicture.style.backgroundSize = 'cover';
+            profilePicture.style.backgroundPosition = 'center';
+            profilePicture.textContent = '';
+        } else if (emoji) {
+            // Show emoji
+            profilePicture.style.backgroundImage = '';
+            profilePicture.textContent = emoji;
+        }
+    }
 }
 
 function openProfileSettings() {
