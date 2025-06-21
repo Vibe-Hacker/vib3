@@ -1979,59 +1979,59 @@ function openAdvancedVideoEditor(stream) {
     editorModal.className = 'modal video-editor-modal';
     editorModal.style.zIndex = '100000'; // Higher than upload modal (99999)
     editorModal.innerHTML = `
-        <div class="modal-content editor-content" style="max-width: 375px; height: 85vh; max-height: none; padding: 0; border-radius: 20px; overflow: hidden;">
+        <div class="modal-content editor-content" style="max-width: 375px; height: 85vh; max-height: none; padding: 0; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column;">
             <!-- Top Header -->
-            <div class="editor-header" style="padding: 15px 20px; background: #000; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333;">
-                <button onclick="closeVideoEditor()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+            <div class="editor-header" style="padding: 12px 20px; background: #000; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; flex-shrink: 0;">
+                <button onclick="closeVideoEditor()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">✕</button>
                 <div style="color: white; font-weight: 600; font-size: 16px;">Video Editor</div>
-                <button onclick="saveEditedVideo()" style="background: #fe2c55; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 600; cursor: pointer;">Next</button>
+                <button onclick="saveEditedVideo()" style="background: #fe2c55; color: white; border: none; padding: 6px 14px; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 14px;">Next</button>
             </div>
             
             <!-- Video Preview Area -->
-            <div class="video-preview-container" style="flex: 1; background: #000; position: relative; display: flex; align-items: center; justify-content: center; height: 450px;">
+            <div class="video-preview-container" style="background: #000; position: relative; display: flex; align-items: center; justify-content: center; height: 300px; flex-shrink: 0;">
                 <video id="editorPreview" autoplay muted style="width: 100%; height: 100%; object-fit: cover;"></video>
                 <canvas id="editorCanvas" style="display: none;"></canvas>
                 
                 <!-- Recording Controls Overlay -->
-                <div class="recording-controls" style="position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 15px;">
-                    <button onclick="flipCamera()" style="width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: white; font-size: 20px; cursor: pointer;">🔄</button>
-                    <button onclick="toggleFlash()" style="width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: white; font-size: 20px; cursor: pointer;">⚡</button>
-                    <button onclick="toggleGridLines()" style="width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: white; font-size: 20px; cursor: pointer;">⚏</button>
+                <div class="recording-controls" style="position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; gap: 10px;">
+                    <button onclick="flipCamera()" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: white; font-size: 16px; cursor: pointer;">🔄</button>
+                    <button onclick="toggleFlash()" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: white; font-size: 16px; cursor: pointer;">⚡</button>
+                    <button onclick="toggleGridLines()" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: white; font-size: 16px; cursor: pointer;">⚏</button>
                 </div>
                 
                 <!-- Timer Display -->
-                <div class="timer-display" style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.6); color: white; padding: 8px 12px; border-radius: 20px; font-weight: 600;">00:00</div>
+                <div class="timer-display" style="position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.6); color: white; padding: 6px 10px; border-radius: 15px; font-weight: 600; font-size: 14px;">00:00</div>
                 
                 <!-- Record Button -->
-                <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);">
-                    <button id="recordButton" onclick="toggleRecording()" style="width: 70px; height: 70px; border-radius: 50%; background: #fe2c55; border: 4px solid white; color: white; font-size: 30px; cursor: pointer; box-shadow: 0 4px 15px rgba(254, 44, 85, 0.4);">⬤</button>
+                <div style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);">
+                    <button id="recordButton" onclick="toggleRecording()" style="width: 60px; height: 60px; border-radius: 50%; background: #fe2c55; border: 3px solid white; color: white; font-size: 24px; cursor: pointer; box-shadow: 0 3px 10px rgba(254, 44, 85, 0.4);">⬤</button>
                 </div>
             </div>
             
             <!-- TikTok-Style Bottom Toolbar -->
-            <div class="editor-toolbar" style="background: #000; border-top: 1px solid #333; padding: 15px 10px; display: flex; justify-content: space-around; align-items: center;">
-                <button onclick="openEditorTool('filters')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 12px; gap: 5px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px;">🎨</div>
+            <div class="editor-toolbar" style="background: #000; border-top: 1px solid #333; padding: 10px 5px; display: flex; justify-content: space-around; align-items: center; flex-shrink: 0;">
+                <button onclick="openEditorTool('filters')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 10px; gap: 3px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 14px;">🎨</div>
                     <span>Filters</span>
                 </button>
-                <button onclick="openEditorTool('effects')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 12px; gap: 5px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px;">✨</div>
+                <button onclick="openEditorTool('effects')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 10px; gap: 3px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 14px;">✨</div>
                     <span>Effects</span>
                 </button>
-                <button onclick="openEditorTool('speed')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 12px; gap: 5px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px;">⚡</div>
+                <button onclick="openEditorTool('speed')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 10px; gap: 3px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 14px;">⚡</div>
                     <span>Speed</span>
                 </button>
-                <button onclick="openEditorTool('text')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 12px; gap: 5px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px;">📝</div>
+                <button onclick="openEditorTool('text')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 10px; gap: 3px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 14px;">📝</div>
                     <span>Text</span>
                 </button>
-                <button onclick="openEditorTool('music')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 12px; gap: 5px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px;">🎵</div>
+                <button onclick="openEditorTool('music')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 10px; gap: 3px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 14px;">🎵</div>
                     <span>Music</span>
                 </button>
-                <button onclick="openEditorTool('timer')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 12px; gap: 5px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 18px;">⏰</div>
+                <button onclick="openEditorTool('timer')" class="tool-btn" style="display: flex; flex-direction: column; align-items: center; background: none; border: none; color: white; cursor: pointer; font-size: 10px; gap: 3px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 14px;">⏰</div>
                     <span>Timer</span>
                 </button>
             </div>
