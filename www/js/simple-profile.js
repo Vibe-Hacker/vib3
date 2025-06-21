@@ -9,6 +9,25 @@ function createSimpleProfilePage() {
         existingProfile.remove();
     }
     
+    // Get current user data
+    const user = window.currentUser || { 
+        email: 'user@example.com',
+        username: 'vib3user',
+        bio: 'Welcome to my VIB3!',
+        profilePicture: '👤',
+        stats: {
+            following: 0,
+            followers: 0,
+            likes: 0,
+            videos: 0
+        }
+    };
+    
+    // Load user profile data
+    if (window.authToken) {
+        loadUserProfileData();
+    }
+    
     // Create new profile page
     const profilePage = document.createElement('div');
     profilePage.id = 'profilePage';
@@ -42,7 +61,7 @@ function createSimpleProfilePage() {
             <div style="display: flex; align-items: center; gap: 30px; max-width: 1000px; margin: 0 auto;">
                 <div style="position: relative;">
                     <div id="profilePicture" style="width: 140px; height: 140px; background: linear-gradient(135deg, #333, #666); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; border: 4px solid rgba(255,255,255,0.2); cursor: pointer;" onclick="changeProfilePicture()">
-                        👤
+                        ${user.profilePicture || '👤'}
                     </div>
                     <button onclick="changeProfilePicture()" style="position: absolute; bottom: 0; right: 0; background: #fe2c55; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 16px; cursor: pointer;">
                         📷
@@ -50,25 +69,25 @@ function createSimpleProfilePage() {
                 </div>
                 <div style="flex: 1;">
                     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                        <h1 id="profileUsername" style="font-size: 36px; margin: 0; cursor: pointer;" onclick="editUsername()">@vib3user</h1>
+                        <h1 id="profileUsername" style="font-size: 36px; margin: 0; cursor: pointer;" onclick="editUsername()">@${user.username || 'vib3user'}</h1>
                         <button onclick="editUsername()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             Edit
                         </button>
                     </div>
                     <div id="profileBio" style="font-size: 16px; margin-bottom: 20px; line-height: 1.5; cursor: pointer; min-height: 24px;" onclick="editBio()">
-                        Creator | Dancer | Music Lover ✨ Living my best life through dance 💃 Follow for daily vibes!
+                        ${user.bio || 'Welcome to my VIB3!'}
                     </div>
                     <div style="display: flex; gap: 30px; margin-bottom: 20px;">
                         <div onclick="showFollowing()" style="cursor: pointer; text-align: center;">
-                            <strong style="font-size: 24px; display: block;">123</strong>
+                            <strong id="followingCount" style="font-size: 24px; display: block;">${user.stats?.following || 0}</strong>
                             <span style="color: rgba(255,255,255,0.7);">Following</span>
                         </div>
                         <div onclick="showFollowers()" style="cursor: pointer; text-align: center;">
-                            <strong style="font-size: 24px; display: block;">1.2K</strong>
+                            <strong id="followersCount" style="font-size: 24px; display: block;">${user.stats?.followers || 0}</strong>
                             <span style="color: rgba(255,255,255,0.7);">Followers</span>
                         </div>
                         <div style="cursor: pointer; text-align: center;">
-                            <strong style="font-size: 24px; display: block;">5.6K</strong>
+                            <strong id="likesCount" style="font-size: 24px; display: block;">${user.stats?.likes || 0}</strong>
                             <span style="color: rgba(255,255,255,0.7);">Likes</span>
                         </div>
                     </div>
@@ -109,8 +128,10 @@ function createSimpleProfilePage() {
         <div style="padding: 30px 50px; max-width: 1000px; margin: 0 auto;">
             <!-- Videos Grid -->
             <div id="videosContent" class="profile-content">
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
-                    ${generateVideoGrid()}
+                <div style="text-align: center; padding: 60px 20px; color: #666;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">📹</div>
+                    <h3 style="margin-bottom: 10px;">Loading videos...</h3>
+                    <p>Your videos will appear here</p>
                 </div>
             </div>
             
@@ -138,8 +159,10 @@ function createSimpleProfilePage() {
             
             <!-- Following Feed -->
             <div id="followingContent" class="profile-content" style="display: none;">
-                <div style="display: flex; flex-direction: column; gap: 20px;">
-                    ${generateFollowingFeed()}
+                <div style="text-align: center; padding: 60px 20px; color: #666;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">📱</div>
+                    <h3 style="margin-bottom: 10px;">Following Feed</h3>
+                    <p>Posts from people you follow will appear here</p>
                 </div>
             </div>
         </div>
@@ -157,88 +180,143 @@ function createSimpleProfilePage() {
     return profilePage;
 }
 
-function generateVideoGrid() {
-    const videos = [
-        { id: 1, thumbnail: '🎵', title: 'Dance Challenge', views: '2.1M', duration: '0:15' },
-        { id: 2, thumbnail: '🎭', title: 'Comedy Skit', views: '890K', duration: '0:30' },
-        { id: 3, thumbnail: '🎨', title: 'Art Tutorial', views: '1.5M', duration: '1:45' },
-        { id: 4, thumbnail: '🍕', title: 'Food Review', views: '654K', duration: '0:45' },
-        { id: 5, thumbnail: '🏃', title: 'Fitness Tips', views: '987K', duration: '1:00' },
-        { id: 6, thumbnail: '🎸', title: 'Music Cover', views: '2.3M', duration: '2:30' }
-    ];
-    
-    return videos.map(video => `
-        <div style="background: #222; border-radius: 8px; overflow: hidden; cursor: pointer; position: relative; aspect-ratio: 9/16;" onclick="playVideo(${video.id})">
-            <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #333, #555); display: flex; align-items: center; justify-content: center; font-size: 48px;">
-                ${video.thumbnail}
-            </div>
-            <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
-                ${video.duration}
-            </div>
-            <div style="position: absolute; bottom: 8px; left: 8px; color: white; font-size: 12px; background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 4px;">
-                ${video.views}
-            </div>
-        </div>
-    `).join('');
+// Real-time profile data functions
+async function loadUserProfileData() {
+    try {
+        const response = await fetch('/api/user/profile', {
+            headers: { 'Authorization': `Bearer ${window.authToken}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            updateProfileDisplay(data);
+            loadUserVideos();
+            loadUserStats();
+        }
+    } catch (error) {
+        console.error('Error loading profile data:', error);
+    }
 }
 
-function generateFollowingFeed() {
-    const followingPosts = [
-        { 
-            user: 'vibemaster', 
-            avatar: '🎵', 
-            username: 'Vibe Master',
-            timeAgo: '2h ago',
-            content: 'Just dropped my latest dance routine! Who else is ready to vibe? 💃',
-            thumbnail: '🕺',
-            likes: '2.1K',
-            comments: '156'
-        },
-        { 
-            user: 'dancequeen', 
-            avatar: '💃', 
-            username: 'Dance Queen',
-            timeAgo: '5h ago',
-            content: 'New tutorial coming tomorrow! Can you guess the song? 🎶',
-            thumbnail: '🎭',
-            likes: '1.8K',
-            comments: '89'
-        },
-        { 
-            user: 'musiclover', 
-            avatar: '🎶', 
-            username: 'Music Lover',
-            timeAgo: '1d ago',
-            content: 'Cover of my favorite song! Hope you love it as much as I do ❤️',
-            thumbnail: '🎸',
-            likes: '945',
-            comments: '67'
+async function loadUserVideos() {
+    try {
+        const response = await fetch('/api/user/videos', {
+            headers: { 'Authorization': `Bearer ${window.authToken}` }
+        });
+        
+        if (response.ok) {
+            const videos = await response.json();
+            displayUserVideos(videos);
         }
-    ];
+    } catch (error) {
+        console.error('Error loading user videos:', error);
+    }
+}
+
+async function loadUserStats() {
+    try {
+        const response = await fetch('/api/user/stats', {
+            headers: { 'Authorization': `Bearer ${window.authToken}` }
+        });
+        
+        if (response.ok) {
+            const stats = await response.json();
+            updateStatsDisplay(stats);
+        }
+    } catch (error) {
+        console.error('Error loading user stats:', error);
+    }
+}
+
+function updateProfileDisplay(userData) {
+    // Update username
+    const usernameEl = document.getElementById('profileUsername');
+    if (usernameEl && userData.username) {
+        usernameEl.textContent = `@${userData.username}`;
+    }
     
-    return followingPosts.map(post => `
-        <div style="background: #222; border-radius: 12px; padding: 20px;">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
-                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #fe2c55, #ff006e); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                    ${post.avatar}
-                </div>
-                <div style="flex: 1;">
-                    <div style="color: white; font-weight: 600;">@${post.user}</div>
-                    <div style="color: #999; font-size: 14px;">${post.username} • ${post.timeAgo}</div>
-                </div>
-                <button style="background: none; border: none; color: #666; font-size: 20px; cursor: pointer;">⋯</button>
+    // Update bio
+    const bioEl = document.getElementById('profileBio');
+    if (bioEl && userData.bio) {
+        bioEl.textContent = userData.bio;
+    }
+    
+    // Update profile picture
+    const profilePicEl = document.getElementById('profilePicture');
+    if (profilePicEl && userData.profilePicture) {
+        profilePicEl.textContent = userData.profilePicture;
+    }
+}
+
+function updateStatsDisplay(stats) {
+    if (stats.following !== undefined) {
+        document.getElementById('followingCount').textContent = formatNumber(stats.following);
+    }
+    if (stats.followers !== undefined) {
+        document.getElementById('followersCount').textContent = formatNumber(stats.followers);
+    }
+    if (stats.likes !== undefined) {
+        document.getElementById('likesCount').textContent = formatNumber(stats.likes);
+    }
+}
+
+function formatNumber(num) {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+}
+
+function displayUserVideos(videos) {
+    const videosContent = document.getElementById('videosContent');
+    if (!videosContent) return;
+    
+    if (videos.length === 0) {
+        videosContent.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: #666;">
+                <div style="font-size: 48px; margin-bottom: 20px;">📹</div>
+                <h3 style="margin-bottom: 10px;">No videos yet</h3>
+                <p>Upload your first video to get started!</p>
+                <button onclick="showUploadModal()" style="background: #fe2c55; color: white; border: none; padding: 12px 24px; border-radius: 8px; margin-top: 20px; cursor: pointer;">
+                    Upload Video
+                </button>
             </div>
-            <p style="color: white; margin-bottom: 15px; line-height: 1.5;">${post.content}</p>
-            <div style="background: #333; border-radius: 8px; height: 200px; display: flex; align-items: center; justify-content: center; font-size: 64px; margin-bottom: 15px; cursor: pointer;" onclick="playVideo('${post.user}')">
-                ${post.thumbnail}
+        `;
+    } else {
+        videosContent.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                ${videos.map(video => createVideoCard(video)).join('')}
             </div>
-            <div style="display: flex; gap: 20px; color: #999;">
-                <span style="cursor: pointer;" onclick="likePost('${post.user}')">❤️ ${post.likes}</span>
-                <span style="cursor: pointer;" onclick="commentOnPost('${post.user}')">💬 ${post.comments}</span>
-                <span style="cursor: pointer;" onclick="sharePost('${post.user}')">🔗 Share</span>
+        `;
+    }
+}
+
+function createVideoCard(video) {
+    return `
+        <div style="background: #222; border-radius: 8px; overflow: hidden; cursor: pointer; position: relative; aspect-ratio: 9/16;" onclick="playUserVideo('${video._id}')">
+            ${video.thumbnail ? 
+                `<img src="${video.thumbnail}" style="width: 100%; height: 100%; object-fit: cover;">` :
+                `<div style="width: 100%; height: 100%; background: linear-gradient(135deg, #333, #555); display: flex; align-items: center; justify-content: center; font-size: 48px;">
+                    🎵
+                </div>`
+            }
+            <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                ${formatDuration(video.duration)}
+            </div>
+            <div style="position: absolute; bottom: 8px; left: 8px; color: white; font-size: 12px; background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 4px;">
+                ${formatNumber(video.views || 0)}
             </div>
         </div>
-    `).join('');
+    `;
+}
+
+function formatDuration(seconds) {
+    if (!seconds) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 function goBackToFeed() {
@@ -290,39 +368,140 @@ function switchProfileTab(tab) {
     if (activeContent) {
         activeContent.style.display = 'block';
     }
+    
+    // Load content for the selected tab
+    switch(tab) {
+        case 'videos':
+            loadUserVideos();
+            break;
+        case 'liked':
+            loadLikedVideos();
+            break;
+        case 'favorites':
+            loadFavoriteVideos();
+            break;
+        case 'following':
+            loadFollowingFeed();
+            break;
+    }
 }
 
-function editBio() {
+async function editBio() {
     const bioElement = document.getElementById('profileBio');
     const currentBio = bioElement.textContent;
     
     const newBio = prompt('Edit your bio:', currentBio);
     if (newBio !== null && newBio.trim() !== '') {
-        bioElement.textContent = newBio;
-        showNotification('Bio updated!', 'success');
+        try {
+            const response = await fetch('/api/user/profile', {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${window.authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ bio: newBio.trim() })
+            });
+            
+            if (response.ok) {
+                bioElement.textContent = newBio;
+                showNotification('Bio updated!', 'success');
+            } else {
+                showNotification('Failed to update bio', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating bio:', error);
+            showNotification('Error updating bio', 'error');
+        }
     }
 }
 
-function editUsername() {
+async function editUsername() {
     const usernameElement = document.getElementById('profileUsername');
     const currentUsername = usernameElement.textContent.replace('@', '');
     
     const newUsername = prompt('Edit your username:', currentUsername);
     if (newUsername !== null && newUsername.trim() !== '') {
-        usernameElement.textContent = '@' + newUsername.trim().replace('@', '');
-        showNotification('Username updated!', 'success');
+        const cleanUsername = newUsername.trim().replace('@', '').toLowerCase();
+        
+        try {
+            const response = await fetch('/api/user/profile', {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${window.authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username: cleanUsername })
+            });
+            
+            if (response.ok) {
+                usernameElement.textContent = '@' + cleanUsername;
+                showNotification('Username updated!', 'success');
+            } else {
+                const data = await response.json();
+                showNotification(data.error || 'Username unavailable', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating username:', error);
+            showNotification('Error updating username', 'error');
+        }
     }
 }
 
-function changeProfilePicture() {
+async function changeProfilePicture() {
     const emojis = ['👤', '😀', '😎', '🤩', '🥳', '🦄', '🌟', '💫', '🎵', '🎭', '🎨', '🏆'];
-    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+    const currentEmoji = document.getElementById('profilePicture').textContent;
     
-    const profilePic = document.getElementById('profilePicture');
-    if (profilePic) {
-        profilePic.textContent = randomEmoji;
-        showNotification('Profile picture updated!', 'success');
-    }
+    // Create emoji picker modal
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.8); z-index: 2000; display: flex; 
+        align-items: center; justify-content: center;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: #222; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%;">
+            <h3 style="color: white; margin-bottom: 20px;">Choose Profile Picture</h3>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                ${emojis.map(emoji => `
+                    <button onclick="selectProfilePicture('${emoji}')" style="width: 60px; height: 60px; font-size: 30px; background: ${emoji === currentEmoji ? '#fe2c55' : '#333'}; border: none; border-radius: 12px; cursor: pointer; color: white;">
+                        ${emoji}
+                    </button>
+                `).join('')}
+            </div>
+            <button onclick="closePictureModal()" style="background: #666; color: white; border: none; padding: 12px 24px; border-radius: 8px; width: 100%; margin-top: 20px; cursor: pointer;">
+                Cancel
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    window.closePictureModal = () => modal.remove();
+    
+    window.selectProfilePicture = async (emoji) => {
+        try {
+            const response = await fetch('/api/user/profile', {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${window.authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ profilePicture: emoji })
+            });
+            
+            if (response.ok) {
+                document.getElementById('profilePicture').textContent = emoji;
+                showNotification('Profile picture updated!', 'success');
+                modal.remove();
+            } else {
+                showNotification('Failed to update profile picture', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating profile picture:', error);
+            showNotification('Error updating profile picture', 'error');
+        }
+    };
 }
 
 function openProfileSettings() {
@@ -370,22 +549,40 @@ function openProfileSettings() {
     };
 }
 
-function showFollowing() {
-    showFollowModal('Following', [
-        { username: 'vibemaster', name: 'Vibe Master', followers: '2.1M', avatar: '🎵' },
-        { username: 'dancequeen', name: 'Dance Queen', followers: '1.8M', avatar: '💃' },
-        { username: 'musiclover', name: 'Music Lover', followers: '945K', avatar: '🎶' },
-        { username: 'creator_101', name: 'Creator 101', followers: '523K', avatar: '🎬' }
-    ]);
+async function showFollowing() {
+    try {
+        const response = await fetch('/api/user/following', {
+            headers: { 'Authorization': `Bearer ${window.authToken}` }
+        });
+        
+        if (response.ok) {
+            const following = await response.json();
+            showFollowModal('Following', following);
+        } else {
+            showFollowModal('Following', []);
+        }
+    } catch (error) {
+        console.error('Error loading following:', error);
+        showFollowModal('Following', []);
+    }
 }
 
-function showFollowers() {
-    showFollowModal('Followers', [
-        { username: 'superfan1', name: 'Super Fan', followers: '12K', avatar: '⭐' },
-        { username: 'vibesupporter', name: 'Vibe Supporter', followers: '8.9K', avatar: '🔥' },
-        { username: 'dancelover', name: 'Dance Lover', followers: '5.2K', avatar: '💫' },
-        { username: 'musicfan', name: 'Music Fan', followers: '3.1K', avatar: '🎤' }
-    ]);
+async function showFollowers() {
+    try {
+        const response = await fetch('/api/user/followers', {
+            headers: { 'Authorization': `Bearer ${window.authToken}` }
+        });
+        
+        if (response.ok) {
+            const followers = await response.json();
+            showFollowModal('Followers', followers);
+        } else {
+            showFollowModal('Followers', []);
+        }
+    } catch (error) {
+        console.error('Error loading followers:', error);
+        showFollowModal('Followers', []);
+    }
 }
 
 function showFollowModal(title, users) {
@@ -403,17 +600,21 @@ function showFollowModal(title, users) {
                 <button onclick="closeModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
             </div>
             <div style="display: flex; flex-direction: column; gap: 12px;">
-                ${users.map(user => `
+                ${users.length === 0 ? `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <p>No ${title.toLowerCase()} yet</p>
+                    </div>
+                ` : users.map(user => `
                     <div style="display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 8px; background: #333;">
                         <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #fe2c55, #ff006e); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-                            ${user.avatar}
+                            ${user.profilePicture || user.avatar || '👤'}
                         </div>
                         <div style="flex: 1;">
                             <div style="color: white; font-weight: 600;">@${user.username}</div>
-                            <div style="color: #999; font-size: 14px;">${user.name} • ${user.followers} followers</div>
+                            <div style="color: #999; font-size: 14px;">${user.bio || user.name || ''} • ${formatNumber(user.followers || 0)} followers</div>
                         </div>
-                        <button style="background: #fe2c55; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
-                            Follow
+                        <button onclick="toggleFollow('${user._id || user.username}', this)" style="background: ${user.isFollowing ? '#333' : '#fe2c55'}; color: white; border: ${user.isFollowing ? '1px solid #666' : 'none'}; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                            ${user.isFollowing ? 'Following' : 'Follow'}
                         </button>
                     </div>
                 `).join('')}
@@ -469,6 +670,199 @@ function sharePost(userId) {
     showNotification(`Shared ${userId}'s post!`, 'success');
 }
 
+async function toggleFollow(userId, button) {
+    const isFollowing = button.textContent.trim() === 'Following';
+    
+    try {
+        const response = await fetch(`/api/user/${isFollowing ? 'unfollow' : 'follow'}/${userId}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${window.authToken}` }
+        });
+        
+        if (response.ok) {
+            button.textContent = isFollowing ? 'Follow' : 'Following';
+            button.style.background = isFollowing ? '#fe2c55' : '#333';
+            button.style.border = isFollowing ? 'none' : '1px solid #666';
+            showNotification(isFollowing ? 'Unfollowed' : 'Following!', 'success');
+            
+            // Update follower count
+            loadUserStats();
+        }
+    } catch (error) {
+        console.error('Error toggling follow:', error);
+        showNotification('Error updating follow status', 'error');
+    }
+}
+
+function playUserVideo(videoId) {
+    // Close profile and play video
+    goBackToFeed();
+    // Play specific video
+    if (window.playVideo) {
+        window.playVideo(videoId);
+    }
+}
+
+async function loadLikedVideos() {
+    try {
+        const response = await fetch('/api/user/liked-videos', {
+            headers: { 'Authorization': `Bearer ${window.authToken}` }
+        });
+        
+        if (response.ok) {
+            const videos = await response.json();
+            displayLikedVideos(videos);
+        }
+    } catch (error) {
+        console.error('Error loading liked videos:', error);
+    }
+}
+
+function displayLikedVideos(videos) {
+    const likedContent = document.getElementById('likedContent');
+    if (!likedContent) return;
+    
+    if (videos.length === 0) {
+        likedContent.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: #666;">
+                <div style="font-size: 48px; margin-bottom: 20px;">❤️</div>
+                <h3 style="margin-bottom: 10px;">Liked videos</h3>
+                <p>Videos you liked will appear here</p>
+                <div style="display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 20px;">
+                    <input type="checkbox" id="likedPrivacyToggle" onchange="toggleLikedPrivacy()">
+                    <label for="likedPrivacyToggle" style="color: #666;">Make liked videos private</label>
+                </div>
+            </div>
+        `;
+    } else {
+        likedContent.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                ${videos.map(video => createVideoCard(video)).join('')}
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 20px;">
+                <input type="checkbox" id="likedPrivacyToggle" onchange="toggleLikedPrivacy()">
+                <label for="likedPrivacyToggle" style="color: #666;">Make liked videos private</label>
+            </div>
+        `;
+    }
+}
+
+async function loadFavoriteVideos() {
+    try {
+        const response = await fetch('/api/user/favorites', {
+            headers: { 'Authorization': `Bearer ${window.authToken}` }
+        });
+        
+        if (response.ok) {
+            const videos = await response.json();
+            displayFavoriteVideos(videos);
+        }
+    } catch (error) {
+        console.error('Error loading favorite videos:', error);
+    }
+}
+
+function displayFavoriteVideos(videos) {
+    const favoritesContent = document.getElementById('favoritesContent');
+    if (!favoritesContent) return;
+    
+    if (videos.length === 0) {
+        favoritesContent.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: #666;">
+                <div style="font-size: 48px; margin-bottom: 20px;">⭐</div>
+                <h3 style="margin-bottom: 10px;">Favorite videos</h3>
+                <p>Your favorite videos will appear here</p>
+            </div>
+        `;
+    } else {
+        favoritesContent.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                ${videos.map(video => createVideoCard(video)).join('')}
+            </div>
+        `;
+    }
+}
+
+async function loadFollowingFeed() {
+    try {
+        const response = await fetch('/api/feed/following', {
+            headers: { 'Authorization': `Bearer ${window.authToken}` }
+        });
+        
+        if (response.ok) {
+            const posts = await response.json();
+            displayFollowingFeed(posts);
+        }
+    } catch (error) {
+        console.error('Error loading following feed:', error);
+    }
+}
+
+function displayFollowingFeed(posts) {
+    const followingContent = document.getElementById('followingContent');
+    if (!followingContent) return;
+    
+    if (posts.length === 0) {
+        followingContent.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: #666;">
+                <div style="font-size: 48px; margin-bottom: 20px;">📱</div>
+                <h3 style="margin-bottom: 10px;">No posts yet</h3>
+                <p>Posts from people you follow will appear here</p>
+            </div>
+        `;
+    } else {
+        followingContent.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                ${posts.map(post => createFollowingPost(post)).join('')}
+            </div>
+        `;
+    }
+}
+
+function createFollowingPost(post) {
+    return `
+        <div style="background: #222; border-radius: 12px; padding: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 15px;">
+                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #fe2c55, #ff006e); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                    ${post.user?.profilePicture || '👤'}
+                </div>
+                <div style="flex: 1;">
+                    <div style="color: white; font-weight: 600;">@${post.user?.username || 'user'}</div>
+                    <div style="color: #999; font-size: 14px;">${post.user?.bio || ''} • ${formatTimeAgo(post.createdAt)}</div>
+                </div>
+                <button style="background: none; border: none; color: #666; font-size: 20px; cursor: pointer;">⋯</button>
+            </div>
+            <p style="color: white; margin-bottom: 15px; line-height: 1.5;">${post.description || ''}</p>
+            ${post.thumbnail ? 
+                `<img src="${post.thumbnail}" style="width: 100%; border-radius: 8px; margin-bottom: 15px; cursor: pointer;" onclick="playUserVideo('${post._id}')">` :
+                `<div style="background: #333; border-radius: 8px; height: 200px; display: flex; align-items: center; justify-content: center; font-size: 64px; margin-bottom: 15px; cursor: pointer;" onclick="playUserVideo('${post._id}')">
+                    🎵
+                </div>`
+            }
+            <div style="display: flex; gap: 20px; color: #999;">
+                <span style="cursor: pointer;" onclick="likePost('${post._id}')">❤️ ${formatNumber(post.likes || 0)}</span>
+                <span style="cursor: pointer;" onclick="commentOnPost('${post._id}')">💬 ${formatNumber(post.comments || 0)}</span>
+                <span style="cursor: pointer;" onclick="sharePost('${post._id}')">🔗 Share</span>
+            </div>
+        </div>
+    `;
+}
+
+function formatTimeAgo(dateString) {
+    if (!dateString) return 'now';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+    if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+    if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+    
+    return date.toLocaleDateString();
+}
+
 // Make functions globally available
 window.createSimpleProfilePage = createSimpleProfilePage;
 window.goBackToFeed = goBackToFeed;
@@ -487,3 +881,11 @@ window.switchAccount = switchAccount;
 window.likePost = likePost;
 window.commentOnPost = commentOnPost;
 window.sharePost = sharePost;
+window.toggleFollow = toggleFollow;
+window.playUserVideo = playUserVideo;
+window.loadUserProfileData = loadUserProfileData;
+window.loadUserVideos = loadUserVideos;
+window.loadUserStats = loadUserStats;
+window.loadLikedVideos = loadLikedVideos;
+window.loadFavoriteVideos = loadFavoriteVideos;
+window.loadFollowingFeed = loadFollowingFeed;
