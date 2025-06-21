@@ -179,6 +179,51 @@ async function loadUserProfile() {
     });
     
     console.log('User profile loaded:', currentUser.email);
+    
+    // Debug current user data structure
+    console.log('📊 Current user debug info:');
+    console.log('  - Raw currentUser object:', currentUser);
+    console.log('  - Available properties:', Object.keys(currentUser || {}));
+    console.log('  - username:', currentUser?.username);
+    console.log('  - displayName:', currentUser?.displayName);
+    console.log('  - name:', currentUser?.name);
+    console.log('  - email:', currentUser?.email);
+    console.log('  - id/uid/_id:', currentUser?.id || currentUser?.uid || currentUser?._id);
+}
+
+// Debug function to check auth state and refresh if needed
+async function debugAuthState() {
+    console.log('🔍 DEBUG: Checking authentication state...');
+    console.log('  - Current token:', window.authToken ? 'Present' : 'Missing');
+    console.log('  - Token length:', window.authToken?.length || 0);
+    console.log('  - Current user:', window.currentUser);
+    
+    if (window.authToken) {
+        try {
+            console.log('🔄 Testing current token...');
+            const response = await fetch(`${window.API_BASE_URL}/api/auth/me`, {
+                headers: { 'Authorization': `Bearer ${window.authToken}` }
+            });
+            console.log('  - Auth test response status:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('  - Auth test success:', data);
+                if (data.user && !window.currentUser) {
+                    window.currentUser = data.user;
+                    console.log('✅ Updated currentUser from server');
+                }
+            } else {
+                console.log('❌ Auth token invalid, need to re-login');
+                const errorText = await response.text();
+                console.log('  - Error:', errorText);
+            }
+        } catch (error) {
+            console.log('❌ Auth test failed:', error);
+        }
+    } else {
+        console.log('⚠️ No auth token found');
+    }
 }
 
 // Clean up orphaned media elements that might cause ghost audio
@@ -5653,6 +5698,7 @@ window.showMoreOptions = showMoreOptions;
 // Live streaming functions
 window.startLiveStream = startLiveStream;
 window.stopLiveStream = stopLiveStream;
+window.debugAuthState = debugAuthState;
 window.scheduleLiveStream = scheduleLiveStream;
 window.closeLiveStream = closeLiveStream;
 window.toggleChatSettings = toggleChatSettings;
