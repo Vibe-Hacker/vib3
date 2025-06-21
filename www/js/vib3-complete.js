@@ -1532,6 +1532,12 @@ function setupEditingPreview() {
     const videoPreview = document.getElementById('contentPreview');
     const photoSlideshow = document.getElementById('photoSlideshow');
     
+    // Check if elements exist (they may not in the compact editor step)
+    if (!videoPreview || !photoSlideshow) {
+        console.log('📹 Preview elements not found - using compact editor flow');
+        return;
+    }
+    
     if (uploadType === 'video' && (selectedFiles.length > 0 || window.selectedVideoFile)) {
         // Show video preview (either selected file or recorded video)
         const videoFile = selectedFiles.length > 0 ? selectedFiles[0] : window.selectedVideoFile;
@@ -2317,17 +2323,19 @@ function initializeVideoEditor(stream) {
             return;
         }
         
-        // Check if we have a recorded video file to load
-        if (window.selectedVideoFile) {
-            console.log('📹 Loading recorded video file into editor');
-            const videoUrl = URL.createObjectURL(window.selectedVideoFile);
+        // Check if we have a video file to load (recorded or selected)
+        const videoFile = window.selectedVideoFile || (selectedFiles && selectedFiles.length > 0 ? selectedFiles[0] : null);
+        
+        if (videoFile) {
+            console.log('📹 Loading video file into editor:', videoFile.name);
+            const videoUrl = URL.createObjectURL(videoFile);
             videoPreview.src = videoUrl;
             videoPreview.load();
             
             // Store the video file globally for editing
-            window.currentVideoFile = window.selectedVideoFile;
+            window.currentVideoFile = videoFile;
             
-            console.log('✅ Video editor initialized with recorded video');
+            console.log('✅ Video editor initialized with video file');
         } else if (stream) {
             console.log('📹 Setting camera stream to video element');
             videoPreview.srcObject = stream;
@@ -4963,7 +4971,7 @@ function saveEditedVideo() {
     // Close video editor first
     closeVideoEditor();
     
-    // Get the recorded video file
+    // Get the video file
     const videoFile = window.selectedVideoFile || window.currentVideoFile;
     
     if (videoFile) {
@@ -4972,18 +4980,10 @@ function saveEditedVideo() {
         // Show upload modal with the video ready for publishing
         showUploadModal();
         
-        // Go directly to step 3 (publish step) with the video loaded
-        goToStep(3);
+        // Go directly to step 4 (details step) to add title/description
+        goToStep(4);
         
-        // Set up video preview for publishing
-        const preview = document.getElementById('videoPreview');
-        if (preview) {
-            const videoUrl = URL.createObjectURL(videoFile);
-            preview.src = videoUrl;
-            preview.style.display = 'block';
-        }
-        
-        showNotification('Ready to publish your video!', 'success');
+        showNotification('Ready to add details and publish!', 'success');
     } else {
         console.error('❌ No video file found to save');
         showNotification('No video to save', 'error');
