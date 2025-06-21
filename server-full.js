@@ -1533,7 +1533,7 @@ app.get('/api/search/content', async (req, res) => {
 });
 
 // Validate uploaded files
-app.post('/api/upload/validate', requireAuth, uploadMixed.array('files', 35), async (req, res) => {
+app.post('/api/upload/validate', requireAuth, upload.array('files', 35), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No files provided for validation' });
