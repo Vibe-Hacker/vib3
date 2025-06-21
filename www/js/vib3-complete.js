@@ -820,13 +820,22 @@ function showUploadModal() {
     console.log('✅ Upload modal found, current display:', window.getComputedStyle(modal).display);
     console.log('📍 Current modal classes:', modal.className);
     
-    // Gently pause all videos without permanent muting
-    console.log('⏸️ Pausing all background videos...');
+    // Pause and temporarily mute all videos
+    console.log('🔇 Pausing and muting background videos...');
+    window.tempMutedVideos = []; // Store original mute states
     document.querySelectorAll('video').forEach((video, index) => {
         try {
             video.pause();
-            // Don't reset time or mute permanently - just pause
-            console.log(`⏸️ Paused video ${index}`);
+            // Store original mute state before temporarily muting
+            window.tempMutedVideos.push({
+                video: video,
+                originalMuted: video.muted,
+                originalVolume: video.volume
+            });
+            // Temporarily mute for upload modal
+            video.muted = true;
+            video.volume = 0;
+            console.log(`🔇 Paused and muted video ${index}`);
         } catch (error) {
             console.log(`Failed to pause video ${index}:`, error.message);
         }
@@ -920,6 +929,21 @@ function closeUploadModal() {
             feed.style.visibility = 'visible';
         });
         console.log('✅ Restored video feeds visibility');
+    }
+    
+    // Restore original video audio states
+    if (window.tempMutedVideos && window.tempMutedVideos.length > 0) {
+        console.log('🔊 Restoring original video audio states...');
+        window.tempMutedVideos.forEach((videoData, index) => {
+            try {
+                videoData.video.muted = videoData.originalMuted;
+                videoData.video.volume = videoData.originalVolume;
+                console.log(`🔊 Restored audio for video ${index}`);
+            } catch (error) {
+                console.log(`Failed to restore audio for video ${index}:`, error.message);
+            }
+        });
+        window.tempMutedVideos = []; // Clear the array
     }
     
     // Reconnect video observer when modal closes
