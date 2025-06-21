@@ -886,6 +886,71 @@ app.get('/api/posts', async (req, res) => {
     }
 });
 
+// Get user's videos for profile page
+app.get('/api/user/videos', async (req, res) => {
+    if (!db) {
+        return res.json({ videos: [] });
+    }
+    
+    try {
+        const { userId, limit = 20, skip = 0, page = 1 } = req.query;
+        const actualSkip = page > 1 ? (parseInt(page) - 1) * parseInt(limit) : parseInt(skip);
+        
+        // Get current user from auth token if no userId provided
+        let targetUserId = userId;
+        if (!targetUserId && req.headers.authorization) {
+            const token = req.headers.authorization.replace('Bearer ', '');
+            const session = sessions.get(token);
+            if (session) {
+                targetUserId = session.userId;
+            }
+        }
+        
+        if (!targetUserId) {
+            return res.status(400).json({ error: 'User ID required' });
+        }
+        
+        console.log(`Getting videos for user: ${targetUserId}`);
+        
+        const videos = await db.collection('videos')
+            .find({ userId: targetUserId, status: { $ne: 'deleted' } })
+            .sort({ createdAt: -1 })
+            .skip(actualSkip)
+            .limit(parseInt(limit))
+            .toArray();
+        
+        console.log(`Found ${videos.length} videos for user ${targetUserId}`);
+        
+        // Get user info and engagement counts for each video
+        for (const video of videos) {
+            try {
+                const user = await db.collection('users').findOne(
+                    { _id: new ObjectId(video.userId) },
+                    { projection: { password: 0 } }
+                );
+                video.user = user;
+                
+                // Get engagement counts
+                video.likeCount = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
+                video.commentCount = await db.collection('comments').countDocuments({ videoId: video._id.toString() });
+                video.views = video.views || 0;
+            } catch (userError) {
+                console.error('Error getting user info for video:', video._id, userError);
+                video.user = { username: 'unknown', displayName: 'Unknown User', _id: 'unknown' };
+                video.likeCount = 0;
+                video.commentCount = 0;
+                video.views = 0;
+            }
+        }
+        
+        res.json({ videos });
+        
+    } catch (error) {
+        console.error('Get user videos error:', error);
+        res.json({ videos: [] });
+    }
+});
+
 // Get combined feed (videos and posts)
 app.get('/api/feed/combined', async (req, res) => {
     if (!db) {
