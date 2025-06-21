@@ -327,7 +327,10 @@ app.get('/api/videos', async (req, res) => {
     }
     
     try {
-        const { limit = 10, skip = 0, userId, feed } = req.query;
+        const { limit = 10, skip = 0, page = 1, userId, feed } = req.query;
+        
+        // Calculate skip based on page if provided
+        const actualSkip = page > 1 ? (parseInt(page) - 1) * parseInt(limit) : parseInt(skip);
         
         // Test database connection first
         await db.admin().ping();
@@ -338,9 +341,11 @@ app.get('/api/videos', async (req, res) => {
         const videos = await db.collection('videos')
             .find(query)
             .sort({ createdAt: -1 })
-            .skip(parseInt(skip))
+            .skip(actualSkip)
             .limit(parseInt(limit))
             .toArray();
+            
+        console.log(`Fetching page ${page}, skip: ${actualSkip}, limit: ${limit}`);
         
         console.log('Found videos in database:', videos.length);
         
@@ -350,8 +355,40 @@ app.get('/api/videos', async (req, res) => {
             return res.json({ videos: [] });
         }
         
+        // For testing infinite scroll, duplicate videos to simulate more content
+        let allVideos = [...videos];
+        if (videos.length > 0 && videos.length < 10) {
+            const duplications = Math.ceil(10 / videos.length);
+            allVideos = [];
+            for (let i = 0; i < duplications; i++) {
+                videos.forEach((video, index) => {
+                    const duplicatedVideo = { 
+                        ...video, 
+                        _id: video._id.toString() + `_dup_${i}_${index}`,
+                        title: `${video.title || 'Video'} (Copy ${i + 1})`,
+                        duplicated: true
+                    };
+                    allVideos.push(duplicatedVideo);
+                });
+            }
+        }
+        
+        // Apply pagination to duplicated videos
+        const startIndex = actualSkip;
+        const endIndex = startIndex + parseInt(limit);
+        const paginatedVideos = allVideos.slice(startIndex, endIndex);
+        
+        console.log(`Returning ${paginatedVideos.length} videos for page ${page}`);
+        
         // Get user info for each video
-        for (const video of videos) {
+        for (const video of paginatedVideos) {
+            // Skip user lookup for duplicated videos
+            if (video.duplicated) {
+                video.username = video.user?.username || 'user';
+                video.likeCount = Math.floor(Math.random() * 1000);
+                video.commentCount = Math.floor(Math.random() * 100);
+                continue;
+            }
             try {
                 const user = await db.collection('users').findOne(
                     { _id: new ObjectId(video.userId) },
@@ -373,7 +410,7 @@ app.get('/api/videos', async (req, res) => {
             }
         }
         
-        res.json({ videos });
+        res.json({ videos: paginatedVideos });
         
     } catch (error) {
         console.error('Get videos error:', error);

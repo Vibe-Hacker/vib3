@@ -172,6 +172,9 @@ function createErrorMessage(feedType) {
 // Global video observer to prevent multiple instances
 let videoObserver = null;
 let lastFeedLoad = 0;
+let isLoadingMore = false;
+let hasMoreVideos = true;
+let currentPage = 1;
 
 function initializeVideoObserver() {
     console.log('🎬 TIKTOK-STYLE VIDEO INIT WITH SCROLL SNAP');
@@ -250,6 +253,50 @@ function initializeVideoObserver() {
     console.log('🏁 TikTok-style video system initialized with scroll snap');
 }
 
+function setupInfiniteScroll(feedElement, feedType) {
+    let scrollTimeout;
+    
+    feedElement.addEventListener('scroll', () => {
+        // Clear existing timeout
+        clearTimeout(scrollTimeout);
+        
+        // Set a new timeout to handle scroll end
+        scrollTimeout = setTimeout(() => {
+            const scrollHeight = feedElement.scrollHeight;
+            const scrollTop = feedElement.scrollTop;
+            const clientHeight = feedElement.clientHeight;
+            
+            // Check if user scrolled near the bottom (within 200px)
+            if (scrollTop + clientHeight >= scrollHeight - 200) {
+                loadMoreVideos(feedType);
+            }
+        }, 100); // Wait 100ms after scroll stops
+    });
+    
+    console.log('🔄 Infinite scroll setup for', feedType);
+}
+
+async function loadMoreVideos(feedType) {
+    if (isLoadingMore || !hasMoreVideos) {
+        console.log('🚫 Skipping load more:', { isLoadingMore, hasMoreVideos });
+        return;
+    }
+    
+    isLoadingMore = true;
+    currentPage++;
+    
+    console.log('📥 Loading more videos for', feedType, 'page', currentPage);
+    
+    try {
+        await loadVideoFeed(feedType, false, currentPage, true);
+    } catch (error) {
+        console.error('Error loading more videos:', error);
+        currentPage--; // Revert page increment on error
+    } finally {
+        isLoadingMore = false;
+    }
+}
+
 function formatCount(count) {
     if (count < 1000) return count.toString();
     if (count < 1000000) return Math.floor(count / 100) / 10 + 'K';
@@ -257,24 +304,31 @@ function formatCount(count) {
 }
 
 // ================ VIDEO FEED MANAGEMENT ================
-async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
+async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1, append = false) {
     const now = Date.now();
-    if (!forceRefresh && now - lastFeedLoad < 1000) {
+    if (!forceRefresh && !append && now - lastFeedLoad < 1000) {
         console.log('Debouncing feed load for', feedType);
         return;
     }
-    lastFeedLoad = now;
     
-    console.log('Loading video feed:', feedType);
+    if (!append) {
+        lastFeedLoad = now;
+        currentPage = 1;
+        hasMoreVideos = true;
+    }
+    
+    console.log(`Loading video feed: ${feedType}, page: ${page}, append: ${append}`);
     currentFeed = feedType;
     
-    // Update UI to show correct feed
-    document.querySelectorAll('.feed-content').forEach(feed => {
-        feed.classList.remove('active');
-    });
-    document.querySelectorAll('.feed-tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
+    // Update UI to show correct feed (only if not appending)
+    if (!append) {
+        document.querySelectorAll('.feed-content').forEach(feed => {
+            feed.classList.remove('active');
+        });
+        document.querySelectorAll('.feed-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+    }
     
     // Show the correct feed
     const feedElement = document.getElementById(feedType + 'Feed');
@@ -283,16 +337,38 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
     console.log('Feed element found:', !!feedElement, feedElement);
     
     if (feedElement) {
-        feedElement.classList.add('active');
-        feedElement.innerHTML = '<div class="loading-container"><div class="spinner"></div><p>Loading videos...</p></div>';
-        console.log('Set loading state for feed');
+        if (!append) {
+            feedElement.classList.add('active');
+            feedElement.innerHTML = '<div class="loading-container"><div class="spinner"></div><p>Loading videos...</p></div>';
+            console.log('Set loading state for feed');
+        } else {
+            // Add loading indicator at bottom for infinite scroll
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'infinite-loading';
+            loadingDiv.style.cssText = `
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 60px;
+                color: white;
+                font-size: 14px;
+            `;
+            loadingDiv.innerHTML = '⏳ Loading more videos...';
+            feedElement.appendChild(loadingDiv);
+        }
         
         try {
-            const response = await fetch(`/api/videos?feed=${feedType}`, {
+            const response = await fetch(`/api/videos?feed=${feedType}&page=${page}&limit=10`, {
                 headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
             });
             
             const data = await response.json();
+            
+            // Remove loading indicator
+            if (append) {
+                const loadingElement = feedElement.querySelector('.infinite-loading');
+                if (loadingElement) loadingElement.remove();
+            }
             
             if (data.videos && data.videos.length > 0) {
                 // Filter out videos with invalid URLs
@@ -304,33 +380,55 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false) {
                 });
                 
                 if (validVideos.length > 0) {
-                    feedElement.innerHTML = '';
-                    feedElement.style.overflow = 'auto'; // Restore scrolling when videos present
-                    feedElement.style.scrollSnapType = 'y mandatory'; // Enable scroll snap
-                    feedElement.style.scrollBehavior = 'smooth'; // Smooth scrolling
+                    if (!append) {
+                        feedElement.innerHTML = '';
+                        feedElement.style.overflow = 'auto';
+                        feedElement.style.scrollSnapType = 'y mandatory';
+                        feedElement.style.scrollBehavior = 'smooth';
+                    }
+                    
                     validVideos.forEach(video => {
                         const videoCard = createAdvancedVideoCard(video);
                         feedElement.appendChild(videoCard);
                     });
-                    // Only initialize video observer if we have videos
-                    setTimeout(() => initializeVideoObserver(), 200);
+                    
+                    // Check if we have more videos
+                    hasMoreVideos = validVideos.length >= 10; // Assuming 10 is our page size
+                    
+                    // Setup infinite scroll listener
+                    if (!append) {
+                        setupInfiniteScroll(feedElement, feedType);
+                        setTimeout(() => initializeVideoObserver(), 200);
+                    } else {
+                        // Re-initialize observer for new videos
+                        setTimeout(() => initializeVideoObserver(), 200);
+                    }
                 } else {
-                    feedElement.innerHTML = createEmptyFeedMessage(feedType);
-                    feedElement.style.overflow = 'hidden';
-                    console.log('No valid videos after filtering, showing empty message for', feedType);
+                    if (!append) {
+                        feedElement.innerHTML = createEmptyFeedMessage(feedType);
+                        feedElement.style.overflow = 'hidden';
+                        console.log('No valid videos after filtering, showing empty message for', feedType);
+                    }
+                    hasMoreVideos = false;
                 }
             } else {
-                feedElement.innerHTML = createEmptyFeedMessage(feedType);
-                feedElement.style.overflow = 'hidden'; // Prevent scrolling when empty
-                console.log('No videos to display, showing empty message for', feedType);
+                if (!append) {
+                    feedElement.innerHTML = createEmptyFeedMessage(feedType);
+                    feedElement.style.overflow = 'hidden';
+                    console.log('No videos to display, showing empty message for', feedType);
+                }
+                hasMoreVideos = false;
             }
         } catch (error) {
             console.error('Load feed error:', error);
-            feedElement.innerHTML = createErrorMessage(feedType);
+            if (!append) {
+                feedElement.innerHTML = createErrorMessage(feedType);
+            }
+            hasMoreVideos = false;
         }
     }
     
-    if (tabElement) {
+    if (tabElement && !append) {
         tabElement.classList.add('active');
     }
 }
