@@ -338,7 +338,7 @@ app.get('/api/videos', async (req, res) => {
         
         const query = userId ? { userId } : {};
         
-        const videos = await db.collection('videos')
+        let videos = await db.collection('videos')
             .find(query)
             .sort({ createdAt: -1 })
             .skip(actualSkip)
