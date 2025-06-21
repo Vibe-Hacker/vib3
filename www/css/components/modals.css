@@ -431,6 +431,48 @@
     padding: 15px;
 }
 
+.live-stream-modal select {
+    width: 100%;
+    padding: 10px;
+    background: #333;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.live-stream-modal select option {
+    background: #333;
+    color: white;
+    padding: 8px;
+}
+
+.live-stream-modal input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    background: #333;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.live-stream-modal input[type="text"]::placeholder {
+    color: #999;
+}
+
+.live-stream-modal .setting-group {
+    margin-bottom: 15px;
+}
+
+.live-stream-modal .setting-group label {
+    display: block;
+    color: white;
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
 .live-preview {
     position: relative;
     background: #000;
