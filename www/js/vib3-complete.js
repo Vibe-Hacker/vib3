@@ -787,7 +787,16 @@ let selectedFiles = [];
 let currentEditingFile = null;
 
 function showUploadModal() {
-    document.getElementById('uploadModal').classList.add('show');
+    console.log('🎬 Opening upload modal...');
+    const modal = document.getElementById('uploadModal');
+    if (!modal) {
+        console.error('❌ Upload modal not found!');
+        return;
+    }
+    
+    console.log('✅ Upload modal found, showing...');
+    modal.classList.add('show');
+    modal.style.display = 'flex';  // Ensure modal is visible
     goToStep(1);
 }
 
@@ -804,6 +813,8 @@ function resetUploadState() {
 }
 
 function goToStep(step) {
+    console.log(`📋 Going to upload step ${step}...`);
+    
     // Hide all steps
     for (let i = 1; i <= 5; i++) {
         const stepElement = document.getElementById(`uploadStep${i}`);
@@ -811,10 +822,14 @@ function goToStep(step) {
             stepElement.style.display = 'none';
         }
     }
+    
     // Show current step
     const currentStepElement = document.getElementById(`uploadStep${step}`);
     if (currentStepElement) {
         currentStepElement.style.display = 'block';
+        console.log(`✅ Showing upload step ${step}`);
+    } else {
+        console.error(`❌ Upload step ${step} element not found!`);
     }
     currentStep = step;
     
