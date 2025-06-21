@@ -1030,7 +1030,7 @@ function loadMusicTracks(category) {
 // ================ LIVE STREAMING ================
 function showPage(page) {
     // Handle feed tabs - don't show "coming soon" for these
-    if (page === 'foryou' || page === 'following' || page === 'explore' || page === 'discover') {
+    if (page === 'foryou' || page === 'following' || page === 'explore' || page === 'friends') {
         switchFeedTab(page);
         return;
     }
@@ -1048,7 +1048,7 @@ function showPage(page) {
     
     // Hide main video feed for non-feed pages
     const mainApp = document.getElementById('mainApp');
-    if (mainApp && page !== 'foryou' && page !== 'explore' && page !== 'following') {
+    if (mainApp && page !== 'foryou' && page !== 'explore' && page !== 'following' && page !== 'friends') {
         mainApp.style.display = 'none';
     }
     

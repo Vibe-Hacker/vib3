@@ -66,7 +66,7 @@
             <div class="sidebar-text">Following</div>
         </button>
         
-        <button class="sidebar-item" onclick="showPage('friends')" id="sidebarFriends">
+        <button class="sidebar-item" onclick="switchFeedTab('friends')" id="sidebarFriends">
             <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm2.78 3.58A2 2 0 0 0 17 7h-2c-.83 0-1.58.56-1.85 1.37L12 12l-1.15-3.63A2 2 0 0 0 9 7H7a2 2 0 0 0-1.78.58L4 9v6h2v5h3v-5h2v5h3v-5h2V9l-1.22-1.42z"/>
             </svg>
@@ -157,13 +157,13 @@
             <div class="feed-tabs">
                 <button class="feed-tab active" onclick="switchFeedTab('foryou')" id="foryouTab" aria-label="For You Feed">For You</button>
                 <button class="feed-tab" onclick="switchFeedTab('following')" id="followingTab" aria-label="Following Feed">Following</button>
-                <button class="feed-tab" onclick="switchFeedTab('discover')" id="discoverTab" aria-label="Discover Feed">Discover</button>
+                <button class="feed-tab" onclick="switchFeedTab('explore')" id="exploreTab" aria-label="Explore Feed">Explore</button>
             </div>
             <div class="feed-content active" id="foryouFeed">
             </div>
             <div class="feed-content" id="followingFeed">
             </div>
-            <div class="feed-content" id="discoverFeed">
+            <div class="feed-content" id="exploreFeed">
                 <div style="position: sticky; top: 0; background: var(--bg-primary); padding: 20px; z-index: 10; border-bottom: 1px solid var(--border-primary);">
                     <input type="text" id="discoverSearchInput" placeholder="Search videos, users, or hashtags..." 
                            style="width: 100%; padding: 12px 20px; border: none; border-radius: 25px; background: rgba(255,255,255,0.1); color: white; font-size: 16px; margin-bottom: 15px;"
@@ -177,6 +177,8 @@
                     </div>
                 </div>
                 <div id="discoverVideoFeed" style="padding: 20px;"></div>
+            </div>
+            <div class="feed-content" id="friendsFeed">
             </div>
         </div>
         <div class="search-page" id="searchPage">

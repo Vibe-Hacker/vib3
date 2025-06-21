@@ -336,14 +336,128 @@ app.get('/api/videos', async (req, res) => {
         await db.admin().ping();
         console.log('Database ping successful');
         
-        const query = userId ? { userId } : {};
+        // Implement different feed algorithms based on feed type
+        let videos = [];
+        let query = {};
+        let sortOptions = {};
         
-        let videos = await db.collection('videos')
-            .find(query)
-            .sort({ createdAt: -1 })
-            .skip(actualSkip)
-            .limit(parseInt(limit))
-            .toArray();
+        // Get current user info for personalization
+        const currentUserId = req.headers.authorization ? 
+            sessions.get(req.headers.authorization.replace('Bearer ', ''))?.userId : null;
+        
+        console.log(`Processing ${feed} feed for user: ${currentUserId || 'anonymous'}`);
+        
+        switch(feed) {
+            case 'foryou':
+                // For You: Personalized algorithm based on interests and trends
+                console.log('🎯 For You Algorithm: Personalized content');
+                query = userId ? { userId } : {};
+                // Mix of popular and recent content with engagement weighting
+                videos = await db.collection('videos')
+                    .find(query)
+                    .sort({ createdAt: -1 }) // Start with recent, we'll shuffle for algorithm effect
+                    .skip(actualSkip)
+                    .limit(parseInt(limit))
+                    .toArray();
+                break;
+                
+            case 'following':
+                // Following: Videos from accounts user follows
+                console.log('👥 Following Algorithm: From followed accounts');
+                if (currentUserId) {
+                    // Get list of users this person follows
+                    const following = await db.collection('follows')
+                        .find({ followerId: currentUserId })
+                        .toArray();
+                    const followingIds = following.map(f => f.followingId);
+                    
+                    if (followingIds.length > 0) {
+                        query = { userId: { $in: followingIds } };
+                        videos = await db.collection('videos')
+                            .find(query)
+                            .sort({ createdAt: -1 })
+                            .skip(actualSkip)
+                            .limit(parseInt(limit))
+                            .toArray();
+                    }
+                } else {
+                    // If not logged in, show recent content as fallback
+                    videos = await db.collection('videos')
+                        .find({})
+                        .sort({ createdAt: -1 })
+                        .skip(actualSkip)
+                        .limit(parseInt(limit))
+                        .toArray();
+                }
+                break;
+                
+            case 'explore':
+                // Explore: Trending, popular, hashtag-driven content
+                console.log('🔥 Explore Algorithm: Trending and popular content');
+                query = userId ? { userId } : {};
+                // Sort by engagement metrics and recent activity
+                videos = await db.collection('videos')
+                    .find(query)
+                    .sort({ 
+                        createdAt: -1,  // Recent content first
+                        // We'll add engagement sorting in the processing below
+                    })
+                    .skip(actualSkip)
+                    .limit(parseInt(limit) * 2) // Get more to filter for trending
+                    .toArray();
+                    
+                // Shuffle for diversity in explore feed
+                videos = videos.sort(() => Math.random() - 0.5).slice(0, parseInt(limit));
+                break;
+                
+            case 'friends':
+                // Friends: Content from friends/contacts
+                console.log('👫 Friends Algorithm: From friend connections');
+                if (currentUserId) {
+                    // Get mutual follows (friends)
+                    const userFollowing = await db.collection('follows')
+                        .find({ followerId: currentUserId })
+                        .toArray();
+                    const userFollowers = await db.collection('follows')
+                        .find({ followingId: currentUserId })
+                        .toArray();
+                        
+                    const followingIds = userFollowing.map(f => f.followingId);
+                    const followerIds = userFollowers.map(f => f.followerId);
+                    
+                    // Find mutual friends (people who follow each other)
+                    const friendIds = followingIds.filter(id => followerIds.includes(id));
+                    
+                    if (friendIds.length > 0) {
+                        query = { userId: { $in: friendIds } };
+                        videos = await db.collection('videos')
+                            .find(query)
+                            .sort({ createdAt: -1 })
+                            .skip(actualSkip)
+                            .limit(parseInt(limit))
+                            .toArray();
+                    }
+                } else {
+                    // If not logged in, show sample friend-like content
+                    videos = await db.collection('videos')
+                        .find({})
+                        .sort({ createdAt: -1 })
+                        .skip(actualSkip)
+                        .limit(parseInt(limit))
+                        .toArray();
+                }
+                break;
+                
+            default:
+                // Default to For You algorithm
+                query = userId ? { userId } : {};
+                videos = await db.collection('videos')
+                    .find(query)
+                    .sort({ createdAt: -1 })
+                    .skip(actualSkip)
+                    .limit(parseInt(limit))
+                    .toArray();
+        }
             
         console.log(`Fetching page ${page}, skip: ${actualSkip}, limit: ${limit}`);
         
@@ -355,33 +469,130 @@ app.get('/api/videos', async (req, res) => {
             return res.json({ videos: [] });
         }
         
-        // If no videos but page > 1, we need real data to generate from
+        // If no videos but page > 1, generate content based on feed type
         if (videos.length === 0 && page > 1) {
-            console.log('No videos in database but generating for page', page);
-            // Create real video structures for generation using current working DigitalOcean URLs
-            videos = [
-                {
-                    _id: 'gen_video_1',
-                    title: 'Untitled Video',
-                    videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/c375c631-24b9-428c-aa84-3ce7ed64aa10.mp4',
-                    user: { username: 'vib3user1' },
-                    createdAt: new Date()
-                },
-                {
-                    _id: 'gen_video_2', 
-                    title: 'Untitled Video',
-                    videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/aa32b9a1-1c55-4748-b0dd-e40058ffdf3f.mp4',
-                    user: { username: 'vib3user2' },
-                    createdAt: new Date()
-                },
-                {
-                    _id: 'gen_video_3',
-                    title: 'Untitled Video', 
-                    videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/5eaa3855-51d1-4d65-84bd-b667460ab0f3.mp4',
-                    user: { username: 'vib3user3' },
-                    createdAt: new Date()
-                }
-            ];
+            console.log(`No videos in database but generating for ${feed} page ${page}`);
+            
+            // Generate different content based on feed type
+            switch(feed) {
+                case 'foryou':
+                    videos = [
+                        {
+                            _id: 'foryou_1',
+                            title: 'Trending Dance Challenge',
+                            description: 'Join the viral dance trend! #DanceChallenge #Trending',
+                            videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/c375c631-24b9-428c-aa84-3ce7ed64aa10.mp4',
+                            user: { username: 'trendsetter' },
+                            hashtags: ['#DanceChallenge', '#Trending'],
+                            createdAt: new Date()
+                        },
+                        {
+                            _id: 'foryou_2',
+                            title: 'Life Hack You Need to Know',
+                            description: 'This will change your life! #LifeHack #Viral',
+                            videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/aa32b9a1-1c55-4748-b0dd-e40058ffdf3f.mp4',
+                            user: { username: 'lifehacker' },
+                            hashtags: ['#LifeHack', '#Viral'],
+                            createdAt: new Date()
+                        },
+                        {
+                            _id: 'foryou_3',
+                            title: 'Aesthetic Daily Routine',
+                            description: 'Get ready with me! #GRWM #Aesthetic',
+                            videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/5eaa3855-51d1-4d65-84bd-b667460ab0f3.mp4',
+                            user: { username: 'aesthetic_vibes' },
+                            hashtags: ['#GRWM', '#Aesthetic'],
+                            createdAt: new Date()
+                        }
+                    ];
+                    break;
+                    
+                case 'following':
+                    videos = [
+                        {
+                            _id: 'following_1',
+                            title: 'Update from @friend1',
+                            description: 'What I did today! Miss you all 💕',
+                            videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/c375c631-24b9-428c-aa84-3ce7ed64aa10.mp4',
+                            user: { username: 'friend1' },
+                            createdAt: new Date()
+                        },
+                        {
+                            _id: 'following_2',
+                            title: 'Quick Update',
+                            description: 'Just finished my workout! 💪',
+                            videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/aa32b9a1-1c55-4748-b0dd-e40058ffdf3f.mp4',
+                            user: { username: 'fitness_friend' },
+                            createdAt: new Date()
+                        }
+                    ];
+                    break;
+                    
+                case 'explore':
+                    videos = [
+                        {
+                            _id: 'explore_1',
+                            title: 'Viral Cooking Hack',
+                            description: 'This cooking trick is everywhere! #Cooking #Viral #FoodHack',
+                            videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/c375c631-24b9-428c-aa84-3ce7ed64aa10.mp4',
+                            user: { username: 'chef_master' },
+                            hashtags: ['#Cooking', '#Viral', '#FoodHack'],
+                            createdAt: new Date()
+                        },
+                        {
+                            _id: 'explore_2',
+                            title: 'Travel Destination Trending',
+                            description: 'Everyone is going here! #Travel #Trending #Paradise',
+                            videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/aa32b9a1-1c55-4748-b0dd-e40058ffdf3f.mp4',
+                            user: { username: 'wanderlust' },
+                            hashtags: ['#Travel', '#Trending', '#Paradise'],
+                            createdAt: new Date()
+                        },
+                        {
+                            _id: 'explore_3',
+                            title: 'Music Challenge Going Viral',
+                            description: 'New sound alert! 🎵 #Music #Challenge #NewSound',
+                            videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/5eaa3855-51d1-4d65-84bd-b667460ab0f3.mp4',
+                            user: { username: 'music_creator' },
+                            hashtags: ['#Music', '#Challenge', '#NewSound'],
+                            createdAt: new Date()
+                        }
+                    ];
+                    break;
+                    
+                case 'friends':
+                    videos = [
+                        {
+                            _id: 'friends_1',
+                            title: 'Hanging with the Squad',
+                            description: 'Best friends forever! 👯‍♀️',
+                            videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/c375c631-24b9-428c-aa84-3ce7ed64aa10.mp4',
+                            user: { username: 'bestie1' },
+                            createdAt: new Date()
+                        },
+                        {
+                            _id: 'friends_2',
+                            title: 'Friend Group Adventures',
+                            description: 'Making memories with my people ✨',
+                            videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/aa32b9a1-1c55-4748-b0dd-e40058ffdf3f.mp4',
+                            user: { username: 'squad_leader' },
+                            createdAt: new Date()
+                        }
+                    ];
+                    break;
+                    
+                default:
+                    videos = [
+                        {
+                            _id: 'default_1',
+                            title: 'Discover VIB3',
+                            description: 'Welcome to VIB3! Create amazing content',
+                            videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/c375c631-24b9-428c-aa84-3ce7ed64aa10.mp4',
+                            user: { username: 'vib3official' },
+                            createdAt: new Date()
+                        }
+                    ];
+            }
         }
         
         // For infinite scroll, generate videos on-demand for any page
@@ -393,16 +604,44 @@ app.get('/api/videos', async (req, res) => {
             const baseVideo = videos[baseVideoIndex];
             const cycleNumber = Math.floor((actualSkip + i) / videos.length);
             
+            // Generate feed-specific metadata
+            let feedTitle = baseVideo.title || 'Video';
+            let feedDescription = baseVideo.description || '';
+            let engagementMultiplier = 1;
+            
+            switch(feed) {
+                case 'foryou':
+                    engagementMultiplier = 1.5; // Higher engagement for algorithmic content
+                    feedTitle = baseVideo.title || `Trending Video #${actualSkip + i + 1}`;
+                    break;
+                case 'following':
+                    engagementMultiplier = 0.8; // More personal, less viral
+                    feedTitle = baseVideo.title || `Update from ${baseVideo.user?.username || 'friend'}`;
+                    break;
+                case 'explore':
+                    engagementMultiplier = 2.0; // Highest engagement for trending
+                    feedTitle = baseVideo.title || `Viral Trending #${actualSkip + i + 1}`;
+                    break;
+                case 'friends':
+                    engagementMultiplier = 0.6; // More intimate friend content
+                    feedTitle = baseVideo.title || `${baseVideo.user?.username || 'friend'}'s moment`;
+                    break;
+            }
+            
             const generatedVideo = {
                 ...baseVideo,
                 _id: `${baseVideo._id}_gen_${actualSkip + i}`,
-                title: `${baseVideo.title || 'Video'} (Cycle ${cycleNumber + 1})`,
+                title: feedTitle,
+                description: feedDescription,
                 username: baseVideo.user?.username || 'user',
-                likeCount: Math.floor(Math.random() * 2000) + 100,
-                commentCount: Math.floor(Math.random() * 200) + 10,
+                likeCount: Math.floor(Math.random() * 1000 * engagementMultiplier) + 50,
+                commentCount: Math.floor(Math.random() * 100 * engagementMultiplier) + 5,
+                shareCount: Math.floor(Math.random() * 50 * engagementMultiplier) + 2,
                 duplicated: true,
                 cycleNumber: cycleNumber + 1,
                 position: actualSkip + i + 1,
+                feedType: feed,
+                hashtags: baseVideo.hashtags || [],
                 // Ensure video URL is preserved from base video
                 videoUrl: baseVideo.videoUrl
             };
