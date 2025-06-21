@@ -1421,6 +1421,7 @@ async function recordVideo() {
 function openAdvancedVideoEditor(stream) {
     const editorModal = document.createElement('div');
     editorModal.className = 'modal video-editor-modal';
+    editorModal.style.zIndex = '100000'; // Higher than upload modal (99999)
     editorModal.innerHTML = `
         <div class="modal-content editor-content">
             <div class="editor-header">
@@ -1557,6 +1558,16 @@ function openAdvancedVideoEditor(stream) {
     
     document.body.appendChild(editorModal);
     editorModal.classList.add('show');
+    
+    // Force modal to appear above upload modal
+    editorModal.style.display = 'flex';
+    editorModal.style.position = 'fixed';
+    editorModal.style.top = '0';
+    editorModal.style.left = '0';
+    editorModal.style.right = '0';
+    editorModal.style.bottom = '0';
+    editorModal.style.backgroundColor = 'rgba(0,0,0,0.95)';
+    console.log('📹 Video editor modal displayed above upload modal');
     
     // Initialize video editor
     initializeVideoEditor(stream);
