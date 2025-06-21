@@ -373,13 +373,21 @@ app.get('/api/videos', async (req, res) => {
                 commentCount: Math.floor(Math.random() * 200) + 10,
                 duplicated: true,
                 cycleNumber: cycleNumber + 1,
-                position: actualSkip + i + 1
+                position: actualSkip + i + 1,
+                // Ensure video URL is preserved from base video
+                videoUrl: baseVideo.videoUrl
             };
             
             paginatedVideos.push(generatedVideo);
         }
         
         console.log(`Generated ${paginatedVideos.length} videos for page ${page} (positions ${actualSkip + 1}-${actualSkip + requestedLimit})`);
+        
+        // Debug: Check if we have any videos to process
+        if (paginatedVideos.length === 0) {
+            console.log(`⚠️ No videos generated for page ${page}, actualSkip: ${actualSkip}, requestedLimit: ${requestedLimit}, originalVideos: ${videos.length}`);
+            return res.json({ videos: [] });
+        }
         
         // Get user info for each video
         for (const video of paginatedVideos) {
@@ -411,6 +419,7 @@ app.get('/api/videos', async (req, res) => {
             }
         }
         
+        console.log(`📤 Sending ${paginatedVideos.length} videos for page ${page}`);
         res.json({ videos: paginatedVideos });
         
     } catch (error) {
