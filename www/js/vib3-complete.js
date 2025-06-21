@@ -2,6 +2,11 @@
 // No ES6 modules - global functions only
 
 // ================ CONFIGURATION ================
+// API base URL configuration
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? '' 
+    : 'https://vib3-production.up.railway.app';
+
 const appConfig = {
     name: 'VIB3',
     version: '1.0.0',
@@ -361,7 +366,7 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
         }
         
         try {
-            const response = await fetch(`/api/videos?feed=${feedType}&page=${page}&limit=10`, {
+            const response = await fetch(`${API_BASE_URL}/api/videos?feed=${feedType}&page=${page}&limit=10`, {
                 headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
             });
             
@@ -648,7 +653,7 @@ function showReactionOptions(button) {
 async function addReaction(videoId, reactionType) {
     // Send reaction to backend
     try {
-        const response = await fetch(`/api/videos/${videoId}/reaction`, {
+        const response = await fetch(`${API_BASE_URL}/api/videos/${videoId}/reaction`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${window.authToken}`,

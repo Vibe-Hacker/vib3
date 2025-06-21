@@ -188,9 +188,10 @@ function createSimpleProfilePage() {
 // Real-time profile data functions
 // Get the API base URL - use same server as main feed
 function getAPIBaseURL() {
-    // Use current server (same as main feed) instead of hard-coded Railway URL
-    // This ensures we authenticate with the same MongoDB server that issued our token
-    return '';
+    // Use Railway URL for production, empty for local development
+    return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        ? '' 
+        : 'https://vib3-production.up.railway.app';
 }
 
 async function loadUserProfileData() {

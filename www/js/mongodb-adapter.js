@@ -1,6 +1,11 @@
 // MongoDB Adapter for VIB3
 // This replaces Firebase functionality with MongoDB API calls
 
+// API base URL configuration
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? '' 
+    : 'https://vib3-production.up.railway.app';
+
 window.authToken = localStorage.getItem('vib3_token');
 window.currentUser = null;
 
@@ -12,7 +17,7 @@ const auth = {
         this._callbacks.push(callback);
         // Check if user is logged in
         if (window.authToken) {
-            fetch('/api/auth/me', {
+            fetch(`${API_BASE_URL}/api/auth/me`, {
                 headers: { 'Authorization': `Bearer ${window.authToken}` }
             })
             .then(response => response.json())
@@ -37,7 +42,7 @@ const auth = {
 
 // Replace Firebase functions
 async function signInWithEmailAndPassword(authObj, email, password) {
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -59,7 +64,7 @@ async function signInWithEmailAndPassword(authObj, email, password) {
 
 async function createUserWithEmailAndPassword(authObj, email, password) {
     const username = email.split('@')[0]; // Default username from email
-    const response = await fetch('/api/auth/register', {
+    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, username })
@@ -81,7 +86,7 @@ async function createUserWithEmailAndPassword(authObj, email, password) {
 
 async function signOut(authObj) {
     if (window.authToken) {
-        await fetch('/api/auth/logout', {
+        await fetch(`${API_BASE_URL}/api/auth/logout`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${window.authToken}` }
         });
@@ -150,7 +155,7 @@ const db = {
                         return {
                             get: async function() {
                                 // Get videos from API
-                                const response = await fetch('/api/videos?limit=' + n, {
+                                const response = await fetch(`${API_BASE_URL}/api/videos?limit=` + n, {
                                     headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
                                 });
                                 const data = await response.json();

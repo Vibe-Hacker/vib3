@@ -869,7 +869,7 @@
         
         const autoFix = {
             fixMissingPages() {
-                const requiredPages = ['searchPage', 'profilePage', 'settingsPage', 'messagesPage'];
+                const requiredPages = ['searchPage', 'settingsPage', 'messagesPage'];
                 requiredPages.forEach(pageId => {
                     if (!document.getElementById(pageId)) {
                         const page = document.createElement('div');
