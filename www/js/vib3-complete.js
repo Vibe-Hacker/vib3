@@ -1717,6 +1717,9 @@ async function publishContent() {
             return;
         }
         
+        // Debug current user info
+        console.log('👤 Current user info:', currentUser);
+        
         updatePublishProgress('Uploading content...', 20);
         
         // Create FormData for file upload
@@ -1730,6 +1733,12 @@ async function publishContent() {
             formData.append('video', videoFile);
             formData.append('title', finalTitle);
             formData.append('description', description);
+            
+            // Add user information for proper association
+            if (currentUser) {
+                formData.append('username', currentUser.username || currentUser.displayName || currentUser.email?.split('@')[0] || 'user');
+                console.log('📤 Adding username to upload:', currentUser.username || currentUser.displayName || currentUser.email?.split('@')[0]);
+            }
             
             const response = await fetch(`${window.API_BASE_URL}/api/upload/video`, {
                 method: 'POST',
@@ -1755,6 +1764,11 @@ async function publishContent() {
             // Handle photo slideshow upload
             formData.append('title', finalTitle);
             formData.append('description', description);
+            
+            // Add user information for proper association
+            if (currentUser) {
+                formData.append('username', currentUser.username || currentUser.displayName || currentUser.email?.split('@')[0] || 'user');
+            }
             
             // Add all photos
             selectedFiles.forEach((file, index) => {
