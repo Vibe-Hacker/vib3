@@ -2046,11 +2046,12 @@ function openAdvancedVideoEditor(stream) {
             
             <!-- Video Preview Area -->
             <div class="video-preview-container" style="background: #000; position: relative; display: flex; align-items: center; justify-content: center; flex: 1; min-height: 500px;">
-                <video id="editorPreview" autoplay muted style="width: auto; height: 100%; max-width: 100%; object-fit: contain;"></video>
+                <video id="editorPreview" autoplay controls style="width: auto; height: 100%; max-width: 100%; object-fit: contain;"></video>
                 <canvas id="editorCanvas" style="display: none;"></canvas>
                 
                 <!-- Recording Controls Overlay -->
                 <div class="recording-controls" style="position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 15px;">
+                    <button onclick="toggleEditorAudio()" id="audioToggleBtn" style="width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 16px; cursor: pointer;">🔊</button>
                     <button onclick="flipCamera()" style="width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 20px; cursor: pointer;">🔄</button>
                     <button onclick="toggleFlash()" style="width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 20px; cursor: pointer;">⚡</button>
                     <button onclick="toggleGridLines()" style="width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 20px; cursor: pointer;">⚏</button>
@@ -2330,7 +2331,23 @@ function initializeVideoEditor(stream) {
             console.log('📹 Loading video file into editor:', videoFile.name);
             const videoUrl = URL.createObjectURL(videoFile);
             videoPreview.src = videoUrl;
+            videoPreview.muted = false; // Ensure audio is not muted
             videoPreview.load();
+            
+            // Add click handler to unmute on user interaction
+            videoPreview.addEventListener('click', function() {
+                this.muted = false;
+                this.play();
+                // Update audio button state
+                const audioBtn = document.getElementById('audioToggleBtn');
+                if (audioBtn) audioBtn.textContent = this.muted ? '🔇' : '🔊';
+            });
+            
+            // Set initial audio button state
+            setTimeout(() => {
+                const audioBtn = document.getElementById('audioToggleBtn');
+                if (audioBtn) audioBtn.textContent = videoPreview.muted ? '🔇' : '🔊';
+            }, 100);
             
             // Store the video file globally for editing
             window.currentVideoFile = videoFile;
@@ -2350,6 +2367,18 @@ function initializeVideoEditor(stream) {
         
     } catch (error) {
         console.error('❌ Failed to initialize video editor:', error);
+    }
+}
+
+// Video editor audio toggle
+function toggleEditorAudio() {
+    const video = document.getElementById('editorPreview');
+    const audioBtn = document.getElementById('audioToggleBtn');
+    
+    if (video) {
+        video.muted = !video.muted;
+        audioBtn.textContent = video.muted ? '🔇' : '🔊';
+        console.log('🔊 Editor audio toggled:', video.muted ? 'muted' : 'unmuted');
     }
 }
 
@@ -5332,6 +5361,7 @@ window.toggleFlash = toggleFlash;
 window.toggleRecording = toggleRecording;
 window.toggleCountdown = toggleCountdown;
 window.toggleGridLines = toggleGridLines;
+window.toggleEditorAudio = toggleEditorAudio;
 window.closeVideoEditor = closeVideoEditor;
 window.saveEditedVideo = saveEditedVideo;
 
