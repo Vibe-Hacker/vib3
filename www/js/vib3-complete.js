@@ -1033,9 +1033,73 @@ function goToStep(step) {
 // Step 1: Upload Type Selection
 function selectVideo() {
     uploadType = 'video';
-    document.getElementById('step2Title').textContent = '🎥 Select Video';
+    
+    // Show video source selection modal instead of going directly to file upload
+    const videoSourceModal = document.createElement('div');
+    videoSourceModal.className = 'modal video-source-modal';
+    videoSourceModal.style.zIndex = '100002'; // Higher than camera modal
+    videoSourceModal.innerHTML = `
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeVideoSourceModal()">&times;</button>
+            <h3>🎥 How do you want to add your video?</h3>
+            
+            <div class="upload-options">
+                <div class="upload-option" onclick="selectVideoFile()" aria-label="Upload video file">
+                    <div class="upload-option-icon">📁</div>
+                    <div class="upload-option-text">
+                        <div>Upload Video File</div>
+                        <small>Select from your device (MP4, MOV, AVI)</small>
+                    </div>
+                </div>
+                
+                <div class="upload-option" onclick="recordNewVideo()" aria-label="Record new video">
+                    <div class="upload-option-icon">🎬</div>
+                    <div class="upload-option-text">
+                        <div>Record Video</div>
+                        <small>Use your camera to record a new video</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(videoSourceModal);
+    videoSourceModal.style.display = 'flex';
+    videoSourceModal.style.position = 'fixed';
+    videoSourceModal.style.top = '0';
+    videoSourceModal.style.left = '0';
+    videoSourceModal.style.right = '0';
+    videoSourceModal.style.bottom = '0';
+    videoSourceModal.style.backgroundColor = 'rgba(0,0,0,0.95)';
+    videoSourceModal.style.alignItems = 'center';
+    videoSourceModal.style.justifyContent = 'center';
+    
+    console.log('📹 Video source selection modal displayed');
+}
+
+function closeVideoSourceModal() {
+    const modal = document.querySelector('.video-source-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function selectVideoFile() {
+    console.log('📁 User chose to upload video file');
+    closeVideoSourceModal();
+    
+    // Continue with original video upload flow
+    document.getElementById('step2Title').textContent = '🎥 Select Video File';
     document.getElementById('formatHint').textContent = 'Supported: MP4, MOV, AVI (up to 1080p)';
     goToStep(2);
+}
+
+function recordNewVideo() {
+    console.log('🎬 User chose to record new video');
+    closeVideoSourceModal();
+    
+    // Start video recording flow
+    recordVideo();
 }
 
 function selectPhotos() {
