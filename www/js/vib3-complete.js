@@ -180,6 +180,13 @@ async function loadUserProfile() {
     
     console.log('User profile loaded:', currentUser.email);
     
+    // Auto-run debug when profile loads
+    setTimeout(() => {
+        if (window.debugAuthState) {
+            debugAuthState();
+        }
+    }, 1000);
+    
     // Debug current user data structure
     console.log('📊 Current user debug info:');
     console.log('  - Raw currentUser object:', currentUser);
