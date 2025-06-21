@@ -362,7 +362,7 @@ app.get('/api/videos', async (req, res) => {
             case 'foryou':
                 // For You: Personalized algorithm based on interests and trends
                 console.log('🎯 For You Algorithm: Personalized content');
-                query = userId ? { userId } : {};
+                query = userId ? { userId, status: { $ne: 'deleted' } } : { status: { $ne: 'deleted' } };
                 // Mix of popular and recent content with engagement weighting
                 videos = await db.collection('videos')
                     .find(query)
@@ -385,7 +385,7 @@ app.get('/api/videos', async (req, res) => {
                     console.log(`User ${currentUserId} follows ${followingIds.length} accounts`);
                     
                     if (followingIds.length > 0) {
-                        query = { userId: { $in: followingIds } };
+                        query = { userId: { $in: followingIds }, status: { $ne: 'deleted' } };
                         videos = await db.collection('videos')
                             .find(query)
                             .sort({ createdAt: -1 })
@@ -408,7 +408,7 @@ app.get('/api/videos', async (req, res) => {
             case 'explore':
                 // Explore: Trending, popular, hashtag-driven content
                 console.log('🔥 Explore Algorithm: Trending and popular content');
-                query = userId ? { userId } : {};
+                query = userId ? { userId, status: { $ne: 'deleted' } } : { status: { $ne: 'deleted' } };
                 // Sort by engagement metrics and recent activity
                 videos = await db.collection('videos')
                     .find(query)
@@ -445,7 +445,7 @@ app.get('/api/videos', async (req, res) => {
                     console.log(`User ${currentUserId} has ${friendIds.length} mutual friends`);
                     
                     if (friendIds.length > 0) {
-                        query = { userId: { $in: friendIds } };
+                        query = { userId: { $in: friendIds }, status: { $ne: 'deleted' } };
                         videos = await db.collection('videos')
                             .find(query)
                             .sort({ createdAt: -1 })
