@@ -233,6 +233,11 @@ async function debugAuthState() {
     }
 }
 
+// Helper function to get current user info
+function getCurrentUserInfo() {
+    return window.currentUser || null;
+}
+
 // Clean up orphaned media elements that might cause ghost audio
 function cleanupOrphanedMedia() {
     console.log('🧹 Cleaning up orphaned media elements');
@@ -636,7 +641,7 @@ function createAdvancedVideoCard(video) {
     
     overlay.innerHTML = `
         <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-            @${video.username || video.user?.username || video.user?.displayName || 'unknown'}
+            @${video.user?.username || video.user?.displayName || video.username || getCurrentUserInfo()?.username || 'unknown'}
         </div>
         <div style="font-size: 14px; line-height: 1.3; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
             ${video.description || video.title || 'Check out this video!'}
@@ -1958,7 +1963,7 @@ async function publishContent() {
                 formData.append(`photos`, file);
             });
             
-            const response = await fetch(`${window.API_BASE_URL}/api/upload/slideshow`, {
+            const response = await fetch(`${window.API_BASE_URL}/api/upload/video`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`

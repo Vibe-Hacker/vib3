@@ -214,12 +214,18 @@ async function loadUserProfileData() {
         if (response.ok) {
             const data = await response.json();
             console.log('✅ Profile data loaded:', data);
-            updateProfileDisplay(data);
+            updateProfileDisplay(data.user || data);
             loadUserVideos();
             loadUserStats();
         } else {
             const text = await response.text();
             console.error('❌ Profile API failed:', { status: response.status, text: text.substring(0, 200) });
+            // Fallback to currentUser data if API fails
+            if (window.currentUser) {
+                console.log('📊 Using currentUser data as fallback');
+                updateProfileDisplay(window.currentUser);
+                updateStatsDisplay(window.currentUser);
+            }
         }
     } catch (error) {
         console.error('Error loading profile data:', error);
@@ -299,14 +305,34 @@ function updateProfileDisplay(userData) {
 }
 
 function updateStatsDisplay(stats) {
-    if (stats.following !== undefined) {
-        document.getElementById('followingCount').textContent = formatNumber(stats.following);
+    console.log('📊 Updating stats display:', stats);
+    
+    const followingEl = document.getElementById('followingCount');
+    const followersEl = document.getElementById('followersCount');
+    const likesEl = document.getElementById('likesCount');
+    
+    if (followingEl && stats.following !== undefined) {
+        followingEl.textContent = formatNumber(stats.following);
     }
-    if (stats.followers !== undefined) {
-        document.getElementById('followersCount').textContent = formatNumber(stats.followers);
+    if (followersEl && stats.followers !== undefined) {
+        followersEl.textContent = formatNumber(stats.followers);
     }
-    if (stats.likes !== undefined) {
-        document.getElementById('likesCount').textContent = formatNumber(stats.likes);
+    if (likesEl && stats.likes !== undefined) {
+        likesEl.textContent = formatNumber(stats.likes);
+    }
+    
+    // Also try to use currentUser data if stats are empty
+    if (window.currentUser) {
+        const user = window.currentUser;
+        if (followingEl && !stats.following && user.following !== undefined) {
+            followingEl.textContent = formatNumber(user.following);
+        }
+        if (followersEl && !stats.followers && user.followers !== undefined) {
+            followersEl.textContent = formatNumber(user.followers);
+        }
+        if (likesEl && !stats.likes && user.likes !== undefined) {
+            likesEl.textContent = formatNumber(user.likes);
+        }
     }
 }
 
