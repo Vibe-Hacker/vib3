@@ -6572,7 +6572,7 @@ window.saveProfile = async function() {
         });
         
         const displayName = displayNameEl?.value?.trim();
-        const username = usernameEl?.value?.trim().replace('@', '').toLowerCase();
+        const username = usernameEl?.value?.trim().replace('@', '');
         const bio = bioEl?.value?.trim();
         
         console.log('🔍 Form values:', { displayName, username, bio });
@@ -6642,12 +6642,25 @@ window.saveProfile = async function() {
             }
             if (bio) {
                 // Update bio in all possible locations
-                const bioElements = document.querySelectorAll('.profile-bio, [data-bio]');
-                bioElements.forEach(el => el.textContent = bio);
+                const bioElements = document.querySelectorAll('#profileBio, .profile-bio, [data-bio]');
+                bioElements.forEach(el => {
+                    el.textContent = bio;
+                    console.log('✅ Updated bio element:', el);
+                });
                 
                 // Also update bio in simple-profile.js if it exists
                 const simpleBio = document.querySelector('.simple-profile-bio');
-                if (simpleBio) simpleBio.textContent = bio;
+                if (simpleBio) {
+                    simpleBio.textContent = bio;
+                    console.log('✅ Updated simple profile bio');
+                }
+                
+                // Force update main profile bio by direct selector
+                const mainBio = document.getElementById('profileBio');
+                if (mainBio) {
+                    mainBio.textContent = bio;
+                    console.log('✅ Updated main profile bio directly');
+                }
             }
             
             // Trigger a profile refresh if the function exists
