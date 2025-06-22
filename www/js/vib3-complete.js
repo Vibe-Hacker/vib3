@@ -812,7 +812,7 @@ function createAdvancedVideoCard(video) {
         commentBtn.style.transform = 'scale(1.1)';
         setTimeout(() => commentBtn.style.transform = 'scale(1)', 200);
         
-        openCommentsModal(videoId, video);
+        openCommentsModal(videoId);
     });
     
     // Add share button functionality
