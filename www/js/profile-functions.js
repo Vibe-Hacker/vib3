@@ -67,6 +67,9 @@ function editProfile() {
 // Global saveProfile function
 window.saveProfile = async function() {
     try {
+        // Small delay to ensure modal is fully rendered
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Collect form data
         const displayNameEl = document.getElementById('editDisplayName');
         const usernameEl = document.getElementById('editUsername');
@@ -86,12 +89,23 @@ window.saveProfile = async function() {
         const website = websiteEl?.value?.trim();
         
         console.log('🔍 Form values:', { displayName, username, bio, website });
+        console.log('🔍 Raw bio element value:', bioEl?.value);
+        console.log('🔍 Bio length:', bio?.length);
         
         // Prepare update data - server accepts bio, username, displayName, profilePicture
         const updateData = {};
-        if (displayName && displayName !== '') updateData.displayName = displayName;
-        if (username && username !== '') updateData.username = username;
-        if (bio && bio !== '') updateData.bio = bio;
+        if (displayName) {
+            updateData.displayName = displayName;
+            console.log('✅ Adding displayName:', displayName);
+        }
+        if (username) {
+            updateData.username = username;
+            console.log('✅ Adding username:', username);
+        }
+        if (bio) {
+            updateData.bio = bio;
+            console.log('✅ Adding bio:', bio);
+        }
         // Note: website is not supported by current server
         
         console.log('🔧 Sending profile update:', updateData);
