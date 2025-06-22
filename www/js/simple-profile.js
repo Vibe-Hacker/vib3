@@ -254,13 +254,21 @@ async function loadUserStats() {
     try {
         const baseURL = getAPIBaseURL();
         const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
+        console.log('📊 Loading user stats:', { baseURL, hasToken: !!token });
+        
         const response = await fetch(`${baseURL}/api/user/stats`, {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         
+        console.log('📊 Stats API response:', { status: response.status, ok: response.ok });
+        
         if (response.ok) {
             const stats = await response.json();
+            console.log('📊 Stats data received:', stats);
             updateStatsDisplay(stats);
+        } else {
+            const text = await response.text();
+            console.error('📊 Stats API failed:', { status: response.status, text: text.substring(0, 200) });
         }
     } catch (error) {
         console.error('Error loading user stats:', error);

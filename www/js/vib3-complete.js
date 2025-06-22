@@ -7650,11 +7650,14 @@ function viewUserProfile(userId) {
     }
     
     if (userId === currentUser?._id) {
-        // Navigate to own profile
+        // Navigate to own profile page
         showPage('profile');
     } else {
-        // Show other user's profile
-        showUserProfile(userId);
+        // For other users, also navigate to their profile (not modal)
+        // In a full app, this would show their profile page
+        // For now, just navigate to profile page
+        showPage('profile');
+        showNotification(`Viewing ${userId}'s profile`, 'info');
     }
 }
 
