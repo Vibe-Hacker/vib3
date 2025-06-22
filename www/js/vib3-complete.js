@@ -6737,6 +6737,33 @@ function refreshProfileDisplay() {
     }
 }
 
+// Check video compatibility before upload
+async function checkVideoCompatibility(file) {
+    return new Promise((resolve) => {
+        const video = document.createElement('video');
+        const url = URL.createObjectURL(file);
+        
+        video.onloadedmetadata = () => {
+            const canPlay = video.duration > 0 && !video.error;
+            console.log(`🎬 Video compatibility check: ${canPlay ? 'COMPATIBLE' : 'INCOMPATIBLE'}`, {
+                duration: video.duration,
+                videoWidth: video.videoWidth,
+                videoHeight: video.videoHeight
+            });
+            URL.revokeObjectURL(url);
+            resolve(canPlay);
+        };
+        
+        video.onerror = () => {
+            console.log('❌ Video compatibility check: FAILED');
+            URL.revokeObjectURL(url);
+            resolve(false);
+        };
+        
+        video.src = url;
+    });
+}
+
 function changeProfilePicture() {
     const input = document.createElement('input');
     input.type = 'file';
