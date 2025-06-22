@@ -362,7 +362,8 @@ app.get('/api/videos', async (req, res) => {
             case 'foryou':
                 // For You: Personalized algorithm based on interests and trends
                 console.log('🎯 For You Algorithm: Personalized content');
-                query = userId ? { userId, status: { $ne: 'deleted' } } : { status: { $ne: 'deleted' } };
+                // For You feed should show ALL users' videos, not filtered by userId
+                query = { status: { $ne: 'deleted' } };
                 // Mix of popular and recent content with engagement weighting
                 videos = await db.collection('videos')
                     .find(query)
@@ -408,7 +409,8 @@ app.get('/api/videos', async (req, res) => {
             case 'explore':
                 // Explore: Trending, popular, hashtag-driven content
                 console.log('🔥 Explore Algorithm: Trending and popular content');
-                query = userId ? { userId, status: { $ne: 'deleted' } } : { status: { $ne: 'deleted' } };
+                // Explore feed should show ALL users' videos, not filtered by userId
+                query = { status: { $ne: 'deleted' } };
                 // Sort by engagement metrics and recent activity
                 videos = await db.collection('videos')
                     .find(query)
@@ -466,8 +468,8 @@ app.get('/api/videos', async (req, res) => {
                 break;
                 
             default:
-                // Default to For You algorithm
-                query = userId ? { userId } : {};
+                // Default to For You algorithm - show all users' videos
+                query = { status: { $ne: 'deleted' } };
                 videos = await db.collection('videos')
                     .find(query)
                     .sort({ createdAt: -1 })
