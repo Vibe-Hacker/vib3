@@ -2496,69 +2496,69 @@ app.post('/api/admin/cleanup-likes', async (req, res) => {
     }
     
     try {
-        console.log('🧹 Manual likes cleanup requested...');
+        console.log('🧹 Aggressive likes cleanup requested...');
         
-        // Remove postId field from all video likes
-        const updateResult = await db.collection('likes').updateMany(
-            { 
-                videoId: { $exists: true, $ne: null },
-                postId: { $exists: true }
-            },
-            { 
-                $unset: { postId: "" }
-            }
-        );
+        // First, backup the current likes
+        const allLikes = await db.collection('likes').find({}).toArray();
+        console.log(`Found ${allLikes.length} total likes to process`);
         
-        console.log(`✅ Cleaned up ${updateResult.modifiedCount} video likes`);
+        // Drop the entire likes collection to avoid index conflicts
+        console.log('💥 Dropping likes collection...');
+        await db.collection('likes').drop().catch(() => {
+            console.log('Collection already dropped or doesnt exist');
+        });
         
-        // Remove duplicate video likes (keep most recent)
-        const duplicates = await db.collection('likes').aggregate([
-            {
-                $match: {
-                    videoId: { $exists: true, $ne: null }
-                }
-            },
-            {
-                $group: {
-                    _id: { videoId: "$videoId", userId: "$userId" },
-                    count: { $sum: 1 },
-                    docs: { $push: { id: "$_id", createdAt: "$createdAt" } }
-                }
-            },
-            {
-                $match: {
-                    count: { $gt: 1 }
-                }
-            }
-        ]).toArray();
+        // Recreate likes collection with clean data
+        console.log('🔄 Recreating likes collection...');
+        const cleanLikes = new Map();
         
-        let duplicatesRemoved = 0;
-        if (duplicates.length > 0) {
-            console.log(`Found ${duplicates.length} sets of duplicate video likes`);
-            
-            for (const dup of duplicates) {
-                // Sort by createdAt and keep the most recent
-                const sorted = dup.docs.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                const toDelete = sorted.slice(1); // Remove all but the first (most recent)
+        // Process each like, keeping only the most recent for each video/user combo
+        for (const like of allLikes) {
+            if (like.videoId) {
+                // This is a video like
+                const key = `${like.videoId}_${like.userId}`;
+                const existingLike = cleanLikes.get(key);
                 
-                if (toDelete.length > 0) {
-                    await db.collection('likes').deleteMany({ 
-                        _id: { $in: toDelete.map(d => d.id) } 
+                if (!existingLike || new Date(like.createdAt || 0) > new Date(existingLike.createdAt || 0)) {
+                    // Keep this like (it's newer or first one)
+                    cleanLikes.set(key, {
+                        videoId: like.videoId.toString(),
+                        userId: like.userId.toString(),
+                        createdAt: like.createdAt || new Date()
+                        // Note: no postId field for video likes
                     });
-                    duplicatesRemoved += toDelete.length;
-                    console.log(`Removed ${toDelete.length} duplicate likes for video ${dup._id.videoId}, user ${dup._id.userId}`);
                 }
+            } else if (like.postId) {
+                // This is a post like, keep as-is
+                const key = `post_${like.postId}_${like.userId}`;
+                cleanLikes.set(key, like);
             }
         }
         
+        // Insert clean likes
+        const cleanLikesArray = Array.from(cleanLikes.values());
+        if (cleanLikesArray.length > 0) {
+            await db.collection('likes').insertMany(cleanLikesArray);
+        }
+        
+        // Recreate indexes
+        await db.collection('likes').createIndex({ videoId: 1, userId: 1 }, { unique: true });
+        await db.collection('likes').createIndex({ postId: 1, userId: 1 }, { 
+            unique: true, 
+            partialFilterExpression: { postId: { $ne: null } } 
+        });
+        
+        console.log(`✅ Cleanup complete: ${allLikes.length} → ${cleanLikesArray.length} likes`);
+        
         res.json({ 
-            message: 'Likes cleanup complete',
-            cleanedUp: updateResult.modifiedCount,
-            duplicatesRemoved: duplicatesRemoved
+            message: 'Aggressive cleanup complete',
+            originalCount: allLikes.length,
+            cleanCount: cleanLikesArray.length,
+            duplicatesRemoved: allLikes.length - cleanLikesArray.length
         });
         
     } catch (error) {
-        console.error('Manual cleanup error:', error);
+        console.error('Aggressive cleanup error:', error);
         res.status(500).json({ error: 'Cleanup failed', details: error.message });
     }
 });
