@@ -138,6 +138,34 @@ function requireAuth(req, res, next) {
 
 // API Routes
 
+// Debug: Check database content
+app.get('/api/debug/videos', async (req, res) => {
+    if (!db) {
+        return res.json({ error: 'Database not connected' });
+    }
+    
+    try {
+        const totalVideos = await db.collection('videos').countDocuments();
+        const activeVideos = await db.collection('videos').countDocuments({ status: { $ne: 'deleted' } });
+        const deletedVideos = await db.collection('videos').countDocuments({ status: 'deleted' });
+        const allVideos = await db.collection('videos').find({}).limit(5).toArray();
+        
+        res.json({
+            totalVideos,
+            activeVideos,
+            deletedVideos,
+            sampleVideos: allVideos.map(v => ({
+                id: v._id,
+                title: v.title,
+                status: v.status,
+                userId: v.userId
+            }))
+        });
+    } catch (error) {
+        res.json({ error: error.message });
+    }
+});
+
 // Health check
 app.get('/api/health', async (req, res) => {
     const dbConnected = db !== null;
