@@ -103,12 +103,15 @@ app.get('/api/user/profile', (req, res) => {
 // Update user profile
 app.put('/api/user/profile', authMiddleware, (req, res) => {
     const updates = req.body;
+    console.log('📝 Profile update request:', updates);
     
     // Update mock user data
     if (updates.bio) mockUser.bio = updates.bio;
     if (updates.username) mockUser.username = updates.username;
+    if (updates.displayName) mockUser.displayName = updates.displayName;
     if (updates.profilePicture) mockUser.profilePicture = updates.profilePicture;
     
+    console.log('✅ Profile updated:', { bio: mockUser.bio, username: mockUser.username, displayName: mockUser.displayName });
     res.json({ message: 'Profile updated', updates });
 });
 

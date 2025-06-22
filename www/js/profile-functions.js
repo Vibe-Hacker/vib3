@@ -73,12 +73,22 @@ window.saveProfile = async function() {
         const bio = document.getElementById('editBio')?.value?.trim();
         const website = document.getElementById('editWebsite')?.value?.trim();
         
-        // Prepare update data
+        // Prepare update data - server accepts bio, username, displayName, profilePicture
         const updateData = {};
         if (displayName) updateData.displayName = displayName;
         if (username) updateData.username = username;
         if (bio) updateData.bio = bio;
-        if (website) updateData.website = website;
+        // Note: website is not supported by current server
+        
+        console.log('🔧 Sending profile update:', updateData);
+        
+        // Check if there's anything to update
+        if (Object.keys(updateData).length === 0) {
+            showNotification('No changes to save', 'info');
+            const modal = document.querySelector('[style*="position: fixed"][style*="rgba(0,0,0,0.8)"]');
+            if (modal) modal.remove();
+            return;
+        }
         
         // Make API call
         const baseURL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
@@ -118,6 +128,7 @@ window.saveProfile = async function() {
             showNotification('Profile updated successfully!', 'success');
         } else {
             const error = await response.json();
+            console.error('❌ Profile update failed:', error);
             showNotification(error.error || 'Failed to update profile', 'error');
         }
     } catch (error) {
