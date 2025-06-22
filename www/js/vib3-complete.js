@@ -4232,10 +4232,41 @@ function switchFeedTab(feedType) {
         if (feedType !== 'explore') {
             targetFeed.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;">Loading...</div>';
         } else {
-            // For explore feed, just clear the video grid while preserving the header
+            // For explore feed, ensure the structure exists, then clear the video grid
+            if (!document.getElementById('exploreVideoGrid')) {
+                // Create the structure if it doesn't exist
+                targetFeed.innerHTML = `
+                    <div class="explore-header" style="padding: 20px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
+                        <div class="search-bar-container" style="margin-bottom: 20px;">
+                            <input type="text" class="explore-search" placeholder="Search videos, creators, hashtags..." style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); font-size: 14px;" onkeypress="if(event.key==='Enter') performExploreSearch(this.value)">
+                        </div>
+                        <div class="trending-hashtags" style="margin-bottom: 15px;">
+                            <h3 style="color: var(--text-primary); margin-bottom: 10px; font-size: 16px;">Trending</h3>
+                            <div class="hashtag-list" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <span class="hashtag-item" style="background: var(--bg-tertiary); color: var(--text-primary); padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer;" onclick="performExploreSearch('#dance')">#dance</span>
+                                <span class="hashtag-item" style="background: var(--bg-tertiary); color: var(--text-primary); padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer;" onclick="performExploreSearch('#viral')">#viral</span>
+                                <span class="hashtag-item" style="background: var(--bg-tertiary); color: var(--text-primary); padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer;" onclick="performExploreSearch('#music')">#music</span>
+                                <span class="hashtag-item" style="background: var(--bg-tertiary); color: var(--text-primary); padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer;" onclick="performExploreSearch('#comedy')">#comedy</span>
+                                <span class="hashtag-item" style="background: var(--bg-tertiary); color: var(--text-primary); padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer;" onclick="performExploreSearch('#fyp')">#fyp</span>
+                            </div>
+                        </div>
+                        <div class="category-filters" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px;">
+                            <button class="category-btn active" style="background: var(--accent-primary); color: white; border: none; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; cursor: pointer;" onclick="filterByCategory('all')">All</button>
+                            <button class="category-btn" style="background: var(--bg-tertiary); color: var(--text-primary); border: none; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; cursor: pointer;" onclick="filterByCategory('trending')">Trending</button>
+                            <button class="category-btn" style="background: var(--bg-tertiary); color: var(--text-primary); border: none; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; cursor: pointer;" onclick="filterByCategory('dance')">Dance</button>
+                            <button class="category-btn" style="background: var(--bg-tertiary); color: var(--text-primary); border: none; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; cursor: pointer;" onclick="filterByCategory('music')">Music</button>
+                            <button class="category-btn" style="background: var(--bg-tertiary); color: var(--text-primary); border: none; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; cursor: pointer;" onclick="filterByCategory('comedy')">Comedy</button>
+                            <button class="category-btn" style="background: var(--bg-tertiary); color: var(--text-primary); border: none; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; cursor: pointer;" onclick="filterByCategory('beauty')">Beauty</button>
+                            <button class="category-btn" style="background: var(--bg-tertiary); color: var(--text-primary); border: none; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; cursor: pointer;" onclick="filterByCategory('food')">Food</button>
+                        </div>
+                    </div>
+                    <div id="exploreVideoGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 4px; padding: 8px; overflow-y: auto; max-height: calc(100vh - 300px);"></div>
+                `;
+            }
+            // Clear just the video grid
             const exploreGrid = document.getElementById('exploreVideoGrid');
             if (exploreGrid) {
-                exploreGrid.innerHTML = '';
+                exploreGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #888; grid-column: 1 / -1;">Loading explore videos...</div>';
             }
         }
         targetFeed.classList.add('active');
