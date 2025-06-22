@@ -781,6 +781,8 @@ function createAdvancedVideoCard(video) {
         console.error('🚨 VIDEO ERROR:', video_elem.src, e);
         console.error('Error details:', {
             error: e.target.error,
+            errorCode: e.target.error?.code,
+            errorMessage: getVideoErrorMessage(e.target.error?.code),
             networkState: e.target.networkState,
             readyState: e.target.readyState,
             currentSrc: e.target.currentSrc
@@ -6774,6 +6776,17 @@ function refreshProfileDisplay() {
         bioEl.textContent = window.currentUser.bio;
         console.log('✅ Set bio to:', window.currentUser.bio);
     }
+}
+
+// Get human-readable video error messages
+function getVideoErrorMessage(errorCode) {
+    const errors = {
+        1: 'MEDIA_ERR_ABORTED - Video loading was aborted',
+        2: 'MEDIA_ERR_NETWORK - Network error while loading video', 
+        3: 'MEDIA_ERR_DECODE - Video file corrupted or codec not supported',
+        4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - Video format/codec not supported'
+    };
+    return errors[errorCode] || `Unknown error code: ${errorCode}`;
 }
 
 // Check video compatibility before upload
