@@ -1,5 +1,5 @@
 // Video Editor Module - vertical video editing features
-export class VideoEditor {
+class VideoEditor {
     constructor() {
         this.currentVideo = null;
         this.effects = [];
