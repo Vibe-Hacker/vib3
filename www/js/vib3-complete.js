@@ -507,6 +507,13 @@ function formatCount(count) {
 
 // ================ VIDEO FEED MANAGEMENT ================
 async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1, append = false) {
+    // CRITICAL: Never handle explore through loadVideoFeed - it has its own system
+    if (feedType === 'explore') {
+        console.log('⚠️ loadVideoFeed called for explore - redirecting to initializeExplorePage');
+        initializeExplorePage();
+        return;
+    }
+    
     const now = Date.now();
     if (!forceRefresh && !append && now - lastFeedLoad < 1000) {
         console.log('Debouncing feed load for', feedType);
@@ -1560,6 +1567,7 @@ function createExploreVideoCard(video) {
     card.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
+        console.log('🎬 Explore video clicked, opening in vertical feed:', video.title);
         openVideoModal(video);
     });
     
@@ -1749,17 +1757,76 @@ async function loadExploreVideos(category = 'all') {
         const response = await fetch(`${window.API_BASE_URL}/api/videos?feed=explore&category=${category}&limit=30`);
         const data = await response.json();
         
+        // If API returns videos, use them, otherwise use sample data
+        let videosToShow = [];
+        if (data.videos && data.videos.length > 0) {
+            videosToShow = data.videos;
+        } else {
+            // Use sample explore data for demo
+            videosToShow = [
+                {
+                    _id: 'explore1',
+                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                    user: { username: 'dancequeen23', displayName: 'Maya Chen', profilePicture: '💃' },
+                    title: 'Summer dance vibes! ☀️',
+                    description: 'New choreography to my favorite song #dance #summer',
+                    likeCount: 1200, commentCount: 45, views: 15600
+                },
+                {
+                    _id: 'explore2', 
+                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+                    user: { username: 'artlife_alex', displayName: 'Alex Rivera', profilePicture: '🎨' },
+                    title: 'Digital art speedrun',
+                    description: 'Creating art in 60 seconds #art #digital #creative',
+                    likeCount: 890, commentCount: 67, views: 8900
+                },
+                {
+                    _id: 'explore3',
+                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', 
+                    user: { username: 'cookingjake', displayName: 'Jake Martinez', profilePicture: '👨‍🍳' },
+                    title: 'Quick pasta recipe!',
+                    description: '5-minute dinner hack that will change your life #cooking #pasta',
+                    likeCount: 2300, commentCount: 156, views: 23400
+                },
+                {
+                    _id: 'explore4',
+                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+                    user: { username: 'fitness_sarah', displayName: 'Sarah Johnson', profilePicture: '💪' },
+                    title: 'Morning workout routine', 
+                    description: 'Start your day right with this 10-min workout #fitness #morning',
+                    likeCount: 567, commentCount: 43, views: 7800
+                },
+                {
+                    _id: 'explore5',
+                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+                    user: { username: 'tech_tom', displayName: 'Tom Wilson', profilePicture: '💻' },
+                    title: 'iPhone 15 hidden features',
+                    description: 'Mind-blowing features you never knew existed #tech #iphone',
+                    likeCount: 4500, commentCount: 234, views: 45600
+                },
+                {
+                    _id: 'explore6',
+                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                    user: { username: 'fashionista_em', displayName: 'Emma Style', profilePicture: '👗' },
+                    title: 'Outfit of the day',
+                    description: 'Affordable fall looks under $50 #fashion #ootd #style',
+                    likeCount: 890, commentCount: 76, views: 12300
+                }
+            ];
+        }
+        
         // Clear loading state
         exploreGrid.innerHTML = '';
         
-        if (data.videos && data.videos.length > 0) {
-            // Create video cards
-            data.videos.forEach((video, index) => {
+        if (videosToShow.length > 0) {
+            // Create video cards in grid layout
+            videosToShow.forEach((video, index) => {
                 const card = createExploreVideoCard(video);
                 // Add stagger animation
                 card.style.animation = `fadeInUp 0.4s ease ${index * 0.05}s both`;
                 exploreGrid.appendChild(card);
             });
+            console.log(`✅ Created explore grid with ${videosToShow.length} videos`);
         } else {
             // Show empty state
             exploreGrid.innerHTML = `
@@ -4630,7 +4697,15 @@ function switchFeedTab(feedType) {
                             <button class="category-btn" style="background: var(--bg-tertiary); color: var(--text-primary); border: none; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; cursor: pointer;" onclick="filterByCategory('food')">Food</button>
                         </div>
                     </div>
-                    <div id="exploreVideoGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 4px; overflow-y: auto; max-height: calc(100vh - 300px);">
+                    <div id="exploreVideoGrid" style="
+                        display: grid; 
+                        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+                        gap: 3px; 
+                        padding: 8px; 
+                        overflow-y: auto; 
+                        max-height: calc(100vh - 320px);
+                        background: var(--bg-primary);
+                    ">
                         <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
                             <div class="spinner"></div>
                             <p style="margin-top: 20px;">Loading explore content...</p>
@@ -4670,11 +4745,14 @@ function switchFeedTab(feedType) {
         // Clean up any orphaned spinners before loading
         cleanupLoadingSpinners();
         
-        // Initialize explore page if switching to explore
+        // Initialize explore page if switching to explore  
         if (feedType === 'explore') {
-            initializeExplorePage();
+            // Don't call loadVideoFeed for explore - use dedicated explore initialization
+            console.log('🔍 Calling initializeExplorePage for explore feed');
+            setTimeout(initializeExplorePage, 100);
         } else {
-            // Load the feed content with fresh data
+            // Load the feed content with fresh data for other feeds
+            console.log(`📹 Loading regular video feed for: ${feedType}`);
             loadVideoFeed(feedType, true, 1, false); // Force fresh load, no append
         }
     }, 100);
@@ -4865,22 +4943,28 @@ function addGlobalStyles() {
             transform: scale(1.2);
         }
         
-        /* Responsive explore grid */
-        @media (min-width: 768px) {
+        /* Responsive explore grid - landscape format optimized */
+        @media (min-width: 1200px) {
             #exploreVideoGrid {
-                grid-template-columns: repeat(4, 1fr) !important;
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+            }
+        }
+        
+        @media (min-width: 768px) and (max-width: 1199px) {
+            #exploreVideoGrid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
             }
         }
         
         @media (max-width: 767px) {
             #exploreVideoGrid {
-                grid-template-columns: repeat(3, 1fr) !important;
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important;
             }
         }
         
         @media (max-width: 480px) {
             #exploreVideoGrid {
-                grid-template-columns: repeat(2, 1fr) !important;
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
             }
         }
         
