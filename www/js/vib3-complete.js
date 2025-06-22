@@ -483,6 +483,8 @@ async function loadMoreVideos(feedType) {
                     feedElement.appendChild(clonedCard);
                     // Refresh reaction counts for cloned video
                     refreshClonedVideoReactions(clonedCard);
+                    // Register cloned video with observer
+                    registerClonedVideoWithObserver(clonedCard);
                 });
                 setTimeout(() => initializeVideoObserver(), 200);
                 hasMoreVideos = true;
@@ -7128,6 +7130,33 @@ function reinitializeVideoControls(clonedCard) {
         
     } catch (error) {
         console.error('Error reinitializing video controls:', error);
+    }
+}
+
+// Register cloned video with observer for auto-play functionality
+function registerClonedVideoWithObserver(clonedCard) {
+    try {
+        const video = clonedCard.querySelector('video');
+        if (video && window.videoObserver) {
+            // Register with intersection observer for auto-play
+            window.videoObserver.observe(video);
+            
+            // Preserve any manual pause state
+            const originalCard = document.querySelector(`[data-video-id="${clonedCard.querySelector('.like-btn')?.getAttribute('data-video-id')}"]`);
+            if (originalCard && originalCard !== clonedCard) {
+                const originalVideo = originalCard.querySelector('video');
+                if (originalVideo && originalVideo.hasAttribute('data-manually-paused')) {
+                    video.setAttribute('data-manually-paused', 'true');
+                }
+            }
+            
+            // Reinitialize all controls to ensure proper event handling
+            reinitializeVideoControls(clonedCard);
+            
+            console.log('✅ Registered cloned video with observer');
+        }
+    } catch (error) {
+        console.error('Error registering cloned video with observer:', error);
     }
 }
 
