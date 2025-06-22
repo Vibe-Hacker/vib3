@@ -6575,7 +6575,12 @@ window.saveProfile = async function() {
         const username = usernameEl?.value?.trim().replace('@', '');
         const bio = bioEl?.value?.trim();
         
-        console.log('🔍 Form values:', { displayName, username, bio });
+        console.log('🔍 Form values (before processing):', { displayName, username, bio });
+        console.log('🔍 Username case check:', { 
+            original: usernameEl?.value, 
+            trimmed: usernameEl?.value?.trim(), 
+            final: username 
+        });
         
         // Prepare update data - server accepts bio, username, displayName, profilePicture
         const updateData = {};
@@ -6617,28 +6622,40 @@ window.saveProfile = async function() {
         
         if (response.ok) {
             const result = await response.json();
+            console.log('🔍 Server response:', result);
             
             // Update currentUser object with new data
             if (displayName && window.currentUser) {
                 window.currentUser.displayName = displayName;
+                console.log('✅ Updated currentUser.displayName:', displayName);
             }
             if (username && window.currentUser) {
                 window.currentUser.username = username;
+                console.log('✅ Updated currentUser.username:', username);
             }
             if (bio && window.currentUser) {
                 window.currentUser.bio = bio;
+                console.log('✅ Updated currentUser.bio:', bio);
             }
             
             // Update all UI elements with new data
             if (displayName) {
                 // Update display name in all possible locations
                 const nameElements = document.querySelectorAll('#userDisplayName, .profile-display-name');
-                nameElements.forEach(el => el.textContent = displayName);
+                console.log('🔍 Found display name elements:', nameElements.length);
+                nameElements.forEach(el => {
+                    el.textContent = displayName;
+                    console.log('✅ Updated display name element to:', displayName, el);
+                });
             }
             if (username) {
                 // Update username in all possible locations  
                 const usernameElements = document.querySelectorAll('#profileName, .profile-username');
-                usernameElements.forEach(el => el.textContent = '@' + username);
+                console.log('🔍 Found username elements:', usernameElements.length);
+                usernameElements.forEach(el => {
+                    el.textContent = '@' + username;
+                    console.log('✅ Updated username element to:', '@' + username, el);
+                });
             }
             if (bio) {
                 // Update bio in all possible locations
