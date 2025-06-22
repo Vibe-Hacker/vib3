@@ -818,6 +818,12 @@ function createAdvancedVideoCard(video) {
     `;
     
     actions.innerHTML = `
+        <div class="profile-btn" data-user-id="${video.userId || video.user?._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(45deg, #fe2c55, #8b2dbd); border: 2px solid white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 5px;">
+            <div style="font-size: 20px;">${video.user?.profilePicture || '👤'}</div>
+        </div>
+        <div class="follow-btn" data-user-id="${video.userId || video.user?._id || 'unknown'}" style="width: 28px; height: 28px; border-radius: 50%; background: #fe2c55; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 20px; position: relative; top: -15px;">
+            <div style="font-size: 16px; color: white;">+</div>
+        </div>
         <div class="like-btn" data-video-id="${video._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
             <div style="font-size: 20px;" class="heart-icon">🤍</div>
             <div style="font-size: 10px; color: white; margin-top: 2px;" class="like-count">${formatCount(video.likeCount || 0)}</div>
@@ -879,6 +885,37 @@ function createAdvancedVideoCard(video) {
         
         shareVideo(videoId, video);
     });
+    
+    // Add profile button functionality
+    const profileBtn = actions.querySelector('.profile-btn');
+    profileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const userId = profileBtn.dataset.userId;
+        
+        // Add bounce animation
+        profileBtn.style.transform = 'scale(1.1)';
+        setTimeout(() => profileBtn.style.transform = 'scale(1)', 200);
+        
+        // Navigate to user profile
+        viewUserProfile(userId);
+    });
+    
+    // Add follow button functionality
+    const followBtn = actions.querySelector('.follow-btn');
+    followBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const userId = followBtn.dataset.userId;
+        
+        // Add bounce animation
+        followBtn.style.transform = 'scale(1.2)';
+        setTimeout(() => followBtn.style.transform = 'scale(1)', 200);
+        
+        // Handle follow/unfollow
+        await handleFollowClick(userId, followBtn);
+    });
+    
+    // Check if user is already following
+    checkFollowStatus(video.userId || video.user?._id, followBtn);
     
     // Load and set initial like status
     loadVideoLikeStatus(video._id || 'unknown', likeBtn);
@@ -7523,6 +7560,309 @@ function openCreatorTools() {
     `;
     
     document.body.appendChild(modal);
+}
+
+// ================ FOLLOW FUNCTIONALITY ================
+
+async function handleFollowClick(userId, followBtn) {
+    if (!currentUser) {
+        showNotification('Please log in to follow users', 'error');
+        return;
+    }
+    
+    if (userId === currentUser._id) {
+        showNotification("You can't follow yourself", 'info');
+        return;
+    }
+    
+    try {
+        const isFollowing = followBtn.innerHTML.includes('✓');
+        const endpoint = isFollowing ? 'unfollow' : 'follow';
+        
+        const response = await fetch(`${API_BASE_URL}/api/user/${endpoint}/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${window.authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            // Update button UI
+            if (isFollowing) {
+                followBtn.innerHTML = '<div style="font-size: 16px; color: white;">+</div>';
+                followBtn.style.background = '#fe2c55';
+            } else {
+                followBtn.innerHTML = '<div style="font-size: 14px; color: white;">✓</div>';
+                followBtn.style.background = '#25d366';
+            }
+            
+            showNotification(isFollowing ? 'Unfollowed' : 'Following!', 'success');
+        } else {
+            showNotification('Failed to follow user', 'error');
+        }
+    } catch (error) {
+        console.error('Follow error:', error);
+        showNotification('Failed to follow user', 'error');
+    }
+}
+
+async function checkFollowStatus(userId, followBtn) {
+    if (!currentUser || !userId || userId === 'unknown') return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/user/following`, {
+            headers: {
+                'Authorization': `Bearer ${window.authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const following = await response.json();
+            const isFollowing = following.some(user => user._id === userId);
+            
+            if (isFollowing) {
+                followBtn.innerHTML = '<div style="font-size: 14px; color: white;">✓</div>';
+                followBtn.style.background = '#25d366';
+            }
+        }
+    } catch (error) {
+        console.error('Check follow status error:', error);
+    }
+}
+
+function viewUserProfile(userId) {
+    if (!userId || userId === 'unknown') {
+        showNotification('User profile not available', 'error');
+        return;
+    }
+    
+    if (userId === currentUser?._id) {
+        // Navigate to own profile
+        showPage('profile');
+    } else {
+        // Show other user's profile
+        showUserProfile(userId);
+    }
+}
+
+async function showUserProfile(userId) {
+    // Create user profile modal
+    const modal = document.createElement('div');
+    modal.id = 'userProfileModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.9);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow-y: auto;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: var(--bg-primary);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        ">
+            <div style="text-align: center; padding: 40px;">
+                <div class="spinner"></div>
+                <p style="color: var(--text-secondary); margin-top: 20px;">Loading profile...</p>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    try {
+        // Fetch user data
+        const response = await fetch(`${API_BASE_URL}/api/users/${userId}`);
+        if (!response.ok) throw new Error('User not found');
+        
+        const userData = await response.json();
+        
+        // Update modal with user profile
+        modal.innerHTML = `
+            <div style="
+                background: var(--bg-primary);
+                width: 90%;
+                max-width: 600px;
+                max-height: 90vh;
+                border-radius: 12px;
+                overflow-y: auto;
+                position: relative;
+            ">
+                <button onclick="document.getElementById('userProfileModal').remove()" style="
+                    position: absolute;
+                    top: 20px;
+                    right: 20px;
+                    background: none;
+                    border: none;
+                    color: white;
+                    font-size: 24px;
+                    cursor: pointer;
+                    z-index: 10;
+                ">&times;</button>
+                
+                <div style="padding: 40px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div style="
+                            width: 100px;
+                            height: 100px;
+                            border-radius: 50%;
+                            background: linear-gradient(45deg, #fe2c55, #8b2dbd);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 48px;
+                            margin: 0 auto 20px;
+                        ">${userData.profilePicture || '👤'}</div>
+                        
+                        <h2 style="margin: 0 0 10px 0; color: white;">@${userData.username || 'user'}</h2>
+                        <p style="color: var(--text-secondary); margin: 0 0 20px 0;">${userData.bio || 'No bio yet'}</p>
+                        
+                        <div style="display: flex; gap: 30px; justify-content: center; margin-bottom: 30px;">
+                            <div>
+                                <div style="font-size: 20px; font-weight: bold; color: white;">${formatCount(userData.stats?.followers || 0)}</div>
+                                <div style="color: var(--text-secondary); font-size: 14px;">Followers</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 20px; font-weight: bold; color: white;">${formatCount(userData.stats?.following || 0)}</div>
+                                <div style="color: var(--text-secondary); font-size: 14px;">Following</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 20px; font-weight: bold; color: white;">${formatCount(userData.stats?.likes || 0)}</div>
+                                <div style="color: var(--text-secondary); font-size: 14px;">Likes</div>
+                            </div>
+                        </div>
+                        
+                        <button id="modalFollowBtn" data-user-id="${userId}" style="
+                            padding: 12px 40px;
+                            background: #fe2c55;
+                            border: none;
+                            border-radius: 25px;
+                            color: white;
+                            font-weight: 600;
+                            cursor: pointer;
+                            font-size: 16px;
+                        ">Follow</button>
+                    </div>
+                    
+                    <div style="
+                        display: grid;
+                        grid-template-columns: repeat(3, 1fr);
+                        gap: 2px;
+                        margin-top: 30px;
+                    " id="userVideosGrid">
+                        <!-- Videos will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add follow button functionality
+        const modalFollowBtn = document.getElementById('modalFollowBtn');
+        modalFollowBtn.addEventListener('click', async () => {
+            await handleFollowClick(userId, modalFollowBtn);
+        });
+        
+        // Check follow status
+        checkFollowStatus(userId, modalFollowBtn);
+        
+        // Load user's videos
+        loadUserVideosGrid(userId);
+        
+    } catch (error) {
+        console.error('Error loading user profile:', error);
+        modal.innerHTML = `
+            <div style="
+                background: var(--bg-primary);
+                padding: 40px;
+                border-radius: 12px;
+                text-align: center;
+            ">
+                <p style="color: var(--text-secondary);">Failed to load user profile</p>
+                <button onclick="document.getElementById('userProfileModal').remove()" style="
+                    margin-top: 20px;
+                    padding: 10px 20px;
+                    background: var(--bg-secondary);
+                    border: none;
+                    border-radius: 8px;
+                    color: white;
+                    cursor: pointer;
+                ">Close</button>
+            </div>
+        `;
+    }
+}
+
+async function loadUserVideosGrid(userId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/user/videos?userId=${userId}`);
+        const videos = await response.json();
+        
+        const grid = document.getElementById('userVideosGrid');
+        if (!grid) return;
+        
+        if (videos.length === 0) {
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No videos yet</p>';
+            return;
+        }
+        
+        grid.innerHTML = videos.map(video => `
+            <div style="
+                aspect-ratio: 9/16;
+                background: #000;
+                position: relative;
+                cursor: pointer;
+                overflow: hidden;
+            " onclick="playVideoFromProfile('${video._id}')">
+                <video src="${video.videoUrl}" style="
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                "></video>
+                <div style="
+                    position: absolute;
+                    bottom: 5px;
+                    left: 5px;
+                    color: white;
+                    font-size: 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+                ">
+                    <span>▶</span>
+                    <span>${formatCount(video.views || 0)}</span>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading user videos:', error);
+    }
+}
+
+function playVideoFromProfile(videoId) {
+    // Close the profile modal and navigate to the video
+    const modal = document.getElementById('userProfileModal');
+    if (modal) modal.remove();
+    
+    // Find and scroll to the video in the feed
+    const videoCard = document.querySelector(`[data-video-id="${videoId}"]`);
+    if (videoCard) {
+        videoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
 
 // ================ APP INITIALIZATION ================

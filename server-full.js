@@ -1748,6 +1748,43 @@ app.post('/api/users/:userId/follow', requireAuth, async (req, res) => {
     }
 });
 
+// Unfollow user
+app.post('/api/user/unfollow/:userId', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { userId } = req.params;
+    
+    try {
+        // Remove follow
+        const result = await db.collection('follows').deleteOne({ 
+            followerId: req.user.userId,
+            followingId: userId
+        });
+        
+        if (result.deletedCount > 0) {
+            // Update follower counts
+            await db.collection('users').updateOne(
+                { _id: new ObjectId(req.user.userId) },
+                { $inc: { following: -1 } }
+            );
+            await db.collection('users').updateOne(
+                { _id: new ObjectId(userId) },
+                { $inc: { followers: -1 } }
+            );
+            
+            res.json({ message: 'User unfollowed', following: false });
+        } else {
+            res.json({ message: 'Not following this user', following: false });
+        }
+        
+    } catch (error) {
+        console.error('Unfollow user error:', error);
+        res.status(500).json({ error: 'Failed to unfollow user' });
+    }
+});
+
 // Get user profile
 app.get('/api/users/:userId', async (req, res) => {
     if (!db) {
@@ -1766,10 +1803,18 @@ app.get('/api/users/:userId', async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
         
-        // Get video count
-        user.videoCount = await db.collection('videos').countDocuments({ userId });
+        // Get stats
+        const stats = {
+            followers: await db.collection('follows').countDocuments({ followingId: userId }),
+            following: await db.collection('follows').countDocuments({ followerId: userId }),
+            likes: await db.collection('likes').countDocuments({ userId: userId }),
+            videos: await db.collection('videos').countDocuments({ userId: userId, status: { $ne: 'deleted' } })
+        };
         
-        res.json({ user });
+        // Add stats to user object
+        user.stats = stats;
+        
+        res.json(user);
         
     } catch (error) {
         console.error('Get user error:', error);
