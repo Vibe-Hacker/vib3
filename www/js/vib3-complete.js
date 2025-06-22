@@ -428,6 +428,8 @@ async function loadMoreVideos(feedType) {
                 videosToClone.forEach(videoCard => {
                     const clonedCard = videoCard.cloneNode(true);
                     feedElement.appendChild(clonedCard);
+                    // Refresh reaction counts for cloned video
+                    refreshClonedVideoReactions(clonedCard);
                 });
                 setTimeout(() => initializeVideoObserver(), 200);
                 hasMoreVideos = true;
@@ -577,6 +579,8 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                             videosToClone.forEach(videoCard => {
                                 const clonedCard = videoCard.cloneNode(true);
                                 feedElement.appendChild(clonedCard);
+                                // Refresh reaction counts for cloned video
+                                refreshClonedVideoReactions(clonedCard);
                             });
                             console.log(`🔄 Cloned ${videosToClone.length} videos for infinite scroll (filtered case)`);
                             
@@ -624,6 +628,9 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                             recycleTag.textContent = '🔄 Replay';
                             clonedCard.appendChild(recycleTag);
                             feedElement.appendChild(clonedCard);
+                            
+                            // Refresh reaction counts for cloned video
+                            refreshClonedVideoReactions(clonedCard);
                         });
                         console.log(`✅ Cloned ${videosToClone.length} videos for infinite scroll`);
                         
@@ -6879,6 +6886,64 @@ async function recordVideoShare(videoId) {
         }
     } catch (error) {
         console.error('Error recording share:', error);
+    }
+}
+
+// Refresh reaction counts for cloned videos
+async function refreshClonedVideoReactions(clonedCard) {
+    try {
+        // Find video ID from the cloned card
+        const likeBtn = clonedCard.querySelector('.like-btn');
+        const videoId = likeBtn?.getAttribute('data-video-id');
+        
+        if (!videoId || videoId === 'unknown') {
+            console.log('⚠️ Cannot refresh cloned video reactions - no valid video ID');
+            return;
+        }
+        
+        console.log(`🔄 Refreshing reactions for cloned video: ${videoId}`);
+        
+        // Get updated video data from server
+        const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}`, {
+            headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
+        });
+        
+        if (response.ok) {
+            const videoData = await response.json();
+            const video = videoData.video || videoData;
+            
+            // Update like count
+            const likeCountEl = clonedCard.querySelector('.like-count');
+            if (likeCountEl && video.likeCount !== undefined) {
+                likeCountEl.textContent = formatCount(video.likeCount);
+            }
+            
+            // Update share count
+            const shareCountEl = clonedCard.querySelector('.share-count');
+            if (shareCountEl && video.shareCount !== undefined) {
+                shareCountEl.textContent = formatCount(video.shareCount);
+            }
+            
+            // Update comment count
+            const commentCountEl = clonedCard.querySelector('.comment-btn div:last-child');
+            if (commentCountEl && video.commentCount !== undefined) {
+                commentCountEl.textContent = formatCount(video.commentCount);
+            }
+            
+            // Update like status from localStorage
+            const heartIcon = clonedCard.querySelector('.heart-icon');
+            if (heartIcon) {
+                const localLikes = JSON.parse(localStorage.getItem('vib3_liked_videos') || '{}');
+                const isLiked = localLikes[videoId] === true;
+                heartIcon.textContent = isLiked ? '❤️' : '🤍';
+            }
+            
+            console.log(`✅ Updated cloned video reactions for ${videoId}`);
+        } else {
+            console.log(`⚠️ Could not fetch updated data for video ${videoId}`);
+        }
+    } catch (error) {
+        console.error('Error refreshing cloned video reactions:', error);
     }
 }
 
