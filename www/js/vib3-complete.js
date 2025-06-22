@@ -601,7 +601,13 @@ function createAdvancedVideoCard(video) {
     
     // Create video element directly
     const video_elem = document.createElement('video');
-    video_elem.src = video.videoUrl || '';
+    
+    // Fix video URL to ensure proper protocol
+    let videoUrl = video.videoUrl || '';
+    if (videoUrl && !videoUrl.startsWith('http://') && !videoUrl.startsWith('https://')) {
+        videoUrl = 'https://' + videoUrl;
+    }
+    video_elem.src = videoUrl;
     video_elem.loop = true;
     video_elem.muted = false;  // Enable audio by default
     video_elem.volume = 0.8;   // Set reasonable volume
@@ -641,7 +647,7 @@ function createAdvancedVideoCard(video) {
     
     overlay.innerHTML = `
         <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-            @${video.user?.username || video.user?.displayName || video.username || getCurrentUserInfo()?.username || 'unknown'}
+            @${video.user?.username || video.user?.displayName || (video.username !== 'anonymous' ? video.username : getCurrentUserInfo()?.username) || getCurrentUserInfo()?.username || 'unknown'}
         </div>
         <div style="font-size: 14px; line-height: 1.3; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
             ${video.description || video.title || 'Check out this video!'}

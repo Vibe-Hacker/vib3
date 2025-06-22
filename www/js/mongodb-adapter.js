@@ -22,9 +22,18 @@ const auth = {
             fetch(`${window.API_BASE_URL}/api/auth/me`, {
                 headers: { 'Authorization': `Bearer ${window.authToken}` }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (response.status === 401) {
+                    // Token is invalid, clear it
+                    localStorage.removeItem('authToken');
+                    window.authToken = null;
+                    callback(null);
+                    return;
+                }
+                return response.json();
+            })
             .then(data => {
-                if (data.user) {
+                if (data && data.user) {
                     this.currentUser = data.user;
                     window.currentUser = data.user;
                     callback(data.user);
