@@ -754,8 +754,8 @@ function createAdvancedVideoCard(video) {
     
     actions.innerHTML = `
         <div class="like-btn" data-video-id="${video._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
-            <div style="font-size: 20px;">🤍</div>
-            <div style="font-size: 10px; color: white; margin-top: 2px;">${formatCount(video.likeCount || 0)}</div>
+            <div style="font-size: 20px;" class="heart-icon">🤍</div>
+            <div style="font-size: 10px; color: white; margin-top: 2px;" class="like-count">${formatCount(video.likeCount || 0)}</div>
         </div>
         <div class="comment-btn" data-video-id="${video._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
             <div style="font-size: 20px;">💬</div>
@@ -802,6 +802,9 @@ function createAdvancedVideoCard(video) {
                 const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
                 countElement.textContent = formatCount(currentCount + 1);
                 
+                // Save to local storage immediately
+                saveLikeToLocalStorage(videoId, true);
+                
                 if (window.authToken) {
                     fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
                         method: 'POST',
@@ -815,6 +818,9 @@ function createAdvancedVideoCard(video) {
                 heartIcon.textContent = '🤍';
                 const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
                 countElement.textContent = formatCount(Math.max(0, currentCount - 1));
+                
+                // Save to local storage immediately
+                saveLikeToLocalStorage(videoId, false);
                 
                 if (window.authToken) {
                     fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
@@ -856,6 +862,9 @@ function createAdvancedVideoCard(video) {
         
         shareVideo(videoId, video);
     });
+    
+    // Load and set initial like status
+    loadVideoLikeStatus(video._id || 'unknown', likeBtn);
     
     // Create pause indicator overlay
     const pauseIndicator = document.createElement('div');
@@ -6747,6 +6756,10 @@ async function submitComment(videoId) {
     }
     
     try {
+        console.log('Posting comment to video:', videoId);
+        console.log('Auth token present:', !!window.authToken);
+        console.log('Comment text:', text);
+        
         const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/comments`, {
             method: 'POST',
             headers: {
@@ -6755,6 +6768,8 @@ async function submitComment(videoId) {
             },
             body: JSON.stringify({ text })
         });
+        
+        console.log('Comment response status:', response.status);
         
         if (response.ok) {
             input.value = '';
@@ -6769,11 +6784,13 @@ async function submitComment(videoId) {
                 countElement.textContent = formatCount(currentCount + 1);
             }
         } else {
-            throw new Error('Failed to post comment');
+            const errorData = await response.text();
+            console.error('Comment error response:', errorData);
+            throw new Error(`Failed to post comment: ${response.status} ${errorData}`);
         }
     } catch (error) {
         console.error('Error posting comment:', error);
-        showNotification('Error posting comment', 'error');
+        showNotification(`Error posting comment: ${error.message}`, 'error');
     }
 }
 
@@ -6811,6 +6828,56 @@ function shareVideo(videoId, video) {
             }
         });
     }
+}
+
+// ================ LIKE STATUS PERSISTENCE ================
+
+async function loadVideoLikeStatus(videoId, likeBtn) {
+    // First check local storage for immediate UI update
+    const localLikes = JSON.parse(localStorage.getItem('vib3_liked_videos') || '{}');
+    const isLikedLocally = localLikes[videoId] === true;
+    
+    const heartIcon = likeBtn.querySelector('.heart-icon');
+    if (isLikedLocally && heartIcon) {
+        heartIcon.textContent = '❤️';
+    }
+    
+    // Then check server if authenticated
+    if (window.authToken && videoId !== 'unknown') {
+        try {
+            const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like-status`, {
+                headers: { 'Authorization': `Bearer ${window.authToken}` }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.liked && heartIcon) {
+                    heartIcon.textContent = '❤️';
+                    // Update local storage to match server
+                    localLikes[videoId] = true;
+                    localStorage.setItem('vib3_liked_videos', JSON.stringify(localLikes));
+                } else if (!data.liked && heartIcon) {
+                    heartIcon.textContent = '🤍';
+                    // Update local storage to match server
+                    delete localLikes[videoId];
+                    localStorage.setItem('vib3_liked_videos', JSON.stringify(localLikes));
+                }
+            }
+        } catch (error) {
+            console.log('Could not load like status from server:', error);
+            // Keep local storage state as fallback
+        }
+    }
+}
+
+function saveLikeToLocalStorage(videoId, isLiked) {
+    const localLikes = JSON.parse(localStorage.getItem('vib3_liked_videos') || '{}');
+    if (isLiked) {
+        localLikes[videoId] = true;
+    } else {
+        delete localLikes[videoId];
+    }
+    localStorage.setItem('vib3_liked_videos', JSON.stringify(localLikes));
 }
 
 function openCreatorTools() {
