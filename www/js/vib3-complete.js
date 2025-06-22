@@ -6419,6 +6419,11 @@ function createAnalyticsView() {
 
 function editProfile() {
     console.log('🔧 vib3-complete.js editProfile() called');
+    console.log('🔍 Current user object:', window.currentUser);
+    console.log('🔍 Current display elements:', {
+        profileName: document.getElementById('profileName')?.textContent,
+        userDisplayName: document.getElementById('userDisplayName')?.textContent
+    });
     const modal = document.createElement('div');
     modal.className = 'modal edit-profile-modal';
     modal.style.cssText = `
@@ -6678,6 +6683,9 @@ window.saveProfile = async function() {
                 }
             }
             
+            // Force refresh the profile display with current data
+            refreshProfileDisplay();
+            
             // Trigger a profile refresh if the function exists
             if (typeof refreshProfileDisplay === 'function') {
                 refreshProfileDisplay();
@@ -6697,6 +6705,37 @@ window.saveProfile = async function() {
         showNotification('Error updating profile', 'error');
     }
 };
+
+// Function to refresh profile display with current user data
+function refreshProfileDisplay() {
+    console.log('🔄 Refreshing profile display with currentUser:', window.currentUser);
+    
+    if (!window.currentUser) {
+        console.log('❌ No currentUser object found');
+        return;
+    }
+    
+    // Update display name 
+    const displayNameEl = document.getElementById('userDisplayName');
+    if (displayNameEl && window.currentUser.displayName) {
+        displayNameEl.textContent = window.currentUser.displayName;
+        console.log('✅ Set display name to:', window.currentUser.displayName);
+    }
+    
+    // Update username
+    const usernameEl = document.getElementById('profileName');
+    if (usernameEl && window.currentUser.username) {
+        usernameEl.textContent = '@' + window.currentUser.username;
+        console.log('✅ Set username to:', '@' + window.currentUser.username);
+    }
+    
+    // Update bio
+    const bioEl = document.getElementById('profileBio');
+    if (bioEl && window.currentUser.bio) {
+        bioEl.textContent = window.currentUser.bio;
+        console.log('✅ Set bio to:', window.currentUser.bio);
+    }
+}
 
 function changeProfilePicture() {
     const input = document.createElement('input');
