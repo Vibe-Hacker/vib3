@@ -6927,49 +6927,22 @@ async function refreshClonedVideoReactions(clonedCard) {
         
         console.log(`🔄 Refreshing reactions for cloned video: ${videoId}`);
         
-        // Get updated video data from server
-        const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}`, {
-            headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
-        });
-        
-        if (response.ok) {
-            const videoData = await response.json();
-            const video = videoData.video || videoData;
-            
-            // Update like count
-            const likeCountEl = clonedCard.querySelector('.like-count');
-            if (likeCountEl && video.likeCount !== undefined) {
-                likeCountEl.textContent = formatCount(video.likeCount);
-            }
-            
-            // Update share count
-            const shareCountEl = clonedCard.querySelector('.share-count');
-            if (shareCountEl && video.shareCount !== undefined) {
-                shareCountEl.textContent = formatCount(video.shareCount);
-            }
-            
-            // Update comment count
-            const commentCountEl = clonedCard.querySelector('.comment-btn div:last-child');
-            if (commentCountEl && video.commentCount !== undefined) {
-                commentCountEl.textContent = formatCount(video.commentCount);
-            }
-            
-            // Load proper like status for cloned video
-            const likeBtn = clonedCard.querySelector('.like-btn');
-            if (likeBtn) {
-                loadVideoLikeStatus(videoId, likeBtn);
-            }
-            
-            console.log(`✅ Updated cloned video reactions for ${videoId}`);
-            
-            // Only reinitialize controls if this is actually a cloned video
-            const isClonedVideo = clonedCard.getAttribute('data-cloned-video') === 'true';
-            if (isClonedVideo) {
-                reinitializeVideoControls(clonedCard);
-            }
-        } else {
-            console.log(`⚠️ Could not fetch updated data for video ${videoId}`);
+        // Load proper like status for cloned video (most important)
+        const likeBtn = clonedCard.querySelector('.like-btn');
+        if (likeBtn) {
+            loadVideoLikeStatus(videoId, likeBtn);
         }
+        
+        console.log(`✅ Updated cloned video reactions for ${videoId}`);
+        
+        // Only reinitialize controls if this is actually a cloned video
+        const isClonedVideo = clonedCard.getAttribute('data-cloned-video') === 'true';
+        if (isClonedVideo) {
+            reinitializeVideoControls(clonedCard);
+        }
+        
+        // Note: Skipping individual video data fetch since /api/videos/:videoId endpoint doesn't exist
+        // The like status and counts will be refreshed through the like status endpoint
     } catch (error) {
         console.error('Error refreshing cloned video reactions:', error);
     }
