@@ -42,7 +42,7 @@ function editProfile() {
                     <input type="url" id="editWebsite" value="" placeholder="https://your-website.com" style="width: 100%; padding: 12px; border: 1px solid #666; border-radius: 6px; background: #333; color: white;">
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button onclick="saveProfile(); closeModal()" style="flex: 1; background: #fe2c55; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    <button onclick="saveProfile()" style="flex: 1; background: #fe2c55; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">
                         Save Changes
                     </button>
                     <button onclick="closeModal()" style="flex: 1; background: #333; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer;">
@@ -68,16 +68,30 @@ function editProfile() {
 window.saveProfile = async function() {
     try {
         // Collect form data
-        const displayName = document.getElementById('editDisplayName')?.value?.trim();
-        const username = document.getElementById('editUsername')?.value?.trim().replace('@', '').toLowerCase();
-        const bio = document.getElementById('editBio')?.value?.trim();
-        const website = document.getElementById('editWebsite')?.value?.trim();
+        const displayNameEl = document.getElementById('editDisplayName');
+        const usernameEl = document.getElementById('editUsername');
+        const bioEl = document.getElementById('editBio');
+        const websiteEl = document.getElementById('editWebsite');
+        
+        console.log('🔍 Form elements found:', {
+            displayNameEl: !!displayNameEl,
+            usernameEl: !!usernameEl,
+            bioEl: !!bioEl,
+            websiteEl: !!websiteEl
+        });
+        
+        const displayName = displayNameEl?.value?.trim();
+        const username = usernameEl?.value?.trim().replace('@', '').toLowerCase();
+        const bio = bioEl?.value?.trim();
+        const website = websiteEl?.value?.trim();
+        
+        console.log('🔍 Form values:', { displayName, username, bio, website });
         
         // Prepare update data - server accepts bio, username, displayName, profilePicture
         const updateData = {};
-        if (displayName) updateData.displayName = displayName;
-        if (username) updateData.username = username;
-        if (bio) updateData.bio = bio;
+        if (displayName && displayName !== '') updateData.displayName = displayName;
+        if (username && username !== '') updateData.username = username;
+        if (bio && bio !== '') updateData.bio = bio;
         // Note: website is not supported by current server
         
         console.log('🔧 Sending profile update:', updateData);
