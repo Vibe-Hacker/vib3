@@ -876,20 +876,35 @@ async function editBio() {
     if (newBio !== null && newBio.trim() !== '') {
         try {
             const baseURL = getAPIBaseURL();
+            const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
+            console.log('Updating bio with token:', !!token);
+            console.log('New bio:', newBio.trim());
+            
             const response = await fetch(`${baseURL}/api/user/profile`, {
                 method: 'PUT',
                 headers: { 
-                    'Authorization': `Bearer ${window.authToken}`,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ bio: newBio.trim() })
             });
             
+            console.log('Bio update response status:', response.status);
+            
             if (response.ok) {
-                bioElement.textContent = newBio;
+                const result = await response.json();
+                console.log('Bio update success:', result);
+                bioElement.textContent = newBio.trim();
                 showNotification('Bio updated!', 'success');
+                
+                // Update currentUser if available
+                if (window.currentUser) {
+                    window.currentUser.bio = newBio.trim();
+                }
             } else {
-                showNotification('Failed to update bio', 'error');
+                const errorText = await response.text();
+                console.error('Bio update failed:', response.status, errorText);
+                showNotification(`Failed to update bio: ${response.status}`, 'error');
             }
         } catch (error) {
             console.error('Error updating bio:', error);
@@ -908,10 +923,11 @@ async function editUsername() {
         
         try {
             const baseURL = getAPIBaseURL();
+            const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
             const response = await fetch(`${baseURL}/api/user/profile`, {
                 method: 'PUT',
                 headers: { 
-                    'Authorization': `Bearer ${window.authToken}`,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ username: cleanUsername })
