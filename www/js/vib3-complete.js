@@ -6525,9 +6525,7 @@ function editProfile() {
                     color: var(--text-primary);
                     font-size: 16px;
                     resize: vertical;
-                ">Welcome to my VIB3 profile! 🎵✨
-Creator | Dancer | Music Lover
-📧 Contact: hello@vib3.com</textarea>
+                ">${currentUser?.bio || 'Welcome to my VIB3 profile! 🎵✨\nCreator | Dancer | Music Lover\n📧 Contact: hello@vib3.com'}</textarea>
             </div>
             
             <div style="display: flex; gap: 12px; justify-content: flex-end;">
@@ -6620,18 +6618,41 @@ window.saveProfile = async function() {
         if (response.ok) {
             const result = await response.json();
             
-            // Update UI with new data
+            // Update currentUser object with new data
+            if (displayName && window.currentUser) {
+                window.currentUser.displayName = displayName;
+            }
+            if (username && window.currentUser) {
+                window.currentUser.username = username;
+            }
+            if (bio && window.currentUser) {
+                window.currentUser.bio = bio;
+            }
+            
+            // Update all UI elements with new data
             if (displayName) {
-                const nameElement = document.getElementById('userDisplayName');
-                if (nameElement) nameElement.textContent = displayName;
+                // Update display name in all possible locations
+                const nameElements = document.querySelectorAll('#userDisplayName, .profile-display-name');
+                nameElements.forEach(el => el.textContent = displayName);
             }
             if (username) {
-                const usernameElement = document.getElementById('profileName');
-                if (usernameElement) usernameElement.textContent = '@' + username;
+                // Update username in all possible locations  
+                const usernameElements = document.querySelectorAll('#profileName, .profile-username');
+                usernameElements.forEach(el => el.textContent = '@' + username);
             }
             if (bio) {
-                const bioElement = document.querySelector('.profile-page [style*="color: var(--text-primary); margin-bottom: 16px"]');
-                if (bioElement) bioElement.textContent = bio;
+                // Update bio in all possible locations
+                const bioElements = document.querySelectorAll('.profile-bio, [data-bio]');
+                bioElements.forEach(el => el.textContent = bio);
+                
+                // Also update bio in simple-profile.js if it exists
+                const simpleBio = document.querySelector('.simple-profile-bio');
+                if (simpleBio) simpleBio.textContent = bio;
+            }
+            
+            // Trigger a profile refresh if the function exists
+            if (typeof refreshProfileDisplay === 'function') {
+                refreshProfileDisplay();
             }
             
             // Close modal and show success
