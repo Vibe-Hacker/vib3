@@ -44,25 +44,34 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Tab visibility detection for auto pause/resume
-let wasPlayingBeforeHide = false;
-let currentlyPlayingVideo = null;
+let videosPlayingBeforeHide = [];
 
 document.addEventListener('visibilitychange', function() {
     if (document.hidden) {
         // Tab became hidden - pause all videos
         console.log('📱 Tab hidden - pausing videos');
-        currentlyPlayingVideo = document.querySelector('video:not([paused])');
-        if (currentlyPlayingVideo && !currentlyPlayingVideo.paused) {
-            wasPlayingBeforeHide = true;
-            currentlyPlayingVideo.pause();
-        }
+        videosPlayingBeforeHide = [];
+        const allVideos = document.querySelectorAll('video');
+        allVideos.forEach(video => {
+            if (!video.paused) {
+                videosPlayingBeforeHide.push(video);
+                video.pause();
+                console.log('⏸️ Paused video on tab hide:', video.src.split('/').pop());
+            }
+        });
     } else {
-        // Tab became visible - resume video if it was playing
-        console.log('📱 Tab visible - resuming video');
-        if (wasPlayingBeforeHide && currentlyPlayingVideo) {
-            currentlyPlayingVideo.play().catch(console.error);
-            wasPlayingBeforeHide = false;
-        }
+        // Tab became visible - resume videos that were playing
+        console.log('📱 Tab visible - resuming videos');
+        videosPlayingBeforeHide.forEach(video => {
+            // Only resume if still in viewport and not manually paused
+            const rect = video.getBoundingClientRect();
+            const isInView = rect.top >= 0 && rect.top < window.innerHeight * 0.7;
+            if (isInView && !video.hasAttribute('data-manually-paused')) {
+                video.play().catch(e => console.log('Resume failed:', e));
+                console.log('▶️ Resumed video on tab show:', video.src.split('/').pop());
+            }
+        });
+        videosPlayingBeforeHide = [];
     }
 });
 
@@ -350,13 +359,17 @@ function initializeVideoObserver() {
         entries.forEach(entry => {
             const video = entry.target;
             if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
-                // Play video when mostly visible
-                video.play().catch(e => console.log('Play failed:', e));
-                console.log('🎬 Playing video:', video.src.split('/').pop());
+                // Only play if not manually paused
+                if (!video.hasAttribute('data-manually-paused')) {
+                    video.play().catch(e => console.log('Play failed:', e));
+                    console.log('🎬 Auto-playing video:', video.src.split('/').pop());
+                }
             } else {
-                // Pause when not visible
-                video.pause();
-                console.log('⏸️ Pausing video:', video.src.split('/').pop());
+                // Only pause if not manually playing
+                if (!video.hasAttribute('data-manually-paused')) {
+                    video.pause();
+                    console.log('⏸️ Auto-pausing video:', video.src.split('/').pop());
+                }
             }
         });
     }, {
@@ -889,19 +902,61 @@ function createAdvancedVideoCard(video) {
     `;
     pauseIndicator.textContent = '⏸️';
     
-    // Add pause/play functionality when clicking video
+    // Add pause/play functionality when clicking video (with double-tap detection)
+    video_elem._doubleTapState = { lastTap: 0, tapCount: 0 };
+    
     video_elem.addEventListener('click', (e) => {
         e.stopPropagation(); // Prevent event bubbling
         
-        if (video_elem.paused) {
-            video_elem.play();
-            pauseIndicator.style.display = 'none';
-            console.log('▶️ RESUMED VIDEO:', video_elem.src);
+        // Double-tap detection
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - video_elem._doubleTapState.lastTap;
+        
+        if (tapLength < 500 && tapLength > 0) {
+            video_elem._doubleTapState.tapCount++;
+            if (video_elem._doubleTapState.tapCount === 1) {
+                // Double tap detected - trigger like instead of pause/play
+                const likeBtn = e.target.closest('.video-card').querySelector('.like-btn');
+                if (likeBtn) {
+                    handleLikeClick(e, likeBtn);
+                    createFloatingHeart(video_elem);
+                    
+                    // Add double heart beat animation
+                    const heartIcon = likeBtn.querySelector('.heart-icon') || likeBtn.querySelector('div:first-child');
+                    if (heartIcon) {
+                        heartIcon.style.animation = 'doubleHeartBeat 0.6s ease';
+                        setTimeout(() => heartIcon.style.animation = '', 600);
+                    }
+                }
+                video_elem._doubleTapState.tapCount = 0;
+                video_elem._doubleTapState.lastTap = currentTime;
+                return; // Don't do pause/play on double-tap
+            }
         } else {
-            video_elem.pause();
-            pauseIndicator.style.display = 'flex';
-            console.log('⏸️ PAUSED VIDEO:', video_elem.src);
+            video_elem._doubleTapState.tapCount = 0;
         }
+        
+        video_elem._doubleTapState.lastTap = currentTime;
+        
+        // Single tap - pause/play functionality
+        setTimeout(() => {
+            if (video_elem._doubleTapState.tapCount === 0) {
+                // Only do pause/play if no double-tap happened
+                if (video_elem.paused) {
+                    // Remove manual pause flag and play
+                    video_elem.removeAttribute('data-manually-paused');
+                    video_elem.play();
+                    pauseIndicator.style.display = 'none';
+                    console.log('▶️ MANUALLY RESUMED VIDEO:', video_elem.src.split('/').pop());
+                } else {
+                    // Mark as manually paused so observer doesn't auto-resume
+                    video_elem.setAttribute('data-manually-paused', 'true');
+                    video_elem.pause();
+                    pauseIndicator.style.display = 'flex';
+                    console.log('⏸️ MANUALLY PAUSED VIDEO:', video_elem.src.split('/').pop());
+                }
+            }
+        }, 300); // Delay to allow double-tap detection
     });
     
     card.appendChild(video_elem);
@@ -6951,19 +7006,61 @@ function reinitializeVideoControls(clonedCard) {
         shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
         volumeBtn.parentNode.replaceChild(newVolumeBtn, volumeBtn);
         
-        // Add video pause/play functionality
+        // Add video pause/play functionality (with double-tap detection)
+        newVideo._doubleTapState = { lastTap: 0, tapCount: 0 };
+        
         newVideo.addEventListener('click', (e) => {
             e.stopPropagation();
             
-            if (newVideo.paused) {
-                newVideo.play();
-                if (pauseIndicator) pauseIndicator.style.display = 'none';
-                console.log('▶️ RESUMED CLONED VIDEO:', newVideo.src);
+            // Double-tap detection
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - newVideo._doubleTapState.lastTap;
+            
+            if (tapLength < 500 && tapLength > 0) {
+                newVideo._doubleTapState.tapCount++;
+                if (newVideo._doubleTapState.tapCount === 1) {
+                    // Double tap detected - trigger like instead of pause/play
+                    const likeBtn = e.target.closest('.video-card').querySelector('.like-btn');
+                    if (likeBtn) {
+                        handleLikeClick(e, likeBtn);
+                        createFloatingHeart(newVideo);
+                        
+                        // Add double heart beat animation
+                        const heartIcon = likeBtn.querySelector('.heart-icon') || likeBtn.querySelector('div:first-child');
+                        if (heartIcon) {
+                            heartIcon.style.animation = 'doubleHeartBeat 0.6s ease';
+                            setTimeout(() => heartIcon.style.animation = '', 600);
+                        }
+                    }
+                    newVideo._doubleTapState.tapCount = 0;
+                    newVideo._doubleTapState.lastTap = currentTime;
+                    return; // Don't do pause/play on double-tap
+                }
             } else {
-                newVideo.pause();
-                if (pauseIndicator) pauseIndicator.style.display = 'flex';
-                console.log('⏸️ PAUSED CLONED VIDEO:', newVideo.src);
+                newVideo._doubleTapState.tapCount = 0;
             }
+            
+            newVideo._doubleTapState.lastTap = currentTime;
+            
+            // Single tap - pause/play functionality
+            setTimeout(() => {
+                if (newVideo._doubleTapState.tapCount === 0) {
+                    // Only do pause/play if no double-tap happened
+                    if (newVideo.paused) {
+                        // Remove manual pause flag and play
+                        newVideo.removeAttribute('data-manually-paused');
+                        newVideo.play();
+                        if (pauseIndicator) pauseIndicator.style.display = 'none';
+                        console.log('▶️ MANUALLY RESUMED CLONED VIDEO:', newVideo.src.split('/').pop());
+                    } else {
+                        // Mark as manually paused so observer doesn't auto-resume
+                        newVideo.setAttribute('data-manually-paused', 'true');
+                        newVideo.pause();
+                        if (pauseIndicator) pauseIndicator.style.display = 'flex';
+                        console.log('⏸️ MANUALLY PAUSED CLONED VIDEO:', newVideo.src.split('/').pop());
+                    }
+                }
+            }, 300); // Delay to allow double-tap detection
         });
         
         // Add volume control functionality
@@ -7257,42 +7354,18 @@ function enhanceLikeButton(likeBtn, videoElement) {
     let lastTap = 0;
     let tapCount = 0;
     
-    // Add double-tap to like functionality on video
-    videoElement.addEventListener('click', (e) => {
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTap;
-        
-        if (tapLength < 500 && tapLength > 0) {
-            tapCount++;
-            if (tapCount === 1) {
-                // Double tap detected - trigger like
-                e.preventDefault();
-                e.stopPropagation();
-                handleLikeClick(e, likeBtn);
-                createFloatingHeart(videoElement);
-                
-                // Add double heart beat animation to the like button
-                const heartIcon = likeBtn.querySelector('.heart-icon') || likeBtn.querySelector('div:first-child');
-                if (heartIcon) {
-                    heartIcon.style.animation = 'doubleHeartBeat 0.6s ease';
-                    setTimeout(() => {
-                        heartIcon.style.animation = '';
-                    }, 600);
-                }
-                
-                tapCount = 0;
-            }
-        } else {
-            tapCount = 0;
-        }
-        
-        lastTap = currentTime;
-    });
+    // Store double-tap state on the video element to avoid conflicts with pause/play
+    videoElement._doubleTapState = { lastTap: 0, tapCount: 0 };
+    
+    // Handle double-tap detection in the existing click handler
+    const originalClickHandler = videoElement.onclick;
+    videoElement.onclick = null; // Remove to avoid conflicts
+    
+    // The main video click handler now handles both pause/play and double-tap
+    // (This is already done in the main video click handler above)
     
     // Enhanced like button animation
     likeBtn.addEventListener('click', (e) => {
-        // Prevent double-execution from double-tap
-        if (tapCount > 0) return;
         
         // Create ripple effect
         const ripple = document.createElement('div');
