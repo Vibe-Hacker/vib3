@@ -1344,7 +1344,15 @@ app.post('/api/videos/:videoId/like', requireAuth, async (req, res) => {
         // Try to insert like
         try {
             await db.collection('likes').insertOne(like);
-            res.json({ message: 'Video liked', liked: true });
+            
+            // Get updated like count
+            const likeCount = await db.collection('likes').countDocuments({ videoId });
+            
+            res.json({ 
+                message: 'Video liked', 
+                liked: true, 
+                likeCount 
+            });
         } catch (error) {
             // If duplicate key error, remove the like
             if (error.code === 11000) {
@@ -1352,7 +1360,15 @@ app.post('/api/videos/:videoId/like', requireAuth, async (req, res) => {
                     videoId, 
                     userId: req.user.userId 
                 });
-                res.json({ message: 'Video unliked', liked: false });
+                
+                // Get updated like count
+                const likeCount = await db.collection('likes').countDocuments({ videoId });
+                
+                res.json({ 
+                    message: 'Video unliked', 
+                    liked: false, 
+                    likeCount 
+                });
             } else {
                 throw error;
             }
@@ -1361,6 +1377,87 @@ app.post('/api/videos/:videoId/like', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Like video error:', error);
         res.status(500).json({ error: 'Failed to like video' });
+    }
+});
+
+// Simple like endpoint as specified
+app.post('/like', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { videoId, userId } = req.body;
+    
+    // Use authenticated user ID if not provided
+    const actualUserId = userId || req.user.userId;
+    
+    try {
+        const like = {
+            videoId,
+            userId: actualUserId,
+            createdAt: new Date()
+        };
+        
+        // Try to insert like
+        try {
+            await db.collection('likes').insertOne(like);
+            
+            // Get updated like count
+            const likeCount = await db.collection('likes').countDocuments({ videoId });
+            
+            res.json({ 
+                message: 'Video liked', 
+                liked: true, 
+                likeCount 
+            });
+        } catch (error) {
+            // If duplicate key error, remove the like
+            if (error.code === 11000) {
+                await db.collection('likes').deleteOne({ 
+                    videoId, 
+                    userId: actualUserId 
+                });
+                
+                // Get updated like count
+                const likeCount = await db.collection('likes').countDocuments({ videoId });
+                
+                res.json({ 
+                    message: 'Video unliked', 
+                    liked: false, 
+                    likeCount 
+                });
+            } else {
+                throw error;
+            }
+        }
+        
+    } catch (error) {
+        console.error('Like video error:', error);
+        res.status(500).json({ error: 'Failed to like video' });
+    }
+});
+
+// Get like status for a video
+app.get('/api/videos/:videoId/like-status', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { videoId } = req.params;
+    const userId = req.user.userId;
+    
+    try {
+        const like = await db.collection('likes').findOne({ videoId, userId });
+        const likeCount = await db.collection('likes').countDocuments({ videoId });
+        
+        res.json({ 
+            liked: !!like, 
+            likeCount 
+        });
+        
+    } catch (error) {
+        console.error('Get like status error:', error);
+        res.status(500).json({ error: 'Failed to get like status' });
     }
 });
 

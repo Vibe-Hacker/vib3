@@ -797,92 +797,7 @@ function createAdvancedVideoCard(video) {
     
     // Add like button functionality
     const likeBtn = actions.querySelector('.like-btn');
-    likeBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const videoId = likeBtn.dataset.videoId;
-        const heartIcon = likeBtn.querySelector('div:first-child');
-        const countElement = likeBtn.querySelector('div:last-child');
-        
-        try {
-            // Add heart animation
-            likeBtn.style.transform = 'scale(1.2)';
-            setTimeout(() => likeBtn.style.transform = 'scale(1)', 200);
-            
-            if (heartIcon.textContent === '🤍') {
-                // Like the video
-                heartIcon.textContent = '❤️';
-                heartIcon.style.animation = 'heartBeat 0.5s ease';
-                const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
-                countElement.textContent = formatCount(currentCount + 1);
-                
-                // Save to local storage immediately
-                saveLikeToLocalStorage(videoId, true);
-                
-                if (window.authToken) {
-                    try {
-                        const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${window.authToken}` }
-                        });
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            // Update with real database count
-                            if (data.likeCount !== undefined) {
-                                countElement.textContent = formatCount(data.likeCount);
-                                
-                                // Update all instances of this video's like count
-                                document.querySelectorAll(`[data-video-id="${videoId}"] .like-count`).forEach(el => {
-                                    el.textContent = formatCount(data.likeCount);
-                                });
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error liking video:', error);
-                    }
-                }
-                
-                showNotification('Liked! ❤️', 'success');
-            } else {
-                // Unlike the video  
-                heartIcon.textContent = '🤍';
-                const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
-                countElement.textContent = formatCount(Math.max(0, currentCount - 1));
-                
-                // Save to local storage immediately
-                saveLikeToLocalStorage(videoId, false);
-                
-                if (window.authToken) {
-                    try {
-                        const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${window.authToken}` }
-                        });
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            // Update with real database count
-                            if (data.likeCount !== undefined) {
-                                countElement.textContent = formatCount(data.likeCount);
-                                
-                                // Update all instances of this video's like count
-                                document.querySelectorAll(`[data-video-id="${videoId}"] .like-count`).forEach(el => {
-                                    el.textContent = formatCount(data.likeCount);
-                                });
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error unliking video:', error);
-                    }
-                }
-                
-                showNotification('Unliked', 'info');
-            }
-        } catch (error) {
-            console.error('Like error:', error);
-            showNotification('Error liking video', 'error');
-        }
-    });
+    likeBtn.addEventListener('click', (e) => handleLikeClick(e, likeBtn));
     
     // Add comment button functionality
     const commentBtn = actions.querySelector('.comment-btn');
@@ -6942,12 +6857,10 @@ async function refreshClonedVideoReactions(clonedCard) {
                 commentCountEl.textContent = formatCount(video.commentCount);
             }
             
-            // Update like status from localStorage
-            const heartIcon = clonedCard.querySelector('.heart-icon');
-            if (heartIcon) {
-                const localLikes = JSON.parse(localStorage.getItem('vib3_liked_videos') || '{}');
-                const isLiked = localLikes[videoId] === true;
-                heartIcon.textContent = isLiked ? '❤️' : '🤍';
+            // Load proper like status for cloned video
+            const likeBtn = clonedCard.querySelector('.like-btn');
+            if (likeBtn) {
+                loadVideoLikeStatus(videoId, likeBtn);
             }
             
             console.log(`✅ Updated cloned video reactions for ${videoId}`);
@@ -7025,89 +6938,7 @@ function reinitializeVideoControls(clonedCard) {
         });
         
         // Add like button functionality
-        newLikeBtn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const heartIcon = newLikeBtn.querySelector('div:first-child');
-            const countElement = newLikeBtn.querySelector('div:last-child');
-            
-            try {
-                // Add heart animation
-                newLikeBtn.style.transform = 'scale(1.2)';
-                setTimeout(() => newLikeBtn.style.transform = 'scale(1)', 200);
-                
-                if (heartIcon.textContent === '🤍') {
-                    // Like the video
-                    heartIcon.textContent = '❤️';
-                    heartIcon.style.animation = 'heartBeat 0.5s ease';
-                    const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
-                    countElement.textContent = formatCount(currentCount + 1);
-                    
-                    // Save to local storage immediately
-                    saveLikeToLocalStorage(videoId, true);
-                    
-                    if (window.authToken) {
-                        try {
-                            const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${window.authToken}` }
-                            });
-                            
-                            if (response.ok) {
-                                const data = await response.json();
-                                if (data.likeCount !== undefined) {
-                                    countElement.textContent = formatCount(data.likeCount);
-                                    
-                                    // Update all instances of this video's like count
-                                    document.querySelectorAll(`[data-video-id="${videoId}"] .like-count`).forEach(el => {
-                                        el.textContent = formatCount(data.likeCount);
-                                    });
-                                }
-                            }
-                        } catch (error) {
-                            console.error('Error liking video:', error);
-                        }
-                    }
-                    
-                    showNotification('Liked! ❤️', 'success');
-                } else {
-                    // Unlike the video  
-                    heartIcon.textContent = '🤍';
-                    const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
-                    countElement.textContent = formatCount(Math.max(0, currentCount - 1));
-                    
-                    // Save to local storage immediately
-                    saveLikeToLocalStorage(videoId, false);
-                    
-                    if (window.authToken) {
-                        try {
-                            const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${window.authToken}` }
-                            });
-                            
-                            if (response.ok) {
-                                const data = await response.json();
-                                if (data.likeCount !== undefined) {
-                                    countElement.textContent = formatCount(data.likeCount);
-                                    
-                                    // Update all instances of this video's like count
-                                    document.querySelectorAll(`[data-video-id="${videoId}"] .like-count`).forEach(el => {
-                                        el.textContent = formatCount(data.likeCount);
-                                    });
-                                }
-                            }
-                        } catch (error) {
-                            console.error('Error unliking video:', error);
-                        }
-                    }
-                    
-                    showNotification('Unliked', 'info');
-                }
-            } catch (error) {
-                console.error('Like error:', error);
-                showNotification('Error liking video', 'error');
-            }
-        });
+        newLikeBtn.addEventListener('click', (e) => handleLikeClick(e, newLikeBtn));
         
         // Add comment button functionality
         newCommentBtn.addEventListener('click', (e) => {
@@ -7140,6 +6971,139 @@ function reinitializeVideoControls(clonedCard) {
         
     } catch (error) {
         console.error('Error reinitializing video controls:', error);
+    }
+}
+
+// ================ PERSISTENT LIKE FUNCTIONALITY ================
+
+// Centralized like button click handler
+async function handleLikeClick(e, likeBtn) {
+    e.stopPropagation();
+    const videoId = likeBtn.dataset.videoId;
+    
+    if (!videoId || videoId === 'unknown') {
+        showNotification('Cannot like this video', 'error');
+        return;
+    }
+    
+    const heartIcon = likeBtn.querySelector('.heart-icon') || likeBtn.querySelector('div:first-child');
+    const countElement = likeBtn.querySelector('.like-count') || likeBtn.querySelector('div:last-child');
+    
+    try {
+        // Add heart animation
+        likeBtn.style.transform = 'scale(1.2)';
+        setTimeout(() => likeBtn.style.transform = 'scale(1)', 200);
+        
+        if (!window.authToken) {
+            showNotification('Please sign in to like videos', 'error');
+            return;
+        }
+        
+        // Call the /like endpoint as specified
+        const response = await fetch(`${window.API_BASE_URL}/like`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.authToken}`
+            },
+            body: JSON.stringify({
+                videoId: videoId,
+                userId: null // Let server use authenticated user ID
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const { liked, likeCount } = data;
+            
+            // Update UI based on server response
+            heartIcon.textContent = liked ? '❤️' : '🤍';
+            if (liked) {
+                heartIcon.style.animation = 'heartBeat 0.5s ease';
+            }
+            
+            // Update count with real database value
+            countElement.textContent = formatCount(likeCount);
+            
+            // Update all instances of this video's like count across the page
+            updateAllVideoLikeCounts(videoId, likeCount, liked);
+            
+            // Store like status for persistence
+            localStorage.setItem(`like_${videoId}`, liked.toString());
+            
+            showNotification(liked ? 'Liked! ❤️' : 'Unliked', liked ? 'success' : 'info');
+            
+            console.log(`✅ ${liked ? 'Liked' : 'Unliked'} video ${videoId}, count: ${likeCount}`);
+        } else {
+            const errorData = await response.json();
+            console.error('Like API error:', errorData);
+            showNotification('Error updating like', 'error');
+        }
+    } catch (error) {
+        console.error('Like error:', error);
+        showNotification('Error liking video', 'error');
+    }
+}
+
+// Update all instances of a video's like count
+function updateAllVideoLikeCounts(videoId, likeCount, liked) {
+    document.querySelectorAll(`[data-video-id="${videoId}"]`).forEach(videoElement => {
+        const heartIcon = videoElement.querySelector('.heart-icon') || 
+                         videoElement.querySelector('.like-btn div:first-child');
+        const countElement = videoElement.querySelector('.like-count') || 
+                           videoElement.querySelector('.like-btn div:last-child');
+        
+        if (heartIcon) {
+            heartIcon.textContent = liked ? '❤️' : '🤍';
+        }
+        if (countElement) {
+            countElement.textContent = formatCount(likeCount);
+        }
+    });
+}
+
+// Load like status for a video (called when video is created)
+async function loadVideoLikeStatus(videoId, likeBtn) {
+    if (!videoId || videoId === 'unknown' || !likeBtn) {
+        return;
+    }
+    
+    const heartIcon = likeBtn.querySelector('.heart-icon') || likeBtn.querySelector('div:first-child');
+    const countElement = likeBtn.querySelector('.like-count') || likeBtn.querySelector('div:last-child');
+    
+    try {
+        // First check localStorage for immediate feedback
+        const storedLike = localStorage.getItem(`like_${videoId}`);
+        if (storedLike === 'true' && heartIcon) {
+            heartIcon.textContent = '❤️';
+        }
+        
+        // Then get authoritative data from server if authenticated
+        if (window.authToken) {
+            const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like-status`, {
+                headers: { 'Authorization': `Bearer ${window.authToken}` }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const { liked, likeCount } = data;
+                
+                // Update UI with server data
+                if (heartIcon) {
+                    heartIcon.textContent = liked ? '❤️' : '🤍';
+                }
+                if (countElement) {
+                    countElement.textContent = formatCount(likeCount);
+                }
+                
+                // Update localStorage with server truth
+                localStorage.setItem(`like_${videoId}`, liked.toString());
+                
+                console.log(`📊 Loaded like status for ${videoId}: liked=${liked}, count=${likeCount}`);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading like status:', error);
     }
 }
 
