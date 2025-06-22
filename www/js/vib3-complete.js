@@ -1296,7 +1296,6 @@ async function startSimpleVideoRecording() {
                     border-radius: 12px;
                     background: #000;
                     margin: 0 0 15px 0;
-                    transform: scaleX(-1);
                 "></video>
                 
                 <div style="margin: 0;">
@@ -5383,7 +5382,7 @@ function toggleEffect(effectName) {
 
 function flipCamera() {
     showNotification('Camera flipped', 'info');
-    const video = document.querySelector('.camera-preview video');
+    const video = document.getElementById('simpleRecordingPreview') || document.querySelector('.camera-preview video');
     if (video) {
         video.style.transform = video.style.transform === 'scaleX(-1)' ? 'scaleX(1)' : 'scaleX(-1)';
     }
