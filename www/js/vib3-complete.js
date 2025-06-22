@@ -6538,9 +6538,8 @@ Creator | Dancer | Music Lover
     document.body.appendChild(modal);
 }
 
-function saveProfile() {
-    showNotification('Profile updated successfully!', 'success');
-}
+// Profile saving is handled by profile-functions.js
+// This duplicate function is removed to avoid conflicts
 
 function changeProfilePicture() {
     const input = document.createElement('input');
