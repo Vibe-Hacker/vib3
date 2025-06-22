@@ -6640,22 +6640,20 @@ window.saveProfile = async function() {
             
             // Update all UI elements with new data
             if (displayName) {
-                // Update display name in all possible locations
-                const nameElements = document.querySelectorAll('#userDisplayName, .profile-display-name');
-                console.log('🔍 Found display name elements:', nameElements.length);
-                nameElements.forEach(el => {
-                    el.textContent = displayName;
-                    console.log('✅ Updated display name element to:', displayName, el);
-                });
+                // Update display name in the correct location  
+                const displayNameElement = document.getElementById('userDisplayName');
+                if (displayNameElement) {
+                    displayNameElement.textContent = displayName;
+                    console.log('✅ Updated DISPLAY NAME (#userDisplayName) to:', displayName);
+                }
             }
             if (username) {
-                // Update username in all possible locations  
-                const usernameElements = document.querySelectorAll('#profileName, .profile-username');
-                console.log('🔍 Found username elements:', usernameElements.length);
-                usernameElements.forEach(el => {
-                    el.textContent = '@' + username;
-                    console.log('✅ Updated username element to:', '@' + username, el);
-                });
+                // Update username in the correct location
+                const usernameElement = document.getElementById('profileName');
+                if (usernameElement) {
+                    usernameElement.textContent = '@' + username;
+                    console.log('✅ Updated USERNAME (#profileName) to:', '@' + username);
+                }
             }
             if (bio) {
                 // Update bio in all possible locations
