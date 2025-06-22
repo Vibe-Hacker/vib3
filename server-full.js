@@ -1392,14 +1392,35 @@ app.post('/like', requireAuth, async (req, res) => {
     const actualUserId = userId || req.user.userId;
     
     try {
-        const like = {
-            videoId,
-            userId: actualUserId,
-            createdAt: new Date()
-        };
+        // Check if like already exists
+        const existingLike = await db.collection('likes').findOne({ 
+            videoId, 
+            userId: actualUserId 
+        });
         
-        // Try to insert like
-        try {
+        if (existingLike) {
+            // Unlike - remove the like
+            await db.collection('likes').deleteOne({ 
+                videoId, 
+                userId: actualUserId 
+            });
+            
+            // Get updated like count
+            const likeCount = await db.collection('likes').countDocuments({ videoId });
+            
+            res.json({ 
+                message: 'Video unliked', 
+                liked: false, 
+                likeCount 
+            });
+        } else {
+            // Like - add new like
+            const like = {
+                videoId,
+                userId: actualUserId,
+                createdAt: new Date()
+            };
+            
             await db.collection('likes').insertOne(like);
             
             // Get updated like count
@@ -1410,25 +1431,6 @@ app.post('/like', requireAuth, async (req, res) => {
                 liked: true, 
                 likeCount 
             });
-        } catch (error) {
-            // If duplicate key error, remove the like
-            if (error.code === 11000) {
-                await db.collection('likes').deleteOne({ 
-                    videoId, 
-                    userId: actualUserId 
-                });
-                
-                // Get updated like count
-                const likeCount = await db.collection('likes').countDocuments({ videoId });
-                
-                res.json({ 
-                    message: 'Video unliked', 
-                    liked: false, 
-                    likeCount 
-                });
-            } else {
-                throw error;
-            }
         }
         
     } catch (error) {
