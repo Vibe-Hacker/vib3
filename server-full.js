@@ -2485,6 +2485,36 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Something broke!', memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB' });
 });
 
+// Nuclear likes reset endpoint
+app.post('/api/admin/reset-likes', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    try {
+        console.log('💥 NUCLEAR RESET: Completely resetting likes collection...');
+        
+        // Drop the entire collection and all its indexes
+        await db.collection('likes').drop().catch(() => {
+            console.log('Collection already dropped or doesnt exist');
+        });
+        
+        // Create fresh collection with only video likes index
+        await db.collection('likes').createIndex({ videoId: 1, userId: 1 }, { unique: true });
+        
+        console.log('✅ Likes collection completely reset with clean indexes');
+        
+        res.json({ 
+            message: 'Nuclear reset complete - all likes deleted, clean indexes created',
+            warning: 'All existing likes have been removed'
+        });
+        
+    } catch (error) {
+        console.error('Nuclear reset error:', error);
+        res.status(500).json({ error: 'Reset failed', details: error.message });
+    }
+});
+
 // Manual cleanup endpoint (temporary)
 app.post('/api/admin/cleanup-likes', async (req, res) => {
     if (!db) {
