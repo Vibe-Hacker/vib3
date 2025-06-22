@@ -40,9 +40,9 @@ export function showPage(page) {
             }
         });
         
-        // Switch to discover tab
+        // Switch to explore tab
         if (window.switchFeedTab) {
-            window.switchFeedTab('discover');
+            window.switchFeedTab('explore');
         }
         return;
     }

@@ -1,5 +1,5 @@
 // Feed manager module
-import { db } from '../firebase-init.js';
+// Note: Using Firebase-like API that connects to MongoDB backend
 
 class FeedManager {
     constructor() {
@@ -30,7 +30,8 @@ class FeedManager {
         }
         
         try {
-            const q = window.query(window.collection(db, 'videos'));
+            // Get videos from MongoDB via Firebase-like API
+            const q = window.query(window.collection(window.db, 'videos'));
             const querySnapshot = await window.getDocs(q);
             
             const foryouFeed = document.getElementById('foryouFeed');
@@ -137,7 +138,7 @@ class FeedManager {
 
             // Get list of users the current user is following
             const followingQuery = window.query(
-                window.collection(db, 'following'),
+                window.collection(window.db, 'following'),
                 window.where('followerId', '==', window.currentUser.uid)
             );
             const followingSnapshot = await window.getDocs(followingQuery);
@@ -187,7 +188,7 @@ class FeedManager {
 
             // Get videos from followed users
             const videosQuery = window.query(
-                window.collection(db, 'videos'),
+                window.collection(window.db, 'videos'),
                 window.where('userId', 'in', followedUserIds)
             );
             const videosSnapshot = await window.getDocs(videosQuery);
@@ -270,28 +271,34 @@ class FeedManager {
     // Load discover feed with trending videos and search functionality
     async loadDiscoverFeed() {
         try {
-            const discoverFeed = document.getElementById('discoverFeed');
-            if (!discoverFeed) return;
+            const exploreFeed = document.getElementById('exploreFeed');
+            if (!exploreFeed) return;
 
-            discoverFeed.innerHTML = '<div class="feed-loading">Loading trending videos...</div>';
+            // Clear the explore video grid specifically, not the whole feed
+            const exploreGrid = document.getElementById('exploreVideoGrid');
+            if (exploreGrid) {
+                exploreGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: var(--text-secondary);">Loading trending videos...</div>';
+            }
 
             // Get all videos
-            const videosQuery = window.query(window.collection(db, 'videos'));
+            const videosQuery = window.query(window.collection(window.db, 'videos'));
             const videosSnapshot = await window.getDocs(videosQuery);
 
             if (videosSnapshot.empty) {
-                discoverFeed.innerHTML = `
-                    <div style="text-align: center; padding: 80px 20px; color: rgba(255,255,255,0.7);">
-                        <div style="font-size: 72px; margin-bottom: 30px;">📹</div>
-                        <h2 style="margin-bottom: 20px; font-size: 28px;">No videos yet!</h2>
-                        <p style="font-size: 18px; margin-bottom: 30px; line-height: 1.5;">
-                            Be the first to share something amazing.
-                        </p>
-                        <button onclick="showUploadModal()" style="padding: 15px 30px; font-size: 18px; background: linear-gradient(45deg, #ff006e, #8338ec); color: white; border: none; border-radius: 25px; cursor: pointer;">
-                            Upload First Video
-                        </button>
-                    </div>
-                `;
+                if (exploreGrid) {
+                    exploreGrid.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 80px 20px; color: rgba(255,255,255,0.7);">
+                            <div style="font-size: 72px; margin-bottom: 30px;">📹</div>
+                            <h2 style="margin-bottom: 20px; font-size: 28px;">No videos yet!</h2>
+                            <p style="font-size: 18px; margin-bottom: 30px; line-height: 1.5;">
+                                Be the first to share something amazing.
+                            </p>
+                            <button onclick="showUploadModal()" style="padding: 15px 30px; font-size: 18px; background: linear-gradient(45deg, #ff006e, #8338ec); color: white; border: none; border-radius: 25px; cursor: pointer;">
+                                Upload First Video
+                            </button>
+                        </div>
+                    `;
+                }
                 return;
             }
 
@@ -313,21 +320,30 @@ class FeedManager {
             // Sort by engagement score (trending)
             videos.sort((a, b) => b.engagementScore - a.engagementScore);
 
-            // Clear feed
-            discoverFeed.innerHTML = '';
+            // Clear the grid only
+            if (exploreGrid) {
+                exploreGrid.innerHTML = '';
+            }
 
-            // Process videos with user data
+            // Process videos with user data - create explore cards for grid layout
             const videoPromises = videos.map(videoData => 
-                this.createVideoItemWithUserData(videoData, videoData.id, 'discover')
+                this.createExploreVideoCard(videoData)
             );
 
-            // Add videos to feed
+            // Add videos to explore grid
             Promise.all(videoPromises).then(async videoItems => {
-                videoItems.forEach(videoItem => {
-                    if (videoItem) {
-                        discoverFeed.appendChild(videoItem);
-                    }
-                });
+                if (exploreGrid) {
+                    videoItems.forEach(videoItem => {
+                        if (videoItem) {
+                            exploreGrid.appendChild(videoItem);
+                        }
+                    });
+                }
+
+                // Hide loading manager after successful load
+                if (window.loadingManager) {
+                    window.loadingManager.hide('video');
+                }
 
                 // Initialize follow buttons and profile pictures
                 const uniqueUserIds = new Set();
@@ -353,10 +369,10 @@ class FeedManager {
 
         } catch (error) {
             console.error('Error loading discover feed:', error);
-            const discoverFeed = document.getElementById('discoverFeed');
-            if (discoverFeed) {
-                discoverFeed.innerHTML = `
-                    <div style="text-align: center; padding: 80px 20px; color: rgba(255,255,255,0.7);">
+            const exploreGrid = document.getElementById('exploreVideoGrid');
+            if (exploreGrid) {
+                exploreGrid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 80px 20px; color: rgba(255,255,255,0.7);">
                         <div style="font-size: 72px; margin-bottom: 30px;">❌</div>
                         <h2 style="margin-bottom: 20px; font-size: 28px;">Error loading videos</h2>
                         <p style="font-size: 18px; margin-bottom: 30px; line-height: 1.5;">
@@ -374,8 +390,8 @@ class FeedManager {
     // Create video item with proper user data
     async createVideoItemWithUserData(videoData, videoId, badgeType = null) {
         try {
-            // Get user data from Firestore
-            const userQuery = window.query(window.collection(db, 'users'), window.where('uid', '==', videoData.userId));
+            // Get user data from MongoDB via Firebase-like API
+            const userQuery = window.query(window.collection(window.db, 'users'), window.where('uid', '==', videoData.userId));
             const userSnapshot = await window.getDocs(userQuery);
             
             let userData = { displayName: 'Unknown User', username: 'unknown' };
@@ -416,6 +432,88 @@ class FeedManager {
             console.error('Error creating video item:', error);
             return null;
         }
+    }
+
+    // Create explore video card for grid layout
+    createExploreVideoCard(videoData) {
+        console.log('🔍 Creating explore grid card for:', videoData.videoUrl);
+        
+        const card = document.createElement('div');
+        card.className = 'explore-video-card';
+        card.style.cssText = `
+            position: relative;
+            width: 100%;
+            aspect-ratio: 9/16;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        `;
+        
+        // Video thumbnail (first frame)
+        const video_elem = document.createElement('video');
+        let videoUrl = videoData.videoUrl || '';
+        if (videoUrl && !videoUrl.startsWith('http://') && !videoUrl.startsWith('https://')) {
+            videoUrl = 'https://' + videoUrl;
+        }
+        
+        video_elem.src = videoUrl;
+        video_elem.muted = true;
+        video_elem.preload = 'metadata';
+        video_elem.style.cssText = `
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        `;
+        
+        // Add click handler for video modal
+        card.addEventListener('click', () => {
+            if (window.openVideoModal) {
+                window.openVideoModal(videoData);
+            }
+        });
+        
+        // Video info overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            color: white;
+            padding: 16px 8px 8px;
+            font-size: 12px;
+        `;
+        
+        // Video stats
+        const views = videoData.views || 0;
+        const likes = videoData.likes?.length || videoData.likeCount || 0;
+        
+        overlay.innerHTML = `
+            <div style="font-weight: 600; margin-bottom: 4px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                ${videoData.description || videoData.title || 'Video'}
+            </div>
+            <div style="font-size: 11px; opacity: 0.9;">
+                ${views.toLocaleString()} views • ${likes} likes
+            </div>
+        `;
+        
+        card.appendChild(video_elem);
+        card.appendChild(overlay);
+        
+        // Add hover effect
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'scale(1.05)';
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'scale(1)';
+        });
+        
+        return card;
     }
 }
 

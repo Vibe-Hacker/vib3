@@ -560,6 +560,23 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
         }
         
         try {
+            // Special handling for different feed types using feed manager
+            if (!append && window.feedManager) {
+                if (feedType === 'explore' && window.feedManager.loadDiscoverFeed) {
+                    console.log('🔍 Loading explore feed via feed manager');
+                    await window.feedManager.loadDiscoverFeed();
+                    return; // Exit early as feed manager handles everything
+                } else if (feedType === 'following' && window.feedManager.loadFollowingFeed) {
+                    console.log('👥 Loading following feed via feed manager');
+                    await window.feedManager.loadFollowingFeed();
+                    return; // Exit early as feed manager handles everything
+                } else if (feedType === 'foryou' && window.feedManager.loadAllVideosForFeed) {
+                    console.log('⭐ Loading foryou feed via feed manager');
+                    await window.feedManager.loadAllVideosForFeed();
+                    return; // Exit early as feed manager handles everything
+                }
+            }
+            
             // Add cache busting to prevent stale data
             const timestamp = Date.now();
             const response = await fetch(`${window.API_BASE_URL}/api/videos?feed=${feedType}&page=${page}&limit=10&_t=${timestamp}`, {
@@ -568,6 +585,126 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
             
             const data = await response.json();
             console.log(`📦 Received data for page ${page}:`, data.videos?.length, 'videos');
+            
+            // For explore feed, supplement with sample data if needed
+            if (feedType === 'explore' && (!data.videos || data.videos.length < 6)) {
+                console.log('🔍 Adding sample explore data');
+                const sampleExploreVideos = [
+                    {
+                        _id: 'sample1',
+                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                        user: { 
+                            _id: 'creator1',
+                            username: 'dancequeen23', 
+                            displayName: 'Maya Chen',
+                            profilePicture: '💃' 
+                        },
+                        title: 'Summer dance vibes! ☀️',
+                        description: 'New choreography to my favorite song #dance #summer',
+                        likeCount: 1200,
+                        commentCount: 45,
+                        shareCount: 23,
+                        uploadDate: new Date('2024-01-01'),
+                        duration: 60,
+                        views: 15600
+                    },
+                    {
+                        _id: 'sample2',
+                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+                        user: { 
+                            _id: 'creator2',
+                            username: 'artlife_alex', 
+                            displayName: 'Alex Rivera',
+                            profilePicture: '🎨' 
+                        },
+                        title: 'Digital art speedrun',
+                        description: 'Creating art in 60 seconds #art #digital #creative',
+                        likeCount: 890,
+                        commentCount: 67,
+                        shareCount: 34,
+                        uploadDate: new Date('2024-01-02'),
+                        duration: 45,
+                        views: 8900
+                    },
+                    {
+                        _id: 'sample3',
+                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                        user: { 
+                            _id: 'creator3',
+                            username: 'cookingjake', 
+                            displayName: 'Jake Martinez',
+                            profilePicture: '👨‍🍳' 
+                        },
+                        title: 'Quick pasta recipe!',
+                        description: '5-minute dinner hack that will change your life #cooking #pasta',
+                        likeCount: 2300,
+                        commentCount: 156,
+                        shareCount: 89,
+                        uploadDate: new Date('2024-01-03'),
+                        duration: 30,
+                        views: 23400
+                    },
+                    {
+                        _id: 'sample4',
+                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+                        user: { 
+                            _id: 'creator4',
+                            username: 'fitness_sarah', 
+                            displayName: 'Sarah Johnson',
+                            profilePicture: '💪' 
+                        },
+                        title: 'Morning workout routine',
+                        description: 'Start your day right with this 10-min workout #fitness #morning',
+                        likeCount: 567,
+                        commentCount: 43,
+                        shareCount: 28,
+                        uploadDate: new Date('2024-01-04'),
+                        duration: 25,
+                        views: 7800
+                    },
+                    {
+                        _id: 'sample5',
+                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+                        user: { 
+                            _id: 'creator5',
+                            username: 'tech_tom', 
+                            displayName: 'Tom Wilson',
+                            profilePicture: '💻' 
+                        },
+                        title: 'iPhone 15 hidden features',
+                        description: 'Mind-blowing features you never knew existed #tech #iphone',
+                        likeCount: 4500,
+                        commentCount: 234,
+                        shareCount: 167,
+                        uploadDate: new Date('2024-01-05'),
+                        duration: 180,
+                        views: 45600
+                    },
+                    {
+                        _id: 'sample6',
+                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                        user: { 
+                            _id: 'creator6',
+                            username: 'fashionista_em', 
+                            displayName: 'Emma Style',
+                            profilePicture: '👗' 
+                        },
+                        title: 'Outfit of the day',
+                        description: 'Affordable fall looks under $50 #fashion #ootd #style',
+                        likeCount: 890,
+                        commentCount: 76,
+                        shareCount: 45,
+                        uploadDate: new Date('2024-01-06'),
+                        duration: 60,
+                        views: 12300
+                    }
+                ];
+                
+                // Combine existing videos with sample data
+                const combinedVideos = [...(data.videos || []), ...sampleExploreVideos];
+                data.videos = combinedVideos.slice(0, 12); // Limit to 12 for grid
+                console.log(`🔄 Enhanced explore feed: ${data.videos.length} total videos`);
+            }
             
             // Remove loading indicator
             if (append) {
@@ -578,12 +715,19 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
             if (data.videos && data.videos.length > 0) {
                 // Filter out videos with invalid URLs or known broken paths
                 const validVideos = data.videos.filter(video => {
-                    return video.videoUrl && 
+                    const isValid = video.videoUrl && 
                            !video.videoUrl.includes('example.com') && 
                            video.videoUrl !== '' &&
                            video.videoUrl.startsWith('http') &&
                            !video.videoUrl.includes('2025-06-20/55502f40'); // Filter out old broken videos
+                    
+                    if (!isValid) {
+                        console.log(`❌ Filtered out video: ${video.videoUrl}`);
+                    }
+                    return isValid;
                 });
+                
+                console.log(`📊 Filtered ${data.videos.length} → ${validVideos.length} videos for ${feedType}`);
                 
                 if (validVideos.length > 0) {
                     if (!append) {
@@ -4067,6 +4211,12 @@ function switchFeedTab(feedType) {
         // Only clear content for non-explore feeds to preserve explore structure
         if (feed.id !== 'exploreFeed') {
             feed.innerHTML = '';
+        } else {
+            // For explore feed, just clear the video grid if it exists
+            const exploreGrid = feed.querySelector('#exploreVideoGrid');
+            if (exploreGrid) {
+                exploreGrid.innerHTML = '';
+            }
         }
     });
     
