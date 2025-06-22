@@ -100,7 +100,10 @@ async function createIndexes() {
         
         // Social indexes
         await db.collection('likes').createIndex({ videoId: 1, userId: 1 }, { unique: true });
-        await db.collection('likes').createIndex({ postId: 1, userId: 1 }, { unique: true });
+        await db.collection('likes').createIndex({ postId: 1, userId: 1 }, { 
+            unique: true, 
+            partialFilterExpression: { postId: { $ne: null } } 
+        });
         await db.collection('comments').createIndex({ videoId: 1, createdAt: -1 });
         await db.collection('comments').createIndex({ postId: 1, createdAt: -1 });
         await db.collection('follows').createIndex({ followerId: 1, followingId: 1 }, { unique: true });
@@ -1438,19 +1441,47 @@ app.post('/like', requireAuth, async (req, res) => {
                 createdAt: new Date()
             };
             
-            const insertResult = await db.collection('likes').insertOne(like);
-            console.log(`💖 Insert result: ${insertResult.insertedId}`);
-            
-            // Get updated like count
-            const likeCount = await db.collection('likes').countDocuments({ videoId: videoId.toString() });
-            
-            console.log(`💖 Liked video ${videoId}, new count: ${likeCount}`);
-            
-            res.json({ 
-                message: 'Video liked', 
-                liked: true, 
-                likeCount 
-            });
+            try {
+                const insertResult = await db.collection('likes').insertOne(like);
+                console.log(`💖 Insert result: ${insertResult.insertedId}`);
+                
+                // Get updated like count
+                const likeCount = await db.collection('likes').countDocuments({ videoId: videoId.toString() });
+                
+                console.log(`💖 Liked video ${videoId}, new count: ${likeCount}`);
+                
+                res.json({ 
+                    message: 'Video liked', 
+                    liked: true, 
+                    likeCount 
+                });
+            } catch (insertError) {
+                // Handle duplicate key errors specifically
+                if (insertError.code === 11000) {
+                    console.log(`💖 Duplicate key error on insert, checking existing like...`);
+                    
+                    // Check if there's already a like for this video
+                    const existingVideoLike = await db.collection('likes').findOne({ 
+                        videoId: videoId.toString(), 
+                        userId: actualUserId.toString() 
+                    });
+                    
+                    if (existingVideoLike) {
+                        console.log(`💖 Found existing video like, treating as already liked`);
+                        const likeCount = await db.collection('likes').countDocuments({ videoId: videoId.toString() });
+                        res.json({ 
+                            message: 'Video already liked', 
+                            liked: true, 
+                            likeCount 
+                        });
+                    } else {
+                        console.error(`💖 Duplicate key error but no existing video like found:`, insertError);
+                        throw insertError;
+                    }
+                } else {
+                    throw insertError;
+                }
+            }
         }
         
     } catch (error) {
