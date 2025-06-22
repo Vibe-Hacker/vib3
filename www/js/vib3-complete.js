@@ -6482,9 +6482,24 @@ function editProfile() {
             
             <div style="margin-bottom: 24px;">
                 <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">
+                    Display Name
+                </label>
+                <input type="text" id="editDisplayName" value="${currentUser?.displayName || 'VIB3 User'}" style="
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid var(--border-primary);
+                    border-radius: 8px;
+                    background: var(--bg-secondary);
+                    color: var(--text-primary);
+                    font-size: 16px;
+                ">
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">
                     Username
                 </label>
-                <input type="text" value="${currentUser?.username || 'vib3user'}" style="
+                <input type="text" id="editUsername" value="${currentUser?.username || 'vib3user'}" style="
                     width: 100%;
                     padding: 12px;
                     border: 1px solid var(--border-primary);
@@ -6499,7 +6514,7 @@ function editProfile() {
                 <label style="display: block; margin-bottom: 8px; color: var(--text-primary); font-weight: 600;">
                     Bio
                 </label>
-                <textarea placeholder="Tell us about yourself..." style="
+                <textarea id="editBio" placeholder="Tell us about yourself..." style="
                     width: 100%;
                     height: 100px;
                     padding: 12px;
