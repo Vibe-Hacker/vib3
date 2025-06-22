@@ -144,6 +144,7 @@ app.get('/api/health', async (req, res) => {
     const spacesConfigured = !!(process.env.DO_SPACES_KEY && process.env.DO_SPACES_SECRET);
     res.json({ 
         status: 'ok',
+        version: 'Fixed like API duplicate key error - build 627076c',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
@@ -1404,6 +1405,7 @@ app.post('/like', requireAuth, async (req, res) => {
     }
     
     console.log(`💖 Like request: videoId=${videoId}, userId=${actualUserId}`);
+    console.log(`💖 SERVER VERSION: Fixed duplicate key error - using empty string for postId`);
     
     try {
         // Check if like already exists (handle both null and empty string postId)
