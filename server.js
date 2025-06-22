@@ -65,7 +65,7 @@ const mockUser = {
     }
 };
 
-// Test video data for debugging video playback
+// Test video data for debugging video playback - using working external URLs
 const mockVideos = [
     {
         _id: 'test1',
@@ -257,6 +257,40 @@ app.get('/api/user/following', (req, res) => {
 app.get('/api/user/followers', (req, res) => {
     console.log('👥 Followers request: Returning empty array');
     res.json([]);
+});
+
+// Video proxy endpoint to serve videos without CORS issues
+app.get('/api/video-proxy/:filename', async (req, res) => {
+    try {
+        const filename = decodeURIComponent(req.params.filename);
+        console.log(`🎬 Proxying video: ${filename}`);
+        
+        // For now, just redirect to the original URL since we don't have DigitalOcean config here
+        // This would need to be updated with actual DigitalOcean Spaces integration
+        const videoUrl = `https://vib3-videos.nyc3.digitaloceanspaces.com/${filename}`;
+        
+        // Set proper headers for video streaming
+        res.set({
+            'Content-Type': 'video/mp4',
+            'Accept-Ranges': 'bytes',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+            'Access-Control-Allow-Headers': 'Range, Content-Type',
+            'Cache-Control': 'public, max-age=31536000'
+        });
+        
+        // Handle OPTIONS preflight request
+        if (req.method === 'OPTIONS') {
+            return res.status(200).end();
+        }
+        
+        // Redirect to actual video URL for now
+        res.redirect(videoUrl);
+        
+    } catch (error) {
+        console.error('Video proxy error:', error);
+        res.status(404).json({ error: 'Video not found' });
+    }
 });
 
 // Simple like endpoint for testing
