@@ -971,7 +971,7 @@ function createAdvancedVideoCard(video) {
     video_elem.preload = 'metadata';
     video_elem.src = videoUrl;
     video_elem.loop = true;
-    video_elem.muted = true;   // Start muted to allow autoplay
+    video_elem.muted = false;  // Enable audio by default
     video_elem.volume = 0.8;   // Set reasonable volume
     video_elem.playsInline = true;
     video_elem.style.cssText = `
@@ -1098,20 +1098,13 @@ function createAdvancedVideoCard(video) {
     
     // Add volume control functionality
     const volumeBtn = actions.querySelector('.volume-btn');
-    // Update initial volume button state
-    volumeBtn.innerHTML = video_elem.muted ? '🔇' : '🔊';
-    
-    volumeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
+    volumeBtn.addEventListener('click', () => {
         if (video_elem.muted) {
             video_elem.muted = false;
-            video_elem.volume = 0.8;
-            volumeBtn.innerHTML = '🔊';
-            console.log('🔊 Unmuted video');
+            volumeBtn.textContent = '🔊';
         } else {
             video_elem.muted = true;
-            volumeBtn.innerHTML = '🔇';
-            console.log('🔇 Muted video');
+            volumeBtn.textContent = '🔇';
         }
     });
     
