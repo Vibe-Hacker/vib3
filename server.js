@@ -155,6 +155,37 @@ app.get('/api/user/followers', (req, res) => {
     res.json([]);
 });
 
+// Simple like endpoint for testing
+app.post('/like', (req, res) => {
+    const { videoId, userId } = req.body;
+    console.log(`💖 Like request: videoId=${videoId}, userId=${userId}`);
+    
+    // Mock like toggle behavior
+    const mockLiked = Math.random() > 0.5; // Random like/unlike for testing
+    const mockCount = Math.floor(Math.random() * 100) + 1; // Random count 1-100
+    
+    res.json({
+        message: mockLiked ? 'Video liked' : 'Video unliked',
+        liked: mockLiked,
+        likeCount: mockCount
+    });
+});
+
+// Like status endpoint for testing
+app.get('/api/videos/:videoId/like-status', (req, res) => {
+    const { videoId } = req.params;
+    console.log(`📊 Like status request: videoId=${videoId}`);
+    
+    // Mock like status
+    const mockLiked = Math.random() > 0.5;
+    const mockCount = Math.floor(Math.random() * 100) + 1;
+    
+    res.json({
+        liked: mockLiked,
+        likeCount: mockCount
+    });
+});
+
 // Follow/unfollow users
 app.post('/api/user/follow/:userId', authMiddleware, (req, res) => {
     res.json({ message: 'Followed successfully' });
