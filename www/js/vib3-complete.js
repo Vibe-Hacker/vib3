@@ -7016,6 +7016,14 @@ async function handleLikeClick(e, likeBtn) {
     const isCurrentlyLiked = heartIcon && heartIcon.textContent === '❤️';
     const newLikedState = !isCurrentlyLiked;
     
+    console.log('🔍 LIKE DEBUG:', {
+        videoId,
+        heartIconText: heartIcon?.textContent,
+        isCurrentlyLiked,
+        newLikedState,
+        expectedAction: newLikedState ? 'LIKE' : 'UNLIKE'
+    });
+    
     try {
         // Enhanced button animation
         likeBtn.style.transform = 'scale(1.2)';
@@ -7047,6 +7055,13 @@ async function handleLikeClick(e, likeBtn) {
         if (response.ok) {
             const data = await response.json();
             const { liked, likeCount } = data;
+            
+            console.log('🔍 SERVER RESPONSE:', {
+                liked,
+                likeCount,
+                expectedLiked: newLikedState,
+                matches: liked === newLikedState
+            });
             
             // Update UI based on server response (may correct optimistic update)
             heartIcon.textContent = liked ? '❤️' : '🤍';
