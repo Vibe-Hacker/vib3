@@ -855,7 +855,9 @@ function createAdvancedVideoCard(video) {
     
     // Add like button functionality
     const likeBtn = actions.querySelector('.like-btn');
-    likeBtn.addEventListener('click', (e) => handleLikeClick(e, likeBtn));
+    likeBtn.addEventListener('click', function likeBtnClickHandler(e) { 
+        return handleLikeClick(e, likeBtn); 
+    });
     
     // Add enhanced like button features (double-tap, ripple, floating hearts)
     enhanceLikeButton(likeBtn, video_elem);
