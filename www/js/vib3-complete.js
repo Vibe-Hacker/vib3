@@ -587,19 +587,31 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                 
                 if (validVideos.length > 0) {
                     if (!append) {
-                        feedElement.innerHTML = '';
+                        // Don't clear the entire explore feed, just the video grid
+                        if (feedType !== 'explore') {
+                            feedElement.innerHTML = '';
+                        }
                         
                         // Set different layouts for different feed types
                         if (feedType === 'explore') {
                             // Use the dedicated explore grid container
-                            const exploreGrid = document.getElementById('exploreVideoGrid');
-                            if (exploreGrid) {
-                                exploreGrid.innerHTML = '';
-                                exploreGrid.style.display = 'grid';
-                                exploreGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-                                exploreGrid.style.gap = '4px';
+                            let exploreGrid = document.getElementById('exploreVideoGrid');
+                            console.log('🔍 Setting up explore grid:', !!exploreGrid);
+                            if (!exploreGrid) {
+                                // Create explore grid if it doesn't exist
+                                console.log('⚠️ Creating missing explore grid container');
+                                exploreGrid = document.createElement('div');
+                                exploreGrid.id = 'exploreVideoGrid';
+                                exploreGrid.className = 'explore-video-grid';
                                 exploreGrid.style.padding = '8px';
+                                feedElement.appendChild(exploreGrid);
                             }
+                            exploreGrid.innerHTML = '';
+                            exploreGrid.style.display = 'grid';
+                            exploreGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                            exploreGrid.style.gap = '4px';
+                            exploreGrid.style.padding = '8px';
+                            console.log('✅ Explore grid configured');
                         } else {
                             // Vertical scroll for For You and Following
                             feedElement.style.display = 'block';
@@ -1681,9 +1693,12 @@ function searchTrendingTag(tag) {
 
 // Initialize explore page interactions
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Initializing explore page interactions');
+    
     // Search input interactions
     const searchInput = document.getElementById('exploreSearchInput');
     if (searchInput) {
+        console.log('✅ Found explore search input');
         // Show/hide clear button based on input
         searchInput.addEventListener('input', function(e) {
             const clearBtn = document.querySelector('.clear-search');
@@ -1699,7 +1714,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 hideSearchSuggestions();
             }
         });
+    } else {
+        console.log('❌ Explore search input not found');
     }
+    
+    // Check if explore page structure exists
+    const exploreFeed = document.getElementById('exploreFeed');
+    const exploreGrid = document.getElementById('exploreVideoGrid');
+    console.log('🔍 Explore page elements:', {
+        exploreFeed: !!exploreFeed,
+        exploreGrid: !!exploreGrid
+    });
 });
 
 async function startStitch(videoId) {
@@ -4084,7 +4109,7 @@ function switchFeedTab(feedType) {
     // Add a small delay to ensure cleanup is complete before loading new content
     setTimeout(() => {
         // Load the feed content with fresh data
-        loadVideoFeed(feedType, 1, false); // Force fresh load, no append
+        loadVideoFeed(feedType, true, 1, false); // Force fresh load, no append
     }, 100);
     
     // After a brief delay, ensure the first video starts playing
