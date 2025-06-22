@@ -501,12 +501,13 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
             }
             
             if (data.videos && data.videos.length > 0) {
-                // Filter out videos with invalid URLs
+                // Filter out videos with invalid URLs or known broken paths
                 const validVideos = data.videos.filter(video => {
                     return video.videoUrl && 
                            !video.videoUrl.includes('example.com') && 
                            video.videoUrl !== '' &&
-                           video.videoUrl.startsWith('http');
+                           video.videoUrl.startsWith('http') &&
+                           !video.videoUrl.includes('2025-06-20/55502f40'); // Filter out old broken videos
                 });
                 
                 if (validVideos.length > 0) {
@@ -524,8 +525,13 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                         console.log(`  ✅ Added video ${index + 1}: ${video.title || 'Untitled'}`);
                     });
                     
-                    // For infinite scroll testing, always assume there are more videos
-                    hasMoreVideos = true;
+                    // Check if we have fewer videos than requested - if so, we've reached the end
+                    if (validVideos.length < 10) {
+                        hasMoreVideos = false;
+                        console.log('📴 Reached end of videos - no more pages available');
+                    } else {
+                        hasMoreVideos = true;
+                    }
                     console.log(`🔄 Feed now has ${feedElement.children.length} video elements total`);
                     
                     // Setup infinite scroll listener
@@ -543,8 +549,24 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                         console.log('No valid videos after filtering, showing empty message for', feedType);
                         hasMoreVideos = false;
                     } else {
-                        console.log('No valid videos in append mode, but keeping hasMoreVideos true');
-                        hasMoreVideos = true; // Keep trying for infinite scroll
+                        // No valid videos after filtering - cycle through existing videos
+                        console.log('No valid videos after filtering, cycling through existing videos');
+                        const existingVideos = Array.from(feedElement.children);
+                        if (existingVideos.length > 0) {
+                            // Clone and append existing videos for infinite scroll effect
+                            const videosToClone = existingVideos.slice(0, Math.min(3, existingVideos.length));
+                            videosToClone.forEach(videoCard => {
+                                const clonedCard = videoCard.cloneNode(true);
+                                feedElement.appendChild(clonedCard);
+                            });
+                            console.log(`🔄 Cloned ${videosToClone.length} videos for infinite scroll (filtered case)`);
+                            
+                            // Re-initialize observer for cloned videos
+                            setTimeout(() => initializeVideoObserver(), 200);
+                            hasMoreVideos = true; // Keep infinite scroll active
+                        } else {
+                            hasMoreVideos = false;
+                        }
                     }
                 }
             } else {
@@ -554,8 +576,24 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                     console.log('No videos to display, showing empty message for', feedType);
                     hasMoreVideos = false;
                 } else {
-                    console.log('No videos returned in append mode, but keeping hasMoreVideos true');
-                    hasMoreVideos = true; // Keep trying for infinite scroll
+                    // No more videos from server - cycle through existing videos for infinite scroll
+                    console.log('No more videos from server, cycling through existing videos');
+                    const existingVideos = Array.from(feedElement.children);
+                    if (existingVideos.length > 0) {
+                        // Clone and append existing videos for infinite scroll effect
+                        const videosToClone = existingVideos.slice(0, Math.min(5, existingVideos.length));
+                        videosToClone.forEach(videoCard => {
+                            const clonedCard = videoCard.cloneNode(true);
+                            feedElement.appendChild(clonedCard);
+                        });
+                        console.log(`🔄 Cloned ${videosToClone.length} videos for infinite scroll`);
+                        
+                        // Re-initialize observer for cloned videos
+                        setTimeout(() => initializeVideoObserver(), 200);
+                        hasMoreVideos = true; // Keep infinite scroll active
+                    } else {
+                        hasMoreVideos = false;
+                    }
                 }
             }
         } catch (error) {
@@ -627,7 +665,13 @@ function createAdvancedVideoCard(video) {
     `;
     
     // Add event listeners
-    video_elem.onerror = () => console.error('🚨 VIDEO ERROR:', video_elem.src);
+    video_elem.onerror = () => {
+        console.error('🚨 VIDEO ERROR:', video_elem.src);
+        // Hide broken videos completely
+        card.style.display = 'none';
+        card.style.height = '0px';
+        card.style.visibility = 'hidden';
+    };
     video_elem.onloadstart = () => console.log('📹 VIDEO LOADING:', video_elem.src);
     video_elem.oncanplay = () => console.log('✅ VIDEO READY:', video_elem.src);
     video_elem.onplay = () => console.log('▶️ PLAYING:', video_elem.src);
@@ -647,7 +691,7 @@ function createAdvancedVideoCard(video) {
     
     overlay.innerHTML = `
         <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-            @${video.user?.username || video.user?.displayName || (video.username !== 'anonymous' ? video.username : getCurrentUserInfo()?.username) || getCurrentUserInfo()?.username || 'unknown'}
+            @${video.user?.username || video.user?.displayName || video.username || 'user'}
         </div>
         <div style="font-size: 14px; line-height: 1.3; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
             ${video.description || video.title || 'Check out this video!'}
@@ -6433,117 +6477,4 @@ function openCreatorTools() {
     `;
     
     modal.innerHTML = `
-        <div style="
-            background: var(--bg-primary);
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-        ">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 style="color: var(--text-primary); margin: 0;">Creator Tools</h2>
-                <button onclick="this.closest('.modal').remove()" style="
-                    background: none;
-                    border: none;
-                    color: var(--text-secondary);
-                    font-size: 24px;
-                    cursor: pointer;
-                ">×</button>
-            </div>
-            
-            <div class="creator-tools-grid" style="
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                gap: 16px;
-            ">
-                <button onclick="showNotification('Analytics dashboard', 'info')" style="
-                    padding: 24px;
-                    background: var(--bg-secondary);
-                    border: none;
-                    border-radius: 12px;
-                    color: var(--text-primary);
-                    cursor: pointer;
-                    text-align: center;
-                    transition: background 0.2s ease;
-                ">
-                    <div style="font-size: 32px; margin-bottom: 8px;">📊</div>
-                    <div style="font-weight: 600;">Analytics</div>
-                </button>
-                
-                <button onclick="showNotification('Live streaming setup', 'info')" style="
-                    padding: 24px;
-                    background: var(--bg-secondary);
-                    border: none;
-                    border-radius: 12px;
-                    color: var(--text-primary);
-                    cursor: pointer;
-                    text-align: center;
-                    transition: background 0.2s ease;
-                ">
-                    <div style="font-size: 32px; margin-bottom: 8px;">📺</div>
-                    <div style="font-weight: 600;">Live Stream</div>
-                </button>
-                
-                <button onclick="showNotification('Monetization options', 'info')" style="
-                    padding: 24px;
-                    background: var(--bg-secondary);
-                    border: none;
-                    border-radius: 12px;
-                    color: var(--text-primary);
-                    cursor: pointer;
-                    text-align: center;
-                    transition: background 0.2s ease;
-                ">
-                    <div style="font-size: 32px; margin-bottom: 8px;">💰</div>
-                    <div style="font-weight: 600;">Monetization</div>
-                </button>
-                
-                <button onclick="showNotification('Creator fund info', 'info')" style="
-                    padding: 24px;
-                    background: var(--bg-secondary);
-                    border: none;
-                    border-radius: 12px;
-                    color: var(--text-primary);
-                    cursor: pointer;
-                    text-align: center;
-                    transition: background 0.2s ease;
-                ">
-                    <div style="font-size: 32px; margin-bottom: 8px;">🏆</div>
-                    <div style="font-weight: 600;">Creator Fund</div>
-                </button>
-                
-                <button onclick="showNotification('Brand partnerships', 'info')" style="
-                    padding: 24px;
-                    background: var(--bg-secondary);
-                    border: none;
-                    border-radius: 12px;
-                    color: var(--text-primary);
-                    cursor: pointer;
-                    text-align: center;
-                    transition: background 0.2s ease;
-                ">
-                    <div style="font-size: 32px; margin-bottom: 8px;">🤝</div>
-                    <div style="font-weight: 600;">Partnerships</div>
-                </button>
-                
-                <button onclick="showNotification('Account verification', 'info')" style="
-                    padding: 24px;
-                    background: var(--bg-secondary);
-                    border: none;
-                    border-radius: 12px;
-                    color: var(--text-primary);
-                    cursor: pointer;
-                    text-align: center;
-                    transition: background 0.2s ease;
-                ">
-                    <div style="font-size: 32px; margin-bottom: 8px;">✅</div>
-                    <div style="font-weight: 600;">Verification</div>
-                </button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-}
+  
