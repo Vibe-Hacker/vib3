@@ -6539,7 +6539,7 @@ Creator | Dancer | Music Lover
                     border-radius: 8px;
                     cursor: pointer;
                 ">Cancel</button>
-                <button onclick="saveProfile(); this.closest('.modal').remove();" style="
+                <button onclick="saveProfile();" style="
                     padding: 12px 24px;
                     background: var(--accent-color);
                     color: white;
@@ -6554,8 +6554,100 @@ Creator | Dancer | Music Lover
     document.body.appendChild(modal);
 }
 
-// Profile saving is handled by profile-functions.js
-// This duplicate function is removed to avoid conflicts
+// Global saveProfile function for vib3-complete.js modal
+window.saveProfile = async function() {
+    try {
+        console.log('🔧 vib3-complete.js saveProfile() called');
+        
+        // Small delay to ensure modal is fully rendered
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Collect form data from the modal created by vib3-complete.js
+        const displayNameEl = document.querySelector('.edit-profile-modal input[type="text"]');
+        const usernameEl = document.querySelector('.edit-profile-modal input[type="text"]:nth-of-type(2)');
+        const bioEl = document.querySelector('.edit-profile-modal textarea');
+        
+        console.log('🔍 Form elements found:', {
+            displayNameEl: !!displayNameEl,
+            usernameEl: !!usernameEl,
+            bioEl: !!bioEl
+        });
+        
+        const displayName = displayNameEl?.value?.trim();
+        const username = usernameEl?.value?.trim().replace('@', '').toLowerCase();
+        const bio = bioEl?.value?.trim();
+        
+        console.log('🔍 Form values:', { displayName, username, bio });
+        
+        // Prepare update data - server accepts bio, username, displayName, profilePicture
+        const updateData = {};
+        if (displayName) {
+            updateData.displayName = displayName;
+            console.log('✅ Adding displayName:', displayName);
+        }
+        if (username) {
+            updateData.username = username;
+            console.log('✅ Adding username:', username);
+        }
+        if (bio) {
+            updateData.bio = bio;
+            console.log('✅ Adding bio:', bio);
+        }
+        
+        console.log('🔧 Sending profile update:', updateData);
+        
+        // Check if there's anything to update
+        if (Object.keys(updateData).length === 0) {
+            showNotification('No changes to save', 'info');
+            return;
+        }
+        
+        // Make API call
+        const baseURL = window.API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? '' 
+            : 'https://vib3-production.up.railway.app');
+        const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
+        
+        const response = await fetch(`${baseURL}/api/user/profile`, {
+            method: 'PUT',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updateData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            // Update UI with new data
+            if (displayName) {
+                const nameElement = document.getElementById('userDisplayName');
+                if (nameElement) nameElement.textContent = displayName;
+            }
+            if (username) {
+                const usernameElement = document.getElementById('profileName');
+                if (usernameElement) usernameElement.textContent = '@' + username;
+            }
+            if (bio) {
+                const bioElement = document.querySelector('.profile-page [style*="color: var(--text-primary); margin-bottom: 16px"]');
+                if (bioElement) bioElement.textContent = bio;
+            }
+            
+            // Close modal and show success
+            const modal = document.querySelector('.edit-profile-modal');
+            if (modal) modal.remove();
+            showNotification('Profile updated successfully!', 'success');
+        } else {
+            const error = await response.json();
+            console.error('❌ Profile update failed:', error);
+            showNotification(error.error || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showNotification('Error updating profile', 'error');
+    }
+};
 
 function changeProfilePicture() {
     const input = document.createElement('input');
