@@ -49,6 +49,16 @@
     color: var(--accent-primary) !important;
 }
 
+/* Sign Out Button Styling */
+.sidebar-item.signout-btn {
+    color: var(--text-danger);
+}
+
+.sidebar-item.signout-btn:hover {
+    background: rgba(255, 107, 107, 0.1);
+    color: var(--text-danger);
+}
+
 /* Ultra-specific override for active buttons */
 .sidebar .sidebar-item.active,
 button.sidebar-item.active,
