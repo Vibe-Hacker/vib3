@@ -427,6 +427,7 @@ async function loadMoreVideos(feedType) {
                 const videosToClone = existingVideos.slice(0, Math.min(3, existingVideos.length));
                 videosToClone.forEach(videoCard => {
                     const clonedCard = videoCard.cloneNode(true);
+                    clonedCard.setAttribute('data-cloned-video', 'true');
                     feedElement.appendChild(clonedCard);
                     // Refresh reaction counts for cloned video
                     refreshClonedVideoReactions(clonedCard);
@@ -578,6 +579,7 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                             const videosToClone = existingVideos.slice(0, Math.min(3, existingVideos.length));
                             videosToClone.forEach(videoCard => {
                                 const clonedCard = videoCard.cloneNode(true);
+                                clonedCard.setAttribute('data-cloned-video', 'true');
                                 feedElement.appendChild(clonedCard);
                                 // Refresh reaction counts for cloned video
                                 refreshClonedVideoReactions(clonedCard);
@@ -612,6 +614,10 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                         
                         videosToClone.forEach((videoCard, index) => {
                             const clonedCard = videoCard.cloneNode(true);
+                            
+                            // Mark as cloned for identification
+                            clonedCard.setAttribute('data-cloned-video', 'true');
+                            
                             // Add a recycling indicator
                             const recycleTag = document.createElement('div');
                             recycleTag.style.cssText = `
@@ -6889,8 +6895,14 @@ async function recordVideoShare(videoId) {
     }
 }
 
-// Refresh reaction counts for cloned videos
+// Refresh reaction counts for cloned videos only
 async function refreshClonedVideoReactions(clonedCard) {
+    // Safety check: only process if this is actually a cloned video
+    const isClonedVideo = clonedCard.getAttribute('data-cloned-video') === 'true';
+    if (!isClonedVideo) {
+        console.log('⚠️ Skipping refresh - not a cloned video');
+        return;
+    }
     try {
         // Find video ID from the cloned card
         const likeBtn = clonedCard.querySelector('.like-btn');
@@ -6940,8 +6952,11 @@ async function refreshClonedVideoReactions(clonedCard) {
             
             console.log(`✅ Updated cloned video reactions for ${videoId}`);
             
-            // Reinitialize video controls for cloned video
-            reinitializeVideoControls(clonedCard);
+            // Only reinitialize controls if this is actually a cloned video
+            const isClonedVideo = clonedCard.getAttribute('data-cloned-video') === 'true';
+            if (isClonedVideo) {
+                reinitializeVideoControls(clonedCard);
+            }
         } else {
             console.log(`⚠️ Could not fetch updated data for video ${videoId}`);
         }
