@@ -1406,25 +1406,42 @@ app.post('/like', requireAuth, async (req, res) => {
     console.log(`💖 Like request: videoId=${videoId}, userId=${actualUserId}`);
     
     try {
-        // Check if like already exists
+        // Check if like already exists (handle both null and empty string postId)
         const existingLike = await db.collection('likes').findOne({ 
             videoId: videoId.toString(), 
-            userId: actualUserId.toString() 
+            userId: actualUserId.toString(),
+            $or: [
+                { postId: { $exists: false } },
+                { postId: null },
+                { postId: '' }
+            ]
         });
         
         console.log(`💖 Existing like found: ${!!existingLike}`);
         
         if (existingLike) {
-            // Unlike - remove the like
+            // Unlike - remove the like (handle both null and empty string postId)
             const deleteResult = await db.collection('likes').deleteOne({ 
                 videoId: videoId.toString(), 
-                userId: actualUserId.toString() 
+                userId: actualUserId.toString(),
+                $or: [
+                    { postId: { $exists: false } },
+                    { postId: null },
+                    { postId: '' }
+                ]
             });
             
             console.log(`💖 Delete result: ${deleteResult.deletedCount} likes removed`);
             
-            // Get updated like count
-            const likeCount = await db.collection('likes').countDocuments({ videoId: videoId.toString() });
+            // Get updated like count (count video likes only)
+            const likeCount = await db.collection('likes').countDocuments({ 
+                videoId: videoId.toString(),
+                $or: [
+                    { postId: { $exists: false } },
+                    { postId: null },
+                    { postId: '' }
+                ]
+            });
             
             console.log(`💖 Unliked video ${videoId}, new count: ${likeCount}`);
             
@@ -1434,10 +1451,12 @@ app.post('/like', requireAuth, async (req, res) => {
                 likeCount 
             });
         } else {
-            // Like - add new like
+            // Like - add new like  
+            // Include postId as empty string to avoid null conflicts with post likes index
             const like = {
                 videoId: videoId.toString(),
                 userId: actualUserId.toString(),
+                postId: '', // Use empty string instead of null to avoid index conflicts
                 createdAt: new Date()
             };
             
@@ -1445,8 +1464,15 @@ app.post('/like', requireAuth, async (req, res) => {
                 const insertResult = await db.collection('likes').insertOne(like);
                 console.log(`💖 Insert result: ${insertResult.insertedId}`);
                 
-                // Get updated like count
-                const likeCount = await db.collection('likes').countDocuments({ videoId: videoId.toString() });
+                // Get updated like count (count video likes only)
+                const likeCount = await db.collection('likes').countDocuments({ 
+                    videoId: videoId.toString(),
+                    $or: [
+                        { postId: { $exists: false } },
+                        { postId: null },
+                        { postId: '' }
+                    ]
+                });
                 
                 console.log(`💖 Liked video ${videoId}, new count: ${likeCount}`);
                 
@@ -1463,12 +1489,24 @@ app.post('/like', requireAuth, async (req, res) => {
                     // Check if there's already a like for this video
                     const existingVideoLike = await db.collection('likes').findOne({ 
                         videoId: videoId.toString(), 
-                        userId: actualUserId.toString() 
+                        userId: actualUserId.toString(),
+                        $or: [
+                            { postId: { $exists: false } },
+                            { postId: null },
+                            { postId: '' }
+                        ]
                     });
                     
                     if (existingVideoLike) {
                         console.log(`💖 Found existing video like, treating as already liked`);
-                        const likeCount = await db.collection('likes').countDocuments({ videoId: videoId.toString() });
+                        const likeCount = await db.collection('likes').countDocuments({ 
+                            videoId: videoId.toString(),
+                            $or: [
+                                { postId: { $exists: false } },
+                                { postId: null },
+                                { postId: '' }
+                            ]
+                        });
                         res.json({ 
                             message: 'Video already liked', 
                             liked: true, 
@@ -1510,13 +1548,23 @@ app.get('/api/videos/:videoId/like-status', requireAuth, async (req, res) => {
     const userId = req.user.userId;
     
     try {
-        // Ensure string types for consistency
+        // Ensure string types for consistency and handle video likes
         const like = await db.collection('likes').findOne({ 
             videoId: videoId.toString(), 
-            userId: userId.toString() 
+            userId: userId.toString(),
+            $or: [
+                { postId: { $exists: false } },
+                { postId: null },
+                { postId: '' }
+            ]
         });
         const likeCount = await db.collection('likes').countDocuments({ 
-            videoId: videoId.toString() 
+            videoId: videoId.toString(),
+            $or: [
+                { postId: { $exists: false } },
+                { postId: null },
+                { postId: '' }
+            ]
         });
         
         res.json({ 
