@@ -156,33 +156,64 @@ app.get('/api/user/followers', (req, res) => {
 });
 
 // Simple like endpoint for testing
+// Simple in-memory storage for likes (for development)
+const likeStorage = new Map();
+
 app.post('/like', (req, res) => {
     const { videoId, userId } = req.body;
     console.log(`💖 Like request: videoId=${videoId}, userId=${userId}`);
     
-    // Mock like toggle behavior
-    const mockLiked = Math.random() > 0.5; // Random like/unlike for testing
-    const mockCount = Math.floor(Math.random() * 100) + 1; // Random count 1-100
+    // Create a unique key for this user-video combination
+    const likeKey = `${videoId}_${userId || 'anonymous'}`;
+    
+    // Toggle like status
+    const currentlyLiked = likeStorage.has(likeKey);
+    const newLikedState = !currentlyLiked;
+    
+    if (newLikedState) {
+        likeStorage.set(likeKey, true);
+    } else {
+        likeStorage.delete(likeKey);
+    }
+    
+    // Count total likes for this video
+    let likeCount = 0;
+    for (const key of likeStorage.keys()) {
+        if (key.startsWith(videoId + '_')) {
+            likeCount++;
+        }
+    }
+    
+    console.log(`💖 ${newLikedState ? 'Liked' : 'Unliked'} video ${videoId}, new count: ${likeCount}`);
     
     res.json({
-        message: mockLiked ? 'Video liked' : 'Video unliked',
-        liked: mockLiked,
-        likeCount: mockCount
+        message: newLikedState ? 'Video liked' : 'Video unliked',
+        liked: newLikedState,
+        likeCount: likeCount
     });
 });
 
 // Like status endpoint for testing
 app.get('/api/videos/:videoId/like-status', (req, res) => {
     const { videoId } = req.params;
+    const userId = 'anonymous'; // For development, use anonymous user
     console.log(`📊 Like status request: videoId=${videoId}`);
     
-    // Mock like status
-    const mockLiked = Math.random() > 0.5;
-    const mockCount = Math.floor(Math.random() * 100) + 1;
+    // Check if this user has liked this video
+    const likeKey = `${videoId}_${userId}`;
+    const isLiked = likeStorage.has(likeKey);
+    
+    // Count total likes for this video
+    let likeCount = 0;
+    for (const key of likeStorage.keys()) {
+        if (key.startsWith(videoId + '_')) {
+            likeCount++;
+        }
+    }
     
     res.json({
-        liked: mockLiked,
-        likeCount: mockCount
+        liked: isLiked,
+        likeCount: likeCount
     });
 });
 
