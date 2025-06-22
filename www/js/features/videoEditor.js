@@ -326,18 +326,206 @@ export class VideoEditor {
 
     // Timeline functions
     initializeTimeline(duration) {
+        console.log('⏱️ Initializing timeline for', duration, 'seconds');
+        
         this.timeline = {
             duration: duration,
             currentTime: 0,
             zoom: 1
         };
         
-        // Update timeline UI
+        this.videoDuration = duration;
+        this.trimStartTime = 0;
+        this.trimEndTime = duration;
+        
+        // Setup interactive timeline
+        this.setupTimelineScrubbing();
+        this.setupTrimControls();
         this.updateTimelineUI();
+    }
+
+    setupTimelineScrubbing() {
+        const video = document.getElementById('editorVideo');
+        const timeline = document.querySelector('.timeline-track');
+        
+        if (!timeline) return;
+        
+        let isDragging = false;
+        
+        // Create scrub handle if it doesn't exist
+        let scrubHandle = timeline.querySelector('.scrub-handle');
+        if (!scrubHandle) {
+            scrubHandle = document.createElement('div');
+            scrubHandle.className = 'scrub-handle';
+            scrubHandle.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 3px;
+                height: 100%;
+                background: #fe2c55;
+                cursor: pointer;
+                z-index: 10;
+                border-radius: 1px;
+            `;
+            timeline.appendChild(scrubHandle);
+        }
+        
+        // Timeline click to jump
+        timeline.addEventListener('click', (e) => {
+            if (isDragging) return;
+            
+            const rect = timeline.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const percentage = clickX / rect.width;
+            const newTime = percentage * this.videoDuration;
+            
+            video.currentTime = Math.max(0, Math.min(newTime, this.videoDuration));
+            this.updateScrubHandle();
+            console.log('⏭️ Jumped to:', this.formatTime(newTime));
+        });
+        
+        // Scrub handle dragging
+        scrubHandle.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🎬 Started scrubbing');
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const rect = timeline.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const percentage = Math.max(0, Math.min(mouseX / rect.width, 1));
+            const newTime = percentage * this.videoDuration;
+            
+            video.currentTime = newTime;
+            this.updateScrubHandle();
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                console.log('🎬 Stopped scrubbing at:', this.formatTime(video.currentTime));
+            }
+            isDragging = false;
+        });
+        
+        // Update handle position as video plays
+        video.addEventListener('timeupdate', () => {
+            if (!isDragging) {
+                this.updateScrubHandle();
+            }
+        });
+    }
+
+    updateScrubHandle() {
+        const video = document.getElementById('editorVideo');
+        const scrubHandle = document.querySelector('.scrub-handle');
+        const timeline = document.querySelector('.timeline-track');
+        
+        if (!scrubHandle || !timeline || !this.videoDuration) return;
+        
+        const percentage = video.currentTime / this.videoDuration;
+        scrubHandle.style.left = `${percentage * 100}%`;
+    }
+
+    setupTrimControls() {
+        const trimStart = document.getElementById('trimStart');
+        const trimEnd = document.getElementById('trimEnd');
+        
+        if (!trimStart || !trimEnd) return;
+        
+        // Set initial values
+        trimStart.min = 0;
+        trimStart.max = 100;
+        trimStart.value = 0;
+        
+        trimEnd.min = 0;
+        trimEnd.max = 100;
+        trimEnd.value = 100;
+        
+        // Handle trim start changes
+        trimStart.addEventListener('input', (e) => {
+            const percentage = parseFloat(e.target.value);
+            this.trimStartTime = (percentage / 100) * this.videoDuration;
+            
+            // Ensure start is before end
+            if (this.trimStartTime >= this.trimEndTime) {
+                this.trimStartTime = Math.max(0, this.trimEndTime - 1);
+                trimStart.value = (this.trimStartTime / this.videoDuration) * 100;
+            }
+            
+            this.updateTimelineUI();
+            console.log('✂️ Trim start:', this.formatTime(this.trimStartTime));
+        });
+        
+        // Handle trim end changes
+        trimEnd.addEventListener('input', (e) => {
+            const percentage = parseFloat(e.target.value);
+            this.trimEndTime = (percentage / 100) * this.videoDuration;
+            
+            // Ensure end is after start
+            if (this.trimEndTime <= this.trimStartTime) {
+                this.trimEndTime = Math.min(this.videoDuration, this.trimStartTime + 1);
+                trimEnd.value = (this.trimEndTime / this.videoDuration) * 100;
+            }
+            
+            this.updateTimelineUI();
+            console.log('✂️ Trim end:', this.formatTime(this.trimEndTime));
+        });
     }
 
     updateTimelineUI() {
         // Update timeline visualization
+        const trimDuration = this.trimEndTime - this.trimStartTime;
+        console.log(`📏 Trimmed duration: ${this.formatTime(trimDuration)}`);
+        
+        // Visual indicators for trim points could be added here
+        this.updateTrimIndicators();
+    }
+
+    updateTrimIndicators() {
+        const timeline = document.querySelector('.timeline-track');
+        if (!timeline) return;
+        
+        // Remove existing indicators
+        timeline.querySelectorAll('.trim-indicator').forEach(indicator => indicator.remove());
+        
+        // Add trim start indicator
+        const startIndicator = document.createElement('div');
+        startIndicator.className = 'trim-indicator trim-start';
+        startIndicator.style.cssText = `
+            position: absolute;
+            left: ${(this.trimStartTime / this.videoDuration) * 100}%;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: #00ff00;
+            z-index: 5;
+        `;
+        timeline.appendChild(startIndicator);
+        
+        // Add trim end indicator
+        const endIndicator = document.createElement('div');
+        endIndicator.className = 'trim-indicator trim-end';
+        endIndicator.style.cssText = `
+            position: absolute;
+            left: ${(this.trimEndTime / this.videoDuration) * 100}%;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: #ff0000;
+            z-index: 5;
+        `;
+        timeline.appendChild(endIndicator);
+    }
+
+    formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
 
     // Filter preview generation
@@ -404,6 +592,87 @@ export class VideoEditor {
         // Create text element on canvas
         console.log('Rendering text overlay:', overlay);
     }
+    // Add method to open with video element
+    openWithVideoElement(videoElement) {
+        if (!videoElement || !videoElement.src) {
+            console.error('❌ No valid video element provided');
+            return;
+        }
+        
+        console.log('🎬 Opening video editor with video element');
+        
+        const editor = document.getElementById('videoEditor');
+        const editorVideo = document.getElementById('editorVideo');
+        
+        // Copy video source
+        editorVideo.src = videoElement.src;
+        editorVideo.load();
+        
+        // Show editor
+        editor.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+        // Initialize when video loads
+        editorVideo.addEventListener('loadedmetadata', () => {
+            this.initializeTimeline(editorVideo.duration);
+            this.loadFilterPreviews();
+            this.loadEffectPreviews();
+        });
+        
+        this.currentVideo = videoElement;
+    }
+    
+    // Export edited video
+    exportVideo() {
+        console.log('💾 Exporting edited video...');
+        console.log('✂️ Trim range:', this.formatTime(this.trimStartTime), 'to', this.formatTime(this.trimEndTime));
+        console.log('🎨 Applied filter:', this.currentFilter ? this.currentFilter.name : 'None');
+        
+        // In a real implementation, this would process the video with WebCodecs API
+        // For now, just close the editor
+        this.close();
+        
+        if (window.showNotification) {
+            window.showNotification('Video edited successfully! 🎬', 'success');
+        }
+    }
 }
 
 export default VideoEditor;
+
+// Make VideoEditor available globally for non-module environments
+if (typeof window !== 'undefined') {
+    window.VideoEditor = VideoEditor;
+    
+    // Create a global video editor instance
+    window.videoEditor = new VideoEditor();
+    window.videoEditor.initialized = false;
+    
+    // Global function to open video editor
+    window.openVideoEditor = function(videoElement) {
+        if (!window.videoEditor.initialized) {
+            window.videoEditor.initialize().then(() => {
+                window.videoEditor.initialized = true;
+                window.videoEditor.openWithVideoElement(videoElement);
+            });
+        } else {
+            window.videoEditor.openWithVideoElement(videoElement);
+        }
+    };
+    
+    // Global functions for editor controls
+    window.closeVideoEditor = function() {
+        if (window.videoEditor) {
+            window.videoEditor.close();
+            document.body.style.overflow = '';
+        }
+    };
+    
+    window.saveEditedVideo = function() {
+        if (window.videoEditor) {
+            window.videoEditor.exportVideo();
+        }
+    };
+    
+    console.log('📱 Video Editor globals loaded');
+}

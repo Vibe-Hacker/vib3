@@ -781,6 +781,9 @@ function createAdvancedVideoCard(video) {
         <div class="volume-btn" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer;">
             🔊
         </div>
+        <div class="edit-btn" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-top: 10px;">
+            ✂️
+        </div>
     `;
     
     // Add volume control functionality
@@ -823,6 +826,20 @@ function createAdvancedVideoCard(video) {
         setTimeout(() => shareBtn.style.transform = 'scale(1)', 200);
         
         shareVideo(videoId, video);
+    });
+    
+    // Add edit button functionality
+    const editBtn = actions.querySelector('.edit-btn');
+    editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Add bounce animation
+        editBtn.style.transform = 'scale(1.1)';
+        setTimeout(() => editBtn.style.transform = 'scale(1)', 200);
+        
+        // Open video editor with this video
+        openVideoEditor(video_elem);
+        console.log('🎬 Opening video editor for video:', video._id);
     });
     
     // Load and set initial like status
