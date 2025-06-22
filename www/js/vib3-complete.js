@@ -1402,10 +1402,10 @@ function createExploreVideoCard(video) {
         width: 100%;
         aspect-ratio: 9/16;
         background: #000;
-        border-radius: 8px;
+        border-radius: 4px;
         overflow: hidden;
         cursor: pointer;
-        transition: transform 0.2s ease;
+        transition: all 0.3s ease;
     `;
     
     // Video thumbnail (first frame)
@@ -1446,65 +1446,102 @@ function createExploreVideoCard(video) {
     playIcon.style.cssText = `
         font-size: 32px;
         color: white;
-        opacity: 0.8;
+        opacity: 0;
         transition: all 0.2s ease;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
     `;
     
-    // Video stats at bottom
+    // Video stats at bottom with interaction icons
     const stats = document.createElement('div');
     stats.style.cssText = `
         position: absolute;
-        bottom: 8px;
-        left: 8px;
-        right: 8px;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 8px;
+        background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
         color: white;
         font-size: 12px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
     `;
     
     const viewCount = video.views || video.likeCount || Math.floor(Math.random() * 10000);
+    const likeCount = video.likeCount || video.likes || 0;
+    const commentCount = video.commentCount || video.comments || 0;
+    
     stats.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 4px;">
-            <span>👁️</span>
-            <span>${formatCount(viewCount)}</span>
+        <div style="margin-bottom: 6px; font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+            ${video.title || video.description || 'Amazing video'}
         </div>
-        <div style="flex: 1; font-size: 10px; opacity: 0.8; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
-            ${video.title || 'Video'}
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <span>❤️</span>
+                    <span>${formatCount(likeCount)}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <span>💬</span>
+                    <span>${formatCount(commentCount)}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <span>👁️</span>
+                    <span>${formatCount(viewCount)}</span>
+                </div>
+            </div>
         </div>
     `;
     
-    // User info
+    // Trending badge for popular videos
+    if (viewCount > 10000 || likeCount > 1000) {
+        const trendingBadge = document.createElement('div');
+        trendingBadge.style.cssText = `
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: linear-gradient(135deg, #ff6b6b, #fe2c55);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 8px rgba(254, 44, 85, 0.3);
+        `;
+        trendingBadge.innerHTML = '🔥 Trending';
+        overlay.appendChild(trendingBadge);
+    }
+    
+    // User info (smaller, top left)
     const userInfo = document.createElement('div');
     userInfo.style.cssText = `
         position: absolute;
         top: 8px;
         left: 8px;
-        right: 8px;
         display: flex;
         align-items: center;
         gap: 6px;
         color: white;
         font-size: 11px;
-        background: rgba(0,0,0,0.3);
+        background: rgba(0,0,0,0.6);
         border-radius: 12px;
         padding: 4px 8px;
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(8px);
     `;
     
     const userAvatar = video.user?.profilePicture || '👤';
     const userName = video.user?.username || video.user?.displayName || 'User';
     userInfo.innerHTML = `
         <span style="font-size: 14px;">${userAvatar}</span>
-        <span style="font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${userName}</span>
+        <span style="font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 80px;">@${userName}</span>
     `;
     
     // Hover effects - muted preview on hover
     card.addEventListener('mouseenter', () => {
-        card.style.transform = 'scale(1.02)';
-        playIcon.style.transform = 'scale(1.1)';
+        card.style.transform = 'scale(1.03)';
+        card.style.boxShadow = '0 8px 16px rgba(0,0,0,0.2)';
         playIcon.style.opacity = '1';
+        playIcon.style.transform = 'scale(1.1)';
         // Ensure video is muted for hover preview
         video_elem.muted = true;
         video_elem.play().catch(e => console.log('Hover play failed:', e));
@@ -1512,8 +1549,9 @@ function createExploreVideoCard(video) {
     
     card.addEventListener('mouseleave', () => {
         card.style.transform = 'scale(1)';
+        card.style.boxShadow = 'none';
+        playIcon.style.opacity = '0';
         playIcon.style.transform = 'scale(1)';
-        playIcon.style.opacity = '0.8';
         video_elem.pause();
         video_elem.currentTime = 0;
     });
@@ -1637,6 +1675,249 @@ async function createVideoFeed(selectedVideo) {
 
 // ================ EXPLORE PAGE FUNCTIONS ================
 
+// Initialize explore page with all features
+function initializeExplorePage() {
+    console.log('🌟 Initializing explore page...');
+    
+    // Load trending hashtags
+    loadTrendingHashtags();
+    
+    // Load explore videos
+    loadExploreVideos();
+    
+    // Setup search functionality
+    setupExploreSearch();
+    
+    // Setup category filters
+    setupCategoryFilters();
+}
+
+// Load trending hashtags
+function loadTrendingHashtags() {
+    const trendingHashtags = [
+        { tag: 'dance', count: '12.5M', fire: true },
+        { tag: 'viral', count: '8.2M', fire: true },
+        { tag: 'music', count: '6.7M' },
+        { tag: 'comedy', count: '5.1M' },
+        { tag: 'fyp', count: '25.8M', fire: true },
+        { tag: 'art', count: '3.2M' },
+        { tag: 'food', count: '4.5M' },
+        { tag: 'fashion', count: '2.8M' }
+    ];
+    
+    const hashtagList = document.querySelector('.hashtag-list');
+    if (hashtagList) {
+        hashtagList.innerHTML = trendingHashtags.map(hashtag => `
+            <span class="hashtag-item" style="
+                background: ${hashtag.fire ? 'linear-gradient(135deg, #ff6b6b, #fe2c55)' : 'var(--bg-tertiary)'};
+                color: ${hashtag.fire ? 'white' : 'var(--text-primary)'};
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 13px;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                transition: all 0.2s ease;
+            " onclick="performExploreSearch('#${hashtag.tag}')" 
+               onmouseover="this.style.transform='scale(1.05)'" 
+               onmouseout="this.style.transform='scale(1)'">
+                ${hashtag.fire ? '🔥' : '#'}${hashtag.tag}
+                <span style="opacity: 0.8; font-size: 11px;">${hashtag.count}</span>
+            </span>
+        `).join('');
+    }
+}
+
+// Load explore videos with categories
+async function loadExploreVideos(category = 'all') {
+    console.log('📹 Loading explore videos for category:', category);
+    
+    const exploreGrid = document.getElementById('exploreVideoGrid');
+    if (!exploreGrid) return;
+    
+    // Show loading state
+    exploreGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px;">Discovering amazing content...</p>
+        </div>
+    `;
+    
+    try {
+        // Fetch videos from API
+        const response = await fetch(`${window.API_BASE_URL}/api/videos?feed=explore&category=${category}&limit=30`);
+        const data = await response.json();
+        
+        // Clear loading state
+        exploreGrid.innerHTML = '';
+        
+        if (data.videos && data.videos.length > 0) {
+            // Create video cards
+            data.videos.forEach((video, index) => {
+                const card = createExploreVideoCard(video);
+                // Add stagger animation
+                card.style.animation = `fadeInUp 0.4s ease ${index * 0.05}s both`;
+                exploreGrid.appendChild(card);
+            });
+        } else {
+            // Show empty state
+            exploreGrid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                    <div style="font-size: 72px; margin-bottom: 20px;">🎬</div>
+                    <h3 style="margin-bottom: 12px; color: var(--text-primary);">No videos found</h3>
+                    <p>Try exploring different categories or search for something specific</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading explore videos:', error);
+        exploreGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                <div style="font-size: 72px; margin-bottom: 20px;">⚠️</div>
+                <h3 style="margin-bottom: 12px; color: var(--text-primary);">Oops! Something went wrong</h3>
+                <p style="margin-bottom: 20px;">Failed to load explore content</p>
+                <button onclick="loadExploreVideos()" style="padding: 12px 24px; background: var(--accent-primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// Setup explore search with autocomplete
+function setupExploreSearch() {
+    const searchInput = document.querySelector('.explore-search');
+    if (!searchInput) return;
+    
+    // Create search suggestions dropdown
+    const suggestionsDropdown = document.createElement('div');
+    suggestionsDropdown.className = 'search-suggestions';
+    suggestionsDropdown.style.cssText = `
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 8px;
+        margin-top: 4px;
+        display: none;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    `;
+    
+    searchInput.parentElement.style.position = 'relative';
+    searchInput.parentElement.appendChild(suggestionsDropdown);
+    
+    // Search history
+    let searchHistory = JSON.parse(localStorage.getItem('vib3SearchHistory') || '[]');
+    
+    // Handle input
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        if (query.length > 0) {
+            showSearchSuggestions(query, suggestionsDropdown, searchHistory);
+        } else {
+            suggestionsDropdown.style.display = 'none';
+        }
+    });
+    
+    // Handle focus
+    searchInput.addEventListener('focus', () => {
+        if (searchInput.value.trim().length > 0) {
+            showSearchSuggestions(searchInput.value.trim(), suggestionsDropdown, searchHistory);
+        }
+    });
+    
+    // Handle blur
+    searchInput.addEventListener('blur', () => {
+        setTimeout(() => suggestionsDropdown.style.display = 'none', 200);
+    });
+}
+
+// Show search suggestions
+function showSearchSuggestions(query, dropdown, history) {
+    const suggestions = [];
+    
+    // Add search query as first suggestion
+    suggestions.push({ type: 'search', text: query, icon: '🔍' });
+    
+    // Add hashtag suggestion
+    if (!query.startsWith('#')) {
+        suggestions.push({ type: 'hashtag', text: `#${query}`, icon: '#' });
+    }
+    
+    // Add user suggestion
+    if (!query.startsWith('@')) {
+        suggestions.push({ type: 'user', text: `@${query}`, icon: '@' });
+    }
+    
+    // Add history matches
+    const historyMatches = history.filter(item => 
+        item.toLowerCase().includes(query.toLowerCase())
+    ).slice(0, 3);
+    
+    historyMatches.forEach(item => {
+        suggestions.push({ type: 'history', text: item, icon: '🕐' });
+    });
+    
+    // Add trending suggestions
+    const trending = ['dance', 'viral', 'music', 'comedy', 'fyp'];
+    const trendingMatches = trending.filter(item => 
+        item.toLowerCase().includes(query.toLowerCase())
+    ).slice(0, 2);
+    
+    trendingMatches.forEach(item => {
+        suggestions.push({ type: 'trending', text: `#${item}`, icon: '🔥' });
+    });
+    
+    // Render suggestions
+    dropdown.innerHTML = suggestions.map(suggestion => `
+        <div class="search-suggestion-item" style="
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.2s ease;
+        " onmouseover="this.style.background='var(--bg-tertiary)'" 
+           onmouseout="this.style.background='transparent'"
+           onclick="performExploreSearch('${suggestion.text}')">
+            <span style="font-size: 16px;">${suggestion.icon}</span>
+            <span style="flex: 1;">${suggestion.text}</span>
+            ${suggestion.type === 'trending' ? '<span style="font-size: 12px; color: var(--accent-primary);">Trending</span>' : ''}
+        </div>
+    `).join('');
+    
+    dropdown.style.display = 'block';
+}
+
+// Setup category filters
+function setupCategoryFilters() {
+    // Update active state on category buttons
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Remove active from all
+            document.querySelectorAll('.category-btn').forEach(b => {
+                b.style.background = 'var(--bg-tertiary)';
+                b.style.color = 'var(--text-primary)';
+            });
+            
+            // Add active to clicked
+            this.style.background = 'var(--accent-primary)';
+            this.style.color = 'white';
+        });
+    });
+}
+
+// Filter by category
+function filterByCategory(category) {
+    console.log('🏷️ Filtering by category:', category);
+    loadExploreVideos(category);
+    showNotification(`Exploring ${category} videos`, 'info');
+}
+
 // Search functionality
 function performExploreSearch(query) {
     console.log('🔍 Performing explore search:', query);
@@ -1645,13 +1926,91 @@ function performExploreSearch(query) {
     // Add to search history
     addToSearchHistory(query);
     
+    // Update search input
+    const searchInput = document.querySelector('.explore-search');
+    if (searchInput) {
+        searchInput.value = query;
+    }
+    
+    // Hide suggestions
+    const suggestions = document.querySelector('.search-suggestions');
+    if (suggestions) {
+        suggestions.style.display = 'none';
+    }
+    
     // Filter videos based on search query
     filterExploreVideos(query);
     
-    // Hide search suggestions
-    hideSearchSuggestions();
-    
     showNotification(`Searching for "${query}"`, 'info');
+}
+
+// Add to search history
+function addToSearchHistory(query) {
+    let history = JSON.parse(localStorage.getItem('vib3SearchHistory') || '[]');
+    
+    // Remove if already exists
+    history = history.filter(item => item !== query);
+    
+    // Add to beginning
+    history.unshift(query);
+    
+    // Keep only last 10
+    history = history.slice(0, 10);
+    
+    localStorage.setItem('vib3SearchHistory', JSON.stringify(history));
+}
+
+// Filter explore videos
+async function filterExploreVideos(query) {
+    console.log('🔍 Filtering videos for:', query);
+    
+    const exploreGrid = document.getElementById('exploreVideoGrid');
+    if (!exploreGrid) return;
+    
+    // Show searching state
+    exploreGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px;">Searching for "${query}"...</p>
+        </div>
+    `;
+    
+    try {
+        // Fetch filtered videos
+        const response = await fetch(`${window.API_BASE_URL}/api/videos/search?q=${encodeURIComponent(query)}&limit=30`);
+        const data = await response.json();
+        
+        // Clear searching state
+        exploreGrid.innerHTML = '';
+        
+        if (data.videos && data.videos.length > 0) {
+            // Create video cards
+            data.videos.forEach((video, index) => {
+                const card = createExploreVideoCard(video);
+                card.style.animation = `fadeInUp 0.4s ease ${index * 0.05}s both`;
+                exploreGrid.appendChild(card);
+            });
+        } else {
+            // Show no results
+            exploreGrid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                    <div style="font-size: 72px; margin-bottom: 20px;">🔍</div>
+                    <h3 style="margin-bottom: 12px; color: var(--text-primary);">No results for "${query}"</h3>
+                    <p>Try searching for something else</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+        // Show error state
+        exploreGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                <div style="font-size: 72px; margin-bottom: 20px;">⚠️</div>
+                <h3 style="margin-bottom: 12px; color: var(--text-primary);">Search failed</h3>
+                <p>Please try again</p>
+            </div>
+        `;
+    }
 }
 
 function showSearchSuggestions() {
@@ -4271,7 +4630,12 @@ function switchFeedTab(feedType) {
                             <button class="category-btn" style="background: var(--bg-tertiary); color: var(--text-primary); border: none; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; cursor: pointer;" onclick="filterByCategory('food')">Food</button>
                         </div>
                     </div>
-                    <div id="exploreVideoGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 4px; padding: 8px; overflow-y: auto; max-height: calc(100vh - 300px);"></div>
+                    <div id="exploreVideoGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 4px; overflow-y: auto; max-height: calc(100vh - 300px);">
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
+                            <div class="spinner"></div>
+                            <p style="margin-top: 20px;">Loading explore content...</p>
+                        </div>
+                    </div>
                 `;
             }
             // Clear just the video grid
@@ -4305,8 +4669,14 @@ function switchFeedTab(feedType) {
     setTimeout(() => {
         // Clean up any orphaned spinners before loading
         cleanupLoadingSpinners();
-        // Load the feed content with fresh data
-        loadVideoFeed(feedType, true, 1, false); // Force fresh load, no append
+        
+        // Initialize explore page if switching to explore
+        if (feedType === 'explore') {
+            initializeExplorePage();
+        } else {
+            // Load the feed content with fresh data
+            loadVideoFeed(feedType, true, 1, false); // Force fresh load, no append
+        }
     }, 100);
     
     // After a brief delay, ensure the first video starts playing
@@ -4430,6 +4800,17 @@ function addGlobalStyles() {
             to { transform: rotate(360deg); }
         }
         
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         .video-card {
             position: relative;
             height: 100vh;
@@ -4482,6 +4863,36 @@ function addGlobalStyles() {
         
         .reaction-btn:hover {
             transform: scale(1.2);
+        }
+        
+        /* Responsive explore grid */
+        @media (min-width: 768px) {
+            #exploreVideoGrid {
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
+        }
+        
+        @media (max-width: 767px) {
+            #exploreVideoGrid {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #exploreVideoGrid {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+        
+        /* Explore category pills */
+        .category-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .hashtag-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
     `;
     document.head.appendChild(style);
