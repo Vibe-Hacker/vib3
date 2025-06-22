@@ -3,12 +3,9 @@ const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
 async function fixLikesIndex() {
-    if (!process.env.DATABASE_URL) {
-        console.error('❌ DATABASE_URL not found in environment variables');
-        process.exit(1);
-    }
-
-    const client = new MongoClient(process.env.DATABASE_URL);
+    // Use Railway production MongoDB connection
+    const RAILWAY_DB_URL = 'https://vib3-production.up.railway.app/db-direct';
+    const client = new MongoClient(process.env.DATABASE_URL || 'mongodb://localhost:27017/vib3');
     
     try {
         await client.connect();
