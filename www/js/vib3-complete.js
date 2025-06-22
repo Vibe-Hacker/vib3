@@ -650,8 +650,15 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                     }
                 } else {
                     if (!append) {
-                        feedElement.innerHTML = createEmptyFeedMessage(feedType);
-                        feedElement.style.overflow = 'hidden';
+                        if (feedType === 'explore') {
+                            const exploreGrid = document.getElementById('exploreVideoGrid');
+                            if (exploreGrid) {
+                                exploreGrid.innerHTML = createEmptyFeedMessage(feedType);
+                            }
+                        } else {
+                            feedElement.innerHTML = createEmptyFeedMessage(feedType);
+                            feedElement.style.overflow = 'hidden';
+                        }
                         console.log('No valid videos after filtering, showing empty message for', feedType);
                         hasMoreVideos = false;
                     } else {
@@ -682,8 +689,15 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                 }
             } else {
                 if (!append) {
-                    feedElement.innerHTML = createEmptyFeedMessage(feedType);
-                    feedElement.style.overflow = 'hidden';
+                    if (feedType === 'explore') {
+                        const exploreGrid = document.getElementById('exploreVideoGrid');
+                        if (exploreGrid) {
+                            exploreGrid.innerHTML = createEmptyFeedMessage(feedType);
+                        }
+                    } else {
+                        feedElement.innerHTML = createEmptyFeedMessage(feedType);
+                        feedElement.style.overflow = 'hidden';
+                    }
                     console.log('No videos to display, showing empty message for', feedType);
                     hasMoreVideos = false;
                 } else {
@@ -738,7 +752,14 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
         } catch (error) {
             console.error('Load feed error:', error);
             if (!append) {
-                feedElement.innerHTML = createErrorMessage(feedType);
+                if (feedType === 'explore') {
+                    const exploreGrid = document.getElementById('exploreVideoGrid');
+                    if (exploreGrid) {
+                        exploreGrid.innerHTML = createErrorMessage(feedType);
+                    }
+                } else {
+                    feedElement.innerHTML = createErrorMessage(feedType);
+                }
                 hasMoreVideos = false;
             } else {
                 console.log('Error in append mode, but keeping hasMoreVideos true');
@@ -4015,8 +4036,10 @@ function switchFeedTab(feedType) {
     document.querySelectorAll('.feed-content').forEach(feed => {
         feed.classList.remove('active');
         feed.style.display = 'none';
-        // Clear all content to prevent flicker
-        feed.innerHTML = '';
+        // Only clear content for non-explore feeds to preserve explore structure
+        if (feed.id !== 'exploreFeed') {
+            feed.innerHTML = '';
+        }
     });
     
     // Remove active class from all tabs
@@ -4027,11 +4050,19 @@ function switchFeedTab(feedType) {
     // Show the target feed container
     const targetFeed = document.getElementById(feedType + 'Feed');
     if (targetFeed) {
-        // Clear existing content immediately to prevent flicker
-        targetFeed.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;">Loading...</div>';
+        // Only clear content for non-explore feeds to preserve explore structure
+        if (feedType !== 'explore') {
+            targetFeed.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;">Loading...</div>';
+        } else {
+            // For explore feed, just clear the video grid while preserving the header
+            const exploreGrid = document.getElementById('exploreVideoGrid');
+            if (exploreGrid) {
+                exploreGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: var(--text-secondary);">Loading videos...</div>';
+            }
+        }
         targetFeed.classList.add('active');
         targetFeed.style.display = 'block';
-        console.log(`✅ Activated ${feedType} feed container and cleared content`);
+        console.log(`✅ Activated ${feedType} feed container`);
     }
     
     // Activate the corresponding tab if it exists
