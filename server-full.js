@@ -101,12 +101,8 @@ async function createIndexes() {
         await db.collection('posts').createIndex({ hashtags: 1 });
         await db.collection('posts').createIndex({ status: 1 });
         
-        // Social indexes
+        // Social indexes (only video likes for now)
         await db.collection('likes').createIndex({ videoId: 1, userId: 1 }, { unique: true });
-        await db.collection('likes').createIndex({ postId: 1, userId: 1 }, { 
-            unique: true, 
-            partialFilterExpression: { postId: { $ne: null } } 
-        });
         await db.collection('comments').createIndex({ videoId: 1, createdAt: -1 });
         await db.collection('comments').createIndex({ postId: 1, createdAt: -1 });
         await db.collection('follows').createIndex({ followerId: 1, followingId: 1 }, { unique: true });
@@ -2541,12 +2537,8 @@ app.post('/api/admin/cleanup-likes', async (req, res) => {
             await db.collection('likes').insertMany(cleanLikesArray);
         }
         
-        // Recreate indexes
+        // Recreate indexes (only video likes index for now)
         await db.collection('likes').createIndex({ videoId: 1, userId: 1 }, { unique: true });
-        await db.collection('likes').createIndex({ postId: 1, userId: 1 }, { 
-            unique: true, 
-            partialFilterExpression: { postId: { $ne: null } } 
-        });
         
         console.log(`✅ Cleanup complete: ${allLikes.length} → ${cleanLikesArray.length} likes`);
         
