@@ -1391,22 +1391,39 @@ app.post('/like', requireAuth, async (req, res) => {
     // Use authenticated user ID if not provided
     const actualUserId = userId || req.user.userId;
     
+    // Validate required fields
+    if (!videoId) {
+        return res.status(400).json({ error: 'videoId is required' });
+    }
+    
+    if (!actualUserId) {
+        return res.status(400).json({ error: 'userId is required' });
+    }
+    
+    console.log(`💖 Like request: videoId=${videoId}, userId=${actualUserId}`);
+    
     try {
         // Check if like already exists
         const existingLike = await db.collection('likes').findOne({ 
-            videoId, 
-            userId: actualUserId 
+            videoId: videoId.toString(), 
+            userId: actualUserId.toString() 
         });
+        
+        console.log(`💖 Existing like found: ${!!existingLike}`);
         
         if (existingLike) {
             // Unlike - remove the like
-            await db.collection('likes').deleteOne({ 
-                videoId, 
-                userId: actualUserId 
+            const deleteResult = await db.collection('likes').deleteOne({ 
+                videoId: videoId.toString(), 
+                userId: actualUserId.toString() 
             });
             
+            console.log(`💖 Delete result: ${deleteResult.deletedCount} likes removed`);
+            
             // Get updated like count
-            const likeCount = await db.collection('likes').countDocuments({ videoId });
+            const likeCount = await db.collection('likes').countDocuments({ videoId: videoId.toString() });
+            
+            console.log(`💖 Unliked video ${videoId}, new count: ${likeCount}`);
             
             res.json({ 
                 message: 'Video unliked', 
@@ -1416,15 +1433,18 @@ app.post('/like', requireAuth, async (req, res) => {
         } else {
             // Like - add new like
             const like = {
-                videoId,
-                userId: actualUserId,
+                videoId: videoId.toString(),
+                userId: actualUserId.toString(),
                 createdAt: new Date()
             };
             
-            await db.collection('likes').insertOne(like);
+            const insertResult = await db.collection('likes').insertOne(like);
+            console.log(`💖 Insert result: ${insertResult.insertedId}`);
             
             // Get updated like count
-            const likeCount = await db.collection('likes').countDocuments({ videoId });
+            const likeCount = await db.collection('likes').countDocuments({ videoId: videoId.toString() });
+            
+            console.log(`💖 Liked video ${videoId}, new count: ${likeCount}`);
             
             res.json({ 
                 message: 'Video liked', 
@@ -1435,7 +1455,17 @@ app.post('/like', requireAuth, async (req, res) => {
         
     } catch (error) {
         console.error('Like video error:', error);
-        res.status(500).json({ error: 'Failed to like video' });
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            code: error.code,
+            videoId,
+            userId: actualUserId
+        });
+        res.status(500).json({ 
+            error: 'Failed to like video',
+            details: error.message 
+        });
     }
 });
 
@@ -1449,8 +1479,14 @@ app.get('/api/videos/:videoId/like-status', requireAuth, async (req, res) => {
     const userId = req.user.userId;
     
     try {
-        const like = await db.collection('likes').findOne({ videoId, userId });
-        const likeCount = await db.collection('likes').countDocuments({ videoId });
+        // Ensure string types for consistency
+        const like = await db.collection('likes').findOne({ 
+            videoId: videoId.toString(), 
+            userId: userId.toString() 
+        });
+        const likeCount = await db.collection('likes').countDocuments({ 
+            videoId: videoId.toString() 
+        });
         
         res.json({ 
             liked: !!like, 
