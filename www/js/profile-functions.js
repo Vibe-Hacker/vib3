@@ -11,6 +11,7 @@ function createProfilePage() {
 }
 
 function editProfile() {
+    console.log('🔧 profile-functions.js editProfile() called');
     const modal = document.createElement('div');
     modal.style.cssText = `
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -58,6 +59,12 @@ function editProfile() {
     };
     
     document.body.appendChild(modal);
+    console.log('✅ profile-functions.js modal added to DOM with elements:', {
+        displayName: !!document.getElementById('editDisplayName'),
+        username: !!document.getElementById('editUsername'),
+        bio: !!document.getElementById('editBio'),
+        website: !!document.getElementById('editWebsite')
+    });
     
     window.closeModal = () => {
         modal.remove();

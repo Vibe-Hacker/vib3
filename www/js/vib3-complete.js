@@ -6418,6 +6418,7 @@ function createAnalyticsView() {
 }
 
 function editProfile() {
+    console.log('🔧 vib3-complete.js editProfile() called');
     const modal = document.createElement('div');
     modal.className = 'modal edit-profile-modal';
     modal.style.cssText = `
