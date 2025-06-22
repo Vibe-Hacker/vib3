@@ -314,9 +314,19 @@ function initializeVideoObserver() {
     // Only target feed videos, not upload modal videos
     const videos = document.querySelectorAll('.feed-content video');
     
-    // Skip if video count hasn't changed to prevent unnecessary re-initialization
-    if (videos.length === lastVideoCount && videos.length > 0) {
-        console.log('📹 Video count unchanged, skipping re-initialization');
+    // If we have an observer and videos, make sure all videos are being observed
+    if (videos.length === lastVideoCount && videos.length > 0 && videoObserver) {
+        console.log('📹 Video count unchanged, ensuring all videos are observed');
+        videos.forEach(video => {
+            videoObserver.observe(video);
+            // Immediately pause videos that aren't in the viewport
+            const rect = video.getBoundingClientRect();
+            const isInView = rect.top >= 0 && rect.top < window.innerHeight * 0.7;
+            if (!isInView && !video.paused) {
+                video.pause();
+                console.log('⏸️ Emergency pause for out-of-view video:', video.src.split('/').pop());
+            }
+        });
         return;
     }
     
@@ -389,9 +399,16 @@ function initializeVideoObserver() {
         console.log(`✅ TikTok video ${index + 1} setup complete`);
     });
     
-    // Auto-play first video
+    // Auto-play first video and pause all others
     if (videos.length > 0) {
-        videos[0].play().catch(e => console.log('▶️ First video autoplay blocked:', e));
+        videos.forEach((video, index) => {
+            if (index === 0) {
+                video.play().catch(e => console.log('▶️ First video autoplay blocked:', e));
+            } else {
+                video.pause();
+                console.log('⏸️ Paused non-first video:', video.src.split('/').pop());
+            }
+        });
     }
     
     console.log('🏁 TikTok-style video system initialized with scroll snap');
