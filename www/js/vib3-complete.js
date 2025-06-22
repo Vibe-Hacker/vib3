@@ -416,6 +416,24 @@ async function loadMoreVideos(feedType) {
     
     try {
         await loadVideoFeed(feedType, false, currentPage, true);
+        
+        // Additional fallback: if we're on page 3+ and didn't get videos, definitely recycle
+        if (currentPage > 2) {
+            const feedElement = document.getElementById(feedType + 'Feed');
+            const existingVideos = feedElement ? Array.from(feedElement.children) : [];
+            
+            if (existingVideos.length > 0) {
+                console.log(`🔄 Extra fallback: Recycling videos for page ${currentPage}`);
+                const videosToClone = existingVideos.slice(0, Math.min(3, existingVideos.length));
+                videosToClone.forEach(videoCard => {
+                    const clonedCard = videoCard.cloneNode(true);
+                    feedElement.appendChild(clonedCard);
+                });
+                setTimeout(() => initializeVideoObserver(), 200);
+                hasMoreVideos = true;
+            }
+        }
+        
     } catch (error) {
         console.error('Error loading more videos:', error);
         currentPage--; // Revert page increment on error
@@ -527,8 +545,9 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                     
                     // Check if we have fewer videos than requested - if so, we've reached the end
                     if (validVideos.length < 10) {
-                        hasMoreVideos = false;
-                        console.log('📴 Reached end of videos - no more pages available');
+                        console.log('📴 Reached end of videos - will start recycling for infinite scroll');
+                        // Still allow infinite scroll by recycling existing videos
+                        hasMoreVideos = true;
                     } else {
                         hasMoreVideos = true;
                     }
@@ -577,21 +596,42 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                     hasMoreVideos = false;
                 } else {
                     // No more videos from server - cycle through existing videos for infinite scroll
-                    console.log('No more videos from server, cycling through existing videos');
-                    const existingVideos = Array.from(feedElement.children);
+                    console.log('🔄 No more videos from server, cycling through existing videos');
+                    const existingVideos = Array.from(feedElement.children).filter(child => 
+                        child.classList.contains('video-card') || child.querySelector('video')
+                    );
+                    
                     if (existingVideos.length > 0) {
                         // Clone and append existing videos for infinite scroll effect
                         const videosToClone = existingVideos.slice(0, Math.min(5, existingVideos.length));
-                        videosToClone.forEach(videoCard => {
+                        console.log(`🔄 Found ${existingVideos.length} existing videos, cloning ${videosToClone.length}`);
+                        
+                        videosToClone.forEach((videoCard, index) => {
                             const clonedCard = videoCard.cloneNode(true);
+                            // Add a recycling indicator
+                            const recycleTag = document.createElement('div');
+                            recycleTag.style.cssText = `
+                                position: absolute;
+                                top: 10px;
+                                left: 10px;
+                                background: rgba(0,0,0,0.6);
+                                color: white;
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                font-size: 12px;
+                                z-index: 100;
+                            `;
+                            recycleTag.textContent = '🔄 Replay';
+                            clonedCard.appendChild(recycleTag);
                             feedElement.appendChild(clonedCard);
                         });
-                        console.log(`🔄 Cloned ${videosToClone.length} videos for infinite scroll`);
+                        console.log(`✅ Cloned ${videosToClone.length} videos for infinite scroll`);
                         
                         // Re-initialize observer for cloned videos
                         setTimeout(() => initializeVideoObserver(), 200);
                         hasMoreVideos = true; // Keep infinite scroll active
                     } else {
+                        console.log('❌ No existing videos found to recycle');
                         hasMoreVideos = false;
                     }
                 }
