@@ -1169,14 +1169,19 @@ app.put('/api/user/profile', requireAuth, async (req, res) => {
 
 // Get user stats (followers, following, likes)
 app.get('/api/user/stats', async (req, res) => {
+    console.log('📊 User stats request:', {
+        hasAuth: !!req.headers.authorization,
+        userId: req.query.userId,
+        dbConnected: !!db
+    });
+    
     if (!db) {
+        console.log('📊 No DB connection, returning zeros');
         return res.json({ 
-            stats: {
-                followers: 0,
-                following: 0,
-                likes: 0,
-                videoCount: 0
-            }
+            followers: 0,
+            following: 0,
+            likes: 0,
+            videoCount: 0
         });
     }
     
@@ -1190,10 +1195,12 @@ app.get('/api/user/stats', async (req, res) => {
             const session = sessions.get(token);
             if (session) {
                 targetUserId = session.userId;
+                console.log('📊 Using authenticated user ID:', targetUserId);
             }
         }
         
         if (!targetUserId) {
+            console.log('📊 No user ID found, returning error');
             return res.status(400).json({ error: 'User ID required' });
         }
         
@@ -1218,7 +1225,9 @@ app.get('/api/user/stats', async (req, res) => {
             videoCount: userVideos.length
         };
         
-        res.json({ stats });
+        console.log('📊 Calculated stats for user', targetUserId, ':', stats);
+        
+        res.json(stats);
         
     } catch (error) {
         console.error('Get user stats error:', error);
