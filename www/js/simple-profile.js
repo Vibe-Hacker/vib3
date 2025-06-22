@@ -96,16 +96,8 @@ function createSimpleProfilePage() {
                             <span style="color: rgba(255,255,255,0.7);">Likes</span>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 15px;">
-                        <button onclick="editProfile()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
-                            Edit Profile
-                        </button>
-                        <button onclick="shareProfile()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
-                            Share Profile
-                        </button>
-                        <button onclick="openCreatorTools()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
-                            Creator Tools
-                        </button>
+                    <div style="display: flex; gap: 15px;" id="profileActions">
+                        <!-- Actions will be populated based on whether it's current user or another user -->
                     </div>
                 </div>
             </div>
@@ -202,7 +194,7 @@ function getAPIBaseURL() {
 async function loadUserProfileData() {
     try {
         const baseURL = getAPIBaseURL();
-        const token = localStorage.getItem('vib3_token');
+        const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
         console.log('🔍 Loading profile data:', { baseURL, hasToken: !!token });
         
         const response = await fetch(`${baseURL}/api/user/profile`, {
@@ -215,6 +207,7 @@ async function loadUserProfileData() {
             const data = await response.json();
             console.log('✅ Profile data loaded:', data);
             updateProfileDisplay(data.user || data);
+            setupProfileActions(data.user || data);
             loadUserVideos();
             loadUserStats();
         } else {
@@ -235,7 +228,7 @@ async function loadUserProfileData() {
 async function loadUserVideos() {
     try {
         const baseURL = getAPIBaseURL();
-        const token = localStorage.getItem('vib3_token');
+        const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
         console.log('🎬 Loading user videos:', { baseURL, hasToken: !!token });
         
         const response = await fetch(`${baseURL}/api/user/videos`, {
@@ -260,7 +253,7 @@ async function loadUserVideos() {
 async function loadUserStats() {
     try {
         const baseURL = getAPIBaseURL();
-        const token = localStorage.getItem('vib3_token');
+        const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
         const response = await fetch(`${baseURL}/api/user/stats`, {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
@@ -343,6 +336,118 @@ function formatNumber(num) {
         return (num / 1000).toFixed(1) + 'K';
     }
     return num.toString();
+}
+
+function setupProfileActions(profileUser) {
+    const actionsContainer = document.getElementById('profileActions');
+    if (!actionsContainer) return;
+    
+    const currentUser = window.currentUser;
+    const isOwnProfile = currentUser && profileUser && (currentUser._id === profileUser._id || currentUser.username === profileUser.username);
+    
+    if (isOwnProfile) {
+        // Own profile - show edit buttons
+        actionsContainer.innerHTML = `
+            <button onclick="editProfile()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                Edit Profile
+            </button>
+            <button onclick="shareProfile()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                Share Profile
+            </button>
+            <button onclick="openCreatorTools()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                Creator Tools
+            </button>
+        `;
+    } else {
+        // Other user's profile - show follow button
+        actionsContainer.innerHTML = `
+            <button id="followButton" onclick="toggleFollow('${profileUser._id || profileUser.id}')" style="background: #fe2c55; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                <span id="followButtonText">Follow</span>
+            </button>
+            <button onclick="shareProfile()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                Share Profile
+            </button>
+            <button onclick="messageUser('${profileUser._id || profileUser.id}')" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                Message
+            </button>
+        `;
+        
+        // Load follow status
+        loadFollowStatus(profileUser._id || profileUser.id);
+    }
+}
+
+async function loadFollowStatus(userId) {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${getAPIBaseURL()}/api/users/${userId}/follow-status`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            updateFollowButton(data.following);
+        }
+    } catch (error) {
+        console.log('Could not load follow status:', error);
+    }
+}
+
+function updateFollowButton(isFollowing) {
+    const followButton = document.getElementById('followButton');
+    const followButtonText = document.getElementById('followButtonText');
+    
+    if (followButton && followButtonText) {
+        if (isFollowing) {
+            followButton.style.background = 'rgba(255,255,255,0.2)';
+            followButton.style.color = 'white';
+            followButtonText.textContent = 'Following';
+        } else {
+            followButton.style.background = '#fe2c55';
+            followButton.style.color = 'white';
+            followButtonText.textContent = 'Follow';
+        }
+    }
+}
+
+async function toggleFollow(userId) {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
+    if (!token) {
+        showNotification('Please login to follow users', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${getAPIBaseURL()}/api/users/${userId}/follow`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            updateFollowButton(data.following);
+            
+            // Update follower count
+            const followersCountEl = document.getElementById('followersCount');
+            if (followersCountEl) {
+                const currentCount = parseInt(followersCountEl.textContent) || 0;
+                followersCountEl.textContent = data.following ? currentCount + 1 : Math.max(0, currentCount - 1);
+            }
+            
+            showNotification(data.following ? 'Following!' : 'Unfollowed', 'success');
+        } else {
+            throw new Error('Failed to update follow status');
+        }
+    } catch (error) {
+        console.error('Follow error:', error);
+        showNotification('Error updating follow status', 'error');
+    }
+}
+
+function messageUser(userId) {
+    showNotification('Messaging feature coming soon!', 'info');
 }
 
 function displayUserVideos(videos) {
@@ -477,7 +582,7 @@ async function deleteUserVideo(videoId, videoTitle) {
     
     try {
         const baseURL = getAPIBaseURL();
-        const token = localStorage.getItem('vib3_token');
+        const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
         
         if (!token) {
             showNotification('Please log in to delete videos', 'error');
@@ -893,7 +998,7 @@ async function changeProfilePicture() {
                 formData.append('profileImage', file);
                 
                 const baseURL = getAPIBaseURL();
-                const token = localStorage.getItem('vib3_token');
+                const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
                 
                 showNotification('Uploading profile picture...', 'info');
                 
@@ -927,7 +1032,7 @@ async function changeProfilePicture() {
     window.selectProfilePicture = async (emoji) => {
         try {
             const baseURL = getAPIBaseURL();
-            const token = localStorage.getItem('vib3_token');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
             
             const response = await fetch(`${baseURL}/api/user/profile`, {
                 method: 'PUT',
