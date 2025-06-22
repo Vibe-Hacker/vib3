@@ -65,8 +65,117 @@ const mockUser = {
     }
 };
 
-// No mock videos - empty array for production
-const mockVideos = [];
+// Sample videos for explore page (different creators)
+const mockVideos = [
+    {
+        _id: 'explore1',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        user: { 
+            _id: 'creator1',
+            username: 'dancequeen23', 
+            displayName: 'Maya Chen',
+            profilePicture: '💃' 
+        },
+        title: 'Summer dance vibes! ☀️',
+        description: 'New choreography to my favorite song #dance #summer',
+        likeCount: 1200,
+        commentCount: 45,
+        shareCount: 23,
+        uploadDate: new Date('2024-01-01'),
+        duration: 60,
+        views: 15600
+    },
+    {
+        _id: 'explore2',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+        user: { 
+            _id: 'creator2',
+            username: 'artlife_alex', 
+            displayName: 'Alex Rivera',
+            profilePicture: '🎨' 
+        },
+        title: 'Digital art speedrun',
+        description: 'Creating art in 60 seconds #art #digital #creative',
+        likeCount: 890,
+        commentCount: 67,
+        shareCount: 34,
+        uploadDate: new Date('2024-01-02'),
+        duration: 45,
+        views: 8900
+    },
+    {
+        _id: 'explore3',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        user: { 
+            _id: 'creator3',
+            username: 'cookingjake', 
+            displayName: 'Jake Martinez',
+            profilePicture: '👨‍🍳' 
+        },
+        title: 'Quick pasta recipe!',
+        description: '5-minute dinner hack that will change your life #cooking #pasta',
+        likeCount: 2300,
+        commentCount: 156,
+        shareCount: 89,
+        uploadDate: new Date('2024-01-03'),
+        duration: 30,
+        views: 23400
+    },
+    {
+        _id: 'explore4',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+        user: { 
+            _id: 'creator4',
+            username: 'fitness_sarah', 
+            displayName: 'Sarah Johnson',
+            profilePicture: '💪' 
+        },
+        title: 'Morning workout routine',
+        description: 'Start your day right with this 10-min workout #fitness #morning',
+        likeCount: 567,
+        commentCount: 43,
+        shareCount: 28,
+        uploadDate: new Date('2024-01-04'),
+        duration: 25,
+        views: 7800
+    },
+    {
+        _id: 'explore5',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+        user: { 
+            _id: 'creator5',
+            username: 'tech_tom', 
+            displayName: 'Tom Wilson',
+            profilePicture: '💻' 
+        },
+        title: 'iPhone 15 hidden features',
+        description: 'Mind-blowing features you never knew existed #tech #iphone',
+        likeCount: 4500,
+        commentCount: 234,
+        shareCount: 167,
+        uploadDate: new Date('2024-01-05'),
+        duration: 180,
+        views: 45600
+    },
+    {
+        _id: 'explore6',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        user: { 
+            _id: 'creator6',
+            username: 'fashionista_em', 
+            displayName: 'Emma Style',
+            profilePicture: '👗' 
+        },
+        title: 'Outfit of the day',
+        description: 'Affordable fall looks under $50 #fashion #ootd #style',
+        likeCount: 890,
+        commentCount: 76,
+        shareCount: 45,
+        uploadDate: new Date('2024-01-06'),
+        duration: 60,
+        views: 12300
+    }
+];
 
 // Simple auth middleware (simulates being logged in as the video uploader)
 const authMiddleware = (req, res, next) => {

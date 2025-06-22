@@ -588,14 +588,30 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                 if (validVideos.length > 0) {
                     if (!append) {
                         feedElement.innerHTML = '';
-                        feedElement.style.overflow = 'auto';
-                        feedElement.style.scrollSnapType = 'y mandatory';
-                        feedElement.style.scrollBehavior = 'smooth';
+                        
+                        // Set different layouts for different feed types
+                        if (feedType === 'explore') {
+                            // Grid layout for explore page like TikTok
+                            feedElement.style.display = 'grid';
+                            feedElement.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                            feedElement.style.gap = '4px';
+                            feedElement.style.padding = '4px';
+                            feedElement.style.overflow = 'auto';
+                            feedElement.style.scrollSnapType = 'none';
+                        } else {
+                            // Vertical scroll for For You and Following
+                            feedElement.style.display = 'block';
+                            feedElement.style.overflow = 'auto';
+                            feedElement.style.scrollSnapType = 'y mandatory';
+                            feedElement.style.scrollBehavior = 'smooth';
+                        }
                     }
                     
                     console.log(`➕ Adding ${validVideos.length} videos to feed (append: ${append})`);
                     validVideos.forEach((video, index) => {
-                        const videoCard = createAdvancedVideoCard(video);
+                        const videoCard = feedType === 'explore' ? 
+                            createExploreVideoCard(video) : 
+                            createAdvancedVideoCard(video);
                         feedElement.appendChild(videoCard);
                         console.log(`  ✅ Added video ${index + 1}: ${video.title || 'Untitled'}`);
                     });
@@ -613,10 +629,14 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                     // Setup infinite scroll listener
                     if (!append) {
                         setupInfiniteScroll(feedElement, feedType);
-                        setTimeout(() => initializeVideoObserver(), 200);
+                        if (feedType !== 'explore') {
+                            setTimeout(() => initializeVideoObserver(), 200);
+                        }
                     } else {
                         // Re-initialize observer for new videos
-                        setTimeout(() => initializeVideoObserver(), 200);
+                        if (feedType !== 'explore') {
+                            setTimeout(() => initializeVideoObserver(), 200);
+                        }
                     }
                 } else {
                     if (!append) {
@@ -641,7 +661,9 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                             console.log(`🔄 Cloned ${videosToClone.length} videos for infinite scroll (filtered case)`);
                             
                             // Re-initialize observer for cloned videos
-                            setTimeout(() => initializeVideoObserver(), 200);
+                            if (feedType !== 'explore') {
+                                setTimeout(() => initializeVideoObserver(), 200);
+                            }
                             hasMoreVideos = true; // Keep infinite scroll active
                         } else {
                             hasMoreVideos = false;
@@ -1177,6 +1199,233 @@ async function startDuet(videoId) {
     
     // Initialize duet camera
     initializeDuetCamera();
+}
+
+// Create TikTok-style explore grid video card
+function createExploreVideoCard(video) {
+    console.log('🔍 Creating explore grid card for:', video.videoUrl);
+    
+    const card = document.createElement('div');
+    card.className = 'explore-video-card';
+    card.style.cssText = `
+        position: relative;
+        width: 100%;
+        aspect-ratio: 9/16;
+        background: #000;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+    `;
+    
+    // Video thumbnail (first frame)
+    const video_elem = document.createElement('video');
+    let videoUrl = video.videoUrl || '';
+    if (videoUrl && !videoUrl.startsWith('http://') && !videoUrl.startsWith('https://')) {
+        videoUrl = 'https://' + videoUrl;
+    }
+    
+    video_elem.src = videoUrl;
+    video_elem.muted = true;
+    video_elem.preload = 'metadata';
+    video_elem.style.cssText = `
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        background: #000;
+    `;
+    
+    // Overlay with play icon and stats
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(transparent 60%, rgba(0,0,0,0.8));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+    `;
+    
+    // Play button icon
+    const playIcon = document.createElement('div');
+    playIcon.innerHTML = '▶️';
+    playIcon.style.cssText = `
+        font-size: 32px;
+        color: white;
+        opacity: 0.8;
+        transition: all 0.2s ease;
+    `;
+    
+    // Video stats at bottom
+    const stats = document.createElement('div');
+    stats.style.cssText = `
+        position: absolute;
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        color: white;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    `;
+    
+    const viewCount = video.views || video.likeCount || Math.floor(Math.random() * 10000);
+    stats.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 4px;">
+            <span>👁️</span>
+            <span>${formatCount(viewCount)}</span>
+        </div>
+        <div style="flex: 1; font-size: 10px; opacity: 0.8; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+            ${video.title || 'Video'}
+        </div>
+    `;
+    
+    // User info
+    const userInfo = document.createElement('div');
+    userInfo.style.cssText = `
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: white;
+        font-size: 11px;
+        background: rgba(0,0,0,0.3);
+        border-radius: 12px;
+        padding: 4px 8px;
+        backdrop-filter: blur(4px);
+    `;
+    
+    const userAvatar = video.user?.profilePicture || '👤';
+    const userName = video.user?.username || video.user?.displayName || 'User';
+    userInfo.innerHTML = `
+        <span style="font-size: 14px;">${userAvatar}</span>
+        <span style="font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${userName}</span>
+    `;
+    
+    // Hover effects
+    card.addEventListener('mouseenter', () => {
+        card.style.transform = 'scale(1.02)';
+        playIcon.style.transform = 'scale(1.1)';
+        playIcon.style.opacity = '1';
+        video_elem.play().catch(e => console.log('Hover play failed:', e));
+    });
+    
+    card.addEventListener('mouseleave', () => {
+        card.style.transform = 'scale(1)';
+        playIcon.style.transform = 'scale(1)';
+        playIcon.style.opacity = '0.8';
+        video_elem.pause();
+        video_elem.currentTime = 0;
+    });
+    
+    // Click to open full video
+    card.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openVideoModal(video);
+    });
+    
+    overlay.appendChild(playIcon);
+    overlay.appendChild(stats);
+    overlay.appendChild(userInfo);
+    
+    card.appendChild(video_elem);
+    card.appendChild(overlay);
+    
+    return card;
+}
+
+// Open video in full-screen modal (like TikTok)
+function openVideoModal(video) {
+    console.log('🎬 Opening video modal for:', video.title);
+    
+    const modal = document.createElement('div');
+    modal.className = 'video-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #000;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    `;
+    
+    // Create full TikTok-style video card in modal
+    const videoCard = createAdvancedVideoCard(video);
+    videoCard.style.height = '100vh';
+    videoCard.style.margin = '0';
+    videoCard.style.maxWidth = '100vw';
+    
+    // Close button
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '×';
+    closeBtn.style.cssText = `
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.5);
+        color: white;
+        border: none;
+        font-size: 32px;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+    `;
+    
+    closeBtn.addEventListener('click', () => {
+        document.body.removeChild(modal);
+        document.body.style.overflow = '';
+    });
+    
+    // Close on background click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+            document.body.style.overflow = '';
+        }
+    });
+    
+    // Close on Escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            document.body.removeChild(modal);
+            document.body.style.overflow = '';
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    modal.appendChild(videoCard);
+    modal.appendChild(closeBtn);
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+    
+    // Auto-play video in modal
+    setTimeout(() => {
+        const video_elem = modal.querySelector('video');
+        if (video_elem) {
+            video_elem.play().catch(e => console.log('Modal video play failed:', e));
+        }
+    }, 100);
 }
 
 async function startStitch(videoId) {
@@ -6185,6 +6434,8 @@ window.showFollowing = showFollowing;
 window.showFollowers = showFollowers;
 window.shareProfile = shareProfile;
 window.openCreatorTools = openCreatorTools;
+window.createExploreVideoCard = createExploreVideoCard;
+window.openVideoModal = openVideoModal;
 
 // ================ PROFILE FUNCTIONS ================
 function loadProfileData() {

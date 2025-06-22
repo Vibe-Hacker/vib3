@@ -125,17 +125,27 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
         const fileExtension = path.extname(req.file.originalname);
         const fileName = `videos/${Date.now()}-${crypto.randomBytes(16).toString('hex')}${fileExtension}`;
 
-        // Upload to DigitalOcean Spaces
+        // Upload to DigitalOcean Spaces with CORS headers
         const uploadParams = {
             Bucket: BUCKET_NAME,
             Key: fileName,
             Body: req.file.buffer,
             ContentType: req.file.mimetype,
-            ACL: 'public-read'
+            ACL: 'public-read',
+            Metadata: {
+                'access-control-allow-origin': '*',
+                'access-control-allow-methods': 'GET, HEAD',
+                'access-control-allow-headers': 'Range'
+            },
+            CacheControl: 'public, max-age=31536000',
+            // Add CORS headers for video streaming
+            'x-amz-meta-cors': 'enabled'
         };
 
         const uploadResult = await s3.upload(uploadParams).promise();
-        const videoUrl = uploadResult.Location;
+        // Use proxy URL instead of direct DigitalOcean URL to avoid CORS
+        const videoUrl = `${req.protocol}://${req.get('host')}/api/video-proxy/${encodeURIComponent(fileName)}`;
+        const originalUrl = uploadResult.Location;
 
         // Save to database if connected
         let videoRecord = null;
@@ -169,6 +179,66 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
     } catch (error) {
         console.error('Upload error:', error);
         res.status(500).json({ error: 'Upload failed: ' + error.message });
+    }
+});
+
+// Video proxy endpoint to serve videos without CORS issues
+app.get('/api/video-proxy/:filename', async (req, res) => {
+    try {
+        const filename = decodeURIComponent(req.params.filename);
+        console.log(`🎬 Proxying video: ${filename}`);
+        
+        // Set proper headers for video streaming
+        res.set({
+            'Content-Type': 'video/mp4',
+            'Accept-Ranges': 'bytes',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+            'Access-Control-Allow-Headers': 'Range, Content-Type',
+            'Cache-Control': 'public, max-age=31536000'
+        });
+        
+        // Handle OPTIONS preflight request
+        if (req.method === 'OPTIONS') {
+            return res.status(200).end();
+        }
+        
+        // Get video from DigitalOcean Spaces
+        const getParams = {
+            Bucket: BUCKET_NAME,
+            Key: filename
+        };
+        
+        // Handle range requests for video seeking
+        if (req.headers.range) {
+            // Get video metadata first
+            const headResult = await s3.headObject(getParams).promise();
+            const contentLength = headResult.ContentLength;
+            
+            // Parse range header
+            const range = req.headers.range;
+            const parts = range.replace(/bytes=/, "").split("-");
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : contentLength - 1;
+            const chunksize = (end - start) + 1;
+            
+            // Set range headers
+            res.status(206);
+            res.set({
+                'Content-Range': `bytes ${start}-${end}/${contentLength}`,
+                'Content-Length': chunksize
+            });
+            
+            // Get partial content
+            getParams.Range = `bytes=${start}-${end}`;
+        }
+        
+        const videoStream = s3.getObject(getParams).createReadStream();
+        videoStream.pipe(res);
+        
+    } catch (error) {
+        console.error('Video proxy error:', error);
+        res.status(404).json({ error: 'Video not found' });
     }
 });
 
