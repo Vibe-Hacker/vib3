@@ -802,6 +802,9 @@ function createAdvancedVideoCard(video) {
     const likeBtn = actions.querySelector('.like-btn');
     likeBtn.addEventListener('click', (e) => handleLikeClick(e, likeBtn));
     
+    // Add enhanced like button features (double-tap, ripple, floating hearts)
+    enhanceLikeButton(likeBtn, video_elem);
+    
     // Add comment button functionality
     const commentBtn = actions.querySelector('.comment-btn');
     commentBtn.addEventListener('click', (e) => {
@@ -7006,10 +7009,17 @@ async function handleLikeClick(e, likeBtn) {
     const heartIcon = likeBtn.querySelector('.heart-icon') || likeBtn.querySelector('div:first-child');
     const countElement = likeBtn.querySelector('.like-count') || likeBtn.querySelector('div:last-child');
     
+    // Determine current like state for optimistic update
+    const isCurrentlyLiked = heartIcon && heartIcon.textContent === '❤️';
+    const newLikedState = !isCurrentlyLiked;
+    
     try {
-        // Add heart animation
+        // Enhanced button animation
         likeBtn.style.transform = 'scale(1.2)';
         setTimeout(() => likeBtn.style.transform = 'scale(1)', 200);
+        
+        // Optimistic UI update for immediate feedback
+        await handleOptimisticLikeUpdate(videoId, likeBtn, newLikedState);
         
         if (!window.authToken) {
             console.log('⚠️ Not authenticated, but testing like functionality anyway');
@@ -7035,14 +7045,21 @@ async function handleLikeClick(e, likeBtn) {
             const data = await response.json();
             const { liked, likeCount } = data;
             
-            // Update UI based on server response
+            // Update UI based on server response (may correct optimistic update)
             heartIcon.textContent = liked ? '❤️' : '🤍';
             if (liked) {
                 heartIcon.style.animation = 'heartBeat 0.5s ease';
+                // Create floating heart for successful like
+                const videoElement = likeBtn.closest('[data-video-id]') || likeBtn.closest('.video-item');
+                if (videoElement) {
+                    createFloatingHeart(videoElement);
+                }
             }
             
             // Update count with real database value
-            countElement.textContent = formatCount(likeCount);
+            if (countElement) {
+                countElement.textContent = formatCount(likeCount);
+            }
             
             // Update all instances of this video's like count across the page
             updateAllVideoLikeCounts(videoId, likeCount, liked);
@@ -7054,28 +7071,41 @@ async function handleLikeClick(e, likeBtn) {
             
             console.log(`✅ ${liked ? 'Liked' : 'Unliked'} video ${videoId}, count: ${likeCount}`);
         } else {
+            // Revert optimistic update on error
+            await handleOptimisticLikeUpdate(videoId, likeBtn, isCurrentlyLiked);
+            
             const errorData = await response.json();
             console.error('Like API error:', errorData);
             showNotification('Error updating like', 'error');
         }
     } catch (error) {
+        // Revert optimistic update on error
+        await handleOptimisticLikeUpdate(videoId, likeBtn, isCurrentlyLiked);
+        
         console.error('Like error:', error);
         showNotification('Error liking video', 'error');
     }
 }
 
 // Update all instances of a video's like count
-function updateAllVideoLikeCounts(videoId, likeCount, liked) {
+function updateAllVideoLikeCounts(videoId, likeCount, liked, isOptimistic = false) {
     document.querySelectorAll(`[data-video-id="${videoId}"]`).forEach(videoElement => {
-        const heartIcon = videoElement.querySelector('.heart-icon') || 
-                         videoElement.querySelector('.like-btn div:first-child');
-        const countElement = videoElement.querySelector('.like-count') || 
-                           videoElement.querySelector('.like-btn div:last-child');
+        const likeBtn = videoElement.querySelector('.like-btn');
+        if (!likeBtn) return;
+        
+        const heartIcon = likeBtn.querySelector('.heart-icon') || 
+                         likeBtn.querySelector('div:first-child');
+        const countElement = likeBtn.querySelector('.like-count') || 
+                           likeBtn.querySelector('div:last-child');
         
         if (heartIcon) {
             heartIcon.textContent = liked ? '❤️' : '🤍';
+            if (liked && !isOptimistic) {
+                heartIcon.style.animation = 'heartBeat 0.5s ease';
+                setTimeout(() => heartIcon.style.animation = '', 500);
+            }
         }
-        if (countElement) {
+        if (countElement && likeCount !== null) {
             countElement.textContent = formatCount(likeCount);
         }
     });
@@ -7126,54 +7156,173 @@ async function loadVideoLikeStatus(videoId, likeBtn) {
     }
 }
 
-// ================ LIKE STATUS PERSISTENCE ================
+// ================ ENHANCED REACTION SYSTEM ================
 
-async function loadVideoLikeStatus(videoId, likeBtn) {
-    // First check local storage for immediate UI update
-    const localLikes = JSON.parse(localStorage.getItem('vib3_liked_videos') || '{}');
-    const isLikedLocally = localLikes[videoId] === true;
+// Enhanced heart animation with floating hearts
+function createFloatingHeart(element) {
+    const heart = document.createElement('div');
+    heart.textContent = '❤️';
+    heart.style.cssText = `
+        position: absolute;
+        font-size: 24px;
+        pointer-events: none;
+        z-index: 1000;
+        animation: floatUp 1.5s ease-out forwards;
+    `;
     
-    const heartIcon = likeBtn.querySelector('.heart-icon');
-    if (isLikedLocally && heartIcon) {
-        heartIcon.textContent = '❤️';
-    }
-    
-    // Then check server if authenticated
-    if (window.authToken && videoId !== 'unknown') {
-        try {
-            const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like-status`, {
-                headers: { 'Authorization': `Bearer ${window.authToken}` }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                if (data.liked && heartIcon) {
-                    heartIcon.textContent = '❤️';
-                    // Update local storage to match server
-                    localLikes[videoId] = true;
-                    localStorage.setItem('vib3_liked_videos', JSON.stringify(localLikes));
-                } else if (!data.liked && heartIcon) {
-                    heartIcon.textContent = '🤍';
-                    // Update local storage to match server
-                    delete localLikes[videoId];
-                    localStorage.setItem('vib3_liked_videos', JSON.stringify(localLikes));
+    // Add CSS animation if not exists
+    if (!document.querySelector('#floating-heart-styles')) {
+        const style = document.createElement('style');
+        style.id = 'floating-heart-styles';
+        style.textContent = `
+            @keyframes floatUp {
+                0% {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+                50% {
+                    opacity: 0.8;
+                    transform: translateY(-30px) scale(1.2);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translateY(-60px) scale(0.8);
                 }
             }
-        } catch (error) {
-            console.log('Could not load like status from server:', error);
-            // Keep local storage state as fallback
-        }
+            @keyframes heartBeat {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.3); }
+            }
+            @keyframes doubleHeartBeat {
+                0%, 20%, 40%, 60%, 80%, 100% { transform: scale(1); }
+                10%, 30% { transform: scale(1.2); }
+                50%, 70% { transform: scale(1.4); }
+            }
+        `;
+        document.head.appendChild(style);
     }
+    
+    // Position relative to button
+    const rect = element.getBoundingClientRect();
+    heart.style.left = (rect.left + rect.width / 2 - 12) + 'px';
+    heart.style.top = (rect.top + rect.height / 2 - 12) + 'px';
+    
+    document.body.appendChild(heart);
+    
+    // Remove after animation
+    setTimeout(() => {
+        heart.remove();
+    }, 1500);
 }
 
-function saveLikeToLocalStorage(videoId, isLiked) {
-    const localLikes = JSON.parse(localStorage.getItem('vib3_liked_videos') || '{}');
-    if (isLiked) {
-        localLikes[videoId] = true;
-    } else {
-        delete localLikes[videoId];
+// Enhanced like button with double-tap support
+function enhanceLikeButton(likeBtn, videoElement) {
+    if (!likeBtn || !videoElement) return;
+    
+    let lastTap = 0;
+    let tapCount = 0;
+    
+    // Add double-tap to like functionality on video
+    videoElement.addEventListener('click', (e) => {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        
+        if (tapLength < 500 && tapLength > 0) {
+            tapCount++;
+            if (tapCount === 1) {
+                // Double tap detected - trigger like
+                e.preventDefault();
+                e.stopPropagation();
+                handleLikeClick(e, likeBtn);
+                createFloatingHeart(videoElement);
+                
+                // Add double heart beat animation to the like button
+                const heartIcon = likeBtn.querySelector('.heart-icon') || likeBtn.querySelector('div:first-child');
+                if (heartIcon) {
+                    heartIcon.style.animation = 'doubleHeartBeat 0.6s ease';
+                    setTimeout(() => {
+                        heartIcon.style.animation = '';
+                    }, 600);
+                }
+                
+                tapCount = 0;
+            }
+        } else {
+            tapCount = 0;
+        }
+        
+        lastTap = currentTime;
+    });
+    
+    // Enhanced like button animation
+    likeBtn.addEventListener('click', (e) => {
+        // Prevent double-execution from double-tap
+        if (tapCount > 0) return;
+        
+        // Create ripple effect
+        const ripple = document.createElement('div');
+        ripple.style.cssText = `
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(254, 44, 85, 0.3);
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+        `;
+        
+        if (!document.querySelector('#ripple-styles')) {
+            const style = document.createElement('style');
+            style.id = 'ripple-styles';
+            style.textContent = `
+                @keyframes ripple {
+                    to {
+                        transform: scale(4);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        const rect = likeBtn.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+        ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+        
+        likeBtn.style.position = 'relative';
+        likeBtn.appendChild(ripple);
+        
+        setTimeout(() => {
+            ripple.remove();
+        }, 600);
+    });
+}
+
+// Optimistic UI updates for better UX
+async function handleOptimisticLikeUpdate(videoId, likeBtn, newLikedState) {
+    const heartIcon = likeBtn.querySelector('.heart-icon') || likeBtn.querySelector('div:first-child');
+    const countElement = likeBtn.querySelector('.like-count') || likeBtn.querySelector('div:last-child');
+    
+    if (heartIcon) {
+        heartIcon.textContent = newLikedState ? '❤️' : '🤍';
+        if (newLikedState) {
+            heartIcon.style.animation = 'heartBeat 0.5s ease';
+            setTimeout(() => heartIcon.style.animation = '', 500);
+        }
     }
-    localStorage.setItem('vib3_liked_videos', JSON.stringify(localLikes));
+    
+    if (countElement) {
+        const currentCount = parseInt(countElement.textContent.replace(/[^\d]/g, '')) || 0;
+        const newCount = newLikedState ? currentCount + 1 : Math.max(0, currentCount - 1);
+        countElement.textContent = formatCount(newCount);
+    }
+    
+    // Update all instances optimistically
+    updateAllVideoLikeCounts(videoId, null, newLikedState, true);
+    
+    // Save to localStorage immediately
+    localStorage.setItem(`like_${videoId}`, newLikedState.toString());
 }
 
 function openCreatorTools() {
