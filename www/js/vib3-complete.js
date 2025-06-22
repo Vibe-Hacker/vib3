@@ -753,14 +753,17 @@ function createAdvancedVideoCard(video) {
     `;
     
     actions.innerHTML = `
-        <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer;">
-            ❤️
+        <div class="like-btn" data-video-id="${video._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
+            <div style="font-size: 20px;">🤍</div>
+            <div style="font-size: 10px; color: white; margin-top: 2px;">${formatCount(video.likeCount || 0)}</div>
         </div>
-        <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer;">
-            💬
+        <div class="comment-btn" data-video-id="${video._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
+            <div style="font-size: 20px;">💬</div>
+            <div style="font-size: 10px; color: white; margin-top: 2px;">${formatCount(video.commentCount || 0)}</div>
         </div>
-        <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer;">
-            📤
+        <div class="share-btn" data-video-id="${video._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
+            <div style="font-size: 20px;">📤</div>
+            <div style="font-size: 10px; color: white; margin-top: 2px;">${formatCount(video.shareCount || 0)}</div>
         </div>
         <div class="volume-btn" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer;">
             🔊
@@ -777,6 +780,81 @@ function createAdvancedVideoCard(video) {
             video_elem.muted = true;
             volumeBtn.textContent = '🔇';
         }
+    });
+    
+    // Add like button functionality
+    const likeBtn = actions.querySelector('.like-btn');
+    likeBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const videoId = likeBtn.dataset.videoId;
+        const heartIcon = likeBtn.querySelector('div:first-child');
+        const countElement = likeBtn.querySelector('div:last-child');
+        
+        try {
+            // Add heart animation
+            likeBtn.style.transform = 'scale(1.2)';
+            setTimeout(() => likeBtn.style.transform = 'scale(1)', 200);
+            
+            if (heartIcon.textContent === '🤍') {
+                // Like the video
+                heartIcon.textContent = '❤️';
+                heartIcon.style.animation = 'heartBeat 0.5s ease';
+                const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
+                countElement.textContent = formatCount(currentCount + 1);
+                
+                if (window.authToken) {
+                    fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${window.authToken}` }
+                    }).catch(console.error);
+                }
+                
+                showNotification('Liked! ❤️', 'success');
+            } else {
+                // Unlike the video  
+                heartIcon.textContent = '🤍';
+                const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
+                countElement.textContent = formatCount(Math.max(0, currentCount - 1));
+                
+                if (window.authToken) {
+                    fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${window.authToken}` }
+                    }).catch(console.error);
+                }
+                
+                showNotification('Unliked', 'info');
+            }
+        } catch (error) {
+            console.error('Like error:', error);
+            showNotification('Error liking video', 'error');
+        }
+    });
+    
+    // Add comment button functionality
+    const commentBtn = actions.querySelector('.comment-btn');
+    commentBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const videoId = commentBtn.dataset.videoId;
+        
+        // Add bounce animation
+        commentBtn.style.transform = 'scale(1.1)';
+        setTimeout(() => commentBtn.style.transform = 'scale(1)', 200);
+        
+        openCommentsModal(videoId, video);
+    });
+    
+    // Add share button functionality
+    const shareBtn = actions.querySelector('.share-btn');
+    shareBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const videoId = shareBtn.dataset.videoId;
+        
+        // Add bounce animation
+        shareBtn.style.transform = 'scale(1.1)';
+        setTimeout(() => shareBtn.style.transform = 'scale(1)', 200);
+        
+        shareVideo(videoId, video);
     });
     
     // Create pause indicator overlay
@@ -6497,6 +6575,241 @@ function shareProfile() {
         // Fallback to copy link
         navigator.clipboard.writeText(window.location.href);
         showNotification('Profile link copied to clipboard!', 'success');
+    }
+}
+
+// ================ REACTION BUTTON FUNCTIONS ================
+
+function openCommentsModal(videoId, video) {
+    const modal = document.createElement('div');
+    modal.className = 'comments-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        z-index: 1000;
+        animation: slideUp 0.3s ease;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: var(--bg-primary);
+            border-radius: 16px 16px 0 0;
+            width: 100%;
+            max-width: 500px;
+            max-height: 70vh;
+            padding: 20px;
+            position: relative;
+            overflow-y: auto;
+        ">
+            <div style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 20px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid var(--border-primary);
+            ">
+                <h3 style="margin: 0; color: var(--text-primary);">Comments</h3>
+                <button onclick="this.closest('.comments-modal').remove()" style="
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                    color: var(--text-secondary);
+                ">×</button>
+            </div>
+            
+            <div class="comments-list" style="margin-bottom: 20px; min-height: 200px;">
+                <div style="text-align: center; color: var(--text-secondary); padding: 40px 0;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">💬</div>
+                    <p>No comments yet</p>
+                    <p style="font-size: 14px;">Be the first to comment!</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" placeholder="Add a comment..." style="
+                    flex: 1;
+                    padding: 12px 16px;
+                    border: 1px solid var(--border-primary);
+                    border-radius: 25px;
+                    background: var(--bg-secondary);
+                    color: var(--text-primary);
+                    outline: none;
+                " id="commentInput-${videoId}">
+                <button onclick="submitComment('${videoId}')" style="
+                    padding: 12px 20px;
+                    background: var(--accent-primary);
+                    color: white;
+                    border: none;
+                    border-radius: 25px;
+                    cursor: pointer;
+                    font-weight: 600;
+                ">Post</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Focus input
+    setTimeout(() => {
+        const input = document.getElementById(`commentInput-${videoId}`);
+        if (input) input.focus();
+    }, 100);
+    
+    // Load existing comments
+    loadComments(videoId);
+}
+
+async function loadComments(videoId) {
+    try {
+        const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/comments`);
+        if (response.ok) {
+            const data = await response.json();
+            displayComments(data.comments || []);
+        }
+    } catch (error) {
+        console.error('Error loading comments:', error);
+    }
+}
+
+function displayComments(comments) {
+    const commentsList = document.querySelector('.comments-list');
+    if (!commentsList) return;
+    
+    if (comments.length === 0) {
+        commentsList.innerHTML = `
+            <div style="text-align: center; color: var(--text-secondary); padding: 40px 0;">
+                <div style="font-size: 48px; margin-bottom: 10px;">💬</div>
+                <p>No comments yet</p>
+                <p style="font-size: 14px;">Be the first to comment!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    commentsList.innerHTML = comments.map(comment => `
+        <div style="
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            gap: 12px;
+        ">
+            <div style="
+                width: 32px;
+                height: 32px;
+                background: var(--accent-primary);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                flex-shrink: 0;
+            ">
+                ${(comment.user?.username || 'U').charAt(0).toUpperCase()}
+            </div>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                    ${comment.user?.username || 'Anonymous'}
+                </div>
+                <div style="color: var(--text-primary); line-height: 1.4;">
+                    ${comment.text}
+                </div>
+                <div style="color: var(--text-secondary); font-size: 12px; margin-top: 4px;">
+                    ${new Date(comment.createdAt).toLocaleString()}
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function submitComment(videoId) {
+    const input = document.getElementById(`commentInput-${videoId}`);
+    const text = input?.value?.trim();
+    
+    if (!text) {
+        showNotification('Please enter a comment', 'error');
+        return;
+    }
+    
+    if (!window.authToken) {
+        showNotification('Please login to comment', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/comments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.authToken}`
+            },
+            body: JSON.stringify({ text })
+        });
+        
+        if (response.ok) {
+            input.value = '';
+            showNotification('Comment posted!', 'success');
+            loadComments(videoId); // Reload comments
+            
+            // Update comment count in the UI
+            const commentBtn = document.querySelector(`[data-video-id="${videoId}"].comment-btn`);
+            if (commentBtn) {
+                const countElement = commentBtn.querySelector('div:last-child');
+                const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
+                countElement.textContent = formatCount(currentCount + 1);
+            }
+        } else {
+            throw new Error('Failed to post comment');
+        }
+    } catch (error) {
+        console.error('Error posting comment:', error);
+        showNotification('Error posting comment', 'error');
+    }
+}
+
+function shareVideo(videoId, video) {
+    const videoUrl = `${window.location.origin}/?video=${videoId}`;
+    const shareText = `Check out this video on VIB3! ${video.title || 'Amazing video'}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: video.title || 'VIB3 Video',
+            text: shareText,
+            url: videoUrl
+        }).then(() => {
+            showNotification('Video shared!', 'success');
+            
+            // Update share count
+            const shareBtn = document.querySelector(`[data-video-id="${videoId}"].share-btn`);
+            if (shareBtn) {
+                const countElement = shareBtn.querySelector('div:last-child');
+                const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
+                countElement.textContent = formatCount(currentCount + 1);
+            }
+        }).catch(console.error);
+    } else {
+        // Fallback to copy link
+        navigator.clipboard.writeText(videoUrl).then(() => {
+            showNotification('Video link copied to clipboard!', 'success');
+            
+            // Update share count
+            const shareBtn = document.querySelector(`[data-video-id="${videoId}"].share-btn`);
+            if (shareBtn) {
+                const countElement = shareBtn.querySelector('div:last-child');
+                const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
+                countElement.textContent = formatCount(currentCount + 1);
+            }
+        });
     }
 }
 
