@@ -2489,6 +2489,80 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Something broke!', memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB' });
 });
 
+// Manual cleanup endpoint (temporary)
+app.post('/api/admin/cleanup-likes', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    try {
+        console.log('🧹 Manual likes cleanup requested...');
+        
+        // Remove postId field from all video likes
+        const updateResult = await db.collection('likes').updateMany(
+            { 
+                videoId: { $exists: true, $ne: null },
+                postId: { $exists: true }
+            },
+            { 
+                $unset: { postId: "" }
+            }
+        );
+        
+        console.log(`✅ Cleaned up ${updateResult.modifiedCount} video likes`);
+        
+        // Remove duplicate video likes (keep most recent)
+        const duplicates = await db.collection('likes').aggregate([
+            {
+                $match: {
+                    videoId: { $exists: true, $ne: null }
+                }
+            },
+            {
+                $group: {
+                    _id: { videoId: "$videoId", userId: "$userId" },
+                    count: { $sum: 1 },
+                    docs: { $push: { id: "$_id", createdAt: "$createdAt" } }
+                }
+            },
+            {
+                $match: {
+                    count: { $gt: 1 }
+                }
+            }
+        ]).toArray();
+        
+        let duplicatesRemoved = 0;
+        if (duplicates.length > 0) {
+            console.log(`Found ${duplicates.length} sets of duplicate video likes`);
+            
+            for (const dup of duplicates) {
+                // Sort by createdAt and keep the most recent
+                const sorted = dup.docs.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                const toDelete = sorted.slice(1); // Remove all but the first (most recent)
+                
+                if (toDelete.length > 0) {
+                    await db.collection('likes').deleteMany({ 
+                        _id: { $in: toDelete.map(d => d.id) } 
+                    });
+                    duplicatesRemoved += toDelete.length;
+                    console.log(`Removed ${toDelete.length} duplicate likes for video ${dup._id.videoId}, user ${dup._id.userId}`);
+                }
+            }
+        }
+        
+        res.json({ 
+            message: 'Likes cleanup complete',
+            cleanedUp: updateResult.modifiedCount,
+            duplicatesRemoved: duplicatesRemoved
+        });
+        
+    } catch (error) {
+        console.error('Manual cleanup error:', error);
+        res.status(500).json({ error: 'Cleanup failed', details: error.message });
+    }
+});
+
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`VIB3 Full server running on port ${PORT}`);
