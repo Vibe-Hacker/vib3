@@ -62,67 +62,69 @@ function editProfile() {
     window.closeModal = () => {
         modal.remove();
     };
-    
-    window.saveProfile = async () => {
-        try {
-            // Collect form data
-            const displayName = document.getElementById('editDisplayName')?.value?.trim();
-            const username = document.getElementById('editUsername')?.value?.trim().replace('@', '').toLowerCase();
-            const bio = document.getElementById('editBio')?.value?.trim();
-            const website = document.getElementById('editWebsite')?.value?.trim();
-            
-            // Prepare update data
-            const updateData = {};
-            if (displayName) updateData.displayName = displayName;
-            if (username) updateData.username = username;
-            if (bio) updateData.bio = bio;
-            if (website) updateData.website = website;
-            
-            // Make API call
-            const baseURL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                ? '' 
-                : 'https://vib3-production.up.railway.app';
-            const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
-            
-            const response = await fetch(`${baseURL}/api/user/profile`, {
-                method: 'PUT',
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updateData)
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                
-                // Update UI with new data
-                if (displayName) {
-                    const nameElement = document.getElementById('userDisplayName');
-                    if (nameElement) nameElement.textContent = displayName;
-                }
-                if (username) {
-                    const usernameElement = document.getElementById('profileName');
-                    if (usernameElement) usernameElement.textContent = '@' + username;
-                }
-                if (bio) {
-                    const bioElement = document.querySelector('.profile-page [style*="color: var(--text-primary); margin-bottom: 16px"]');
-                    if (bioElement) bioElement.textContent = bio;
-                }
-                
-                // Close modal and show success
-                modal.remove();
-                showNotification('Profile updated successfully!', 'success');
-            } else {
-                const error = await response.json();
-                showNotification(error.error || 'Failed to update profile', 'error');
-            }
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            showNotification('Error updating profile', 'error');
-        }
-    };
 }
+
+// Global saveProfile function
+window.saveProfile = async function() {
+    try {
+        // Collect form data
+        const displayName = document.getElementById('editDisplayName')?.value?.trim();
+        const username = document.getElementById('editUsername')?.value?.trim().replace('@', '').toLowerCase();
+        const bio = document.getElementById('editBio')?.value?.trim();
+        const website = document.getElementById('editWebsite')?.value?.trim();
+        
+        // Prepare update data
+        const updateData = {};
+        if (displayName) updateData.displayName = displayName;
+        if (username) updateData.username = username;
+        if (bio) updateData.bio = bio;
+        if (website) updateData.website = website;
+        
+        // Make API call
+        const baseURL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? '' 
+            : 'https://vib3-production.up.railway.app';
+        const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
+        
+        const response = await fetch(`${baseURL}/api/user/profile`, {
+            method: 'PUT',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updateData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            // Update UI with new data
+            if (displayName) {
+                const nameElement = document.getElementById('userDisplayName');
+                if (nameElement) nameElement.textContent = displayName;
+            }
+            if (username) {
+                const usernameElement = document.getElementById('profileName');
+                if (usernameElement) usernameElement.textContent = '@' + username;
+            }
+            if (bio) {
+                const bioElement = document.querySelector('.profile-page [style*="color: var(--text-primary); margin-bottom: 16px"]');
+                if (bioElement) bioElement.textContent = bio;
+            }
+            
+            // Close modal and show success
+            const modal = document.querySelector('[style*="position: fixed"][style*="rgba(0,0,0,0.8)"]');
+            if (modal) modal.remove();
+            showNotification('Profile updated successfully!', 'success');
+        } else {
+            const error = await response.json();
+            showNotification(error.error || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showNotification('Error updating profile', 'error');
+    }
+};
 
 function changeProfilePicture() {
     if (window.changeProfilePicture) {
