@@ -610,6 +610,13 @@ async function deleteUserVideo(videoId, videoTitle) {
                 }
             });
             
+            // Also remove from main feed immediately
+            const mainFeedVideos = document.querySelectorAll(`[data-video-id="${videoId}"]`);
+            mainFeedVideos.forEach(video => {
+                console.log('🗑️ Removing video from main feed:', videoId);
+                video.remove();
+            });
+            
             // Reload user videos to update the display
             setTimeout(() => {
                 loadUserVideos();
@@ -617,7 +624,8 @@ async function deleteUserVideo(videoId, videoTitle) {
                 // Also refresh the main video feed to remove the deleted video
                 if (window.loadVideoFeed) {
                     console.log('🔄 Refreshing main video feed after deletion');
-                    window.loadVideoFeed(window.currentFeed || 'foryou', 1, false);
+                    // Force refresh the feed to ensure deleted videos are removed
+                    window.loadVideoFeed(window.currentFeed || 'foryou', true, 1, false);
                 }
             }, 1000);
             
