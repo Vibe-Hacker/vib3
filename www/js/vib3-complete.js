@@ -971,7 +971,7 @@ function createAdvancedVideoCard(video) {
     video_elem.preload = 'metadata';
     video_elem.src = videoUrl;
     video_elem.loop = true;
-    video_elem.muted = false;  // Enable audio by default
+    video_elem.muted = true;   // Start muted to allow autoplay
     video_elem.volume = 0.8;   // Set reasonable volume
     video_elem.playsInline = true;
     video_elem.style.cssText = `
@@ -1098,13 +1098,20 @@ function createAdvancedVideoCard(video) {
     
     // Add volume control functionality
     const volumeBtn = actions.querySelector('.volume-btn');
-    volumeBtn.addEventListener('click', () => {
+    // Update initial volume button state
+    volumeBtn.innerHTML = video_elem.muted ? '🔇' : '🔊';
+    
+    volumeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (video_elem.muted) {
             video_elem.muted = false;
-            volumeBtn.textContent = '🔊';
+            video_elem.volume = 0.8;
+            volumeBtn.innerHTML = '🔊';
+            console.log('🔊 Unmuted video');
         } else {
             video_elem.muted = true;
-            volumeBtn.textContent = '🔇';
+            volumeBtn.innerHTML = '🔇';
+            console.log('🔇 Muted video');
         }
     });
     
@@ -1416,7 +1423,7 @@ function createExploreVideoCard(video) {
     }
     
     video_elem.src = videoUrl;
-    video_elem.muted = true;
+    video_elem.muted = true;  // Always muted for explore page
     video_elem.preload = 'metadata';
     video_elem.style.cssText = `
         width: 100%;
@@ -1500,11 +1507,13 @@ function createExploreVideoCard(video) {
         <span style="font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${userName}</span>
     `;
     
-    // Hover effects
+    // Hover effects - muted preview on hover
     card.addEventListener('mouseenter', () => {
         card.style.transform = 'scale(1.02)';
         playIcon.style.transform = 'scale(1.1)';
         playIcon.style.opacity = '1';
+        // Ensure video is muted for hover preview
+        video_elem.muted = true;
         video_elem.play().catch(e => console.log('Hover play failed:', e));
     });
     
@@ -1591,6 +1600,15 @@ async function createVideoFeed(selectedVideo) {
             
             // Clear loading and populate feed
             feedElement.innerHTML = '';
+            
+            // Also remove any global loading spinners
+            const globalSpinners = document.querySelectorAll('.loading-container, .spinner');
+            globalSpinners.forEach(spinner => {
+                if (spinner.parentNode && !spinner.closest('.feed-content')) {
+                    spinner.remove();
+                    console.log('🧹 Removed orphaned spinner');
+                }
+            });
             
             videoQueue.forEach((video, index) => {
                 const videoCard = createAdvancedVideoCard(video);
@@ -4292,6 +4310,8 @@ function switchFeedTab(feedType) {
     
     // Add a small delay to ensure cleanup is complete before loading new content
     setTimeout(() => {
+        // Clean up any orphaned spinners before loading
+        cleanupLoadingSpinners();
         // Load the feed content with fresh data
         loadVideoFeed(feedType, true, 1, false); // Force fresh load, no append
     }, 100);
@@ -4358,6 +4378,15 @@ function performSearch(query) {
     }
 }
 
+// Global function to clean up any orphaned loading spinners
+function cleanupLoadingSpinners() {
+    const spinners = document.querySelectorAll('.loading-container:not(.feed-content .loading-container), .spinner:not(.feed-content .spinner), .status-circle');
+    spinners.forEach(spinner => {
+        console.log('🧹 Removing orphaned spinner:', spinner.className);
+        spinner.remove();
+    });
+}
+
 // ================ INITIALIZATION ================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('VIB3 Complete App Starting...');
@@ -4373,6 +4402,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add global CSS for animations
     addGlobalStyles();
+    
+    // Clean up any loading spinners from previous sessions
+    setTimeout(cleanupLoadingSpinners, 1000);
     
     // Initialize all features
     console.log('All VIB3 features loaded successfully!');
