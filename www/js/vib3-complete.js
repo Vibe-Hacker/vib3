@@ -6939,11 +6939,192 @@ async function refreshClonedVideoReactions(clonedCard) {
             }
             
             console.log(`✅ Updated cloned video reactions for ${videoId}`);
+            
+            // Reinitialize video controls for cloned video
+            reinitializeVideoControls(clonedCard);
         } else {
             console.log(`⚠️ Could not fetch updated data for video ${videoId}`);
         }
     } catch (error) {
         console.error('Error refreshing cloned video reactions:', error);
+    }
+}
+
+// Reinitialize video controls for cloned videos
+function reinitializeVideoControls(clonedCard) {
+    try {
+        const video_elem = clonedCard.querySelector('video');
+        const likeBtn = clonedCard.querySelector('.like-btn');
+        const commentBtn = clonedCard.querySelector('.comment-btn');
+        const shareBtn = clonedCard.querySelector('.share-btn');
+        const volumeBtn = clonedCard.querySelector('.volume-btn');
+        const pauseIndicator = clonedCard.querySelector('[style*="position: absolute"][style*="top: 50%"]') || 
+                              clonedCard.querySelector('.pause-indicator');
+        
+        if (!video_elem || !likeBtn) {
+            console.log('⚠️ Could not find video elements in cloned card');
+            return;
+        }
+        
+        const videoId = likeBtn.getAttribute('data-video-id');
+        console.log(`🔄 Reinitializing controls for cloned video: ${videoId}`);
+        
+        // Remove existing event listeners by cloning the elements
+        const newVideo = video_elem.cloneNode(true);
+        const newLikeBtn = likeBtn.cloneNode(true);
+        const newCommentBtn = commentBtn.cloneNode(true);
+        const newShareBtn = shareBtn.cloneNode(true);
+        const newVolumeBtn = volumeBtn.cloneNode(true);
+        
+        // Replace old elements with new ones
+        video_elem.parentNode.replaceChild(newVideo, video_elem);
+        likeBtn.parentNode.replaceChild(newLikeBtn, likeBtn);
+        commentBtn.parentNode.replaceChild(newCommentBtn, commentBtn);
+        shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+        volumeBtn.parentNode.replaceChild(newVolumeBtn, volumeBtn);
+        
+        // Add video pause/play functionality
+        newVideo.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            if (newVideo.paused) {
+                newVideo.play();
+                if (pauseIndicator) pauseIndicator.style.display = 'none';
+                console.log('▶️ RESUMED CLONED VIDEO:', newVideo.src);
+            } else {
+                newVideo.pause();
+                if (pauseIndicator) pauseIndicator.style.display = 'flex';
+                console.log('⏸️ PAUSED CLONED VIDEO:', newVideo.src);
+            }
+        });
+        
+        // Add volume control functionality
+        newVolumeBtn.addEventListener('click', () => {
+            if (newVideo.muted) {
+                newVideo.muted = false;
+                newVolumeBtn.textContent = '🔊';
+            } else {
+                newVideo.muted = true;
+                newVolumeBtn.textContent = '🔇';
+            }
+        });
+        
+        // Add like button functionality
+        newLikeBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const heartIcon = newLikeBtn.querySelector('div:first-child');
+            const countElement = newLikeBtn.querySelector('div:last-child');
+            
+            try {
+                // Add heart animation
+                newLikeBtn.style.transform = 'scale(1.2)';
+                setTimeout(() => newLikeBtn.style.transform = 'scale(1)', 200);
+                
+                if (heartIcon.textContent === '🤍') {
+                    // Like the video
+                    heartIcon.textContent = '❤️';
+                    heartIcon.style.animation = 'heartBeat 0.5s ease';
+                    const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
+                    countElement.textContent = formatCount(currentCount + 1);
+                    
+                    // Save to local storage immediately
+                    saveLikeToLocalStorage(videoId, true);
+                    
+                    if (window.authToken) {
+                        try {
+                            const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${window.authToken}` }
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.likeCount !== undefined) {
+                                    countElement.textContent = formatCount(data.likeCount);
+                                    
+                                    // Update all instances of this video's like count
+                                    document.querySelectorAll(`[data-video-id="${videoId}"] .like-count`).forEach(el => {
+                                        el.textContent = formatCount(data.likeCount);
+                                    });
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error liking video:', error);
+                        }
+                    }
+                    
+                    showNotification('Liked! ❤️', 'success');
+                } else {
+                    // Unlike the video  
+                    heartIcon.textContent = '🤍';
+                    const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
+                    countElement.textContent = formatCount(Math.max(0, currentCount - 1));
+                    
+                    // Save to local storage immediately
+                    saveLikeToLocalStorage(videoId, false);
+                    
+                    if (window.authToken) {
+                        try {
+                            const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${window.authToken}` }
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.likeCount !== undefined) {
+                                    countElement.textContent = formatCount(data.likeCount);
+                                    
+                                    // Update all instances of this video's like count
+                                    document.querySelectorAll(`[data-video-id="${videoId}"] .like-count`).forEach(el => {
+                                        el.textContent = formatCount(data.likeCount);
+                                    });
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error unliking video:', error);
+                        }
+                    }
+                    
+                    showNotification('Unliked', 'info');
+                }
+            } catch (error) {
+                console.error('Like error:', error);
+                showNotification('Error liking video', 'error');
+            }
+        });
+        
+        // Add comment button functionality
+        newCommentBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            // Add bounce animation
+            newCommentBtn.style.transform = 'scale(1.1)';
+            setTimeout(() => newCommentBtn.style.transform = 'scale(1)', 200);
+            
+            showNotification('Comments coming soon! 💬', 'info');
+        });
+        
+        // Add share button functionality
+        newShareBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            // Add bounce animation
+            newShareBtn.style.transform = 'scale(1.1)';
+            setTimeout(() => newShareBtn.style.transform = 'scale(1)', 200);
+            
+            // Create fake video object for sharing
+            const video = { 
+                title: `Video ${videoId}`,
+                _id: videoId
+            };
+            shareVideo(videoId, video);
+        });
+        
+        console.log(`✅ Reinitialized controls for cloned video: ${videoId}`);
+        
+    } catch (error) {
+        console.error('Error reinitializing video controls:', error);
     }
 }
 
