@@ -7579,7 +7579,7 @@ async function handleFollowClick(userId, followBtn) {
         const isFollowing = followBtn.innerHTML.includes('✓');
         const endpoint = isFollowing ? 'unfollow' : 'follow';
         
-        const response = await fetch(`${API_BASE_URL}/api/user/${endpoint}/${userId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/${userId}/${endpoint}`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${window.authToken}`,

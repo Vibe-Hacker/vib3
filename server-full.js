@@ -1749,7 +1749,7 @@ app.post('/api/users/:userId/follow', requireAuth, async (req, res) => {
 });
 
 // Unfollow user
-app.post('/api/user/unfollow/:userId', requireAuth, async (req, res) => {
+app.post('/api/users/:userId/unfollow', requireAuth, async (req, res) => {
     if (!db) {
         return res.status(503).json({ error: 'Database not connected' });
     }
