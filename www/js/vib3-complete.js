@@ -301,18 +301,35 @@ let lastFeedLoad = 0;
 let isLoadingMore = false;
 let hasMoreVideos = true;
 let currentPage = 1;
+let lastVideoCount = 0;
+let initializationInProgress = false;
 
 function initializeVideoObserver() {
-    console.log('🎬 TIKTOK-STYLE VIDEO INIT WITH SCROLL SNAP');
+    // Prevent duplicate initializations
+    if (initializationInProgress) {
+        console.log('⏳ Video initialization already in progress, skipping');
+        return;
+    }
     
     // Only target feed videos, not upload modal videos
     const videos = document.querySelectorAll('.feed-content video');
+    
+    // Skip if video count hasn't changed to prevent unnecessary re-initialization
+    if (videos.length === lastVideoCount && videos.length > 0) {
+        console.log('📹 Video count unchanged, skipping re-initialization');
+        return;
+    }
+    
+    console.log('🎬 TIKTOK-STYLE VIDEO INIT WITH SCROLL SNAP');
     console.log('📹 Found', videos.length, 'feed video elements');
     
     if (videos.length === 0) {
         console.log('❌ No feed videos found');
         return;
     }
+    
+    initializationInProgress = true;
+    lastVideoCount = videos.length;
     
     // Create intersection observer for TikTok-style video playback
     if (videoObserver) {
@@ -378,6 +395,9 @@ function initializeVideoObserver() {
     }
     
     console.log('🏁 TikTok-style video system initialized with scroll snap');
+    
+    // Reset initialization flag
+    initializationInProgress = false;
 }
 
 function setupInfiniteScroll(feedElement, feedType) {
@@ -7005,10 +7025,10 @@ async function handleLikeClick(e, likeBtn) {
         await handleOptimisticLikeUpdate(videoId, likeBtn, newLikedState);
         
         if (!window.authToken) {
-            console.log('⚠️ Not authenticated, but testing like functionality anyway');
-            // For testing - remove this auth check later
-            // showNotification('Please sign in to like videos', 'error');
-            // return;
+            console.log('⚠️ Not authenticated, using mock like functionality');
+            // Use optimistic update for non-authenticated users
+            showNotification(newLikedState ? 'Liked! ❤️' : 'Unliked', newLikedState ? 'success' : 'info');
+            return;
         }
         
         // Call the /like endpoint as specified

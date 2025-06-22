@@ -1045,12 +1045,19 @@
             
             init() {
                 console.log('🚀 Autonomous system initialized');
+                
+                // Run initial fixes and tests
                 setTimeout(() => {
                     this.runFixes();
+                    // Only run tests once on load, not repeatedly
                     autoTest.runTests();
                 }, 3000);
                 
-                setInterval(() => this.runFixes(), 30000);
+                // Reduce frequency of auto-fixes to prevent performance issues
+                // Only run theme fixes periodically, not full page navigation
+                setInterval(() => {
+                    this.fixTheme();
+                }, 120000); // Every 2 minutes instead of 30 seconds
             }
         };
         
