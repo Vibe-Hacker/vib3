@@ -306,6 +306,7 @@ function createErrorMessage(feedType) {
 
 // Global video observer to prevent multiple instances
 let videoObserver = null;
+window.videoObserver = null;
 let lastFeedLoad = 0;
 let isLoadingMore = false;
 let hasMoreVideos = true;
@@ -353,9 +354,10 @@ function initializeVideoObserver() {
     // Create intersection observer for TikTok-style video playback
     if (videoObserver) {
         videoObserver.disconnect();
+        window.videoObserver = null;
     }
     
-    videoObserver = new IntersectionObserver((entries) => {
+    videoObserver = window.videoObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const video = entry.target;
             if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
@@ -7103,6 +7105,12 @@ function reinitializeVideoControls(clonedCard) {
             };
             shareVideo(videoId, video);
         });
+        
+        // CRITICAL: Add the new video to the Intersection Observer
+        if (window.videoObserver && newVideo) {
+            window.videoObserver.observe(newVideo);
+            console.log(`👁️ Added cloned video to observer: ${videoId}`);
+        }
         
         console.log(`✅ Reinitialized controls for cloned video: ${videoId}`);
         
