@@ -81,6 +81,9 @@ async function connectDB() {
 
 async function createIndexes() {
     try {
+        // Clean up problematic likes first
+        await cleanupLikes();
+        
         // User indexes
         await db.collection('users').createIndex({ email: 1 }, { unique: true });
         await db.collection('users').createIndex({ username: 1 }, { unique: true });
@@ -111,6 +114,67 @@ async function createIndexes() {
         console.log('✅ Database indexes created');
     } catch (error) {
         console.error('Index creation error:', error.message);
+    }
+}
+
+async function cleanupLikes() {
+    try {
+        console.log('🧹 Cleaning up likes collection...');
+        
+        // Remove postId field from all video likes
+        const updateResult = await db.collection('likes').updateMany(
+            { 
+                videoId: { $exists: true, $ne: null },
+                postId: { $exists: true }
+            },
+            { 
+                $unset: { postId: "" }
+            }
+        );
+        
+        console.log(`✅ Cleaned up ${updateResult.modifiedCount} video likes`);
+        
+        // Remove duplicate video likes (keep most recent)
+        const duplicates = await db.collection('likes').aggregate([
+            {
+                $match: {
+                    videoId: { $exists: true, $ne: null }
+                }
+            },
+            {
+                $group: {
+                    _id: { videoId: "$videoId", userId: "$userId" },
+                    count: { $sum: 1 },
+                    docs: { $push: { id: "$_id", createdAt: "$createdAt" } }
+                }
+            },
+            {
+                $match: {
+                    count: { $gt: 1 }
+                }
+            }
+        ]).toArray();
+        
+        if (duplicates.length > 0) {
+            console.log(`Found ${duplicates.length} sets of duplicate video likes`);
+            
+            for (const dup of duplicates) {
+                // Sort by createdAt and keep the most recent
+                const sorted = dup.docs.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                const toDelete = sorted.slice(1); // Remove all but the first (most recent)
+                
+                if (toDelete.length > 0) {
+                    await db.collection('likes').deleteMany({ 
+                        _id: { $in: toDelete.map(d => d.id) } 
+                    });
+                    console.log(`Removed ${toDelete.length} duplicate likes for video ${dup._id.videoId}, user ${dup._id.userId}`);
+                }
+            }
+        }
+        
+        console.log('✅ Likes cleanup complete');
+    } catch (error) {
+        console.error('Likes cleanup error:', error.message);
     }
 }
 
