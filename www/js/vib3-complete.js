@@ -6928,7 +6928,7 @@ async function refreshClonedVideoReactions(clonedCard) {
         console.log(`🔄 Refreshing reactions for cloned video: ${videoId}`);
         
         // Load proper like status for cloned video (most important)
-        const likeBtn = clonedCard.querySelector('.like-btn');
+        // (reusing likeBtn variable from above)
         if (likeBtn) {
             loadVideoLikeStatus(videoId, likeBtn);
         }
@@ -7523,5 +7523,26 @@ function openCreatorTools() {
     `;
     
     document.body.appendChild(modal);
+}
+
+// ================ APP INITIALIZATION ================
+
+// Ensure global functions are available immediately
+console.log('📱 VIB3 Complete App Starting...');
+
+// Initialize the app when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
+
+function initializeApp() {
+    try {
+        initializeAuth();
+        console.log('✅ All VIB3 features loaded successfully!');
+    } catch (error) {
+        console.error('❌ Error initializing VIB3:', error);
+    }
 }
   
