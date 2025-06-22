@@ -591,13 +591,15 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                         
                         // Set different layouts for different feed types
                         if (feedType === 'explore') {
-                            // Grid layout for explore page like TikTok
-                            feedElement.style.display = 'grid';
-                            feedElement.style.gridTemplateColumns = 'repeat(3, 1fr)';
-                            feedElement.style.gap = '4px';
-                            feedElement.style.padding = '4px';
-                            feedElement.style.overflow = 'auto';
-                            feedElement.style.scrollSnapType = 'none';
+                            // Use the dedicated explore grid container
+                            const exploreGrid = document.getElementById('exploreVideoGrid');
+                            if (exploreGrid) {
+                                exploreGrid.innerHTML = '';
+                                exploreGrid.style.display = 'grid';
+                                exploreGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                                exploreGrid.style.gap = '4px';
+                                exploreGrid.style.padding = '8px';
+                            }
                         } else {
                             // Vertical scroll for For You and Following
                             feedElement.style.display = 'block';
@@ -612,7 +614,15 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                         const videoCard = feedType === 'explore' ? 
                             createExploreVideoCard(video) : 
                             createAdvancedVideoCard(video);
-                        feedElement.appendChild(videoCard);
+                        
+                        if (feedType === 'explore') {
+                            const exploreGrid = document.getElementById('exploreVideoGrid');
+                            if (exploreGrid) {
+                                exploreGrid.appendChild(videoCard);
+                            }
+                        } else {
+                            feedElement.appendChild(videoCard);
+                        }
                         console.log(`  ✅ Added video ${index + 1}: ${video.title || 'Untitled'}`);
                     });
                     
@@ -1433,6 +1443,243 @@ async function createVideoFeed(selectedVideo) {
         feedElement.innerHTML = '<div class="error-message">Failed to load videos</div>';
     }
 }
+
+// ================ EXPLORE PAGE FUNCTIONS ================
+
+// Search functionality
+function performExploreSearch(query) {
+    console.log('🔍 Performing explore search:', query);
+    if (!query.trim()) return;
+    
+    // Add to search history
+    addToSearchHistory(query);
+    
+    // Filter videos based on search query
+    filterExploreVideos(query);
+    
+    // Hide search suggestions
+    hideSearchSuggestions();
+    
+    showNotification(`Searching for "${query}"`, 'info');
+}
+
+function showSearchSuggestions() {
+    const suggestions = document.getElementById('searchSuggestions');
+    if (suggestions) {
+        suggestions.style.display = 'block';
+        updateSearchSuggestions('');
+    }
+}
+
+function hideSearchSuggestions() {
+    const suggestions = document.getElementById('searchSuggestions');
+    if (suggestions) {
+        suggestions.style.display = 'none';
+    }
+}
+
+function updateSearchSuggestions(value) {
+    const suggestions = document.getElementById('searchSuggestions');
+    if (!suggestions) return;
+    
+    const searchHistory = getSearchHistory();
+    const trendingSuggestions = [
+        { type: 'hashtag', text: '#dance', count: '2.1M' },
+        { type: 'hashtag', text: '#viral', count: '5.8M' },
+        { type: 'hashtag', text: '#fyp', count: '12.4M' },
+        { type: 'hashtag', text: '#comedy', count: '3.2M' },
+        { type: 'user', text: '@dancequeen23', count: '1.2M followers' },
+        { type: 'user', text: '@artlife_alex', count: '890K followers' },
+        { type: 'sound', text: 'Original Sound - Maya', count: 'Used in 45K videos' }
+    ];
+    
+    let filteredSuggestions = trendingSuggestions;
+    if (value.trim()) {
+        filteredSuggestions = trendingSuggestions.filter(s => 
+            s.text.toLowerCase().includes(value.toLowerCase())
+        );
+    }
+    
+    suggestions.innerHTML = `
+        ${searchHistory.length > 0 ? `
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-primary);">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-weight: 600; color: var(--text-secondary); font-size: 14px;">Recent searches</span>
+                    <button onclick="clearSearchHistory()" style="background: none; border: none; color: var(--text-secondary); font-size: 12px; cursor: pointer;">Clear all</button>
+                </div>
+            </div>
+            ${searchHistory.slice(0, 3).map(item => `
+                <div class="suggestion-item" onclick="performExploreSearch('${item}')" style="padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-primary);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-secondary)">
+                        <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/>
+                    </svg>
+                    <span style="color: var(--text-primary);">${item}</span>
+                </div>
+            `).join('')}
+        ` : ''}
+        
+        <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-primary);">
+            <span style="font-weight: 600; color: var(--text-secondary); font-size: 14px;">Suggestions</span>
+        </div>
+        
+        ${filteredSuggestions.map(suggestion => `
+            <div class="suggestion-item" onclick="performExploreSearch('${suggestion.text}')" style="padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-primary);">
+                <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--accent-color); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600;">
+                    ${suggestion.type === 'hashtag' ? '#' : suggestion.type === 'user' ? '@' : '♪'}
+                </div>
+                <div style="flex: 1;">
+                    <div style="color: var(--text-primary); font-weight: 500;">${suggestion.text}</div>
+                    <div style="color: var(--text-secondary); font-size: 12px;">${suggestion.count}</div>
+                </div>
+            </div>
+        `).join('')}
+    `;
+}
+
+function clearExploreSearch() {
+    const input = document.getElementById('exploreSearchInput');
+    const clearBtn = document.querySelector('.clear-search');
+    if (input) {
+        input.value = '';
+        clearBtn.style.display = 'none';
+    }
+    hideSearchSuggestions();
+}
+
+// Search history management
+function getSearchHistory() {
+    try {
+        return JSON.parse(localStorage.getItem('vib3_search_history') || '[]');
+    } catch {
+        return [];
+    }
+}
+
+function addToSearchHistory(query) {
+    const history = getSearchHistory();
+    const filtered = history.filter(item => item !== query);
+    filtered.unshift(query);
+    localStorage.setItem('vib3_search_history', JSON.stringify(filtered.slice(0, 10)));
+}
+
+function clearSearchHistory() {
+    localStorage.removeItem('vib3_search_history');
+    updateSearchSuggestions('');
+}
+
+// Category filtering
+function filterByCategory(category) {
+    console.log('📂 Filtering by category:', category);
+    
+    // Update active category button
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.background = 'var(--bg-tertiary)';
+        btn.style.color = 'var(--text-primary)';
+    });
+    
+    const activeBtn = event.target;
+    activeBtn.classList.add('active');
+    activeBtn.style.background = 'var(--accent-color)';
+    activeBtn.style.color = 'white';
+    
+    // Filter videos by category
+    if (category === 'all') {
+        loadVideoFeed('explore', true);
+    } else {
+        filterExploreVideos(`#${category}`);
+    }
+}
+
+// Filter explore videos
+function filterExploreVideos(query) {
+    const exploreGrid = document.getElementById('exploreVideoGrid');
+    if (!exploreGrid) return;
+    
+    exploreGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: var(--text-secondary);">🔍 Searching...</div>';
+    
+    // Simulate search delay
+    setTimeout(() => {
+        const mockResults = generateMockSearchResults(query);
+        exploreGrid.innerHTML = '';
+        
+        if (mockResults.length > 0) {
+            mockResults.forEach(video => {
+                const videoCard = createExploreVideoCard(video);
+                exploreGrid.appendChild(videoCard);
+            });
+        } else {
+            exploreGrid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                    <div style="font-size: 16px; margin-bottom: 8px;">No results found</div>
+                    <div style="font-size: 14px;">Try a different search term</div>
+                </div>
+            `;
+        }
+    }, 500);
+}
+
+// Generate mock search results
+function generateMockSearchResults(query) {
+    const allVideos = [
+        {
+            _id: 'search1',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            user: { username: 'dancequeen23', displayName: 'Maya Chen', profilePicture: '💃' },
+            title: 'Summer dance moves',
+            description: 'Learn this viral dance #dance #summer',
+            likeCount: 1500, views: 25000
+        },
+        {
+            _id: 'search2',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+            user: { username: 'comedian_joe', displayName: 'Joe Funny', profilePicture: '😂' },
+            title: 'Hilarious comedy sketch',
+            description: 'You will laugh so hard #comedy #viral',
+            likeCount: 2300, views: 45000
+        }
+    ];
+    
+    // Filter based on query
+    return allVideos.filter(video => 
+        video.title.toLowerCase().includes(query.toLowerCase()) ||
+        video.description.toLowerCase().includes(query.toLowerCase()) ||
+        query.startsWith('#') && video.description.includes(query)
+    );
+}
+
+// Trending hashtag search
+function searchTrendingTag(tag) {
+    const input = document.getElementById('exploreSearchInput');
+    if (input) {
+        input.value = `#${tag}`;
+        performExploreSearch(`#${tag}`);
+    }
+}
+
+// Initialize explore page interactions
+document.addEventListener('DOMContentLoaded', function() {
+    // Search input interactions
+    const searchInput = document.getElementById('exploreSearchInput');
+    if (searchInput) {
+        // Show/hide clear button based on input
+        searchInput.addEventListener('input', function(e) {
+            const clearBtn = document.querySelector('.clear-search');
+            if (clearBtn) {
+                clearBtn.style.display = e.target.value ? 'block' : 'none';
+            }
+            updateSearchSuggestions(e.target.value);
+        });
+        
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.explore-search')) {
+                hideSearchSuggestions();
+            }
+        });
+    }
+});
 
 async function startStitch(videoId) {
     showNotification('Starting stitch creation...', 'info');
@@ -6443,6 +6690,15 @@ window.openCreatorTools = openCreatorTools;
 window.createExploreVideoCard = createExploreVideoCard;
 window.openVideoModal = openVideoModal;
 window.createVideoFeed = createVideoFeed;
+window.performExploreSearch = performExploreSearch;
+window.showSearchSuggestions = showSearchSuggestions;
+window.hideSearchSuggestions = hideSearchSuggestions;
+window.updateSearchSuggestions = updateSearchSuggestions;
+window.clearExploreSearch = clearExploreSearch;
+window.clearSearchHistory = clearSearchHistory;
+window.filterByCategory = filterByCategory;
+window.filterExploreVideos = filterExploreVideos;
+window.searchTrendingTag = searchTrendingTag;
 
 // ================ PROFILE FUNCTIONS ================
 function loadProfileData() {

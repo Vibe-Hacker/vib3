@@ -176,19 +176,96 @@
             <div class="feed-content" id="followingFeed">
             </div>
             <div class="feed-content" id="exploreFeed">
-                <div style="position: sticky; top: 0; background: var(--bg-primary); padding: 20px; z-index: 10; border-bottom: 1px solid var(--border-primary);">
-                    <input type="text" id="discoverSearchInput" placeholder="Search videos, users, or hashtags..." 
-                           style="width: 100%; padding: 12px 20px; border: none; border-radius: 25px; background: rgba(255,255,255,0.1); color: white; font-size: 16px; margin-bottom: 15px;"
-                           onkeyup="filterDiscoverVideos(this.value)">
-                    <div style="display: flex; gap: 10px; margin-bottom: 0; flex-wrap: wrap;">
-                        <button onclick="filterByTag('dance')" style="padding: 8px 16px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 14px;">#dance</button>
-                        <button onclick="filterByTag('funny')" style="padding: 8px 16px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 14px;">#funny</button>
-                        <button onclick="filterByTag('music')" style="padding: 8px 16px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 14px;">#music</button>
-                        <button onclick="filterByTag('trending')" style="padding: 8px 16px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 14px;">#trending</button>
-                        <button onclick="filterByTag('viral')" style="padding: 8px 16px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 14px;">#viral</button>
+                <!-- Explore Top Navigation -->
+                <div class="explore-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border-primary); background: var(--bg-primary); position: sticky; top: 0; z-index: 100;">
+                    <!-- Search Bar -->
+                    <div class="explore-search" style="position: relative; margin-bottom: 16px;">
+                        <div class="search-input-container" style="position: relative;">
+                            <input 
+                                type="text" 
+                                id="exploreSearchInput"
+                                placeholder="Search users, videos, sounds, and hashtags"
+                                style="width: 100%; padding: 12px 16px 12px 48px; border: 1px solid var(--border-primary); border-radius: 24px; background: var(--bg-tertiary); color: var(--text-primary); font-size: 16px; outline: none;"
+                                onkeypress="if(event.key==='Enter') performExploreSearch(this.value)"
+                                onfocus="showSearchSuggestions()"
+                                oninput="updateSearchSuggestions(this.value)"
+                            >
+                            <div class="search-icon" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                                </svg>
+                            </div>
+                            <button class="clear-search" onclick="clearExploreSearch()" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); cursor: pointer; display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <!-- Search Suggestions Dropdown -->
+                        <div id="searchSuggestions" class="search-suggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 200; display: none; max-height: 300px; overflow-y: auto;">
+                            <!-- Dynamic suggestions will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Trending Section -->
+                    <div class="trending-section" style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="font-size: 18px;">🔥</span>
+                            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">Trending</h3>
+                        </div>
+                        <div class="trending-scroll" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;">
+                            <div class="trending-item" onclick="searchTrendingTag('dance')" style="min-width: 120px; padding: 8px 16px; background: linear-gradient(135deg, #fe2c55, #ff006e); color: white; border-radius: 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 14px;">
+                                #dance
+                            </div>
+                            <div class="trending-item" onclick="searchTrendingTag('viral')" style="min-width: 120px; padding: 8px 16px; background: linear-gradient(135deg, #25d366, #128c7e); color: white; border-radius: 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 14px;">
+                                #viral
+                            </div>
+                            <div class="trending-item" onclick="searchTrendingTag('fyp')" style="min-width: 120px; padding: 8px 16px; background: linear-gradient(135deg, #1da1f2, #0d8bd9); color: white; border-radius: 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 14px;">
+                                #fyp
+                            </div>
+                            <div class="trending-item" onclick="searchTrendingTag('comedy')" style="min-width: 120px; padding: 8px 16px; background: linear-gradient(135deg, #ffcc02, #ff9500); color: white; border-radius: 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 14px;">
+                                #comedy
+                            </div>
+                            <div class="trending-item" onclick="searchTrendingTag('music')" style="min-width: 120px; padding: 8px 16px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border-radius: 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 14px;">
+                                #music
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Category Navigation -->
+                    <div class="category-nav" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;">
+                        <button class="category-btn active" onclick="filterByCategory('all')" style="min-width: 80px; padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            All
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('music')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Music
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('dance')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Dance
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('comedy')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Comedy
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('gaming')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Gaming
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('beauty')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Beauty
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('food')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Food
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('pets')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Pets
+                        </button>
                     </div>
                 </div>
-                <div id="discoverVideoFeed" style="padding: 20px;"></div>
+                
+                <!-- Video Grid Container -->
+                <div id="exploreVideoGrid" class="explore-video-grid" style="padding: 8px;">
+                    <!-- Videos will be dynamically inserted here -->
+                </div>
             </div>
             <div class="feed-content" id="friendsFeed">
             </div>
