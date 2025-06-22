@@ -638,7 +638,7 @@ class VideoEditor {
     }
 }
 
-export default VideoEditor;
+// VideoEditor available globally
 
 // Make VideoEditor available globally for non-module environments
 if (typeof window !== 'undefined') {

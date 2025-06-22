@@ -1,6 +1,6 @@
 // Simple comments functions for VIB3
 
-let currentVideoId = null;
+// currentVideoId is declared globally in vib3-complete.js
 let commentsModal = null;
 
 // Create comments modal HTML
@@ -144,7 +144,7 @@ function setupCommentsEventListeners() {
 function openCommentsModal(videoId) {
     console.log('💬 Opening comments for video:', videoId);
     
-    currentVideoId = videoId;
+    window.currentVideoId = videoId;
     
     if (!commentsModal) {
         createCommentsModal();
@@ -170,7 +170,7 @@ function closeCommentsModal() {
     
     commentsModal.style.display = 'none';
     document.body.style.overflow = '';
-    currentVideoId = null;
+    window.currentVideoId = null;
     
     console.log('💬 Comments modal closed');
 }
@@ -357,7 +357,7 @@ function createCommentHTML(comment) {
 // Post a new comment
 async function postComment() {
     const input = commentsModal.querySelector('.comment-input');
-    if (!input || !currentVideoId) return;
+    if (!input || !window.currentVideoId) return;
     
     const commentText = input.value.trim();
     if (!commentText) return;
@@ -376,7 +376,7 @@ async function postComment() {
         input.value = '';
         
         // Try to post to API
-        const response = await fetch(`${window.API_BASE_URL}/api/videos/${currentVideoId}/comments`, {
+        const response = await fetch(`${window.API_BASE_URL}/api/videos/${window.currentVideoId}/comments`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -384,7 +384,7 @@ async function postComment() {
             },
             body: JSON.stringify({
                 text: commentText,
-                videoId: currentVideoId
+                videoId: window.currentVideoId
             })
         });
         
@@ -393,7 +393,7 @@ async function postComment() {
             console.log('💬 Comment posted successfully:', data);
             
             // Update comment count in video UI
-            updateVideoCommentCount(currentVideoId);
+            updateVideoCommentCount(window.currentVideoId);
         } else {
             console.log('💬 Comment API not available, using mock');
         }
