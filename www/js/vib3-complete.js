@@ -569,11 +569,8 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
         try {
             // Special handling for different feed types using feed manager
             if (!append && window.feedManager) {
-                if (feedType === 'explore' && window.feedManager.loadDiscoverFeed) {
-                    console.log('🔍 Loading explore feed via feed manager');
-                    await window.feedManager.loadDiscoverFeed();
-                    return; // Exit early as feed manager handles everything
-                } else if (feedType === 'following' && window.feedManager.loadFollowingFeed) {
+                // Note: Explore is handled separately by initializeExplorePage, not feed manager
+                if (feedType === 'following' && window.feedManager.loadFollowingFeed) {
                     console.log('👥 Loading following feed via feed manager');
                     await window.feedManager.loadFollowingFeed();
                     return; // Exit early as feed manager handles everything
@@ -4757,15 +4754,19 @@ function switchFeedTab(feedType) {
         }
     }, 100);
     
-    // After a brief delay, ensure the first video starts playing
-    setTimeout(() => {
-        const firstVideo = targetFeed?.querySelector('video');
-        if (firstVideo) {
-            firstVideo.currentTime = 0;
-            firstVideo.play().catch(e => console.log('Auto-play prevented:', e));
-            console.log('🎬 Started first video in', feedType, 'feed');
-        }
-    }, 500);
+    // After a brief delay, ensure the first video starts playing (but NOT for explore)
+    if (feedType !== 'explore') {
+        setTimeout(() => {
+            const firstVideo = targetFeed?.querySelector('video');
+            if (firstVideo) {
+                firstVideo.currentTime = 0;
+                firstVideo.play().catch(e => console.log('Auto-play prevented:', e));
+                console.log('🎬 Started first video in', feedType, 'feed');
+            }
+        }, 500);
+    } else {
+        console.log('🔍 Skipping video autoplay for explore grid');
+    }
 }
 
 function refreshForYou() {
