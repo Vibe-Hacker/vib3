@@ -531,9 +531,11 @@ app.get('/api/videos', async (req, res) => {
                 // Get comment count
                 video.commentCount = await db.collection('comments').countDocuments({ videoId: video._id.toString() });
                 
+                // Get share count (create shares collection if needed)
+                video.shareCount = await db.collection('shares').countDocuments({ videoId: video._id.toString() });
+                
                 // Add feed metadata without changing titles
                 video.feedType = feed;
-                video.shareCount = Math.floor(Math.random() * 50) + 2;
                 
             } catch (userError) {
                 console.error('Error getting user info for video:', video._id, userError);
@@ -1359,6 +1361,50 @@ app.post('/api/videos/:videoId/like', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Like video error:', error);
         res.status(500).json({ error: 'Failed to like video' });
+    }
+});
+
+// Share video
+app.post('/api/videos/:videoId/share', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { videoId } = req.params;
+    const userAgent = req.headers['user-agent'] || '';
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    
+    try {
+        // Create a unique identifier for this share (to prevent spam)
+        const shareIdentifier = userAgent + ipAddress;
+        const shareHash = require('crypto').createHash('md5').update(shareIdentifier).digest('hex');
+        
+        // Check if this user/device already shared this video recently (within 1 hour)
+        const recentShare = await db.collection('shares').findOne({
+            videoId,
+            shareHash,
+            createdAt: { $gte: new Date(Date.now() - 60 * 60 * 1000) }
+        });
+        
+        if (!recentShare) {
+            // Record the share
+            const share = {
+                videoId,
+                shareHash,
+                userAgent,
+                createdAt: new Date()
+            };
+            
+            await db.collection('shares').insertOne(share);
+        }
+        
+        // Return current share count
+        const shareCount = await db.collection('shares').countDocuments({ videoId });
+        res.json({ message: 'Share recorded', shareCount });
+        
+    } catch (error) {
+        console.error('Share video error:', error);
+        res.status(500).json({ error: 'Failed to record share' });
     }
 });
 

@@ -763,7 +763,7 @@ function createAdvancedVideoCard(video) {
         </div>
         <div class="share-btn" data-video-id="${video._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
             <div style="font-size: 20px;">📤</div>
-            <div style="font-size: 10px; color: white; margin-top: 2px;">${formatCount(video.shareCount || 0)}</div>
+            <div style="font-size: 10px; color: white; margin-top: 2px;" class="share-count">${formatCount(video.shareCount || 0)}</div>
         </div>
         <div class="volume-btn" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer;">
             🔊
@@ -806,10 +806,27 @@ function createAdvancedVideoCard(video) {
                 saveLikeToLocalStorage(videoId, true);
                 
                 if (window.authToken) {
-                    fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${window.authToken}` }
-                    }).catch(console.error);
+                    try {
+                        const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${window.authToken}` }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            // Update with real database count
+                            if (data.likeCount !== undefined) {
+                                countElement.textContent = formatCount(data.likeCount);
+                                
+                                // Update all instances of this video's like count
+                                document.querySelectorAll(`[data-video-id="${videoId}"] .like-count`).forEach(el => {
+                                    el.textContent = formatCount(data.likeCount);
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error liking video:', error);
+                    }
                 }
                 
                 showNotification('Liked! ❤️', 'success');
@@ -823,10 +840,27 @@ function createAdvancedVideoCard(video) {
                 saveLikeToLocalStorage(videoId, false);
                 
                 if (window.authToken) {
-                    fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${window.authToken}` }
-                    }).catch(console.error);
+                    try {
+                        const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${window.authToken}` }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            // Update with real database count
+                            if (data.likeCount !== undefined) {
+                                countElement.textContent = formatCount(data.likeCount);
+                                
+                                // Update all instances of this video's like count
+                                document.querySelectorAll(`[data-video-id="${videoId}"] .like-count`).forEach(el => {
+                                    el.textContent = formatCount(data.likeCount);
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error unliking video:', error);
+                    }
                 }
                 
                 showNotification('Unliked', 'info');
@@ -6806,27 +6840,45 @@ function shareVideo(videoId, video) {
         }).then(() => {
             showNotification('Video shared!', 'success');
             
-            // Update share count
-            const shareBtn = document.querySelector(`[data-video-id="${videoId}"].share-btn`);
-            if (shareBtn) {
-                const countElement = shareBtn.querySelector('div:last-child');
-                const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
-                countElement.textContent = formatCount(currentCount + 1);
-            }
+            // Record the share on server and update count
+            recordVideoShare(videoId);
         }).catch(console.error);
     } else {
         // Fallback to copy link
         navigator.clipboard.writeText(videoUrl).then(() => {
             showNotification('Video link copied to clipboard!', 'success');
             
-            // Update share count
-            const shareBtn = document.querySelector(`[data-video-id="${videoId}"].share-btn`);
-            if (shareBtn) {
-                const countElement = shareBtn.querySelector('div:last-child');
-                const currentCount = parseInt(countElement.textContent.replace(/[KM]/g, '')) || 0;
-                countElement.textContent = formatCount(currentCount + 1);
+            // Record the share on server and update count
+            recordVideoShare(videoId);
+        });
+    }
+}
+
+// Record video share on server and update UI
+async function recordVideoShare(videoId) {
+    try {
+        const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/share`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
             }
         });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const newShareCount = data.shareCount;
+            
+            // Update share count in all instances of this video
+            document.querySelectorAll(`[data-video-id="${videoId}"] .share-count`).forEach(shareCountEl => {
+                shareCountEl.textContent = newShareCount;
+            });
+            
+            console.log(`✅ Share recorded for video ${videoId}, new count: ${newShareCount}`);
+        } else {
+            console.error('Failed to record share:', response.status);
+        }
+    } catch (error) {
+        console.error('Error recording share:', error);
     }
 }
 
