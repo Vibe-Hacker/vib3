@@ -1785,6 +1785,32 @@ app.post('/api/users/:userId/unfollow', requireAuth, async (req, res) => {
     }
 });
 
+// Get current user's following list
+app.get('/api/user/following', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    try {
+        const follows = await db.collection('follows')
+            .find({ followerId: req.user.userId })
+            .toArray();
+        
+        // Get user details for each followed user
+        const followingIds = follows.map(f => new ObjectId(f.followingId));
+        const users = await db.collection('users')
+            .find({ _id: { $in: followingIds } })
+            .project({ password: 0 })
+            .toArray();
+        
+        res.json(users);
+        
+    } catch (error) {
+        console.error('Get following error:', error);
+        res.status(500).json({ error: 'Failed to get following list' });
+    }
+});
+
 // Get user profile
 app.get('/api/users/:userId', async (req, res) => {
     if (!db) {

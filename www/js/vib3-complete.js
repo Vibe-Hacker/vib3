@@ -7610,6 +7610,12 @@ async function handleFollowClick(userId, followBtn) {
 async function checkFollowStatus(userId, followBtn) {
     if (!currentUser || !userId || userId === 'unknown') return;
     
+    // Hide follow button for own videos
+    if (userId === currentUser._id) {
+        followBtn.style.display = 'none';
+        return;
+    }
+    
     try {
         const response = await fetch(`${API_BASE_URL}/api/user/following`, {
             headers: {
@@ -7625,9 +7631,13 @@ async function checkFollowStatus(userId, followBtn) {
                 followBtn.innerHTML = '<div style="font-size: 14px; color: white;">✓</div>';
                 followBtn.style.background = '#25d366';
             }
+        } else if (response.status === 401) {
+            // Not logged in - hide follow button
+            followBtn.style.display = 'none';
         }
     } catch (error) {
         console.error('Check follow status error:', error);
+        // On error, just show the follow button in default state
     }
 }
 
