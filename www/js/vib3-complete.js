@@ -752,6 +752,11 @@ function createAdvancedVideoCard(video) {
     if (videoUrl && !videoUrl.startsWith('http://') && !videoUrl.startsWith('https://')) {
         videoUrl = 'https://' + videoUrl;
     }
+    // Configure video for cross-origin and optimal playback
+    video_elem.setAttribute('crossorigin', 'anonymous');
+    video_elem.setAttribute('playsinline', 'true');
+    video_elem.setAttribute('webkit-playsinline', 'true');
+    video_elem.preload = 'metadata';
     video_elem.src = videoUrl;
     video_elem.loop = true;
     video_elem.muted = false;  // Enable audio by default
@@ -771,13 +776,47 @@ function createAdvancedVideoCard(video) {
         z-index: 1 !important;
     `;
     
-    // Add event listeners
-    video_elem.onerror = () => {
-        console.error('🚨 VIDEO ERROR:', video_elem.src);
-        // Hide broken videos completely
-        card.style.display = 'none';
-        card.style.height = '0px';
-        card.style.visibility = 'hidden';
+    // Add comprehensive error handling
+    video_elem.onerror = (e) => {
+        console.error('🚨 VIDEO ERROR:', video_elem.src, e);
+        console.error('Error details:', {
+            error: e.target.error,
+            networkState: e.target.networkState,
+            readyState: e.target.readyState,
+            currentSrc: e.target.currentSrc
+        });
+        
+        // Try to recover by setting different attributes
+        video_elem.setAttribute('crossorigin', 'anonymous');
+        video_elem.preload = 'none';
+        
+        // If still failing, show error placeholder
+        setTimeout(() => {
+            if (video_elem.error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: #000;
+                    color: white;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 5;
+                `;
+                errorDiv.innerHTML = `
+                    <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                    <div style="font-size: 16px; margin-bottom: 10px;">Video failed to load</div>
+                    <div style="font-size: 12px; color: #888;">URL: ${video.videoUrl}</div>
+                    <button onclick="location.reload()" style="margin-top: 20px; padding: 8px 16px; background: #fe2c55; color: white; border: none; border-radius: 4px;">Retry</button>
+                `;
+                card.appendChild(errorDiv);
+            }
+        }, 2000);
     };
     video_elem.onloadstart = () => console.log('📹 VIDEO LOADING:', video_elem.src);
     video_elem.oncanplay = () => console.log('✅ VIDEO READY:', video_elem.src);

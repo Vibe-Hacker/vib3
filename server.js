@@ -11,11 +11,19 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Serve static files from www directory
 app.use(express.static(path.join(__dirname, 'www')));
 
-// CORS headers for API endpoints
+// CORS headers for API endpoints and video content
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    
+    // Special CORS headers for video content
+    if (req.path.includes('/videos/') || req.headers.accept?.includes('video/')) {
+        res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+        res.header('Access-Control-Allow-Credentials', 'false');
+    }
+    
     if (req.method === 'OPTIONS') {
         res.sendStatus(200);
         return;
@@ -57,7 +65,94 @@ const mockUser = {
     }
 };
 
-// Mock video data removed - no longer using test videos
+// Test video data for debugging video playback
+const mockVideos = [
+    {
+        _id: 'test1',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        user: { 
+            _id: 'user1',
+            username: 'testuser1', 
+            displayName: 'Test User 1',
+            profilePicture: '🎬' 
+        },
+        title: 'Big Buck Bunny',
+        description: 'Test video #1 - Animation short film',
+        likeCount: 42,
+        commentCount: 5,
+        shareCount: 2,
+        uploadDate: new Date('2024-01-01'),
+        duration: 60
+    },
+    {
+        _id: 'test2',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+        user: { 
+            _id: 'user2',
+            username: 'testuser2', 
+            displayName: 'Test User 2',
+            profilePicture: '🎭' 
+        },
+        title: 'Elephant Dream',
+        description: 'Test video #2 - 3D animated short',
+        likeCount: 123,
+        commentCount: 15,
+        shareCount: 8,
+        uploadDate: new Date('2024-01-02'),
+        duration: 45
+    },
+    {
+        _id: 'test3',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        user: { 
+            _id: 'user3',
+            username: 'testuser3', 
+            displayName: 'Test User 3',
+            profilePicture: '🔥' 
+        },
+        title: 'For Bigger Blazes',
+        description: 'Test video #3 - Action demo',
+        likeCount: 89,
+        commentCount: 23,
+        shareCount: 12,
+        uploadDate: new Date('2024-01-03'),
+        duration: 30
+    },
+    {
+        _id: 'test4',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+        user: { 
+            _id: 'user4',
+            username: 'testuser4', 
+            displayName: 'Test User 4',
+            profilePicture: '🚗' 
+        },
+        title: 'Subaru Adventure',
+        description: 'Test video #4 - Car commercial',
+        likeCount: 234,
+        commentCount: 34,
+        shareCount: 19,
+        uploadDate: new Date('2024-01-04'),
+        duration: 25
+    },
+    {
+        _id: 'test5',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+        user: { 
+            _id: 'user5',
+            username: 'testuser5', 
+            displayName: 'Test User 5',
+            profilePicture: '⚔️' 
+        },
+        title: 'Tears of Steel',
+        description: 'Test video #5 - Sci-fi short film',
+        likeCount: 567,
+        commentCount: 78,
+        shareCount: 45,
+        uploadDate: new Date('2024-01-05'),
+        duration: 180
+    }
+];
 
 // Simple auth middleware (simulates being logged in as the video uploader)
 const authMiddleware = (req, res, next) => {
@@ -78,12 +173,18 @@ app.get('/api/videos', (req, res) => {
     
     console.log(`📹 Video feed request: ${feed}, page ${page}, limit ${limit}`);
     
-    // Return empty videos array since test videos have been removed
+    // Return test videos for debugging video playback
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const pageVideos = mockVideos.slice(startIndex, endIndex);
+    
+    console.log(`📦 Returning ${pageVideos.length} test videos for page ${page}`);
+    
     res.json({
-        videos: [],
+        videos: pageVideos,
         page: page,
-        hasMore: false,
-        totalCount: 0
+        hasMore: endIndex < mockVideos.length,
+        totalCount: mockVideos.length
     });
 });
 
