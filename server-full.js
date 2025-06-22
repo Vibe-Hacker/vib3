@@ -501,77 +501,8 @@ app.get('/api/videos', async (req, res) => {
             return res.json({ videos: [] });
         }
         
-        // For infinite scroll, generate videos on-demand for any page
-        const paginatedVideos = [];
-        const requestedLimit = parseInt(limit);
-        
-        for (let i = 0; i < requestedLimit; i++) {
-            const baseVideoIndex = i % videos.length;
-            const baseVideo = videos[baseVideoIndex];
-            const cycleNumber = Math.floor((actualSkip + i) / videos.length);
-            
-            // Generate feed-specific metadata
-            let feedTitle = baseVideo.title || 'Video';
-            let feedDescription = baseVideo.description || '';
-            let engagementMultiplier = 1;
-            
-            switch(feed) {
-                case 'foryou':
-                    engagementMultiplier = 1.5; // Higher engagement for algorithmic content
-                    feedTitle = baseVideo.title || `Trending Video #${actualSkip + i + 1}`;
-                    break;
-                case 'following':
-                    engagementMultiplier = 0.8; // More personal, less viral
-                    feedTitle = baseVideo.title || `Update from ${baseVideo.user?.username || 'friend'}`;
-                    break;
-                case 'explore':
-                    engagementMultiplier = 2.0; // Highest engagement for trending
-                    feedTitle = baseVideo.title || `Viral Trending #${actualSkip + i + 1}`;
-                    break;
-                case 'friends':
-                    engagementMultiplier = 0.6; // More intimate friend content
-                    feedTitle = baseVideo.title || `${baseVideo.user?.username || 'friend'}'s moment`;
-                    break;
-            }
-            
-            const generatedVideo = {
-                ...baseVideo,
-                _id: `${baseVideo._id}_gen_${actualSkip + i}`,
-                title: feedTitle,
-                description: feedDescription,
-                username: baseVideo.user?.username || baseVideo.username || 'anonymous',
-                likeCount: Math.floor(Math.random() * 1000 * engagementMultiplier) + 50,
-                commentCount: Math.floor(Math.random() * 100 * engagementMultiplier) + 5,
-                shareCount: Math.floor(Math.random() * 50 * engagementMultiplier) + 2,
-                duplicated: true,
-                cycleNumber: cycleNumber + 1,
-                position: actualSkip + i + 1,
-                feedType: feed,
-                hashtags: baseVideo.hashtags || [],
-                // Ensure video URL is preserved from base video
-                videoUrl: baseVideo.videoUrl
-            };
-            
-            paginatedVideos.push(generatedVideo);
-        }
-        
-        console.log(`Generated ${paginatedVideos.length} videos for page ${page} (positions ${actualSkip + 1}-${actualSkip + requestedLimit})`);
-        
-        // Debug: Check if we have any videos to process
-        if (paginatedVideos.length === 0) {
-            console.log(`⚠️ No videos generated for page ${page}, actualSkip: ${actualSkip}, requestedLimit: ${requestedLimit}, originalVideos: ${videos.length}`);
-            return res.json({ videos: [] });
-        }
-        
         // Get user info for each video
-        for (const video of paginatedVideos) {
-            // Skip user lookup for duplicated videos
-            if (video.duplicated) {
-                video.username = video.user?.username || video.username || 'anonymous';
-                video.likeCount = Math.floor(Math.random() * 1000);
-                video.commentCount = Math.floor(Math.random() * 100);
-                continue;
-            }
+        for (const video of videos) {
             try {
                 const user = await db.collection('users').findOne(
                     { _id: new ObjectId(video.userId) },
@@ -597,6 +528,11 @@ app.get('/api/videos', async (req, res) => {
                 
                 // Get comment count
                 video.commentCount = await db.collection('comments').countDocuments({ videoId: video._id.toString() });
+                
+                // Add feed metadata without changing titles
+                video.feedType = feed;
+                video.shareCount = Math.floor(Math.random() * 50) + 2;
+                
             } catch (userError) {
                 console.error('Error getting user info for video:', video._id, userError);
                 // Set default user info if error
@@ -612,8 +548,8 @@ app.get('/api/videos', async (req, res) => {
             }
         }
         
-        console.log(`📤 Sending ${paginatedVideos.length} videos for page ${page}`);
-        res.json({ videos: paginatedVideos });
+        console.log(`📤 Sending ${videos.length} videos for page ${page}`);
+        res.json({ videos });
         
     } catch (error) {
         console.error('Get videos error:', error);
