@@ -57,48 +57,7 @@ const mockUser = {
     }
 };
 
-// Mock video data from the console logs
-const mockVideos = [
-    {
-        _id: 'c375c631-24b9-428c-aa84-3ce7ed64aa10',
-        userId: '55502f40',
-        title: 'Dance Challenge',
-        description: 'Latest dance routine!',
-        videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/c375c631-24b9-428c-aa84-3ce7ed64aa10.mp4',
-        thumbnail: null,
-        views: 2100,
-        likes: 156,
-        comments: 23,
-        duration: 15,
-        createdAt: '2025-06-20T10:30:00Z'
-    },
-    {
-        _id: 'aa32b9a1-1c55-4748-b0dd-e40058ffdf3f',
-        userId: '55502f40',
-        title: 'Comedy Skit',
-        description: 'Funny moment caught on camera',
-        videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/aa32b9a1-1c55-4748-b0dd-e40058ffdf3f.mp4',
-        thumbnail: null,
-        views: 890,
-        likes: 67,
-        comments: 12,
-        duration: 30,
-        createdAt: '2025-06-20T09:15:00Z'
-    },
-    {
-        _id: '5eaa3855-51d1-4d65-84bd-b667460ab0f3',
-        userId: '55502f40',
-        title: 'Music Cover',
-        description: 'Singing my favorite song',
-        videoUrl: 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/2025-06-20/55502f40/5eaa3855-51d1-4d65-84bd-b667460ab0f3.mp4',
-        thumbnail: null,
-        views: 1500,
-        likes: 234,
-        comments: 45,
-        duration: 120,
-        createdAt: '2025-06-20T08:00:00Z'
-    }
-];
+// Mock video data removed - no longer using test videos
 
 // Simple auth middleware (simulates being logged in as the video uploader)
 const authMiddleware = (req, res, next) => {
@@ -119,12 +78,12 @@ app.get('/api/videos', (req, res) => {
     
     console.log(`📹 Video feed request: ${feed}, page ${page}, limit ${limit}`);
     
-    // Return all videos for the feed
+    // Return empty videos array since test videos have been removed
     res.json({
-        videos: mockVideos,
+        videos: [],
         page: page,
         hasMore: false,
-        totalCount: mockVideos.length
+        totalCount: 0
     });
 });
 
@@ -165,8 +124,8 @@ app.get('/api/user/videos', (req, res) => {
     // From the logs, we can see the user ID is 55502f40
     const actualUserId = '55502f40';
     
-    // Return the actual videos for this user
-    const userVideos = mockVideos.filter(video => video.userId === actualUserId);
+    // Return empty videos array since test videos have been removed
+    const userVideos = [];
     
     console.log(`📹 Profile request: Returning ${userVideos.length} videos for user ${actualUserId}`);
     res.json(userVideos);
