@@ -6477,4 +6477,97 @@ function openCreatorTools() {
     `;
     
     modal.innerHTML = `
+        <div style="
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        ">
+            <button onclick="this.parentElement.parentElement.remove()" style="
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background: none;
+                border: none;
+                font-size: 32px;
+                cursor: pointer;
+                color: var(--text-secondary);
+                padding: 0;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                transition: background 0.2s ease;
+            " onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='none'">×</button>
+            
+            <h2 style="margin: 0 0 32px 0; color: var(--text-primary); text-align: center; font-size: 28px;">Creator Tools</h2>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <button onclick="showNotification('Analytics coming soon', 'info')" style="
+                    padding: 24px;
+                    background: var(--bg-secondary);
+                    border: none;
+                    border-radius: 12px;
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    text-align: center;
+                    transition: background 0.2s ease;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📊</div>
+                    <div style="font-weight: 600;">Analytics</div>
+                </button>
+                
+                <button onclick="showNotification('Creator fund info', 'info')" style="
+                    padding: 24px;
+                    background: var(--bg-secondary);
+                    border: none;
+                    border-radius: 12px;
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    text-align: center;
+                    transition: background 0.2s ease;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">💰</div>
+                    <div style="font-weight: 600;">Creator Fund</div>
+                </button>
+                
+                <button onclick="showNotification('Promotion tools', 'info')" style="
+                    padding: 24px;
+                    background: var(--bg-secondary);
+                    border: none;
+                    border-radius: 12px;
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    text-align: center;
+                    transition: background 0.2s ease;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📈</div>
+                    <div style="font-weight: 600;">Promote</div>
+                </button>
+                
+                <button onclick="showNotification('Live streaming', 'info')" style="
+                    padding: 24px;
+                    background: var(--bg-secondary);
+                    border: none;
+                    border-radius: 12px;
+                    color: var(--text-primary);
+                    cursor: pointer;
+                    text-align: center;
+                    transition: background 0.2s ease;
+                ">
+                    <div style="font-size: 32px; margin-bottom: 8px;">🔴</div>
+                    <div style="font-weight: 600;">Go Live</div>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
   
