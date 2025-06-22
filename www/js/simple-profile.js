@@ -9,9 +9,19 @@ function createSimpleProfilePage() {
         existingProfile.remove();
     }
     
-    // Pause all videos when opening profile
+    // Pause and properly stop all videos when opening profile
     document.querySelectorAll('video').forEach(video => {
         video.pause();
+        video.muted = true;
+        video.currentTime = 0;
+        // Remove video sources to prevent background playback
+        if (video.srcObject) {
+            video.srcObject = null;
+        }
+        if (video.src && !video.src.includes('blob:')) {
+            video.removeAttribute('src');
+            video.load();
+        }
     });
     
     // Get current user data
@@ -581,6 +591,29 @@ function playUserVideo(videoId) {
 async function deleteUserVideo(videoId, videoTitle) {
     console.log('🗑️ Delete video requested:', videoId, videoTitle);
     
+    // CRITICAL: Stop all videos immediately to prevent background playback
+    console.log('🛑 CRITICAL: Stopping all videos before deletion...');
+    document.querySelectorAll('video').forEach((video, index) => {
+        video.pause();
+        video.muted = true;
+        video.currentTime = 0;
+        // Remove video sources to prevent background playback
+        if (video.srcObject) {
+            video.srcObject = null;
+        }
+        if (video.src && !video.src.includes('blob:')) {
+            video.removeAttribute('src');
+            video.load();
+        }
+        console.log(`🔇 Stopped video ${index} during deletion`);
+    });
+    
+    // Disconnect video observer to prevent auto-play
+    if (window.videoObserver) {
+        window.videoObserver.disconnect();
+        console.log('📹 Disconnected video observer during deletion');
+    }
+    
     // Show confirmation modal
     const confirmed = await showDeleteConfirmation(videoTitle);
     if (!confirmed) {
@@ -625,16 +658,21 @@ async function deleteUserVideo(videoId, videoTitle) {
                 video.remove();
             });
             
+            // Stop all videos again after DOM manipulation
+            console.log('🛑 Stopping all videos again after deletion...');
+            document.querySelectorAll('video').forEach((video) => {
+                video.pause();
+                video.muted = true;
+                video.currentTime = 0;
+            });
+            
             // Reload user videos to update the display
             setTimeout(() => {
                 loadUserVideos();
                 
-                // Also refresh the main video feed to remove the deleted video
-                if (window.loadVideoFeed) {
-                    console.log('🔄 Refreshing main video feed after deletion');
-                    // Force refresh the feed to ensure deleted videos are removed
-                    window.loadVideoFeed(window.currentFeed || 'foryou', true, 1, false);
-                }
+                // DO NOT refresh the main video feed while on profile page
+                // This prevents background video playback
+                console.log('⚠️ Skipping main feed refresh while on profile page');
             }, 1000);
             
         } else {
@@ -736,6 +774,29 @@ function formatDuration(seconds) {
 function goBackToFeed() {
     console.log('🔙 Going back to video feed...');
     
+    // First, stop all videos properly to prevent background playback
+    console.log('🛑 Stopping all videos before returning to feed...');
+    document.querySelectorAll('video').forEach((video, index) => {
+        video.pause();
+        video.muted = true;
+        video.currentTime = 0;
+        // Remove video sources to prevent background playback
+        if (video.srcObject) {
+            video.srcObject = null;
+        }
+        if (video.src && !video.src.includes('blob:')) {
+            video.removeAttribute('src');
+            video.load();
+        }
+        console.log(`🔇 Stopped video ${index} before returning to feed`);
+    });
+    
+    // Disconnect any video observers to prevent them from starting videos
+    if (window.videoObserver) {
+        window.videoObserver.disconnect();
+        console.log('📹 Disconnected video observer');
+    }
+    
     // Remove the profile page
     const profilePage = document.getElementById('profilePage');
     if (profilePage) {
@@ -750,7 +811,7 @@ function goBackToFeed() {
         console.log('✅ Main app shown');
     }
     
-    // Switch to For You feed
+    // Switch to For You feed - this will reinitialize the video observer
     if (window.switchFeedTab) {
         switchFeedTab('foryou');
         console.log('✅ Switched to For You feed');

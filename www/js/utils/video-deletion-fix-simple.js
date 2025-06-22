@@ -18,14 +18,22 @@
                 console.log('🎯 Deleting video:', videoId);
                 console.log('🎯 Video data:', videoData);
                 
-                // Stop video audio immediately
-                console.log('🔇 Stopping video audio...');
+                // Stop video audio immediately and properly
+                console.log('🔇 Stopping ALL video audio to prevent background playback...');
                 const allVideos = document.querySelectorAll('video');
                 allVideos.forEach((video, index) => {
                     video.pause();
                     video.currentTime = 0;
                     video.muted = true;
-                    console.log(`🔇 Stopped video ${index}`);
+                    // Remove video sources to prevent any background playback
+                    if (video.srcObject) {
+                        video.srcObject = null;
+                    }
+                    if (video.src && !video.src.includes('blob:')) {
+                        video.removeAttribute('src');
+                        video.load();
+                    }
+                    console.log(`🔇 Fully stopped video ${index}`);
                 });
                 
                 // Remove from UI immediately
