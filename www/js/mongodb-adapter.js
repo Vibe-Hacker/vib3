@@ -8,7 +8,8 @@ if (typeof API_BASE_URL === 'undefined') {
         : 'https://vib3-production.up.railway.app';
 }
 
-window.authToken = localStorage.getItem('vib3_token');
+// Production-ready token management - no localStorage
+window.authToken = null;
 window.currentUser = null;
 
 // Replace Firebase auth
@@ -17,44 +18,51 @@ const auth = {
     _callbacks: [],
     onAuthStateChanged: function(callback) {
         this._callbacks.push(callback);
-        // Check if user is logged in
-        if (window.authToken) {
-            fetch(`${window.API_BASE_URL}/api/auth/me`, {
-                headers: { 'Authorization': `Bearer ${window.authToken}` }
-            })
-            .then(response => {
-                if (response.status === 401) {
-                    // Token is invalid, clear it
-                    localStorage.removeItem('authToken');
-                    window.authToken = null;
-                    callback(null);
-                    return;
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data && data.user) {
-                    this.currentUser = data.user;
-                    window.currentUser = data.user;
-                    callback(data.user);
-                } else {
-                    callback(null);
-                }
-            })
-            .catch(() => callback(null));
-        } else {
+        // Check if user is logged in using session-based auth (production-ready)
+        fetch(`${window.API_BASE_URL}/api/auth/me`, {
+            method: 'GET',
+            credentials: 'include', // Include HTTP-only cookies
+            headers: { 
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.status === 401 || response.status === 403) {
+                // Not authenticated
+                window.authToken = null;
+                window.currentUser = null;
+                callback(null);
+                return null;
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data && data.user) {
+                this.currentUser = data.user;
+                window.currentUser = data.user;
+                // Set auth token for API calls (but don't store in localStorage)
+                window.authToken = data.token || 'session-based';
+                callback(data.user);
+            } else {
+                callback(null);
+            }
+        })
+        .catch(() => {
+            window.authToken = null;
+            window.currentUser = null;
             callback(null);
-        }
+        });
     },
     _triggerCallbacks: function(user) {
         this._callbacks.forEach(callback => callback(user));
     }
 };
 
-// Replace Firebase functions
+// Replace Firebase functions - Production secure authentication
 async function signInWithEmailAndPassword(authObj, email, password) {
     const response = await fetch(`${window.API_BASE_URL}/api/auth/login`, {
         method: 'POST',
+        credentials: 'include', // Enable cookies for session management
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
     });
@@ -62,8 +70,8 @@ async function signInWithEmailAndPassword(authObj, email, password) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
     
-    window.authToken = data.token;
-    localStorage.setItem('vib3_token', data.token);
+    // Set token for API calls (server will manage secure storage via HTTP-only cookies)
+    window.authToken = data.token || 'session-based';
     auth.currentUser = data.user;
     window.currentUser = data.user;
     
@@ -77,6 +85,7 @@ async function createUserWithEmailAndPassword(authObj, email, password) {
     const username = email.split('@')[0]; // Default username from email
     const response = await fetch(`${window.API_BASE_URL}/api/auth/register`, {
         method: 'POST',
+        credentials: 'include', // Enable cookies for session management
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, username })
     });
@@ -84,8 +93,8 @@ async function createUserWithEmailAndPassword(authObj, email, password) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
     
-    window.authToken = data.token;
-    localStorage.setItem('vib3_token', data.token);
+    // Set token for API calls (server will manage secure storage via HTTP-only cookies)
+    window.authToken = data.token || 'session-based';
     auth.currentUser = data.user;
     window.currentUser = data.user;
     
@@ -96,15 +105,15 @@ async function createUserWithEmailAndPassword(authObj, email, password) {
 }
 
 async function signOut(authObj) {
-    if (window.authToken) {
-        await fetch(`${window.API_BASE_URL}/api/auth/logout`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${window.authToken}` }
-        });
-    }
+    // Production logout - clear server-side session
+    await fetch(`${window.API_BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include', // Include cookies for proper logout
+        headers: { 'Content-Type': 'application/json' }
+    });
     
+    // Clear client-side auth state
     window.authToken = null;
-    localStorage.removeItem('vib3_token');
     auth.currentUser = null;
     window.currentUser = null;
     

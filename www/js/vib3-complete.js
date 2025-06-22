@@ -3274,9 +3274,8 @@ async function publishContent() {
     try {
         updatePublishProgress('Preparing upload...', 0);
         
-        // Get auth token
-        const token = localStorage.getItem('vib3_token');
-        if (!token) {
+        // Check authentication (production-ready session-based)
+        if (!window.authToken || !window.currentUser) {
             showNotification('Please log in to upload content', 'error');
             goToStep(4);
             return;
@@ -3328,12 +3327,15 @@ async function publishContent() {
             }
             
             console.log('🚀 SENDING REQUEST TO:', `${window.API_BASE_URL}/api/upload/video`);
-            console.log('🚀 REQUEST HEADERS:', { 'Authorization': `Bearer ${token.substring(0, 20)}...` });
+            console.log('🚀 REQUEST HEADERS: Using session-based authentication');
             
             const response = await fetch(`${window.API_BASE_URL}/api/upload/video`, {
                 method: 'POST',
+                credentials: 'include', // Include HTTP-only cookies for production auth
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    // Authorization header may still be needed if server expects it
+                    ...(window.authToken && window.authToken !== 'session-based' ? 
+                        { 'Authorization': `Bearer ${window.authToken}` } : {})
                 },
                 body: formData
             });
@@ -3411,8 +3413,11 @@ async function publishContent() {
             
             const response = await fetch(`${window.API_BASE_URL}/api/upload/video`, {
                 method: 'POST',
+                credentials: 'include', // Include HTTP-only cookies for production auth
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    // Authorization header may still be needed if server expects it
+                    ...(window.authToken && window.authToken !== 'session-based' ? 
+                        { 'Authorization': `Bearer ${window.authToken}` } : {})
                 },
                 body: formData
             });
@@ -5274,9 +5279,11 @@ async function initializeWebRTCBroadcast(stream, config) {
     // Send stream info to server
     const response = await fetch(`${window.API_BASE_URL}/api/live/start`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('vib3_token')}`
+            ...(window.authToken && window.authToken !== 'session-based' ? 
+                { 'Authorization': `Bearer ${window.authToken}` } : {})
         },
         body: JSON.stringify({
             title: config.title,
@@ -5329,8 +5336,10 @@ function stopLiveStream() {
     // Notify server
     fetch(`${window.API_BASE_URL}/api/live/stop`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('vib3_token')}`
+            ...(window.authToken && window.authToken !== 'session-based' ? 
+                { 'Authorization': `Bearer ${window.authToken}` } : {})
         }
     }).catch(console.error);
     
@@ -5363,9 +5372,11 @@ function scheduleLiveStream() {
         // Send to server for scheduling
         fetch(`${window.API_BASE_URL}/api/live/schedule`, {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('vib3_token')}`
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
             },
             body: JSON.stringify({
                 scheduledTime: time,
@@ -7930,13 +7941,13 @@ window.saveProfile = async function() {
         const baseURL = window.API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? '' 
             : 'https://vib3-production.up.railway.app');
-        const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
-        
         const response = await fetch(`${baseURL}/api/user/profile`, {
             method: 'PUT',
+            credentials: 'include',
             headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
             },
             body: JSON.stringify(updateData)
         });
