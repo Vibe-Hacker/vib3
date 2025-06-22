@@ -1343,89 +1343,95 @@ function createExploreVideoCard(video) {
     return card;
 }
 
-// Open video in full-screen modal (like TikTok)
+// Open video in vertical feed (like TikTok)
 function openVideoModal(video) {
-    console.log('🎬 Opening video modal for:', video.title);
+    console.log('🎬 Opening video in vertical feed for:', video.title);
     
-    const modal = document.createElement('div');
-    modal.className = 'video-modal';
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: #000;
-        z-index: 9999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        animation: fadeIn 0.3s ease;
-    `;
+    // Switch to For You feed to show vertical layout
+    switchFeedTab('foryou');
     
-    // Create full TikTok-style video card in modal
-    const videoCard = createAdvancedVideoCard(video);
-    videoCard.style.height = '100vh';
-    videoCard.style.margin = '0';
-    videoCard.style.maxWidth = '100vw';
+    // Create a temporary feed with this video and related videos
+    createVideoFeed(video);
+}
+
+// Create vertical feed starting with selected video
+async function createVideoFeed(selectedVideo) {
+    console.log('📱 Creating vertical feed starting with:', selectedVideo.title);
     
-    // Close button
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '×';
-    closeBtn.style.cssText = `
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: rgba(0,0,0,0.5);
-        color: white;
-        border: none;
-        font-size: 32px;
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        cursor: pointer;
-        z-index: 10000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(4px);
-    `;
+    const feedElement = document.getElementById('foryouFeed');
+    if (!feedElement) {
+        console.error('For You feed element not found');
+        return;
+    }
     
-    closeBtn.addEventListener('click', () => {
-        document.body.removeChild(modal);
-        document.body.style.overflow = '';
-    });
+    // Clear the feed and set up for vertical scrolling
+    feedElement.innerHTML = '<div class="loading-container"><div class="spinner"></div><p>Loading videos...</p></div>';
+    feedElement.style.display = 'block';
+    feedElement.style.overflow = 'auto';
+    feedElement.style.scrollSnapType = 'y mandatory';
+    feedElement.style.scrollBehavior = 'smooth';
     
-    // Close on background click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            document.body.removeChild(modal);
-            document.body.style.overflow = '';
+    try {
+        // Get all videos from the API
+        const response = await fetch(`${window.API_BASE_URL}/api/videos?feed=foryou&limit=20`, {
+            headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
+        });
+        
+        const data = await response.json();
+        console.log('📦 Fetched videos for vertical feed:', data.videos?.length);
+        
+        if (data.videos && data.videos.length > 0) {
+            // Filter out invalid videos
+            const validVideos = data.videos.filter(video => {
+                return video.videoUrl && 
+                       !video.videoUrl.includes('example.com') && 
+                       video.videoUrl !== '' &&
+                       video.videoUrl.startsWith('http');
+            });
+            
+            // Create array starting with selected video, then others
+            const videoQueue = [selectedVideo];
+            
+            // Add other videos (excluding the selected one)
+            validVideos.forEach(video => {
+                if (video._id !== selectedVideo._id) {
+                    videoQueue.push(video);
+                }
+            });
+            
+            // Clear loading and populate feed
+            feedElement.innerHTML = '';
+            
+            videoQueue.forEach((video, index) => {
+                const videoCard = createAdvancedVideoCard(video);
+                feedElement.appendChild(videoCard);
+                console.log(`➕ Added video ${index + 1} to vertical feed: ${video.title}`);
+            });
+            
+            // Initialize video observer for auto-play
+            setTimeout(() => {
+                initializeVideoObserver();
+                
+                // Auto-play the first video (selected video)
+                const firstVideo = feedElement.querySelector('video');
+                if (firstVideo) {
+                    firstVideo.play().catch(e => console.log('Auto-play failed:', e));
+                }
+            }, 200);
+            
+            // Setup infinite scroll
+            setupInfiniteScroll(feedElement, 'foryou');
+            
+            console.log('✅ Vertical feed created with', videoQueue.length, 'videos');
+            
+        } else {
+            feedElement.innerHTML = '<div class="empty-feed">No videos available</div>';
         }
-    });
-    
-    // Close on Escape key
-    const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-            document.body.removeChild(modal);
-            document.body.style.overflow = '';
-            document.removeEventListener('keydown', handleEscape);
-        }
-    };
-    document.addEventListener('keydown', handleEscape);
-    
-    modal.appendChild(videoCard);
-    modal.appendChild(closeBtn);
-    document.body.appendChild(modal);
-    document.body.style.overflow = 'hidden';
-    
-    // Auto-play video in modal
-    setTimeout(() => {
-        const video_elem = modal.querySelector('video');
-        if (video_elem) {
-            video_elem.play().catch(e => console.log('Modal video play failed:', e));
-        }
-    }, 100);
+        
+    } catch (error) {
+        console.error('Error creating video feed:', error);
+        feedElement.innerHTML = '<div class="error-message">Failed to load videos</div>';
+    }
 }
 
 async function startStitch(videoId) {
@@ -6436,6 +6442,7 @@ window.shareProfile = shareProfile;
 window.openCreatorTools = openCreatorTools;
 window.createExploreVideoCard = createExploreVideoCard;
 window.openVideoModal = openVideoModal;
+window.createVideoFeed = createVideoFeed;
 
 // ================ PROFILE FUNCTIONS ================
 function loadProfileData() {
