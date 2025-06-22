@@ -595,23 +595,23 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                         // Set different layouts for different feed types
                         if (feedType === 'explore') {
                             // Use the dedicated explore grid container
-                            let exploreGrid = document.getElementById('exploreVideoGrid');
+                            const exploreGrid = document.getElementById('exploreVideoGrid');
                             console.log('🔍 Setting up explore grid:', !!exploreGrid);
-                            if (!exploreGrid) {
-                                // Create explore grid if it doesn't exist
-                                console.log('⚠️ Creating missing explore grid container');
-                                exploreGrid = document.createElement('div');
-                                exploreGrid.id = 'exploreVideoGrid';
-                                exploreGrid.className = 'explore-video-grid';
+                            if (exploreGrid) {
+                                exploreGrid.innerHTML = '';
+                                exploreGrid.style.display = 'grid';
+                                exploreGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                                exploreGrid.style.gap = '4px';
                                 exploreGrid.style.padding = '8px';
-                                feedElement.appendChild(exploreGrid);
+                                console.log('✅ Explore grid configured');
+                            } else {
+                                console.error('❌ exploreVideoGrid not found! Check HTML structure');
+                                // Fallback: just use the feedElement
+                                feedElement.style.display = 'grid';
+                                feedElement.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                                feedElement.style.gap = '4px';
+                                feedElement.style.padding = '8px';
                             }
-                            exploreGrid.innerHTML = '';
-                            exploreGrid.style.display = 'grid';
-                            exploreGrid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-                            exploreGrid.style.gap = '4px';
-                            exploreGrid.style.padding = '8px';
-                            console.log('✅ Explore grid configured');
                         } else {
                             // Vertical scroll for For You and Following
                             feedElement.style.display = 'block';
@@ -631,6 +631,9 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                             const exploreGrid = document.getElementById('exploreVideoGrid');
                             if (exploreGrid) {
                                 exploreGrid.appendChild(videoCard);
+                            } else {
+                                // Fallback to feedElement if grid not found
+                                feedElement.appendChild(videoCard);
                             }
                         } else {
                             feedElement.appendChild(videoCard);
@@ -4082,7 +4085,7 @@ function switchFeedTab(feedType) {
             // For explore feed, just clear the video grid while preserving the header
             const exploreGrid = document.getElementById('exploreVideoGrid');
             if (exploreGrid) {
-                exploreGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: var(--text-secondary);">Loading videos...</div>';
+                exploreGrid.innerHTML = '';
             }
         }
         targetFeed.classList.add('active');
