@@ -1231,8 +1231,9 @@ class UploadManager {
             // Get camera stream
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { 
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
+                    width: { ideal: 3840, max: 3840 },
+                    height: { ideal: 2160, max: 2160 },
+                    frameRate: { ideal: 60, max: 60 },
                     facingMode: this.currentFacingMode
                 },
                 audio: true

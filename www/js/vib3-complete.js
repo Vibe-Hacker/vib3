@@ -13,7 +13,7 @@ const appConfig = {
     name: 'VIB3',
     version: '1.0.0',
     debug: true,
-    maxVideoSize: 100 * 1024 * 1024, // 100MB
+    maxVideoSize: 500 * 1024 * 1024, // 500MB for 4K videos
     supportedVideoFormats: ['video/mp4', 'video/quicktime', 'video/x-msvideo'],
     videoCompressionQuality: 0.8,
     maxVideoDuration: 180, // 3 minutes
@@ -1603,70 +1603,53 @@ async function createVideoFeedWithSelectedVideo(selectedVideo) {
     // Clear the feed
     feedElement.innerHTML = '<div class="loading-container"><div class="spinner"></div><p>Loading video...</p></div>';
     
-    try {
-        // Get all available videos
-        const response = await fetch(`${window.API_BASE_URL}/api/videos?feed=foryou&limit=20`, {
-            credentials: 'include',
-            headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
-        });
-        
-        const data = await response.json();
-        let allVideos = data.videos || [];
-        
-        // If API doesn't return videos, use the selected video at least
-        if (allVideos.length === 0) {
-            allVideos = [selectedVideo];
-        } else {
-            // Make sure the selected video is first in the list
-            allVideos = allVideos.filter(v => getVideoFilename(v.videoUrl) !== getVideoFilename(selectedVideo.videoUrl));
-            allVideos.unshift(selectedVideo);
-        }
-        
-        // Clear and rebuild the feed
-        feedElement.innerHTML = '';
-        
-        // Create video cards for all videos
-        allVideos.forEach((video, index) => {
-            const videoCard = createAdvancedVideoCard(video);
-            feedElement.appendChild(videoCard);
-        });
-        
-        // Initialize video system for the new feed
-        setTimeout(() => {
-            initializeVideoObserver();
-            
-            // Auto-play the first video (which is our selected video)
-            const firstVideo = feedElement.querySelector('video');
-            if (firstVideo) {
-                firstVideo.currentTime = 0;
-                firstVideo.play().catch(e => {
-                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                        console.log('Auto-play prevented:', e);
-                    }
-                });
+    // Instead of fetching from API, get videos from the current explore grid
+    const exploreGrid = document.getElementById('exploreVideoGrid');
+    let allVideos = [selectedVideo]; // Start with the selected video
+    
+    if (exploreGrid) {
+        // Get all explore videos from the DOM
+        const exploreCards = exploreGrid.querySelectorAll('.explore-video-card');
+        exploreCards.forEach(card => {
+            const video = card.querySelector('video');
+            if (video && video.src !== selectedVideo.videoUrl) {
+                // Create a video object from the DOM data
+                const videoData = {
+                    videoUrl: video.src,
+                    title: 'Video from Explore',
+                    username: 'vib3user',
+                    user: { username: 'vib3user', profilePicture: '👤' },
+                    _id: getVideoFilename(video.src)
+                };
+                allVideos.push(videoData);
             }
-        }, 200);
-        
-    } catch (error) {
-        console.error('Error creating video feed:', error);
-        
-        // Fallback: just create a card for the selected video
-        feedElement.innerHTML = '';
-        const videoCard = createAdvancedVideoCard(selectedVideo);
-        feedElement.appendChild(videoCard);
-        
-        setTimeout(() => {
-            const video = feedElement.querySelector('video');
-            if (video) {
-                video.currentTime = 0;
-                video.play().catch(e => {
-                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                        console.log('Auto-play prevented:', e);
-                    }
-                });
-            }
-        }, 200);
+        });
     }
+    
+    // Clear and rebuild the feed
+    feedElement.innerHTML = '';
+    
+    // Create video cards for all videos
+    allVideos.forEach((video, index) => {
+        const videoCard = createAdvancedVideoCard(video);
+        feedElement.appendChild(videoCard);
+    });
+    
+    // Initialize video system for the new feed
+    setTimeout(() => {
+        initializeVideoObserver();
+        
+        // Auto-play the first video (which is our selected video)
+        const firstVideo = feedElement.querySelector('video');
+        if (firstVideo) {
+            firstVideo.currentTime = 0;
+            firstVideo.play().catch(e => {
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    console.log('Auto-play prevented:', e);
+                }
+            });
+        }
+    }, 200);
 }
 
 // Find and play a specific video in the current feed
@@ -2787,7 +2770,7 @@ function selectVideoFile() {
     
     // Continue with original video upload flow
     document.getElementById('step2Title').textContent = '🎥 Select Video File';
-    document.getElementById('formatHint').textContent = 'Supported: MP4, MOV, AVI (up to 1080p)';
+    document.getElementById('formatHint').textContent = 'Supported: MP4, MOV, AVI (up to 4K Ultra HD)';
     goToStep(2);
 }
 
@@ -2840,7 +2823,11 @@ async function startSimpleVideoRecording() {
     try {
         // Get camera stream directly
         const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { width: 720, height: 1280 }, 
+            video: { 
+                width: { ideal: 3840, max: 3840 }, 
+                height: { ideal: 2160, max: 2160 }, 
+                frameRate: { ideal: 60, max: 60 }
+            }, 
             audio: true 
         });
         
@@ -3139,11 +3126,11 @@ function handleVideoSelect(event) {
     // Validate video files
     const validFiles = files.filter(file => {
         const validTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/quicktime'];
-        return validTypes.includes(file.type) && file.size <= 100 * 1024 * 1024; // 100MB limit
+        return validTypes.includes(file.type) && file.size <= 500 * 1024 * 1024; // 500MB limit for 4K
     });
     
     if (validFiles.length === 0) {
-        showNotification('Please select valid video files (MP4, MOV, AVI under 100MB)', 'error');
+        showNotification('Please select valid video files (MP4, MOV, AVI under 500MB)', 'error');
         return;
     }
     
@@ -4561,8 +4548,9 @@ function openLiveStreamWithCamera(stream) {
                     <div class="setting-group">
                         <label>Stream Quality</label>
                         <select id="streamQuality">
-                            <option value="720p">720p HD</option>
+                            <option value="4K">4K Ultra HD</option>
                             <option value="1080p">1080p Full HD</option>
+                            <option value="720p">720p HD</option>
                             <option value="480p">480p (Data Saver)</option>
                         </select>
                     </div>

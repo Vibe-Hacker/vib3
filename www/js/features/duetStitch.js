@@ -14,9 +14,9 @@ export class DuetStitch {
             maxDuetDuration: 60, // seconds
             maxStitchDuration: 15, // seconds
             videoQuality: {
-                width: 720,
-                height: 1280,
-                frameRate: 30
+                width: { ideal: 3840, max: 3840 },
+                height: { ideal: 2160, max: 2160 },
+                frameRate: { ideal: 60, max: 60 }
             }
         };
     }

@@ -15,7 +15,7 @@ const appConfig = {
     name: 'VIB3',
     version: '1.0.0',
     debug: true, // Set to false in production
-    maxVideoSize: 100 * 1024 * 1024, // 100MB
+    maxVideoSize: 500 * 1024 * 1024, // 500MB for 4K videos
     supportedVideoFormats: ['video/mp4', 'video/quicktime', 'video/x-msvideo'],
     videoCompressionQuality: 0.8,
     maxVideoDuration: 180, // 3 minutes in seconds
