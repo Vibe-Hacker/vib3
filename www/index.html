@@ -1127,20 +1127,26 @@
             },
             
             init() {
-                console.log('🚀 Autonomous system initialized');
+                // Only run testing in development
+                const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
                 
-                // Run initial fixes and tests
-                setTimeout(() => {
-                    this.runFixes();
-                    // Only run tests once on load, not repeatedly
-                    autoTest.runTests();
-                }, 3000);
+                if (isDevelopment) {
+                    console.log('🚀 Autonomous system initialized (dev mode)');
+                    
+                    // Run initial fixes and tests in development
+                    setTimeout(() => {
+                        this.runFixes();
+                        autoTest.runTests();
+                    }, 3000);
+                } else {
+                    // Production: only run essential fixes
+                    this.fixTheme();
+                }
                 
-                // Reduce frequency of auto-fixes to prevent performance issues
-                // Only run theme fixes periodically, not full page navigation
+                // Periodic theme fixes (but not excessive testing)
                 setInterval(() => {
                     this.fixTheme();
-                }, 120000); // Every 2 minutes instead of 30 seconds
+                }, 300000); // Every 5 minutes
             }
         };
         

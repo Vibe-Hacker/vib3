@@ -526,7 +526,9 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
         hasMoreVideos = true;
     }
     
-    console.log(`Loading video feed: ${feedType}, page: ${page}, append: ${append}`);
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log(`Loading video feed: ${feedType}, page: ${page}, append: ${append}`);
+    }
     currentFeed = feedType;
     
     // Update UI to show correct feed (only if not appending)
@@ -1736,7 +1738,9 @@ function loadTrendingHashtags() {
 
 // Load explore videos with categories
 async function loadExploreVideos(category = 'all') {
-    console.log('📹 Loading explore videos for category:', category);
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('📹 Loading explore videos for category:', category);
+    }
     
     const exploreGrid = document.getElementById('exploreVideoGrid');
     if (!exploreGrid) return;
@@ -4614,7 +4618,9 @@ function showNotification(message, type = 'info', duration = 3000) {
 }
 
 function switchFeedTab(feedType) {
-    console.log(`🔄 Switching to ${feedType} feed`);
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log(`🔄 Switching to ${feedType} feed`);
+    }
     
     // CRITICAL FIX: Remove profile page when switching feeds
     const profilePage = document.getElementById('profilePage');
@@ -4831,9 +4837,7 @@ function cleanupLoadingSpinners() {
 }
 
 // ================ INITIALIZATION ================
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('VIB3 Complete App Starting...');
-    
+document.addEventListener('DOMContentLoaded', function() {    
     // Apply saved theme
     const savedTheme = localStorage.getItem('vib3-theme');
     if (savedTheme) {
@@ -4848,9 +4852,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Clean up any loading spinners from previous sessions
     setTimeout(cleanupLoadingSpinners, 1000);
-    
-    // Initialize all features
-    console.log('All VIB3 features loaded successfully!');
 });
 
 function addGlobalStyles() {
@@ -9467,9 +9468,6 @@ function playVideoFromProfile(videoId) {
 
 // ================ APP INITIALIZATION ================
 
-// Ensure global functions are available immediately
-console.log('📱 VIB3 Complete App Starting...');
-
 // Initialize the app when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeApp);
@@ -9480,7 +9478,10 @@ if (document.readyState === 'loading') {
 function initializeApp() {
     try {
         initializeAuth();
-        console.log('✅ All VIB3 features loaded successfully!');
+        // Only log success in development
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('✅ VIB3 initialized');
+        }
     } catch (error) {
         console.error('❌ Error initializing VIB3:', error);
     }
