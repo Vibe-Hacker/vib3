@@ -1308,30 +1308,6 @@
                 });
                 console.log('📋 Styled', headers.length, 'headers');
                 
-                // Add emergency test with actual data
-                const dataTest = document.createElement('div');
-                dataTest.innerHTML = `
-                    <h2>🔥 ANALYTICS WORKING 🔥</h2>
-                    <p><strong>Total Videos:</strong> ${data.totalVideos}</p>
-                    <p><strong>Avg Engagement:</strong> ${data.engagementStats.avgScore.toFixed(2)}</p>
-                    <p><strong>Algorithm:</strong> ${data.algorithmVersion}</p>
-                    <p><strong>High Engagement Videos:</strong> ${data.engagementStats.highEngagementCount}</p>
-                `;
-                dataTest.style.cssText = `
-                    position: fixed !important;
-                    top: 100px !important;
-                    left: 300px !important;
-                    background: #00ff00 !important;
-                    color: #000000 !important;
-                    padding: 20px !important;
-                    border: 3px solid #000000 !important;
-                    z-index: 999999 !important;
-                    font-size: 16px !important;
-                    width: 350px !important;
-                `;
-                document.body.appendChild(dataTest);
-                console.log('🔥 Data test added to body with actual analytics data');
-                
                 // Add a simple test text at the very top
                 const testText = document.createElement('div');
                 testText.innerHTML = '🔴 ANALYTICS DASHBOARD - IF YOU SEE THIS, STYLING IS WORKING 🔴';
@@ -1350,12 +1326,11 @@
                 analyticsPage.insertBefore(testText, analyticsPage.firstChild);
                 console.log('🔴 Added red test header to analytics page');
                 
-                // Last resort: Add text directly to document body
+                // Simple emergency test without data dependency
                 const emergencyTest = document.createElement('div');
                 emergencyTest.innerHTML = `
-                    <h1>🚨 EMERGENCY ANALYTICS TEST 🚨</h1>
-                    <p>Analytics data loaded successfully!</p>
-                    <p>Check console for full data object</p>
+                    <h1>🚨 ANALYTICS PAGE VISIBLE 🚨</h1>
+                    <p>Analytics loading function executed!</p>
                 `;
                 emergencyTest.style.cssText = `
                     position: fixed !important;
@@ -1466,6 +1441,30 @@
             `).join('');
             
             console.log('✅ Analytics display completed successfully');
+            
+            // Add emergency test with actual data here where data is available
+            const dataTest = document.createElement('div');
+            dataTest.innerHTML = `
+                <h2>🔥 ANALYTICS WORKING 🔥</h2>
+                <p><strong>Total Videos:</strong> ${data.totalVideos}</p>
+                <p><strong>Avg Engagement:</strong> ${data.engagementStats.avgScore.toFixed(2)}</p>
+                <p><strong>Algorithm:</strong> ${data.algorithmVersion}</p>
+                <p><strong>High Engagement Videos:</strong> ${data.engagementStats.highEngagementCount}</p>
+            `;
+            dataTest.style.cssText = `
+                position: fixed !important;
+                top: 100px !important;
+                left: 300px !important;
+                background: #00ff00 !important;
+                color: #000000 !important;
+                padding: 20px !important;
+                border: 3px solid #000000 !important;
+                z-index: 999999 !important;
+                font-size: 16px !important;
+                width: 350px !important;
+            `;
+            document.body.appendChild(dataTest);
+            console.log('🔥 Data test added to body with actual analytics data');
             
             } catch (error) {
                 console.error('❌ Error displaying analytics data:', error);
