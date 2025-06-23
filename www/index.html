@@ -1252,9 +1252,20 @@
                 // Force analytics page to be visible for debugging
                 const analyticsPage = document.getElementById('analyticsPage');
                 if (analyticsPage) {
+                    console.log('📊 Analytics page current style:', {
+                        display: analyticsPage.style.display,
+                        computed: window.getComputedStyle(analyticsPage).display
+                    });
                     analyticsPage.style.display = 'block';
                     analyticsPage.style.backgroundColor = '#161823'; // Force a visible background
+                    analyticsPage.style.zIndex = '9999';
                     console.log('📊 Analytics page forced visible');
+                    console.log('📊 Analytics page new style:', {
+                        display: analyticsPage.style.display,
+                        computed: window.getComputedStyle(analyticsPage).display
+                    });
+                } else {
+                    console.error('❌ Analytics page element not found!');
                 }
                 
                 // Force content to be visible with debugging styles
@@ -1262,6 +1273,20 @@
                 content.style.border = '2px solid #fe2c55';
                 content.style.minHeight = '500px';
                 console.log('🔧 Applied debugging styles to content');
+                
+                // Check for overlapping elements
+                console.log('🔍 Checking for overlapping pages...');
+                const allPages = document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page');
+                allPages.forEach(page => {
+                    const style = window.getComputedStyle(page);
+                    if (style.display !== 'none') {
+                        console.log('⚠️ Page still visible:', page.className, {
+                            display: style.display,
+                            zIndex: style.zIndex,
+                            position: style.position
+                        });
+                    }
+                });
                 
             } catch (err) {
                 console.error('❌ Analytics error:', err);
