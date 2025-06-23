@@ -3407,14 +3407,31 @@ async function publishContent() {
             if (!authCheck.ok) {
                 console.log('❌ Session verification failed, status:', authCheck.status);
                 showNotification('Your session has expired. Please log in again.', 'error');
+                
                 // Clear invalid auth state
                 window.authToken = null;
                 window.currentUser = null;
-                // Trigger login screen
+                
+                // Close upload modal and show login screen
+                hideUploadModal();
+                
+                // Show auth container for login
+                const authContainer = document.getElementById('authContainer');
+                if (authContainer) {
+                    authContainer.style.display = 'flex';
+                }
+                
+                // Hide main app until re-authenticated
+                const mainApp = document.getElementById('mainApp');
+                if (mainApp) {
+                    mainApp.style.display = 'none';
+                }
+                
+                // Trigger auth state change callbacks
                 if (window.auth && window.auth._triggerCallbacks) {
                     window.auth._triggerCallbacks(null);
                 }
-                goToStep(4);
+                
                 return;
             }
             
