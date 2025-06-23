@@ -1206,198 +1206,59 @@
             error.style.display = 'none';
             
             try {
-                console.log('📊 Loading analytics data...');
-                
-                // Ensure API_BASE_URL is available
                 const apiBaseUrl = window.API_BASE_URL || 
                     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                         ? '' 
                         : 'https://vib3-production.up.railway.app');
                 
-                console.log('🌐 Using API base URL:', apiBaseUrl);
                 const response = await fetch(`${apiBaseUrl}/api/analytics/algorithm`);
-                
-                console.log('📡 Response status:', response.status, response.statusText);
-                console.log('📄 Response headers:', [...response.headers.entries()]);
                 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('❌ API Error Response:', errorText);
-                    throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText.substring(0, 200)}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const contentType = response.headers.get('content-type');
-                console.log('📝 Content-Type:', contentType);
-                
                 if (!contentType || !contentType.includes('application/json')) {
                     const responseText = await response.text();
-                    console.error('❌ Expected JSON but got:', responseText.substring(0, 200));
-                    throw new Error(`Expected JSON response but got ${contentType}. Response: ${responseText.substring(0, 100)}...`);
+                    throw new Error(`Expected JSON response but got ${contentType}`);
                 }
                 
                 const analytics = await response.json();
-                console.log('✅ Analytics data loaded:', analytics);
                 
                 displayAnalyticsData(analytics);
                 
                 // Show content
-                console.log('📺 Showing analytics content...');
                 loading.style.display = 'none';
                 content.style.display = 'block';
-                content.style.visibility = 'visible';
-                content.style.opacity = '1';
-                console.log('👁️ Content visibility set to:', content.style.display);
-                console.log('📦 Content element:', content);
                 
-                // Force analytics page to be visible for debugging
+                // Show analytics page
                 const analyticsPage = document.getElementById('analyticsPage');
                 if (analyticsPage) {
-                    console.log('📊 Analytics page current style:', {
-                        display: analyticsPage.style.display,
-                        computed: window.getComputedStyle(analyticsPage).display
-                    });
-                    
-                    // Force visible styling with proper positioning
                     analyticsPage.style.display = 'block';
-                    analyticsPage.style.backgroundColor = '#2a2a2a'; // Lighter dark background
-                    analyticsPage.style.color = '#ffffff'; // White text
-                    analyticsPage.style.zIndex = '99999';
-                    analyticsPage.style.position = 'absolute';
-                    analyticsPage.style.top = '0';
-                    analyticsPage.style.left = '240px'; // Account for sidebar
-                    analyticsPage.style.width = 'calc(100vw - 240px)';
-                    analyticsPage.style.height = '100vh';
-                    analyticsPage.style.overflow = 'auto';
-                    analyticsPage.style.boxSizing = 'border-box';
-                    
-                    console.log('📊 Analytics page forced visible with proper styling');
-                    console.log('📊 Analytics page new style:', {
-                        display: analyticsPage.style.display,
-                        computed: window.getComputedStyle(analyticsPage).display
-                    });
                 } else {
                     console.error('❌ Analytics page element not found!');
                 }
                 
-                // Force content to be visible with bright styles for debugging
-                content.style.backgroundColor = '#333333';
-                content.style.color = '#ffffff';
-                content.style.minHeight = '500px';
-                content.style.padding = '20px';
-                content.style.border = '2px solid #fe2c55'; // Bright pink border
-                console.log('🔧 Applied bright styles to content');
-                
-                // Also force all stat cards to be visible
-                const statCards = document.querySelectorAll('.stat-card');
-                statCards.forEach(card => {
-                    card.style.backgroundColor = '#444444';
-                    card.style.border = '1px solid #fe2c55';
-                    card.style.color = '#ffffff';
-                    card.style.padding = '15px';
-                    card.style.margin = '10px';
-                });
-                console.log('🎯 Styled', statCards.length, 'stat cards');
-                
-                // Force header to be visible
-                const headers = analyticsPage.querySelectorAll('h2, h3');
-                headers.forEach(header => {
-                    header.style.color = '#ffffff';
-                    header.style.backgroundColor = '#fe2c55';
-                    header.style.padding = '10px';
-                    header.style.margin = '10px 0';
-                });
-                console.log('📋 Styled', headers.length, 'headers');
-                
-                // Add a simple test text at the very top
-                const testText = document.createElement('div');
-                testText.innerHTML = '🔴 ANALYTICS DASHBOARD - IF YOU SEE THIS, STYLING IS WORKING 🔴';
-                testText.style.cssText = `
-                    background: #ff0000;
-                    color: #ffffff;
-                    font-size: 24px;
-                    font-weight: bold;
-                    text-align: center;
-                    padding: 20px;
-                    margin: 20px;
-                    border: 5px solid #ffffff;
-                    position: relative;
-                    z-index: 10000;
-                `;
-                analyticsPage.insertBefore(testText, analyticsPage.firstChild);
-                console.log('🔴 Added red test header to analytics page');
-                
-                // Simple emergency test without data dependency
-                const emergencyTest = document.createElement('div');
-                emergencyTest.innerHTML = `
-                    <h1>🚨 ANALYTICS PAGE VISIBLE 🚨</h1>
-                    <p>Analytics loading function executed!</p>
-                `;
-                emergencyTest.style.cssText = `
-                    position: fixed !important;
-                    top: 50px !important;
-                    left: 250px !important;
-                    background: #ff0000 !important;
-                    color: #ffffff !important;
-                    padding: 20px !important;
-                    border: 5px solid #ffffff !important;
-                    z-index: 999999 !important;
-                    font-size: 18px !important;
-                    width: 400px !important;
-                `;
-                document.body.appendChild(emergencyTest);
-                console.log('🚨 Emergency test added to body');
-                
-                // Log the actual computed styles to see what browser thinks
-                const computedStyles = window.getComputedStyle(analyticsPage);
-                console.log('🖥️ Browser computed styles for analytics page:', {
-                    display: computedStyles.display,
-                    visibility: computedStyles.visibility,
-                    opacity: computedStyles.opacity,
-                    zIndex: computedStyles.zIndex,
-                    position: computedStyles.position,
-                    top: computedStyles.top,
-                    left: computedStyles.left,
-                    width: computedStyles.width,
-                    height: computedStyles.height,
-                    backgroundColor: computedStyles.backgroundColor
-                });
-                
-                // Check for overlapping elements and hide them
-                console.log('🔍 Checking for overlapping pages...');
+                // Hide overlapping pages
                 const allPages = document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page');
                 allPages.forEach(page => {
-                    const style = window.getComputedStyle(page);
-                    if (style.display !== 'none') {
-                        console.log('⚠️ Page still visible, hiding:', page.className, {
-                            display: style.display,
-                            zIndex: style.zIndex,
-                            position: style.position
-                        });
-                        page.style.display = 'none';
-                        console.log('✅ Hidden page:', page.className);
-                    }
+                    page.style.display = 'none';
                 });
                 
             } catch (err) {
-                console.error('❌ Analytics error:', err);
                 loading.style.display = 'none';
                 error.style.display = 'block';
-                error.textContent = `❌ Failed to load analytics: ${err.message}`;
+                error.textContent = `Failed to load analytics: ${err.message}`;
             }
         }
         
         function displayAnalyticsData(data) {
-            console.log('🎨 Displaying analytics data:', data);
-            
             try {
                 // Overview stats
                 const avgScoreEl = document.getElementById('avgEngagementScore');
-                console.log('🎯 Setting avgEngagementScore element:', avgScoreEl);
                 if (avgScoreEl) {
                     avgScoreEl.textContent = data.engagementStats.avgScore.toFixed(2);
-                    console.log('✅ Set avgEngagementScore to:', data.engagementStats.avgScore.toFixed(2));
-                } else {
-                    console.error('❌ avgEngagementScore element not found!');
                 }
             document.getElementById('highEngagementCount').textContent = data.engagementStats.highEngagementCount;
             document.getElementById('freshContentCount').textContent = data.freshnessStats.last24h;
@@ -1440,36 +1301,9 @@
                 </div>
             `).join('');
             
-            console.log('✅ Analytics display completed successfully');
-            
-            // Add emergency test with actual data here where data is available
-            const dataTest = document.createElement('div');
-            dataTest.innerHTML = `
-                <h2>🔥 ANALYTICS WORKING 🔥</h2>
-                <p><strong>Total Videos:</strong> ${data.totalVideos}</p>
-                <p><strong>Avg Engagement:</strong> ${data.engagementStats.avgScore.toFixed(2)}</p>
-                <p><strong>Algorithm:</strong> ${data.algorithmVersion}</p>
-                <p><strong>High Engagement Videos:</strong> ${data.engagementStats.highEngagementCount}</p>
-            `;
-            dataTest.style.cssText = `
-                position: fixed !important;
-                top: 100px !important;
-                left: 300px !important;
-                background: #00ff00 !important;
-                color: #000000 !important;
-                padding: 20px !important;
-                border: 3px solid #000000 !important;
-                z-index: 999999 !important;
-                font-size: 16px !important;
-                width: 350px !important;
-            `;
-            document.body.appendChild(dataTest);
-            console.log('🔥 Data test added to body with actual analytics data');
-            
             } catch (error) {
-                console.error('❌ Error displaying analytics data:', error);
-                console.error('Data that caused error:', data);
-                throw error; // Re-throw to trigger main error handler
+                console.error('Error displaying analytics data:', error);
+                throw error;
             }
         }
         
@@ -1494,59 +1328,25 @@
         // Auto-load analytics when analytics page is opened
         const originalShowPage = window.showPage;
         window.showPage = function(page) {
-            console.log('🔄 showPage called with:', page);
-            console.log('📄 Original showPage function exists:', !!originalShowPage);
-            
             if (originalShowPage) {
                 originalShowPage(page);
             } else {
-                console.log('⚠️ No original showPage function, implementing basic logic');
                 // Basic fallback logic
                 document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page').forEach(el => {
                     el.style.display = 'none';
                 });
                 
                 const pageElement = document.getElementById(page + 'Page');
-                console.log('🎯 Looking for page element:', page + 'Page', pageElement);
                 if (pageElement) {
                     pageElement.style.display = 'block';
-                    console.log('✅ Showed page element:', pageElement);
-                } else {
-                    console.log('❌ Page element not found');
                 }
             }
             
             if (page === 'analytics') {
-                console.log('📊 Analytics page detected, loading data...');
                 setTimeout(loadAnalyticsData, 100);
             }
         };
         
-        // Manual test function to force show analytics page
-        window.forceShowAnalytics = function() {
-            console.log('🔧 Force showing analytics page...');
-            
-            // Hide all other pages
-            document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page').forEach(el => {
-                el.style.display = 'none';
-                console.log('🙈 Hidden:', el.className);
-            });
-            
-            // Show analytics page
-            const analyticsPage = document.getElementById('analyticsPage');
-            if (analyticsPage) {
-                analyticsPage.style.display = 'block';
-                analyticsPage.style.visibility = 'visible';
-                analyticsPage.style.opacity = '1';
-                analyticsPage.style.zIndex = '1000';
-                console.log('👁️ Analytics page forced visible:', analyticsPage);
-                
-                // Load data
-                loadAnalyticsData();
-            } else {
-                console.error('❌ Analytics page element not found');
-            }
-        };
     </script>
 </body>
 </html>
