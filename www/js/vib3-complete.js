@@ -1403,6 +1403,12 @@ function createExploreVideoCard(video) {
     
     const card = document.createElement('div');
     card.className = 'explore-video-card';
+    
+    // CRITICAL: Store the complete video data on the card for later access
+    card.videoData = video;
+    card.dataset.videoId = video.id || video._id;
+    card.dataset.userId = video.userId;
+    
     card.style.cssText = `
         position: relative;
         width: 100%;
@@ -3386,6 +3392,36 @@ async function publishContent() {
         // Check authentication (production-ready session-based)
         if (!window.authToken || !window.currentUser) {
             showNotification('Please log in to upload content', 'error');
+            goToStep(4);
+            return;
+        }
+        
+        // Verify session is still valid
+        try {
+            const authCheck = await fetch(`${window.API_BASE_URL}/api/auth/me`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (!authCheck.ok) {
+                console.log('❌ Session verification failed, status:', authCheck.status);
+                showNotification('Your session has expired. Please log in again.', 'error');
+                // Clear invalid auth state
+                window.authToken = null;
+                window.currentUser = null;
+                // Trigger login screen
+                if (window.auth && window.auth._triggerCallbacks) {
+                    window.auth._triggerCallbacks(null);
+                }
+                goToStep(4);
+                return;
+            }
+            
+            console.log('✅ Session verified for upload');
+        } catch (error) {
+            console.error('❌ Auth check failed:', error);
+            showNotification('Please check your connection and try logging in again.', 'error');
             goToStep(4);
             return;
         }
