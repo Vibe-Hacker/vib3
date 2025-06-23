@@ -1308,6 +1308,30 @@
                 });
                 console.log('📋 Styled', headers.length, 'headers');
                 
+                // Add emergency test with actual data
+                const dataTest = document.createElement('div');
+                dataTest.innerHTML = `
+                    <h2>🔥 ANALYTICS WORKING 🔥</h2>
+                    <p><strong>Total Videos:</strong> ${data.totalVideos}</p>
+                    <p><strong>Avg Engagement:</strong> ${data.engagementStats.avgScore.toFixed(2)}</p>
+                    <p><strong>Algorithm:</strong> ${data.algorithmVersion}</p>
+                    <p><strong>High Engagement Videos:</strong> ${data.engagementStats.highEngagementCount}</p>
+                `;
+                dataTest.style.cssText = `
+                    position: fixed !important;
+                    top: 100px !important;
+                    left: 300px !important;
+                    background: #00ff00 !important;
+                    color: #000000 !important;
+                    padding: 20px !important;
+                    border: 3px solid #000000 !important;
+                    z-index: 999999 !important;
+                    font-size: 16px !important;
+                    width: 350px !important;
+                `;
+                document.body.appendChild(dataTest);
+                console.log('🔥 Data test added to body with actual analytics data');
+                
                 // Add a simple test text at the very top
                 const testText = document.createElement('div');
                 testText.innerHTML = '🔴 ANALYTICS DASHBOARD - IF YOU SEE THIS, STYLING IS WORKING 🔴';
@@ -1330,9 +1354,8 @@
                 const emergencyTest = document.createElement('div');
                 emergencyTest.innerHTML = `
                     <h1>🚨 EMERGENCY ANALYTICS TEST 🚨</h1>
-                    <p>Total Videos: ${data.totalVideos}</p>
-                    <p>Avg Engagement: ${data.engagementStats.avgScore.toFixed(2)}</p>
-                    <p>Algorithm Version: ${data.algorithmVersion}</p>
+                    <p>Analytics data loaded successfully!</p>
+                    <p>Check console for full data object</p>
                 `;
                 emergencyTest.style.cssText = `
                     position: fixed !important;
