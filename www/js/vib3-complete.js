@@ -4606,7 +4606,10 @@ function showPage(page) {
         console.log('📊 Analytics page element:', analyticsPage);
         if (analyticsPage) {
             analyticsPage.style.display = 'block';
-            console.log('📊 Analytics page display set to block');
+            analyticsPage.style.visibility = 'visible';
+            analyticsPage.style.opacity = '1';
+            analyticsPage.style.zIndex = '1000';
+            console.log('📊 Analytics page display set to block with visibility fixes');
             // Trigger analytics data loading from the HTML page function
             if (window.loadAnalyticsData) {
                 console.log('📊 Calling loadAnalyticsData');
