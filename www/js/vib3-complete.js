@@ -4572,12 +4572,41 @@ function showPage(page) {
 
     // Handle feed tabs - don't show "coming soon" for these
     if (page === 'foryou' || page === 'following' || page === 'explore' || page === 'friends') {
+        // CRITICAL: Force hide ALL activity and special pages when going to feeds
+        document.querySelectorAll('.activity-page, .analytics-page, .messages-page, .profile-page').forEach(el => {
+            if (el) {
+                el.style.display = 'none';
+                el.style.visibility = 'hidden';
+                el.style.opacity = '0';
+                el.style.zIndex = '-1';
+            }
+        });
+        
+        // Remove any dynamically created pages
+        const dynamicPages = ['activityPage', 'analyticsOverlay'];
+        dynamicPages.forEach(pageId => {
+            const element = document.getElementById(pageId);
+            if (element) {
+                element.remove();
+                console.log(`🧹 Force removed ${pageId} for feed navigation`);
+            }
+        });
+        
+        // Remove any fixed position overlays
+        document.querySelectorAll('[style*="position: fixed"]').forEach(overlay => {
+            if (overlay.style.zIndex === '99999' || overlay.style.zIndex === '100000') {
+                overlay.remove();
+                console.log('🧹 Removed fixed overlay for feed navigation');
+            }
+        });
+        
         // Make sure to show the main app for feed tabs
         const mainApp = document.getElementById('mainApp');
         if (mainApp) {
             mainApp.style.display = 'block';
             mainApp.style.visibility = 'visible';
             mainApp.style.opacity = '1';
+            mainApp.style.zIndex = '1';
         }
         switchFeedTab(page);
         return;
