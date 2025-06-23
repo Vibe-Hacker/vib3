@@ -2485,14 +2485,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('exploreSearchInput');
     if (searchInput) {
         console.log('✅ Found explore search input');
-        // Show/hide clear button based on input
-        searchInput.addEventListener('input', function(e) {
-            const clearBtn = document.querySelector('.clear-search');
-            if (clearBtn) {
-                clearBtn.style.display = e.target.value ? 'block' : 'none';
-            }
-            updateSearchSuggestions(e.target.value);
-        });
+        // Note: input handler moved to handleSearchInput function called from HTML
         
         // Hide suggestions when clicking outside
         document.addEventListener('click', function(e) {
@@ -8218,6 +8211,200 @@ function handleMentionKeyDownDash(event, videoId) {
     }
 }
 
+// Search input handlers with @mention support
+async function handleSearchInput(input) {
+    console.log('🔍 handleSearchInput called');
+    const text = input.value;
+    const cursorPosition = input.selectionStart;
+    console.log('📝 Search input text:', text, 'Cursor position:', cursorPosition);
+    
+    // Handle clear button and regular search suggestions
+    const clearBtn = document.querySelector('.clear-search');
+    if (clearBtn) {
+        clearBtn.style.display = text ? 'block' : 'none';
+    }
+    
+    // Find if we're in a mention context
+    const beforeCursor = text.substring(0, cursorPosition);
+    const mentionMatch = beforeCursor.match(/@(\w*)$/);
+    console.log('🔎 Mention match in search:', mentionMatch);
+    
+    if (mentionMatch) {
+        mentionStartPosition = mentionMatch.index;
+        mentionSearchTerm = mentionMatch[1];
+        console.log('✅ Found mention in search! Search term:', mentionSearchTerm);
+        showSearchMentionDropdown(mentionSearchTerm);
+        // Hide regular search suggestions when showing mentions
+        hideSearchSuggestions();
+    } else {
+        console.log('❌ No mention found in search');
+        hideSearchMentionDropdown();
+        // Show regular search suggestions
+        updateSearchSuggestions(text);
+    }
+}
+
+async function showSearchMentionDropdown(searchTerm) {
+    console.log('🎯 showSearchMentionDropdown called, searchTerm:', searchTerm);
+    const dropdown = document.getElementById('searchMentionDropdown');
+    console.log('📦 Search dropdown element:', dropdown);
+    if (!dropdown) {
+        console.error('❌ No search dropdown element found');
+        return;
+    }
+    
+    try {
+        // Search for users
+        const apiBaseUrl = window.API_BASE_URL || 
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? '' 
+                : 'https://vib3-production.up.railway.app');
+        
+        const searchUrl = `${apiBaseUrl}/api/users/search?q=${searchTerm}&limit=5`;
+        console.log('🌐 Searching users for search bar at:', searchUrl);
+                
+        const response = await fetch(searchUrl, {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
+        });
+        
+        console.log('📡 Search API Response status:', response.status);
+        if (!response.ok) {
+            console.error('❌ Search API Error:', response.status, response.statusText);
+            throw new Error('Failed to search users');
+        }
+        
+        const users = await response.json();
+        console.log('👥 Users found for search:', users);
+        
+        if (users.length > 0) {
+            dropdown.innerHTML = users.map((user, index) => `
+                <div class="mention-item ${index === selectedMentionIndex ? 'selected' : ''}" 
+                     onclick="selectSearchMention('${user.username}')"
+                     onmouseover="selectedMentionIndex = ${index}"
+                     style="
+                        display: flex;
+                        align-items: center;
+                        padding: 12px 16px;
+                        cursor: pointer;
+                        transition: background 0.2s ease;
+                        ${index === selectedMentionIndex ? 'background: var(--bg-tertiary);' : ''}
+                     ">
+                    <div style="
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        background: linear-gradient(135deg, var(--accent-color), #ff006e);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin-right: 12px;
+                        font-size: 14px;
+                        color: white;
+                    ">${user.username[0].toUpperCase()}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--text-primary); font-size: 14px;">
+                            @${user.username}
+                        </div>
+                        ${user.displayName ? `<div style="font-size: 12px; color: var(--text-secondary);">${user.displayName}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            dropdown.style.cssText = `
+                display: block !important;
+                position: absolute !important;
+                top: 100% !important;
+                left: 0 !important;
+                right: 0 !important;
+                max-height: 200px !important;
+                overflow-y: auto !important;
+                background: #1a1a1a !important;
+                border: 1px solid #333 !important;
+                border-radius: 12px !important;
+                margin-top: 5px !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+                z-index: 10000 !important;
+            `;
+            
+            mentionDropdownOpen = true;
+            window.mentionDropdownOpen = true;
+            console.log('✅ Search mention dropdown shown successfully!');
+        } else {
+            console.log('⚠️ No users found for search, hiding dropdown');
+            hideSearchMentionDropdown();
+        }
+    } catch (error) {
+        console.error('❌ Error searching users for search bar:', error);
+        hideSearchMentionDropdown();
+    }
+}
+
+function hideSearchMentionDropdown() {
+    const dropdown = document.getElementById('searchMentionDropdown');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+        dropdown.innerHTML = '';
+    }
+    mentionDropdownOpen = false;
+    window.mentionDropdownOpen = false;
+    selectedMentionIndex = 0;
+}
+
+function selectSearchMention(username) {
+    const input = document.getElementById('exploreSearchInput');
+    if (!input) return;
+    
+    const text = input.value;
+    const beforeMention = text.substring(0, mentionStartPosition);
+    const afterMention = text.substring(input.selectionStart);
+    
+    input.value = beforeMention + '@' + username + ' ' + afterMention;
+    input.focus();
+    
+    const newCursorPosition = beforeMention.length + username.length + 2;
+    input.setSelectionRange(newCursorPosition, newCursorPosition);
+    
+    hideSearchMentionDropdown();
+}
+
+function handleSearchMentionKeyDown(event) {
+    if (!mentionDropdownOpen) return;
+    
+    const dropdown = document.getElementById('searchMentionDropdown');
+    const items = dropdown?.querySelectorAll('.mention-item');
+    
+    if (!items || items.length === 0) return;
+    
+    switch(event.key) {
+        case 'ArrowDown':
+            event.preventDefault();
+            selectedMentionIndex = Math.min(selectedMentionIndex + 1, items.length - 1);
+            updateMentionSelection(items);
+            break;
+            
+        case 'ArrowUp':
+            event.preventDefault();
+            selectedMentionIndex = Math.max(selectedMentionIndex - 1, 0);
+            updateMentionSelection(items);
+            break;
+            
+        case 'Enter':
+            if (mentionDropdownOpen) {
+                event.preventDefault();
+                items[selectedMentionIndex]?.click();
+            }
+            break;
+            
+        case 'Escape':
+            hideSearchMentionDropdown();
+            break;
+    }
+}
+
 // ================ MUSIC AND AUDIO ================
 function recordVoiceover() {
     showNotification('Recording voiceover...', 'info');
@@ -8520,6 +8707,11 @@ window.selectMessageMention = selectMessageMention;
 window.handleCommentInputDash = handleCommentInputDash;
 window.handleMentionKeyDownDash = handleMentionKeyDownDash;
 window.selectMentionDash = selectMentionDash;
+
+// Search input mention functions
+window.handleSearchInput = handleSearchInput;
+window.handleSearchMentionKeyDown = handleSearchMentionKeyDown;
+window.selectSearchMention = selectSearchMention;
 
 // Music and audio functions
 window.recordVoiceover = recordVoiceover;
