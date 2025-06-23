@@ -1288,8 +1288,28 @@
                         </button>
                     </div>
                 `;
-                testElement.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; z-index: 99999; font-size: 14px; width: 90%; max-width: 800px; max-height: 90%; overflow: auto; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);';
+                testElement.style.cssText = 'position: fixed; top: 2vh; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; z-index: 99999; font-size: 14px; width: 90vw; max-width: 800px; height: 90vh; overflow: auto; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); resize: both;';
+                testElement.id = 'analyticsOverlay';
                 document.body.appendChild(testElement);
+                
+                // Add resize listener to adjust when console opens/closes
+                const resizeHandler = () => {
+                    const overlay = document.getElementById('analyticsOverlay');
+                    if (overlay) {
+                        overlay.style.width = '90vw';
+                        overlay.style.height = '90vh';
+                        overlay.style.top = '2vh';
+                        overlay.style.maxHeight = window.innerHeight - 40 + 'px';
+                        overlay.style.maxWidth = Math.min(800, window.innerWidth - 40) + 'px';
+                    }
+                };
+                
+                window.addEventListener('resize', resizeHandler);
+                
+                // Store cleanup function for when overlay is closed
+                testElement.addEventListener('DOMNodeRemoved', () => {
+                    window.removeEventListener('resize', resizeHandler);
+                });
                 
                 // Show analytics page with proper positioning
                 const analyticsPage = document.getElementById('analyticsPage');
