@@ -1355,8 +1355,30 @@
         // Auto-load analytics when analytics page is opened
         const originalShowPage = window.showPage;
         window.showPage = function(page) {
-            if (originalShowPage) originalShowPage(page);
+            console.log('🔄 showPage called with:', page);
+            console.log('📄 Original showPage function exists:', !!originalShowPage);
+            
+            if (originalShowPage) {
+                originalShowPage(page);
+            } else {
+                console.log('⚠️ No original showPage function, implementing basic logic');
+                // Basic fallback logic
+                document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page').forEach(el => {
+                    el.style.display = 'none';
+                });
+                
+                const pageElement = document.getElementById(page + 'Page');
+                console.log('🎯 Looking for page element:', page + 'Page', pageElement);
+                if (pageElement) {
+                    pageElement.style.display = 'block';
+                    console.log('✅ Showed page element:', pageElement);
+                } else {
+                    console.log('❌ Page element not found');
+                }
+            }
+            
             if (page === 'analytics') {
+                console.log('📊 Analytics page detected, loading data...');
                 setTimeout(loadAnalyticsData, 100);
             }
         };
