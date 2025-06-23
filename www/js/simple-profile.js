@@ -504,11 +504,20 @@ function displayUserVideos(videos) {
             </div>
         `;
     } else {
-        videosContent.innerHTML = `
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
-                ${videos.map(video => createVideoCard(video)).join('')}
-            </div>
-        `;
+        // Create grid container
+        const gridContainer = document.createElement('div');
+        gridContainer.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;';
+        
+        // Create video cards
+        videos.forEach(video => {
+            const cardElement = createVideoCard(video);
+            if (cardElement) {
+                gridContainer.appendChild(cardElement);
+            }
+        });
+        
+        videosContent.innerHTML = '';
+        videosContent.appendChild(gridContainer);
     }
 }
 
@@ -539,8 +548,8 @@ function createVideoCard(video) {
             <div style="color: white; font-size: 14px; text-align: center; padding: 0 10px;">${video.title || 'Video'}</div>
         </div>`;
     
-    return `
-        <div style="background: #222; border-radius: 8px; overflow: hidden; cursor: pointer; position: relative; aspect-ratio: 9/16;" onclick="playUserVideo('${videoId}')">
+    const cardHtml = `
+        <div class="profile-video-card" style="background: #222; border-radius: 8px; overflow: hidden; cursor: pointer; position: relative; aspect-ratio: 9/16;" data-video-id="${videoId}">
             ${videoElement}
             
             <!-- Duration -->
@@ -564,15 +573,64 @@ function createVideoCard(video) {
             </div>
             
             <!-- Delete button -->
-            <div style="position: absolute; top: 8px; left: 8px; background: rgba(255,0,0,0.8); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; opacity: 0.9; transition: all 0.3s ease;" 
-                 onclick="event.stopPropagation(); deleteUserVideo('${videoId}', '${video.title || 'this video'}')" 
-                 onmouseover="this.style.opacity='1'; this.style.transform='scale(1.1)'" 
-                 onmouseout="this.style.opacity='0.9'; this.style.transform='scale(1)'"
+            <div class="delete-button" style="position: absolute; top: 8px; left: 8px; background: rgba(255,0,0,0.8); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; opacity: 0.9; transition: all 0.3s ease;" 
                  title="Delete video">
                 🗑️
             </div>
         </div>
     `;
+    
+    // Create DOM element and store video data
+    const cardElement = document.createElement('div');
+    cardElement.innerHTML = cardHtml;
+    const card = cardElement.firstElementChild;
+    
+    // Store the complete video data on the card for reliable access
+    card.videoData = video;
+    
+    // Add click handler that uses stored data
+    card.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🎬 Profile video clicked:', card.videoData.title || 'Untitled');
+        openVideoModalFromProfile(card.videoData);
+    });
+    
+    // Add delete button handler
+    const deleteButton = card.querySelector('.delete-button');
+    if (deleteButton) {
+        deleteButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            deleteUserVideo(videoId, video.title || 'this video');
+        });
+        
+        // Add hover effects
+        deleteButton.addEventListener('mouseenter', () => {
+            deleteButton.style.opacity = '1';
+            deleteButton.style.transform = 'scale(1.1)';
+        });
+        
+        deleteButton.addEventListener('mouseleave', () => {
+            deleteButton.style.opacity = '0.9';
+            deleteButton.style.transform = 'scale(1)';
+        });
+    }
+    
+    return card;
+}
+
+// Open video from profile page using the same reliable method as explore
+function openVideoModalFromProfile(video) {
+    console.log('🎬 Opening video from profile:', video.title || 'Untitled');
+    
+    // Use the same function as explore page for consistency
+    if (window.openVideoModal) {
+        window.openVideoModal(video);
+    } else {
+        // Fallback to the old method if openVideoModal is not available
+        playUserVideo(video._id || video.id);
+    }
 }
 
 function playUserVideo(videoId) {
