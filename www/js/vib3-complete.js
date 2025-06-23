@@ -8033,6 +8033,191 @@ function handleMessageMentionKeyDown(event) {
     }
 }
 
+// Comment input handlers for the working comment input (with dash)
+async function handleCommentInputDash(input, videoId) {
+    console.log('🔍 handleCommentInputDash called for video:', videoId);
+    const text = input.value;
+    const cursorPosition = input.selectionStart;
+    console.log('📝 Input text:', text, 'Cursor position:', cursorPosition);
+    
+    // Find if we're in a mention context
+    const beforeCursor = text.substring(0, cursorPosition);
+    const mentionMatch = beforeCursor.match(/@(\w*)$/);
+    console.log('🔎 Mention match:', mentionMatch);
+    
+    if (mentionMatch) {
+        mentionStartPosition = mentionMatch.index;
+        mentionSearchTerm = mentionMatch[1];
+        console.log('✅ Found mention! Search term:', mentionSearchTerm);
+        showMentionDropdownDash(videoId, mentionSearchTerm);
+    } else {
+        console.log('❌ No mention found');
+        hideMentionDropdownDash(videoId);
+    }
+}
+
+async function showMentionDropdownDash(videoId, searchTerm) {
+    console.log('🎯 showMentionDropdownDash called for video:', videoId, 'searchTerm:', searchTerm);
+    const dropdown = document.getElementById(`mentionDropdownDash-${videoId}`);
+    console.log('📦 Dropdown element:', dropdown);
+    if (!dropdown) {
+        console.error('❌ No dropdown element found for video:', videoId);
+        return;
+    }
+    
+    try {
+        // Search for users
+        const apiBaseUrl = window.API_BASE_URL || 
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? '' 
+                : 'https://vib3-production.up.railway.app');
+        
+        const searchUrl = `${apiBaseUrl}/api/users/search?q=${searchTerm}&limit=5`;
+        console.log('🌐 Searching users at:', searchUrl);
+                
+        const response = await fetch(searchUrl, {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
+        });
+        
+        console.log('📡 API Response status:', response.status);
+        if (!response.ok) {
+            console.error('❌ API Error:', response.status, response.statusText);
+            throw new Error('Failed to search users');
+        }
+        
+        const users = await response.json();
+        console.log('👥 Users found:', users);
+        
+        if (users.length > 0) {
+            dropdown.innerHTML = users.map((user, index) => `
+                <div class="mention-item ${index === selectedMentionIndex ? 'selected' : ''}" 
+                     onclick="selectMentionDash('${videoId}', '${user.username}')"
+                     onmouseover="selectedMentionIndex = ${index}"
+                     style="
+                        display: flex;
+                        align-items: center;
+                        padding: 12px 16px;
+                        cursor: pointer;
+                        transition: background 0.2s ease;
+                        ${index === selectedMentionIndex ? 'background: var(--bg-tertiary);' : ''}
+                     ">
+                    <div style="
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        background: linear-gradient(135deg, var(--accent-color), #ff006e);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin-right: 12px;
+                        font-size: 14px;
+                        color: white;
+                    ">${user.username[0].toUpperCase()}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--text-primary); font-size: 14px;">
+                            @${user.username}
+                        </div>
+                        ${user.displayName ? `<div style="font-size: 12px; color: var(--text-secondary);">${user.displayName}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            dropdown.style.cssText = `
+                display: block !important;
+                position: absolute !important;
+                bottom: 100% !important;
+                left: 0 !important;
+                right: 60px !important;
+                max-height: 200px !important;
+                overflow-y: auto !important;
+                background: #1a1a1a !important;
+                border: 1px solid #333 !important;
+                border-radius: 12px !important;
+                margin-bottom: 8px !important;
+                box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5) !important;
+                z-index: 10000 !important;
+            `;
+            
+            mentionDropdownOpen = true;
+            window.mentionDropdownOpen = true;
+            console.log('✅ Mention dropdown shown successfully!');
+            console.log('🎯 Dropdown HTML:', dropdown.innerHTML.substring(0, 200) + '...');
+        } else {
+            console.log('⚠️ No users found, hiding dropdown');
+            hideMentionDropdownDash(videoId);
+        }
+    } catch (error) {
+        console.error('❌ Error searching users:', error);
+        hideMentionDropdownDash(videoId);
+    }
+}
+
+function hideMentionDropdownDash(videoId) {
+    const dropdown = document.getElementById(`mentionDropdownDash-${videoId}`);
+    if (dropdown) {
+        dropdown.style.display = 'none';
+        dropdown.innerHTML = '';
+    }
+    mentionDropdownOpen = false;
+    window.mentionDropdownOpen = false;
+    selectedMentionIndex = 0;
+}
+
+function selectMentionDash(videoId, username) {
+    const input = document.getElementById(`commentInput-${videoId}`);
+    if (!input) return;
+    
+    const text = input.value;
+    const beforeMention = text.substring(0, mentionStartPosition);
+    const afterMention = text.substring(input.selectionStart);
+    
+    input.value = beforeMention + '@' + username + ' ' + afterMention;
+    input.focus();
+    
+    const newCursorPosition = beforeMention.length + username.length + 2;
+    input.setSelectionRange(newCursorPosition, newCursorPosition);
+    
+    hideMentionDropdownDash(videoId);
+}
+
+function handleMentionKeyDownDash(event, videoId) {
+    if (!mentionDropdownOpen) return;
+    
+    const dropdown = document.getElementById(`mentionDropdownDash-${videoId}`);
+    const items = dropdown?.querySelectorAll('.mention-item');
+    
+    if (!items || items.length === 0) return;
+    
+    switch(event.key) {
+        case 'ArrowDown':
+            event.preventDefault();
+            selectedMentionIndex = Math.min(selectedMentionIndex + 1, items.length - 1);
+            updateMentionSelection(items);
+            break;
+            
+        case 'ArrowUp':
+            event.preventDefault();
+            selectedMentionIndex = Math.max(selectedMentionIndex - 1, 0);
+            updateMentionSelection(items);
+            break;
+            
+        case 'Enter':
+            if (mentionDropdownOpen) {
+                event.preventDefault();
+                items[selectedMentionIndex]?.click();
+            }
+            break;
+            
+        case 'Escape':
+            hideMentionDropdownDash(videoId);
+            break;
+    }
+}
+
 // ================ MUSIC AND AUDIO ================
 function recordVoiceover() {
     showNotification('Recording voiceover...', 'info');
@@ -8330,6 +8515,11 @@ window.replyToComment = replyToComment;
 window.handleMessageInput = handleMessageInput;
 window.handleMessageMentionKeyDown = handleMessageMentionKeyDown;
 window.selectMessageMention = selectMessageMention;
+
+// Comment input with dash (the actual working one) 
+window.handleCommentInputDash = handleCommentInputDash;
+window.handleMentionKeyDownDash = handleMentionKeyDownDash;
+window.selectMentionDash = selectMentionDash;
 
 // Music and audio functions
 window.recordVoiceover = recordVoiceover;
@@ -9238,7 +9428,7 @@ function openCommentsModal(videoId, video) {
                 </div>
             </div>
             
-            <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="display: flex; gap: 10px; align-items: center; position: relative;">
                 <input type="text" placeholder="Add a comment..." style="
                     flex: 1;
                     padding: 12px 16px;
@@ -9247,7 +9437,10 @@ function openCommentsModal(videoId, video) {
                     background: var(--bg-secondary);
                     color: var(--text-primary);
                     outline: none;
-                " id="commentInput-${videoId}">
+                " id="commentInput-${videoId}"
+                   oninput="handleCommentInputDash(this, '${videoId}')"
+                   onkeydown="handleMentionKeyDownDash(event, '${videoId}')">
+                <div id="mentionDropdownDash-${videoId}" class="mention-dropdown" style="display: none; position: absolute; bottom: 100%; left: 0; right: 60px; margin-bottom: 5px;"></div>
                 <button onclick="submitComment('${videoId}')" style="
                     padding: 12px 20px;
                     background: var(--accent-primary);
