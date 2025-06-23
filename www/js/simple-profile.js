@@ -204,11 +204,15 @@ function getAPIBaseURL() {
 async function loadUserProfileData() {
     try {
         const baseURL = getAPIBaseURL();
-        const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
-        console.log('🔍 Loading profile data:', { baseURL, hasToken: !!token });
+        console.log('🔍 Loading profile data:', { baseURL, hasAuthToken: !!window.authToken });
         
         const response = await fetch(`${baseURL}/api/user/profile`, {
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            credentials: 'include', // Use session-based auth
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
         });
         
         console.log('📡 Profile API response:', { status: response.status, ok: response.ok });
