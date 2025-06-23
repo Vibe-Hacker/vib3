@@ -2542,6 +2542,42 @@ app.get('/api/user/profile', async (req, res) => {
     }
 });
 
+// Search users for mentions
+app.get('/api/users/search', async (req, res) => {
+    if (!db) {
+        return res.json([]);
+    }
+    
+    try {
+        const { q = '', limit = 10 } = req.query;
+        
+        if (!q || q.length < 1) {
+            return res.json([]);
+        }
+        
+        // Search users by username (case-insensitive)
+        const users = await db.collection('users')
+            .find({
+                username: { $regex: `^${q}`, $options: 'i' }
+            })
+            .limit(parseInt(limit))
+            .project({
+                _id: 1,
+                username: 1,
+                displayName: 1,
+                profilePicture: 1
+            })
+            .toArray();
+        
+        console.log(`🔍 User search for "${q}" found ${users.length} results`);
+        
+        res.json(users);
+    } catch (error) {
+        console.error('Error searching users:', error);
+        res.status(500).json({ error: 'Failed to search users' });
+    }
+});
+
 // Get user activity feed
 app.get('/api/user/activity', async (req, res) => {
     if (!db) {

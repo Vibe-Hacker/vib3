@@ -7290,9 +7290,15 @@ function openCommentsModal(videoId) {
                     </div>
                 </div>
             </div>
-            <div class="comment-input">
-                <input type="text" placeholder="Add a comment..." onkeypress="if(event.key==='Enter') addComment(this.value, '${videoId}')">
-                <button onclick="addComment(this.previousElementSibling.value, '${videoId}')">Post</button>
+            <div class="comment-input" style="position: relative;">
+                <input type="text" 
+                    id="commentInput_${videoId}"
+                    placeholder="Add a comment..." 
+                    onkeypress="if(event.key==='Enter' && !window.mentionDropdownOpen) addComment(this.value, '${videoId}')"
+                    oninput="handleCommentInput(this, '${videoId}')"
+                    onkeydown="handleMentionKeyDown(event, '${videoId}')">
+                <button onclick="addComment(document.getElementById('commentInput_${videoId}').value, '${videoId}')">Post</button>
+                <div id="mentionDropdown_${videoId}" class="mention-dropdown" style="display: none;"></div>
             </div>
         </div>
     `;
@@ -7593,6 +7599,193 @@ function filterDiscoverVideos(query) {
 }
 
 // ================ COMMENT SYSTEM ================
+// Mention system variables
+let mentionDropdownOpen = false;
+let selectedMentionIndex = 0;
+let mentionSearchTerm = '';
+let mentionStartPosition = -1;
+
+// Handle comment input for @mentions
+async function handleCommentInput(input, videoId) {
+    const text = input.value;
+    const cursorPosition = input.selectionStart;
+    
+    // Find if we're in a mention context
+    const beforeCursor = text.substring(0, cursorPosition);
+    const mentionMatch = beforeCursor.match(/@(\w*)$/);
+    
+    if (mentionMatch) {
+        mentionStartPosition = mentionMatch.index;
+        mentionSearchTerm = mentionMatch[1];
+        showMentionDropdown(videoId, mentionSearchTerm);
+    } else {
+        hideMentionDropdown(videoId);
+    }
+}
+
+// Show mention dropdown with user suggestions
+async function showMentionDropdown(videoId, searchTerm) {
+    const dropdown = document.getElementById(`mentionDropdown_${videoId}`);
+    if (!dropdown) return;
+    
+    try {
+        // Search for users
+        const apiBaseUrl = window.API_BASE_URL || 
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? '' 
+                : 'https://vib3-production.up.railway.app');
+                
+        const response = await fetch(`${apiBaseUrl}/api/users/search?q=${searchTerm}&limit=5`, {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to search users');
+        
+        const users = await response.json();
+        
+        if (users.length > 0) {
+            dropdown.innerHTML = users.map((user, index) => `
+                <div class="mention-item ${index === selectedMentionIndex ? 'selected' : ''}" 
+                     onclick="selectMention('${videoId}', '${user.username}')"
+                     onmouseover="selectedMentionIndex = ${index}"
+                     style="
+                        display: flex;
+                        align-items: center;
+                        padding: 12px 16px;
+                        cursor: pointer;
+                        transition: background 0.2s ease;
+                        ${index === selectedMentionIndex ? 'background: var(--bg-tertiary);' : ''}
+                     ">
+                    <div style="
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        background: linear-gradient(135deg, var(--accent-color), #ff006e);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin-right: 12px;
+                        font-size: 14px;
+                        color: white;
+                    ">${user.username[0].toUpperCase()}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--text-primary); font-size: 14px;">
+                            @${user.username}
+                        </div>
+                        ${user.displayName ? `<div style="font-size: 12px; color: var(--text-secondary);">${user.displayName}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            dropdown.style.cssText = `
+                display: block;
+                position: absolute;
+                bottom: 100%;
+                left: 0;
+                right: 0;
+                max-height: 200px;
+                overflow-y: auto;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-primary);
+                border-radius: 12px;
+                margin-bottom: 8px;
+                box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+            `;
+            
+            mentionDropdownOpen = true;
+            window.mentionDropdownOpen = true;
+        } else {
+            hideMentionDropdown(videoId);
+        }
+    } catch (error) {
+        console.error('Error searching users:', error);
+        hideMentionDropdown(videoId);
+    }
+}
+
+// Hide mention dropdown
+function hideMentionDropdown(videoId) {
+    const dropdown = document.getElementById(`mentionDropdown_${videoId}`);
+    if (dropdown) {
+        dropdown.style.display = 'none';
+        dropdown.innerHTML = '';
+    }
+    mentionDropdownOpen = false;
+    window.mentionDropdownOpen = false;
+    selectedMentionIndex = 0;
+}
+
+// Select a mention from dropdown
+function selectMention(videoId, username) {
+    const input = document.getElementById(`commentInput_${videoId}`);
+    if (!input) return;
+    
+    const text = input.value;
+    const beforeMention = text.substring(0, mentionStartPosition);
+    const afterMention = text.substring(input.selectionStart);
+    
+    input.value = beforeMention + '@' + username + ' ' + afterMention;
+    input.focus();
+    
+    const newCursorPosition = beforeMention.length + username.length + 2;
+    input.setSelectionRange(newCursorPosition, newCursorPosition);
+    
+    hideMentionDropdown(videoId);
+}
+
+// Handle keyboard navigation in mention dropdown
+function handleMentionKeyDown(event, videoId) {
+    if (!mentionDropdownOpen) return;
+    
+    const dropdown = document.getElementById(`mentionDropdown_${videoId}`);
+    const items = dropdown?.querySelectorAll('.mention-item');
+    
+    if (!items || items.length === 0) return;
+    
+    switch(event.key) {
+        case 'ArrowDown':
+            event.preventDefault();
+            selectedMentionIndex = Math.min(selectedMentionIndex + 1, items.length - 1);
+            updateMentionSelection(items);
+            break;
+            
+        case 'ArrowUp':
+            event.preventDefault();
+            selectedMentionIndex = Math.max(selectedMentionIndex - 1, 0);
+            updateMentionSelection(items);
+            break;
+            
+        case 'Enter':
+            if (mentionDropdownOpen) {
+                event.preventDefault();
+                items[selectedMentionIndex]?.click();
+            }
+            break;
+            
+        case 'Escape':
+            hideMentionDropdown(videoId);
+            break;
+    }
+}
+
+// Update visual selection in mention dropdown
+function updateMentionSelection(items) {
+    items.forEach((item, index) => {
+        if (index === selectedMentionIndex) {
+            item.style.background = 'var(--bg-tertiary)';
+            item.classList.add('selected');
+        } else {
+            item.style.background = '';
+            item.classList.remove('selected');
+        }
+    });
+}
+
 function addComment(text, videoId) {
     if (!text || !text.trim()) return;
     
@@ -7612,7 +7805,11 @@ function addComment(text, videoId) {
             </div>
         `;
         commentsList.appendChild(comment);
-        event.target.value = '';
+        
+        // Clear input
+        const input = document.getElementById(`commentInput_${videoId}`);
+        if (input) input.value = '';
+        
         showNotification('Comment added!', 'success');
     }
 }
@@ -7912,6 +8109,9 @@ window.filterDiscoverVideos = filterDiscoverVideos;
 
 // Comment system
 window.addComment = addComment;
+window.handleCommentInput = handleCommentInput;
+window.handleMentionKeyDown = handleMentionKeyDown;
+window.selectMention = selectMention;
 window.likeComment = likeComment;
 window.replyToComment = replyToComment;
 
