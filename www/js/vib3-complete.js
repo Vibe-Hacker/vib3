@@ -4699,13 +4699,9 @@ function switchFeedTab(feedType) {
                             <button class="category-btn" style="background: var(--bg-tertiary); color: var(--text-primary); border: none; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; cursor: pointer;" onclick="filterByCategory('food')">Food</button>
                         </div>
                     </div>
-                    <div id="exploreVideoGrid" style="
-                        display: grid; 
-                        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-                        gap: 3px; 
-                        padding: 8px; 
+                    <div id="exploreVideoGrid" class="explore-video-grid" style="
                         overflow-y: auto; 
-                        max-height: calc(100vh - 320px);
+                        max-height: calc(100vh - 200px);
                         background: var(--bg-primary);
                     ">
                         <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
