@@ -365,6 +365,12 @@ function initializeVideoObserver() {
                 if (!video.hasAttribute('data-manually-paused')) {
                     video.play().catch(e => console.log('Play failed:', e));
                     console.log('🎬 Auto-playing video:', video.src.split('/').pop());
+                    
+                    // Track video view start
+                    const videoCard = video.closest('.video-card');
+                    if (videoCard && videoCard.videoData) {
+                        startVideoTracking(videoCard.videoData._id, video);
+                    }
                 }
             } else {
                 // Only pause if not manually playing
@@ -9778,5 +9784,189 @@ function initializeApp() {
     } catch (error) {
         console.error('❌ Error initializing VIB3:', error);
     }
+}
+
+// ================ USER BEHAVIOR TRACKING ================
+
+// Track video views with detailed analytics
+const videoTracking = new Map(); // Store tracking data for each video
+
+function startVideoTracking(videoId, videoElement) {
+    if (!videoId || !videoElement) return;
+    
+    // Skip if already tracking this video
+    if (videoTracking.has(videoId)) return;
+    
+    const trackingData = {
+        videoId,
+        startTime: Date.now(),
+        lastUpdateTime: Date.now(),
+        totalWatchTime: 0,
+        pauseCount: 0,
+        replayCount: 0,
+        referrer: getCurrentReferrer(),
+        duration: videoElement.duration || 0
+    };
+    
+    videoTracking.set(videoId, trackingData);
+    
+    // Set up event listeners for this video
+    const updateWatchTime = () => {
+        const data = videoTracking.get(videoId);
+        if (data) {
+            const now = Date.now();
+            data.totalWatchTime += (now - data.lastUpdateTime) / 1000; // Convert to seconds
+            data.lastUpdateTime = now;
+        }
+    };
+    
+    const handlePause = () => {
+        updateWatchTime();
+        const data = videoTracking.get(videoId);
+        if (data) data.pauseCount++;
+    };
+    
+    const handleEnded = () => {
+        updateWatchTime();
+        submitVideoAnalytics(videoId);
+    };
+    
+    const handleTimeUpdate = () => {
+        const data = videoTracking.get(videoId);
+        if (data && !data.duration && videoElement.duration) {
+            data.duration = videoElement.duration;
+        }
+    };
+    
+    // Clean up old listeners if they exist
+    videoElement.removeEventListener('pause', handlePause);
+    videoElement.removeEventListener('ended', handleEnded);
+    videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+    
+    // Add new listeners
+    videoElement.addEventListener('pause', handlePause);
+    videoElement.addEventListener('ended', handleEnded);
+    videoElement.addEventListener('timeupdate', handleTimeUpdate);
+    
+    // Also track when video leaves viewport
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) {
+                updateWatchTime();
+                submitVideoAnalytics(videoId);
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    observer.observe(videoElement);
+    
+    // Store cleanup function
+    videoElement.cleanupTracking = () => {
+        observer.disconnect();
+        videoElement.removeEventListener('pause', handlePause);
+        videoElement.removeEventListener('ended', handleEnded);
+        videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+    };
+}
+
+async function submitVideoAnalytics(videoId) {
+    const data = videoTracking.get(videoId);
+    if (!data || data.totalWatchTime < 1) return; // Don't track if watched less than 1 second
+    
+    try {
+        const watchPercentage = data.duration > 0 
+            ? Math.min(100, (data.totalWatchTime / data.duration) * 100)
+            : 0;
+        
+        const payload = {
+            watchTime: Math.round(data.totalWatchTime),
+            watchPercentage: Math.round(watchPercentage),
+            exitPoint: data.totalWatchTime,
+            isReplay: data.replayCount > 0,
+            referrer: data.referrer
+        };
+        
+        // Send view tracking data
+        await fetch(`${API_BASE_URL}/api/videos/${videoId}/view`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Session-Id': getSessionId()
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        console.log(`📊 Video analytics submitted for ${videoId}:`, payload);
+        
+        // Clear tracking data
+        videoTracking.delete(videoId);
+        
+    } catch (error) {
+        console.error('Failed to submit video analytics:', error);
+    }
+}
+
+// Track user interactions
+async function trackInteraction(type, videoId, action, context = {}) {
+    if (!currentUser) return;
+    
+    try {
+        await fetch(`${API_BASE_URL}/api/track/interaction`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                type,
+                videoId,
+                action,
+                timestamp: new Date().toISOString(),
+                context
+            })
+        });
+    } catch (error) {
+        console.error('Failed to track interaction:', error);
+    }
+}
+
+// Get current referrer context
+function getCurrentReferrer() {
+    if (window.location.pathname.includes('profile')) return 'profile';
+    if (window.location.pathname.includes('search')) return 'search';
+    if (window.location.pathname.includes('hashtag')) return 'hashtag';
+    
+    // Check current feed tab
+    const activeTab = document.querySelector('.feed-tab.active');
+    if (activeTab) {
+        const tabName = activeTab.getAttribute('data-feed');
+        if (tabName) return tabName;
+    }
+    
+    return 'foryou';
+}
+
+// Get or create session ID
+function getSessionId() {
+    let sessionId = sessionStorage.getItem('vib3-session-id');
+    if (!sessionId) {
+        sessionId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+        sessionStorage.setItem('vib3-session-id', sessionId);
+    }
+    return sessionId;
+}
+
+// Track swipe/skip actions
+function trackVideoSkip(videoId) {
+    trackInteraction('swipe', videoId, 'skip', {
+        watchTime: videoTracking.get(videoId)?.totalWatchTime || 0
+    });
+}
+
+// Track not interested
+function trackNotInterested(videoId) {
+    trackInteraction('not_interested', videoId, 'marked', {
+        reason: 'user_action'
+    });
 }
   

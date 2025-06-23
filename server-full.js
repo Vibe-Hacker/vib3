@@ -95,7 +95,7 @@ app.get('/api/analytics/algorithm', async (req, res) => {
         console.log('📊 Calculating analytics metrics...');
         const analytics = {
             totalVideos: videos.length,
-            algorithmVersion: '1.1.0-engagement-hashtags',
+            algorithmVersion: '1.2.0-engagement-hashtags-behavior',
             timestamp: now.toISOString(),
             
             // Engagement distribution
@@ -306,6 +306,87 @@ async function applyHashtagRecommendations(videos, currentUser, db) {
         
     } catch (error) {
         console.error('🏷️ Error applying hashtag recommendations:', error);
+    }
+    
+    return videos;
+}
+
+// Apply behavior-based recommendations
+async function applyBehaviorRecommendations(videos, currentUser, db) {
+    if (!currentUser || !currentUser._id) {
+        return videos;
+    }
+    
+    console.log('🧠 Applying behavior-based recommendations...');
+    
+    try {
+        // Get user behavior profile
+        const behaviorProfile = await db.collection('userBehavior').findOne({ 
+            userId: currentUser._id.toString() 
+        });
+        
+        if (!behaviorProfile) {
+            console.log('🧠 No behavior profile found yet');
+            return videos;
+        }
+        
+        // Apply behavior-based scoring
+        videos.forEach(video => {
+            let behaviorScore = 0;
+            
+            // Creator preference score
+            if (behaviorProfile.creatorPreferences && behaviorProfile.creatorPreferences[video.userId]) {
+                const creatorScore = behaviorProfile.creatorPreferences[video.userId];
+                behaviorScore += Math.min(creatorScore * 0.3, 0.3); // Max 0.3 points
+            }
+            
+            // Check disinterests (negative scoring)
+            if (behaviorProfile.disinterests?.creators?.[video.userId] > 2) {
+                behaviorScore -= 0.5; // Penalize creators user has skipped multiple times
+            }
+            
+            // Time preference score
+            const currentHour = new Date().getHours();
+            const hourKey = `hour${currentHour}`;
+            if (behaviorProfile.timePreferences?.[hourKey]) {
+                const timeScore = behaviorProfile.timePreferences[hourKey] / 
+                    Math.max(1, behaviorProfile.stats?.totalViews || 1);
+                behaviorScore += timeScore * 0.1; // Small time-based boost
+            }
+            
+            // Content completion preference
+            if (behaviorProfile.contentPreferences) {
+                const totalPrefs = (behaviorProfile.contentPreferences.complete || 0) +
+                                 (behaviorProfile.contentPreferences.partial || 0) +
+                                 (behaviorProfile.contentPreferences.skip || 0);
+                
+                if (totalPrefs > 10) { // Only apply if enough data
+                    const completionRate = (behaviorProfile.contentPreferences.complete || 0) / totalPrefs;
+                    
+                    // Boost videos from creators with similar completion rates
+                    if (completionRate > 0.7 && video.avgCompletionRate > 0.7) {
+                        behaviorScore += 0.2;
+                    }
+                }
+            }
+            
+            // Apply behavior score
+            video.behaviorScore = behaviorScore;
+            video.engagementScore = (video.engagementScore || 0) + behaviorScore;
+            
+            if (behaviorScore !== 0) {
+                console.log(`🧠 Behavior adjustment for "${video.title}": ${behaviorScore > 0 ? '+' : ''}${behaviorScore.toFixed(3)}`);
+            }
+        });
+        
+        // Re-sort with behavior scores
+        videos.sort((a, b) => (b.engagementScore || 0) - (a.engagementScore || 0));
+        
+        const adjustedVideos = videos.filter(v => v.behaviorScore !== 0).length;
+        console.log(`🧠 Applied behavior adjustments to ${adjustedVideos}/${videos.length} videos`);
+        
+    } catch (error) {
+        console.error('🧠 Error applying behavior recommendations:', error);
     }
     
     return videos;
@@ -996,6 +1077,9 @@ app.get('/api/videos', async (req, res) => {
                 // Apply hashtag-based recommendations (personalization)
                 if (req.user) {
                     videos = await applyHashtagRecommendations(videos, req.user, db);
+                    
+                    // Apply behavior-based recommendations
+                    videos = await applyBehaviorRecommendations(videos, req.user, db);
                 }
                 
                 // Apply pagination after ranking
@@ -2052,6 +2136,299 @@ app.post('/api/videos/:videoId/like', requireAuth, async (req, res) => {
         res.status(500).json({ error: 'Failed to like video' });
     }
 });
+
+// ================ USER BEHAVIOR TRACKING ================
+
+// Track video view with detailed analytics
+app.post('/api/videos/:videoId/view', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    try {
+        const { videoId } = req.params;
+        const { 
+            watchTime = 0, 
+            watchPercentage = 0, 
+            exitPoint = 0,
+            isReplay = false,
+            referrer = 'unknown' // 'foryou', 'following', 'explore', 'profile', 'search', 'hashtag'
+        } = req.body;
+        
+        const userId = req.user ? req.user._id.toString() : null;
+        const sessionId = req.headers['x-session-id'] || null;
+        
+        // Create view record with behavior data
+        const viewRecord = {
+            videoId,
+            userId,
+            sessionId,
+            timestamp: new Date(),
+            watchTime,
+            watchPercentage,
+            exitPoint,
+            isReplay,
+            referrer,
+            // Device and context info
+            userAgent: req.headers['user-agent'],
+            ip: req.ip,
+            // Time-based features
+            hour: new Date().getHours(),
+            dayOfWeek: new Date().getDay(),
+            isWeekend: [0, 6].includes(new Date().getDay())
+        };
+        
+        // Insert view record
+        await db.collection('views').insertOne(viewRecord);
+        
+        // Update video view count
+        await db.collection('videos').updateOne(
+            { _id: new require('mongodb').ObjectId(videoId) },
+            { 
+                $inc: { views: 1 },
+                $set: { lastViewedAt: new Date() }
+            }
+        );
+        
+        // Update user behavior profile if logged in
+        if (userId) {
+            await updateUserBehaviorProfile(userId, videoId, viewRecord, db);
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'View tracked',
+            viewId: viewRecord._id
+        });
+        
+    } catch (error) {
+        console.error('View tracking error:', error);
+        res.status(500).json({ error: 'Failed to track view' });
+    }
+});
+
+// Track user interactions (for behavior analysis)
+app.post('/api/track/interaction', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    try {
+        const userId = req.user._id.toString();
+        const {
+            type, // 'swipe', 'tap', 'share', 'save', 'report', 'not_interested'
+            videoId,
+            action, // 'skip', 'replay', 'pause', 'mute', 'unmute', 'fullscreen'
+            timestamp,
+            context = {}
+        } = req.body;
+        
+        // Store interaction
+        await db.collection('interactions').insertOne({
+            userId,
+            videoId,
+            type,
+            action,
+            timestamp: new Date(timestamp),
+            context,
+            createdAt: new Date()
+        });
+        
+        // Update user behavior patterns
+        if (type === 'not_interested' || (type === 'swipe' && action === 'skip')) {
+            await updateUserDisinterests(userId, videoId, db);
+        }
+        
+        res.json({ success: true });
+        
+    } catch (error) {
+        console.error('Interaction tracking error:', error);
+        res.status(500).json({ error: 'Failed to track interaction' });
+    }
+});
+
+// Get user behavior insights (for debugging/analytics)
+app.get('/api/user/behavior', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    try {
+        const userId = req.user._id.toString();
+        
+        // Get user behavior profile
+        const behaviorProfile = await db.collection('userBehavior').findOne({ userId });
+        
+        if (!behaviorProfile) {
+            return res.json({ 
+                message: 'No behavior profile yet',
+                recommendations: 'Watch more videos to build your profile'
+            });
+        }
+        
+        // Get recent activity summary
+        const recentViews = await db.collection('views')
+            .find({ userId })
+            .sort({ timestamp: -1 })
+            .limit(50)
+            .toArray();
+        
+        const avgWatchTime = recentViews.reduce((sum, v) => sum + v.watchTime, 0) / recentViews.length;
+        const avgWatchPercentage = recentViews.reduce((sum, v) => sum + v.watchPercentage, 0) / recentViews.length;
+        
+        res.json({
+            profile: {
+                contentPreferences: behaviorProfile.contentPreferences || {},
+                creatorPreferences: behaviorProfile.creatorPreferences || {},
+                timePreferences: behaviorProfile.timePreferences || {},
+                engagementPatterns: behaviorProfile.engagementPatterns || {},
+                lastUpdated: behaviorProfile.lastUpdated
+            },
+            recentActivity: {
+                viewCount: recentViews.length,
+                avgWatchTime: Math.round(avgWatchTime),
+                avgWatchPercentage: Math.round(avgWatchPercentage),
+                mostActiveHour: getMostActiveHour(recentViews),
+                preferredReferrer: getPreferredReferrer(recentViews)
+            }
+        });
+        
+    } catch (error) {
+        console.error('Get behavior error:', error);
+        res.status(500).json({ error: 'Failed to get behavior profile' });
+    }
+});
+
+// Helper function to update user behavior profile
+async function updateUserBehaviorProfile(userId, videoId, viewRecord, db) {
+    try {
+        // Get video details for categorization
+        const video = await db.collection('videos').findOne({ 
+            _id: new require('mongodb').ObjectId(videoId) 
+        });
+        
+        if (!video) return;
+        
+        // Extract behavior signals
+        const signals = {
+            watchQuality: viewRecord.watchPercentage > 80 ? 'complete' : 
+                         viewRecord.watchPercentage > 50 ? 'partial' : 'skip',
+            timeOfDay: viewRecord.hour,
+            dayType: viewRecord.isWeekend ? 'weekend' : 'weekday',
+            creator: video.userId,
+            hashtags: video.hashtags || [],
+            duration: video.duration || 0,
+            engagement: viewRecord.watchTime / Math.max(1, video.duration || 30) // Engagement rate
+        };
+        
+        // Update or create behavior profile
+        await db.collection('userBehavior').updateOne(
+            { userId },
+            {
+                $inc: {
+                    'stats.totalViews': 1,
+                    'stats.totalWatchTime': viewRecord.watchTime,
+                    [`contentPreferences.${signals.watchQuality}`]: 1,
+                    [`creatorPreferences.${signals.creator}`]: signals.engagement,
+                    [`timePreferences.hour${signals.timeOfDay}`]: 1,
+                    [`timePreferences.${signals.dayType}`]: 1
+                },
+                $addToSet: {
+                    'recentHashtags': { $each: signals.hashtags }
+                },
+                $set: {
+                    lastUpdated: new Date()
+                }
+            },
+            { upsert: true }
+        );
+        
+        // Track hashtag engagement
+        if (signals.hashtags.length > 0 && signals.watchQuality !== 'skip') {
+            const hashtagUpdate = {};
+            signals.hashtags.forEach(tag => {
+                hashtagUpdate[`hashtagEngagement.${tag}`] = signals.engagement;
+            });
+            
+            await db.collection('userBehavior').updateOne(
+                { userId },
+                { $inc: hashtagUpdate }
+            );
+        }
+        
+    } catch (error) {
+        console.error('Error updating user behavior:', error);
+    }
+}
+
+// Helper function to track disinterests
+async function updateUserDisinterests(userId, videoId, db) {
+    try {
+        const video = await db.collection('videos').findOne({ 
+            _id: new require('mongodb').ObjectId(videoId) 
+        });
+        
+        if (!video) return;
+        
+        // Track negative signals
+        await db.collection('userBehavior').updateOne(
+            { userId },
+            {
+                $inc: {
+                    [`disinterests.creators.${video.userId}`]: 1,
+                    'stats.skippedVideos': 1
+                },
+                $addToSet: {
+                    'disinterests.recentSkips': videoId
+                },
+                $set: {
+                    lastUpdated: new Date()
+                }
+            },
+            { upsert: true }
+        );
+        
+        // Limit recent skips to last 100
+        await db.collection('userBehavior').updateOne(
+            { userId },
+            {
+                $push: {
+                    'disinterests.recentSkips': {
+                        $each: [],
+                        $slice: -100
+                    }
+                }
+            }
+        );
+        
+    } catch (error) {
+        console.error('Error updating disinterests:', error);
+    }
+}
+
+// Helper functions for behavior analysis
+function getMostActiveHour(views) {
+    const hourCounts = {};
+    views.forEach(v => {
+        const hour = v.hour || new Date(v.timestamp).getHours();
+        hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+    });
+    
+    return Object.entries(hourCounts)
+        .sort(([,a], [,b]) => b - a)
+        [0]?.[0] || 'unknown';
+}
+
+function getPreferredReferrer(views) {
+    const referrerCounts = {};
+    views.forEach(v => {
+        referrerCounts[v.referrer] = (referrerCounts[v.referrer] || 0) + 1;
+    });
+    
+    return Object.entries(referrerCounts)
+        .sort(([,a], [,b]) => b - a)
+        [0]?.[0] || 'foryou';
+}
 
 // Simple like endpoint as specified
 app.post('/like', requireAuth, async (req, res) => {
