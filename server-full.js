@@ -29,7 +29,133 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve static files
+// Health check endpoint (before static files)
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Simple API test endpoint (before static files)
+app.get('/api/test', (req, res) => {
+    console.log('🧪 Test endpoint hit');
+    res.json({ 
+        message: 'API is working', 
+        timestamp: new Date().toISOString(),
+        database: !!db ? 'connected' : 'not connected'
+    });
+});
+
+// Algorithm analytics endpoint (before static files)
+app.get('/api/analytics/algorithm', async (req, res) => {
+    console.log('📊 Analytics endpoint hit');
+    
+    // Set JSON content type explicitly
+    res.setHeader('Content-Type', 'application/json');
+    
+    if (!db) {
+        console.log('❌ Database not available');
+        return res.status(503).json({ error: 'Database not available' });
+    }
+
+    try {
+        console.log('📊 Generating algorithm analytics...');
+        
+        const now = new Date();
+        
+        // Get recent videos for analysis
+        const videos = await db.collection('videos')
+            .find({ status: { $ne: 'deleted' } })
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .toArray();
+
+        console.log(`📹 Found ${videos.length} videos in database`);
+
+        // Handle case with no videos
+        if (videos.length === 0) {
+            console.log('⚠️ No videos found - returning empty analytics');
+            const emptyAnalytics = {
+                totalVideos: 0,
+                algorithmVersion: '1.0.0-engagement',
+                timestamp: now.toISOString(),
+                engagementStats: { avgScore: 0, maxScore: 0, minScore: 0, highEngagementCount: 0 },
+                freshnessStats: { last24h: 0, last7days: 0, avgAgeHours: 0 },
+                totalEngagement: { totalLikes: 0, totalComments: 0, totalViews: 0, avgLikeRate: 0 },
+                topVideos: [],
+                diversity: { uniqueCreators: 0, contentSpread: 'no_content' }
+            };
+            return res.json(emptyAnalytics);
+        }
+
+        // Apply engagement ranking to get scores
+        console.log('📈 Applying engagement ranking...');
+        const rankedVideos = await applyEngagementRanking([...videos], db);
+        console.log(`✅ Ranked ${rankedVideos.length} videos`);
+        
+        // Calculate performance metrics
+        console.log('📊 Calculating analytics metrics...');
+        const analytics = {
+            totalVideos: videos.length,
+            algorithmVersion: '1.0.0-engagement',
+            timestamp: now.toISOString(),
+            
+            // Engagement distribution
+            engagementStats: {
+                avgScore: rankedVideos.reduce((sum, v) => sum + (v.engagementScore || 0), 0) / rankedVideos.length,
+                maxScore: Math.max(...rankedVideos.map(v => v.engagementScore || 0)),
+                minScore: Math.min(...rankedVideos.map(v => v.engagementScore || 0)),
+                highEngagementCount: rankedVideos.filter(v => (v.engagementScore || 0) > 1.0).length
+            },
+            
+            // Content freshness
+            freshnessStats: {
+                last24h: rankedVideos.filter(v => (v.hoursOld || 0) < 24).length,
+                last7days: rankedVideos.filter(v => (v.hoursOld || 0) < 168).length,
+                avgAgeHours: rankedVideos.reduce((sum, v) => sum + (v.hoursOld || 0), 0) / rankedVideos.length
+            },
+            
+            // Engagement metrics
+            totalEngagement: {
+                totalLikes: rankedVideos.reduce((sum, v) => sum + (v.likeCount || 0), 0),
+                totalComments: rankedVideos.reduce((sum, v) => sum + (v.commentCount || 0), 0),
+                totalViews: rankedVideos.reduce((sum, v) => sum + (v.views || 0), 0),
+                avgLikeRate: rankedVideos.reduce((sum, v) => sum + (v.likeRate || 0), 0) / rankedVideos.length
+            },
+            
+            // Top performing content
+            topVideos: rankedVideos.slice(0, 10).map(v => ({
+                id: v._id,
+                title: v.title || 'Untitled',
+                engagementScore: parseFloat((v.engagementScore || 0).toFixed(2)),
+                likes: v.likeCount || 0,
+                comments: v.commentCount || 0,
+                views: v.views || 0,
+                hoursOld: parseFloat((v.hoursOld || 0).toFixed(1)),
+                likeRate: parseFloat((v.likeRate || 0).toFixed(4))
+            })),
+            
+            // Algorithm effectiveness indicators
+            diversity: {
+                uniqueCreators: new Set(rankedVideos.map(v => v.userId)).size,
+                contentSpread: rankedVideos.slice(0, 10).map(v => v.userId).length === new Set(rankedVideos.slice(0, 10).map(v => v.userId)).size ? 'good' : 'needs_improvement'
+            }
+        };
+        
+        console.log('✅ Algorithm analytics generated');
+        console.log('📤 Sending analytics response...');
+        res.json(analytics);
+        
+    } catch (error) {
+        console.error('❌ Algorithm analytics error:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            error: 'Failed to generate analytics',
+            details: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Serve static files (AFTER API routes)
 app.use(express.static(path.join(__dirname, 'www')));
 
 // DigitalOcean Spaces configuration
@@ -2851,131 +2977,7 @@ app.post('/api/admin/cleanup-likes', async (req, res) => {
     }
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// Simple API test endpoint
-app.get('/api/test', (req, res) => {
-    console.log('🧪 Test endpoint hit');
-    res.json({ 
-        message: 'API is working', 
-        timestamp: new Date().toISOString(),
-        database: !!db ? 'connected' : 'not connected'
-    });
-});
-
-// Algorithm analytics endpoint
-app.get('/api/analytics/algorithm', async (req, res) => {
-    console.log('📊 Analytics endpoint hit');
-    
-    // Set JSON content type explicitly
-    res.setHeader('Content-Type', 'application/json');
-    
-    if (!db) {
-        console.log('❌ Database not available');
-        return res.status(503).json({ error: 'Database not available' });
-    }
-
-    try {
-        console.log('📊 Generating algorithm analytics...');
-        
-        const now = new Date();
-        
-        // Get recent videos for analysis
-        const videos = await db.collection('videos')
-            .find({ status: { $ne: 'deleted' } })
-            .sort({ createdAt: -1 })
-            .limit(50)
-            .toArray();
-
-        console.log(`📹 Found ${videos.length} videos in database`);
-
-        // Handle case with no videos
-        if (videos.length === 0) {
-            console.log('⚠️ No videos found - returning empty analytics');
-            const emptyAnalytics = {
-                totalVideos: 0,
-                algorithmVersion: '1.0.0-engagement',
-                timestamp: now.toISOString(),
-                engagementStats: { avgScore: 0, maxScore: 0, minScore: 0, highEngagementCount: 0 },
-                freshnessStats: { last24h: 0, last7days: 0, avgAgeHours: 0 },
-                totalEngagement: { totalLikes: 0, totalComments: 0, totalViews: 0, avgLikeRate: 0 },
-                topVideos: [],
-                diversity: { uniqueCreators: 0, contentSpread: 'no_content' }
-            };
-            return res.json(emptyAnalytics);
-        }
-
-        // Apply engagement ranking to get scores
-        console.log('📈 Applying engagement ranking...');
-        const rankedVideos = await applyEngagementRanking([...videos], db);
-        console.log(`✅ Ranked ${rankedVideos.length} videos`);
-        
-        // Calculate performance metrics
-        console.log('📊 Calculating analytics metrics...');
-        const analytics = {
-            totalVideos: videos.length,
-            algorithmVersion: '1.0.0-engagement',
-            timestamp: now.toISOString(),
-            
-            // Engagement distribution
-            engagementStats: {
-                avgScore: rankedVideos.reduce((sum, v) => sum + (v.engagementScore || 0), 0) / rankedVideos.length,
-                maxScore: Math.max(...rankedVideos.map(v => v.engagementScore || 0)),
-                minScore: Math.min(...rankedVideos.map(v => v.engagementScore || 0)),
-                highEngagementCount: rankedVideos.filter(v => (v.engagementScore || 0) > 1.0).length
-            },
-            
-            // Content freshness
-            freshnessStats: {
-                last24h: rankedVideos.filter(v => (v.hoursOld || 0) < 24).length,
-                last7days: rankedVideos.filter(v => (v.hoursOld || 0) < 168).length,
-                avgAgeHours: rankedVideos.reduce((sum, v) => sum + (v.hoursOld || 0), 0) / rankedVideos.length
-            },
-            
-            // Engagement metrics
-            totalEngagement: {
-                totalLikes: rankedVideos.reduce((sum, v) => sum + (v.likeCount || 0), 0),
-                totalComments: rankedVideos.reduce((sum, v) => sum + (v.commentCount || 0), 0),
-                totalViews: rankedVideos.reduce((sum, v) => sum + (v.views || 0), 0),
-                avgLikeRate: rankedVideos.reduce((sum, v) => sum + (v.likeRate || 0), 0) / rankedVideos.length
-            },
-            
-            // Top performing content
-            topVideos: rankedVideos.slice(0, 10).map(v => ({
-                id: v._id,
-                title: v.title || 'Untitled',
-                engagementScore: parseFloat((v.engagementScore || 0).toFixed(2)),
-                likes: v.likeCount || 0,
-                comments: v.commentCount || 0,
-                views: v.views || 0,
-                hoursOld: parseFloat((v.hoursOld || 0).toFixed(1)),
-                likeRate: parseFloat((v.likeRate || 0).toFixed(4))
-            })),
-            
-            // Algorithm effectiveness indicators
-            diversity: {
-                uniqueCreators: new Set(rankedVideos.map(v => v.userId)).size,
-                contentSpread: rankedVideos.slice(0, 10).map(v => v.userId).length === new Set(rankedVideos.slice(0, 10).map(v => v.userId)).size ? 'good' : 'needs_improvement'
-            }
-        };
-        
-        console.log('✅ Algorithm analytics generated');
-        console.log('📤 Sending analytics response...');
-        res.json(analytics);
-        
-    } catch (error) {
-        console.error('❌ Algorithm analytics error:', error);
-        console.error('Error stack:', error.stack);
-        res.status(500).json({ 
-            error: 'Failed to generate analytics',
-            details: error.message,
-            timestamp: new Date().toISOString()
-        });
-    }
-});
+// Duplicate endpoints removed - they are now defined before static files
 
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
