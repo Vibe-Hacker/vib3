@@ -147,6 +147,41 @@ async function handleSignup() {
 }
 
 async function handleLogout() {
+    // CRITICAL: Clean up all overlays and special pages before logout
+    console.log('🚪 Cleaning up overlays before logout...');
+    
+    // Remove analytics overlay specifically
+    const analyticsOverlay = document.getElementById('analyticsOverlay');
+    if (analyticsOverlay) {
+        analyticsOverlay.remove();
+        console.log('🧹 Removed analytics overlay on logout');
+    }
+    
+    // Remove activity page
+    const activityPage = document.getElementById('activityPage');
+    if (activityPage) {
+        activityPage.remove();
+        console.log('🧹 Removed activity page on logout');
+    }
+    
+    // Remove all fixed position overlays
+    document.querySelectorAll('[style*="position: fixed"]').forEach(overlay => {
+        if (overlay.style.zIndex === '99999' || overlay.style.zIndex === '100000') {
+            overlay.remove();
+            console.log('🧹 Removed fixed overlay on logout');
+        }
+    });
+    
+    // Hide all special pages
+    document.querySelectorAll('.activity-page, .analytics-page, .messages-page, .profile-page').forEach(el => {
+        if (el) {
+            el.style.display = 'none';
+            el.style.visibility = 'hidden';
+            el.style.opacity = '0';
+            el.style.zIndex = '-1';
+        }
+    });
+    
     if (window.logout) {
         await window.logout();
     }
