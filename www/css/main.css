@@ -21,6 +21,7 @@
 @import 'components/liveStream.css';
 @import 'components/musicLibrary.css';
 @import 'components/videoEditor.css';
+@import 'components/analytics.css';
 
 /* Pages */
 @import 'pages/profile.css';

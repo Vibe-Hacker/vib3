@@ -1253,8 +1253,11 @@
         }
         
         function displayAnalyticsData(data) {
-            // Overview stats
-            document.getElementById('avgEngagementScore').textContent = data.engagementStats.avgScore.toFixed(2);
+            console.log('🎨 Displaying analytics data:', data);
+            
+            try {
+                // Overview stats
+                document.getElementById('avgEngagementScore').textContent = data.engagementStats.avgScore.toFixed(2);
             document.getElementById('highEngagementCount').textContent = data.engagementStats.highEngagementCount;
             document.getElementById('freshContentCount').textContent = data.freshnessStats.last24h;
             document.getElementById('uniqueCreators').textContent = data.diversity.uniqueCreators;
@@ -1295,6 +1298,14 @@
                     </div>
                 </div>
             `).join('');
+            
+            console.log('✅ Analytics display completed successfully');
+            
+            } catch (error) {
+                console.error('❌ Error displaying analytics data:', error);
+                console.error('Data that caused error:', data);
+                throw error; // Re-throw to trigger main error handler
+            }
         }
         
         function exportAnalyticsData() {
