@@ -746,7 +746,13 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
         };
 
         const uploadResult = await s3.upload(uploadParams).promise();
-        const videoUrl = uploadResult.Location;
+        let videoUrl = uploadResult.Location;
+        
+        // Normalize URL format for DigitalOcean Spaces
+        if (videoUrl && !videoUrl.startsWith('https://')) {
+            // Ensure proper HTTPS URL format
+            videoUrl = `https://${BUCKET_NAME}.${process.env.DO_SPACES_ENDPOINT || 'nyc3.digitaloceanspaces.com'}/${fileName}`;
+        }
 
         console.log('✅ Upload completed to:', videoUrl);
 
