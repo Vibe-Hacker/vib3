@@ -1207,10 +1207,32 @@
             
             try {
                 console.log('📊 Loading analytics data...');
-                const response = await fetch(`${window.API_BASE_URL}/api/analytics/algorithm`);
+                
+                // Ensure API_BASE_URL is available
+                const apiBaseUrl = window.API_BASE_URL || 
+                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                        ? '' 
+                        : 'https://vib3-production.up.railway.app');
+                
+                console.log('🌐 Using API base URL:', apiBaseUrl);
+                const response = await fetch(`${apiBaseUrl}/api/analytics/algorithm`);
+                
+                console.log('📡 Response status:', response.status, response.statusText);
+                console.log('📄 Response headers:', [...response.headers.entries()]);
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    const errorText = await response.text();
+                    console.error('❌ API Error Response:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText.substring(0, 200)}`);
+                }
+                
+                const contentType = response.headers.get('content-type');
+                console.log('📝 Content-Type:', contentType);
+                
+                if (!contentType || !contentType.includes('application/json')) {
+                    const responseText = await response.text();
+                    console.error('❌ Expected JSON but got:', responseText.substring(0, 200));
+                    throw new Error(`Expected JSON response but got ${contentType}. Response: ${responseText.substring(0, 100)}...`);
                 }
                 
                 const analytics = await response.json();
