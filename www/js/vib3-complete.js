@@ -1573,6 +1573,7 @@ function createExploreVideoCard(video) {
         e.preventDefault();
         e.stopPropagation();
         console.log('🎬 Explore video clicked, opening in vertical feed:', video.title);
+        console.log('📋 Complete video data being passed:', video);
         openVideoModal(video);
     });
     
@@ -1597,12 +1598,17 @@ function openVideoModal(video) {
         return;
     }
     
+    // Set flag to prevent normal feed loading
+    window.isLoadingSpecificVideo = true;
+    
     // Switch to For You feed to show vertical layout
     switchFeedTab('foryou');
     
     // Create a new feed starting with the selected video
     setTimeout(() => {
         createVideoFeedWithSelectedVideo(video);
+        // Clear the flag after creating the custom feed
+        window.isLoadingSpecificVideo = false;
     }, 100);
 }
 
@@ -1632,25 +1638,23 @@ async function createVideoFeedWithSelectedVideo(selectedVideo) {
             // Use the stored video data instead of reconstructing from DOM
             const videoData = card.videoData;
             if (videoData) {
-                // Create a normalized URL for comparison
-                const normalizeUrl = (url) => {
-                    if (!url) return '';
-                    // Remove protocol and www prefix for comparison
-                    return url.replace(/^https?:\/\/(www\.)?/, '').toLowerCase();
-                };
+                // Use video ID for more reliable comparison instead of URL
+                const selectedVideoId = selectedVideo._id || selectedVideo.id;
+                const cardVideoId = videoData._id || videoData.id;
                 
-                const selectedVideoNormalized = normalizeUrl(selectedVideo.videoUrl);
-                const cardVideoNormalized = normalizeUrl(videoData.videoUrl);
+                console.log('🔍 Video comparison:', {
+                    selectedId: selectedVideoId,
+                    cardId: cardVideoId,
+                    selectedTitle: selectedVideo.title || selectedVideo.description,
+                    cardTitle: videoData.title || videoData.description
+                });
                 
                 // Only add if it's not the same video as the selected one
-                if (cardVideoNormalized !== selectedVideoNormalized) {
+                if (cardVideoId !== selectedVideoId) {
                     console.log('📹 Adding video to feed:', videoData.description || videoData.title || 'Untitled');
-                    console.log('   URL:', videoData.videoUrl);
                     allVideos.push(videoData);
                 } else {
                     console.log('🎯 Skipping selected video (already first in feed):', videoData.description || videoData.title || 'Untitled');
-                    console.log('   Selected URL normalized:', selectedVideoNormalized); 
-                    console.log('   Card URL normalized:', cardVideoNormalized);
                 }
             } else {
                 console.warn('⚠️ Explore card missing video data:', card);
@@ -4933,7 +4937,10 @@ function switchFeedTab(feedType) {
     if (targetFeed) {
         // Only clear content for non-explore feeds to preserve explore structure
         if (feedType !== 'explore') {
-            targetFeed.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;">Loading...</div>';
+            // Only show loading if not loading a specific video
+            if (!window.isLoadingSpecificVideo) {
+                targetFeed.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;">Loading...</div>';
+            }
         } else {
             // For explore feed, ensure the structure exists, then clear the video grid
             if (!document.getElementById('exploreVideoGrid')) {
@@ -5013,9 +5020,13 @@ function switchFeedTab(feedType) {
             console.log('🔍 Calling initializeExplorePage for explore feed');
             setTimeout(initializeExplorePage, 100);
         } else {
-            // Load the feed content with fresh data for other feeds
-            console.log(`📹 Loading regular video feed for: ${feedType}`);
-            loadVideoFeed(feedType, true, 1, false); // Force fresh load, no append
+            // Only load regular feed if not loading a specific video
+            if (!window.isLoadingSpecificVideo) {
+                console.log(`📹 Loading regular video feed for: ${feedType}`);
+                loadVideoFeed(feedType, true, 1, false); // Force fresh load, no append
+            } else {
+                console.log(`🎯 Skipping regular feed load - loading specific video`);
+            }
         }
     }, 100);
     
