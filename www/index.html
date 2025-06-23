@@ -1238,6 +1238,12 @@
                 window.currentAnalyticsData = analytics;
                 
                 // ANALYTICS DASHBOARD IN BANNER FORM (SINCE THE PAGE WON'T SHOW)
+                // First, remove any existing analytics overlay to prevent duplicates
+                const existingOverlay = document.getElementById('analyticsOverlay');
+                if (existingOverlay) {
+                    existingOverlay.remove();
+                }
+                
                 const testElement = document.createElement('div');
                 testElement.innerHTML = `
                     <div style="text-align: center; margin-bottom: 20px;">
