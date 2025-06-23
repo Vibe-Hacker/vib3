@@ -2850,14 +2850,32 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Simple API test endpoint
+app.get('/api/test', (req, res) => {
+    console.log('🧪 Test endpoint hit');
+    res.json({ 
+        message: 'API is working', 
+        timestamp: new Date().toISOString(),
+        database: !!db ? 'connected' : 'not connected'
+    });
+});
+
 // Algorithm analytics endpoint
 app.get('/api/analytics/algorithm', async (req, res) => {
+    console.log('📊 Analytics endpoint hit');
+    
+    // Set JSON content type explicitly
+    res.setHeader('Content-Type', 'application/json');
+    
     if (!db) {
+        console.log('❌ Database not available');
         return res.status(503).json({ error: 'Database not available' });
     }
 
     try {
         console.log('📊 Generating algorithm analytics...');
+        
+        const now = new Date();
         
         // Get recent videos for analysis
         const videos = await db.collection('videos')
@@ -2866,11 +2884,31 @@ app.get('/api/analytics/algorithm', async (req, res) => {
             .limit(50)
             .toArray();
 
+        console.log(`📹 Found ${videos.length} videos in database`);
+
+        // Handle case with no videos
+        if (videos.length === 0) {
+            console.log('⚠️ No videos found - returning empty analytics');
+            const emptyAnalytics = {
+                totalVideos: 0,
+                algorithmVersion: '1.0.0-engagement',
+                timestamp: now.toISOString(),
+                engagementStats: { avgScore: 0, maxScore: 0, minScore: 0, highEngagementCount: 0 },
+                freshnessStats: { last24h: 0, last7days: 0, avgAgeHours: 0 },
+                totalEngagement: { totalLikes: 0, totalComments: 0, totalViews: 0, avgLikeRate: 0 },
+                topVideos: [],
+                diversity: { uniqueCreators: 0, contentSpread: 'no_content' }
+            };
+            return res.json(emptyAnalytics);
+        }
+
         // Apply engagement ranking to get scores
+        console.log('📈 Applying engagement ranking...');
         const rankedVideos = await applyEngagementRanking([...videos], db);
+        console.log(`✅ Ranked ${rankedVideos.length} videos`);
         
         // Calculate performance metrics
-        const now = new Date();
+        console.log('📊 Calculating analytics metrics...');
         const analytics = {
             totalVideos: videos.length,
             algorithmVersion: '1.0.0-engagement',
@@ -2919,11 +2957,17 @@ app.get('/api/analytics/algorithm', async (req, res) => {
         };
         
         console.log('✅ Algorithm analytics generated');
+        console.log('📤 Sending analytics response...');
         res.json(analytics);
         
     } catch (error) {
         console.error('❌ Algorithm analytics error:', error);
-        res.status(500).json({ error: 'Failed to generate analytics' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            error: 'Failed to generate analytics',
+            details: error.message,
+            timestamp: new Date().toISOString()
+        });
     }
 });
 
