@@ -3476,6 +3476,7 @@ async function publishContent() {
         
         // Create FormData for file upload
         const formData = new FormData();
+        let result = null; // Declare result variable for all upload types
         
         if (uploadType === 'video' && (selectedFiles.length > 0 || window.selectedVideoFile)) {
             // Upload video file (either selected or recorded)
@@ -3593,7 +3594,6 @@ async function publishContent() {
                 console.log('📥 RAW RESPONSE TEXT:', resultText);
             }
             
-            let result;
             try {
                 result = JSON.parse(resultText);
                 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -3667,7 +3667,7 @@ async function publishContent() {
                 throw new Error(error.error || 'Upload failed');
             }
             
-            const result = await response.json();
+            result = await response.json();
             console.log('✅ Slideshow created:', result);
             
             updatePublishProgress('Finalizing...', 90);
