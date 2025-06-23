@@ -3413,7 +3413,16 @@ async function publishContent() {
                 window.currentUser = null;
                 
                 // Close upload modal and show login screen
-                hideUploadModal();
+                if (window.closeUploadModal) {
+                    window.closeUploadModal();
+                } else {
+                    // Fallback: hide modal manually
+                    const uploadModal = document.getElementById('uploadModal');
+                    if (uploadModal) {
+                        uploadModal.style.display = 'none';
+                        uploadModal.classList.remove('active');
+                    }
+                }
                 
                 // Show auth container for login
                 const authContainer = document.getElementById('authContainer');
