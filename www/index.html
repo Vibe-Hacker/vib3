@@ -1250,6 +1250,7 @@
                         <h2 style="color: white; margin: 0;">📊 VIB3 Analytics Dashboard</h2>
                         <p style="margin: 5px 0; opacity: 0.8;">Algorithm: ${analytics.algorithmVersion}</p>
                         ${analytics.hashtagAnalytics ? `<p style="margin: 5px 0; opacity: 0.8;">🏷️ Hashtag Recommendations: Active</p>` : ''}
+                        ${analytics.mlAnalytics ? `<p style="margin: 5px 0; opacity: 0.8;">🤖 ML Recommendations: Active</p>` : ''}
                         <div style="margin-top: 10px;">
                             <button onclick="loadWatchTimeAnalytics()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; margin: 0 5px;">
                                 ⏱️ Watch Time Analytics
@@ -1313,12 +1314,45 @@
                     </div>
                     ` : ''}
                     
+                    ${analytics.mlAnalytics ? `
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h3 style="margin: 0 0 10px 0; color: white;">🤖 Machine Learning Analytics</h3>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 18px; font-weight: bold;">${analytics.mlAnalytics.videosWithMLBoost}</div>
+                                <div style="font-size: 12px; opacity: 0.8;">ML Boosted Videos</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 18px; font-weight: bold;">${analytics.mlAnalytics.collaborativeRecommendations}</div>
+                                <div style="font-size: 12px; opacity: 0.8;">Collaborative Recs</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 18px; font-weight: bold;">${analytics.mlAnalytics.contentRecommendations}</div>
+                                <div style="font-size: 12px; opacity: 0.8;">Content-Based Recs</div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 16px; font-weight: bold;">${analytics.mlAnalytics.avgMLBoost.toFixed(3)}</div>
+                                <div style="font-size: 11px; opacity: 0.8;">Avg ML Boost</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 16px; font-weight: bold;">${analytics.mlAnalytics.maxMLBoost.toFixed(3)}</div>
+                                <div style="font-size: 11px; opacity: 0.8;">Max ML Boost</div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
                     <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                         <h3 style="margin: 0 0 10px 0; color: white;">🏆 Top Performing Videos</h3>
                         ${analytics.topVideos.slice(0, 3).map((video, index) => `
                             <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 4px;">
-                                <span>${index + 1}. ${video.title}</span>
-                                <span>Score: ${video.engagementScore} | ❤️ ${video.likes}</span>
+                                <div style="flex: 1;">
+                                    <span>${index + 1}. ${video.title}</span>
+                                    ${video.mlRecommendationScore > 0 ? `<span style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">🤖 +${video.mlRecommendationScore.toFixed(2)}</span>` : ''}
+                                </div>
+                                <span>Score: ${video.finalScore || video.engagementScore} | ❤️ ${video.likes}</span>
                             </div>
                         `).join('')}
                     </div>

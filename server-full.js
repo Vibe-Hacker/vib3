@@ -95,7 +95,7 @@ app.get('/api/analytics/algorithm', async (req, res) => {
         console.log('📊 Calculating analytics metrics...');
         const analytics = {
             totalVideos: videos.length,
-            algorithmVersion: '1.2.0-engagement-hashtags-behavior',
+            algorithmVersion: '1.3.0-engagement-hashtags-behavior-ml',
             timestamp: now.toISOString(),
             
             // Engagement distribution
@@ -126,6 +126,10 @@ app.get('/api/analytics/algorithm', async (req, res) => {
                 id: v._id,
                 title: v.title || 'Untitled',
                 engagementScore: parseFloat((v.engagementScore || 0).toFixed(2)),
+                finalScore: parseFloat((v.finalScore || v.engagementScore || 0).toFixed(2)),
+                mlRecommendationScore: parseFloat((v.mlRecommendationScore || 0).toFixed(2)),
+                collaborativeScore: parseFloat((v.collaborativeScore || 0).toFixed(2)),
+                contentScore: parseFloat((v.contentScore || 0).toFixed(2)),
                 likes: v.likeCount || 0,
                 comments: v.commentCount || 0,
                 views: v.views || 0,
@@ -149,6 +153,20 @@ app.get('/api/analytics/algorithm', async (req, res) => {
                 avgHashtagBoost: rankedVideos.filter(v => (v.hashtagBoost || 0) > 0)
                     .reduce((sum, v) => sum + (v.hashtagBoost || 0), 0) / Math.max(1, rankedVideos.filter(v => (v.hashtagBoost || 0) > 0).length),
                 topHashtags: getTopHashtags(rankedVideos, 10)
+            },
+            
+            // Machine Learning recommendation metrics
+            mlAnalytics: {
+                videosWithMLBoost: rankedVideos.filter(v => (v.mlRecommendationScore || 0) > 0).length,
+                avgMLBoost: rankedVideos.filter(v => (v.mlRecommendationScore || 0) > 0)
+                    .reduce((sum, v) => sum + (v.mlRecommendationScore || 0), 0) / Math.max(1, rankedVideos.filter(v => (v.mlRecommendationScore || 0) > 0).length),
+                maxMLBoost: Math.max(...rankedVideos.map(v => v.mlRecommendationScore || 0)),
+                collaborativeRecommendations: rankedVideos.filter(v => (v.collaborativeScore || 0) > 0).length,
+                contentRecommendations: rankedVideos.filter(v => (v.contentScore || 0) > 0).length,
+                avgCollaborativeScore: rankedVideos.filter(v => (v.collaborativeScore || 0) > 0)
+                    .reduce((sum, v) => sum + (v.collaborativeScore || 0), 0) / Math.max(1, rankedVideos.filter(v => (v.collaborativeScore || 0) > 0).length),
+                avgContentScore: rankedVideos.filter(v => (v.contentScore || 0) > 0)
+                    .reduce((sum, v) => sum + (v.contentScore || 0), 0) / Math.max(1, rankedVideos.filter(v => (v.contentScore || 0) > 0).length)
             }
         };
         
@@ -1019,6 +1037,277 @@ async function applyEngagementRanking(videos, db) {
     return videos;
 }
 
+// Machine Learning Recommendations System
+async function applyMLRecommendations(videos, currentUser, db) {
+    console.log(`🤖 Applying ML recommendations for ${videos.length} videos`);
+    
+    if (!currentUser || !db) {
+        console.log('⚠️ No user or database - skipping ML recommendations');
+        return videos;
+    }
+    
+    try {
+        // Get user interaction history
+        const userHistory = await getUserInteractionHistory(currentUser.uid || currentUser._id, db);
+        
+        // Apply collaborative filtering
+        const collaborativeScores = await calculateCollaborativeFiltering(videos, userHistory, db);
+        
+        // Apply content-based filtering
+        const contentScores = await calculateContentBasedFiltering(videos, userHistory, db);
+        
+        // Combine scores with existing engagement scores
+        videos.forEach(video => {
+            const videoId = video._id.toString();
+            const collaborativeScore = collaborativeScores[videoId] || 0;
+            const contentScore = contentScores[videoId] || 0;
+            
+            // Weighted combination of all scores
+            const originalScore = video.engagementScore || 0;
+            
+            // ML recommendation boost (max 2.0 points)
+            const mlBoost = (collaborativeScore * 0.6 + contentScore * 0.4) * 2.0;
+            
+            video.mlRecommendationScore = mlBoost;
+            video.collaborativeScore = collaborativeScore;
+            video.contentScore = contentScore;
+            
+            // Update final score
+            video.finalScore = originalScore + mlBoost;
+        });
+        
+        // Re-sort by final score
+        videos.sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0));
+        
+        console.log(`🤖 ML recommendations applied - top video boost: ${videos[0]?.mlRecommendationScore?.toFixed(2) || 0}`);
+        
+        return videos;
+        
+    } catch (error) {
+        console.error('ML recommendation error:', error);
+        return videos;
+    }
+}
+
+// Get user interaction history for ML analysis
+async function getUserInteractionHistory(userId, db) {
+    try {
+        const [likes, views, shares, comments] = await Promise.all([
+            db.collection('likes').find({ userId }).toArray(),
+            db.collection('video_views').find({ userId }).toArray(),
+            db.collection('shares').find({ userId }).toArray(),
+            db.collection('comments').find({ userId }).toArray()
+        ]);
+        
+        return {
+            userId,
+            likes: likes.map(l => l.videoId),
+            views: views.map(v => ({ videoId: v.videoId, watchTime: v.watchTime, timestamp: v.timestamp })),
+            shares: shares.map(s => s.videoId),
+            comments: comments.map(c => c.videoId),
+            allInteractions: [
+                ...likes.map(l => ({ videoId: l.videoId, type: 'like', weight: 3, timestamp: l.createdAt })),
+                ...shares.map(s => ({ videoId: s.videoId, type: 'share', weight: 5, timestamp: s.createdAt })),
+                ...comments.map(c => ({ videoId: c.videoId, type: 'comment', weight: 4, timestamp: c.createdAt })),
+                ...views.filter(v => v.watchTime > 10).map(v => ({ videoId: v.videoId, type: 'view', weight: 1, timestamp: v.timestamp }))
+            ]
+        };
+    } catch (error) {
+        console.error('Error getting user history:', error);
+        return { userId, likes: [], views: [], shares: [], comments: [], allInteractions: [] };
+    }
+}
+
+// Collaborative Filtering: "Users who liked this also liked..."
+async function calculateCollaborativeFiltering(videos, userHistory, db) {
+    const scores = {};
+    
+    if (userHistory.allInteractions.length === 0) {
+        return scores;
+    }
+    
+    try {
+        // Find users with similar interaction patterns
+        const userInteractedVideos = userHistory.allInteractions.map(i => i.videoId);
+        
+        // Get other users who interacted with the same videos
+        const similarUsers = await db.collection('likes')
+            .find({ videoId: { $in: userInteractedVideos } })
+            .toArray();
+        
+        // Count co-occurrence patterns
+        const coOccurrence = {};
+        
+        for (const interaction of similarUsers) {
+            const otherUserId = interaction.userId;
+            if (otherUserId === userHistory.userId) continue;
+            
+            // Get this user's other interactions
+            const otherUserInteractions = await db.collection('likes')
+                .find({ userId: otherUserId })
+                .toArray();
+            
+            for (const otherInteraction of otherUserInteractions) {
+                const videoId = otherInteraction.videoId;
+                if (!userInteractedVideos.includes(videoId)) {
+                    coOccurrence[videoId] = (coOccurrence[videoId] || 0) + 1;
+                }
+            }
+        }
+        
+        // Calculate collaborative scores
+        const maxCoOccurrence = Math.max(...Object.values(coOccurrence), 1);
+        
+        for (const [videoId, count] of Object.entries(coOccurrence)) {
+            scores[videoId] = count / maxCoOccurrence;
+        }
+        
+        console.log(`👥 Collaborative filtering: found ${Object.keys(scores).length} recommendations`);
+        
+    } catch (error) {
+        console.error('Collaborative filtering error:', error);
+    }
+    
+    return scores;
+}
+
+// Content-Based Filtering: Similar content to what user likes
+async function calculateContentBasedFiltering(videos, userHistory, db) {
+    const scores = {};
+    
+    if (userHistory.allInteractions.length === 0) {
+        return scores;
+    }
+    
+    try {
+        // Get videos user has interacted with
+        const interactedVideoIds = userHistory.allInteractions.map(i => i.videoId);
+        const interactedVideos = await db.collection('videos')
+            .find({ _id: { $in: interactedVideoIds.map(id => new ObjectId(id)) } })
+            .toArray();
+        
+        // Build user preference profile
+        const userProfile = buildUserContentProfile(interactedVideos, userHistory);
+        
+        // Score current videos based on similarity to user profile
+        for (const video of videos) {
+            const videoId = video._id.toString();
+            
+            // Skip if user already interacted with this video
+            if (interactedVideoIds.includes(videoId)) {
+                scores[videoId] = 0;
+                continue;
+            }
+            
+            // Calculate content similarity
+            const similarity = calculateContentSimilarity(video, userProfile);
+            scores[videoId] = similarity;
+        }
+        
+        console.log(`🎯 Content-based filtering: calculated ${Object.keys(scores).length} content scores`);
+        
+    } catch (error) {
+        console.error('Content-based filtering error:', error);
+    }
+    
+    return scores;
+}
+
+// Build user content preference profile
+function buildUserContentProfile(interactedVideos, userHistory) {
+    const profile = {
+        hashtags: {},
+        creators: {},
+        timeOfDay: {},
+        videoLength: { short: 0, medium: 0, long: 0 },
+        totalInteractions: userHistory.allInteractions.length
+    };
+    
+    // Weight interactions by type
+    const interactionWeights = { like: 3, share: 5, comment: 4, view: 1 };
+    
+    for (const video of interactedVideos) {
+        const videoId = video._id.toString();
+        const interactions = userHistory.allInteractions.filter(i => i.videoId === videoId);
+        const totalWeight = interactions.reduce((sum, i) => sum + (interactionWeights[i.type] || 1), 0);
+        
+        // Hashtag preferences
+        const hashtags = extractHashtags(video.description || video.title || '');
+        for (const tag of hashtags) {
+            profile.hashtags[tag] = (profile.hashtags[tag] || 0) + totalWeight;
+        }
+        
+        // Creator preferences
+        const creator = video.username || video.userId;
+        if (creator) {
+            profile.creators[creator] = (profile.creators[creator] || 0) + totalWeight;
+        }
+        
+        // Time preferences (when user typically engages)
+        for (const interaction of interactions) {
+            if (interaction.timestamp) {
+                const hour = new Date(interaction.timestamp).getHours();
+                profile.timeOfDay[hour] = (profile.timeOfDay[hour] || 0) + totalWeight;
+            }
+        }
+        
+        // Video length preferences
+        const duration = video.duration || 30; // Default 30 seconds
+        if (duration < 30) profile.videoLength.short += totalWeight;
+        else if (duration < 120) profile.videoLength.medium += totalWeight;
+        else profile.videoLength.long += totalWeight;
+    }
+    
+    return profile;
+}
+
+// Calculate similarity between video and user profile
+function calculateContentSimilarity(video, userProfile) {
+    let similarity = 0;
+    let factors = 0;
+    
+    // Hashtag similarity
+    const videoHashtags = extractHashtags(video.description || video.title || '');
+    if (videoHashtags.length > 0 && Object.keys(userProfile.hashtags).length > 0) {
+        let hashtagScore = 0;
+        for (const tag of videoHashtags) {
+            if (userProfile.hashtags[tag]) {
+                hashtagScore += userProfile.hashtags[tag] / userProfile.totalInteractions;
+            }
+        }
+        similarity += (hashtagScore / videoHashtags.length) * 0.4;
+        factors += 0.4;
+    }
+    
+    // Creator similarity
+    const creator = video.username || video.userId;
+    if (creator && userProfile.creators[creator]) {
+        similarity += (userProfile.creators[creator] / userProfile.totalInteractions) * 0.3;
+        factors += 0.3;
+    }
+    
+    // Video length similarity
+    const duration = video.duration || 30;
+    let lengthScore = 0;
+    if (duration < 30) lengthScore = userProfile.videoLength.short;
+    else if (duration < 120) lengthScore = userProfile.videoLength.medium;
+    else lengthScore = userProfile.videoLength.long;
+    
+    if (userProfile.totalInteractions > 0) {
+        similarity += (lengthScore / userProfile.totalInteractions) * 0.2;
+        factors += 0.2;
+    }
+    
+    // Time-based similarity (current time vs user's active hours)
+    const currentHour = new Date().getHours();
+    if (userProfile.timeOfDay[currentHour]) {
+        similarity += (userProfile.timeOfDay[currentHour] / userProfile.totalInteractions) * 0.1;
+        factors += 0.1;
+    }
+    
+    return factors > 0 ? similarity / factors : 0;
+}
+
 // Configure multer for video uploads with enhanced format support
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -1593,6 +1882,9 @@ app.get('/api/videos', async (req, res) => {
                     
                     // Apply behavior-based recommendations
                     videos = await applyBehaviorRecommendations(videos, req.user, db);
+                    
+                    // Apply machine learning recommendations
+                    videos = await applyMLRecommendations(videos, req.user, db);
                 }
                 
                 // Apply pagination after ranking
