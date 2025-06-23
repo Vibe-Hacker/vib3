@@ -1257,49 +1257,33 @@
                         computed: window.getComputedStyle(analyticsPage).display
                     });
                     
-                    // Force extremely visible styling
+                    // Force visible styling with proper analytics theme
                     analyticsPage.style.display = 'block';
-                    analyticsPage.style.backgroundColor = '#ff0000'; // Bright red background
-                    analyticsPage.style.zIndex = '99999';
+                    analyticsPage.style.backgroundColor = '#161823'; // Dark background
+                    analyticsPage.style.color = '#ffffff'; // White text
+                    analyticsPage.style.zIndex = '9999';
                     analyticsPage.style.position = 'fixed';
                     analyticsPage.style.top = '0';
-                    analyticsPage.style.left = '0';
-                    analyticsPage.style.width = '100vw';
+                    analyticsPage.style.left = '240px'; // Account for sidebar
+                    analyticsPage.style.width = 'calc(100vw - 240px)';
                     analyticsPage.style.height = '100vh';
-                    analyticsPage.style.border = '10px solid #00ff00'; // Bright green border
+                    analyticsPage.style.overflow = 'auto';
                     
-                    console.log('📊 Analytics page forced visible with red background');
+                    console.log('📊 Analytics page forced visible with proper styling');
                     console.log('📊 Analytics page new style:', {
                         display: analyticsPage.style.display,
                         computed: window.getComputedStyle(analyticsPage).display
                     });
-                    
-                    // Add a huge visible test element
-                    const testDiv = document.createElement('div');
-                    testDiv.innerHTML = 'ANALYTICS TEST - THIS SHOULD BE VISIBLE';
-                    testDiv.style.cssText = `
-                        position: fixed;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%, -50%);
-                        background: yellow;
-                        color: black;
-                        font-size: 48px;
-                        padding: 20px;
-                        border: 5px solid red;
-                        z-index: 999999;
-                    `;
-                    document.body.appendChild(testDiv);
-                    console.log('🚨 Added test element to body');
                 } else {
                     console.error('❌ Analytics page element not found!');
                 }
                 
-                // Force content to be visible with debugging styles
-                content.style.backgroundColor = '#161823';
-                content.style.border = '2px solid #fe2c55';
+                // Force content to be visible with proper styles
+                content.style.backgroundColor = 'transparent';
+                content.style.color = '#ffffff';
                 content.style.minHeight = '500px';
-                console.log('🔧 Applied debugging styles to content');
+                content.style.padding = '20px';
+                console.log('🔧 Applied proper styles to content');
                 
                 // Check for overlapping elements and hide them
                 console.log('🔍 Checking for overlapping pages...');
