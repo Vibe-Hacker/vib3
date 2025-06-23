@@ -1589,10 +1589,84 @@ function openVideoModal(video) {
     // Switch to For You feed to show vertical layout
     switchFeedTab('foryou');
     
-    // Wait for feed to be ready, then find and play the specific video
+    // Create a new feed starting with the selected video
     setTimeout(() => {
-        playSpecificVideoInFeed(video);
-    }, 500);
+        createVideoFeedWithSelectedVideo(video);
+    }, 100);
+}
+
+// Create a vertical feed starting with a specific video
+async function createVideoFeedWithSelectedVideo(selectedVideo) {
+    const feedElement = document.getElementById('foryouFeed');
+    if (!feedElement) return;
+    
+    // Clear the feed
+    feedElement.innerHTML = '<div class="loading-container"><div class="spinner"></div><p>Loading video...</p></div>';
+    
+    try {
+        // Get all available videos
+        const response = await fetch(`${window.API_BASE_URL}/api/videos?feed=foryou&limit=20`, {
+            credentials: 'include',
+            headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
+        });
+        
+        const data = await response.json();
+        let allVideos = data.videos || [];
+        
+        // If API doesn't return videos, use the selected video at least
+        if (allVideos.length === 0) {
+            allVideos = [selectedVideo];
+        } else {
+            // Make sure the selected video is first in the list
+            allVideos = allVideos.filter(v => getVideoFilename(v.videoUrl) !== getVideoFilename(selectedVideo.videoUrl));
+            allVideos.unshift(selectedVideo);
+        }
+        
+        // Clear and rebuild the feed
+        feedElement.innerHTML = '';
+        
+        // Create video cards for all videos
+        allVideos.forEach((video, index) => {
+            const videoCard = createTikTokStyleVideoCard(video);
+            feedElement.appendChild(videoCard);
+        });
+        
+        // Initialize video system for the new feed
+        setTimeout(() => {
+            initializeTikTokStyleVideos();
+            
+            // Auto-play the first video (which is our selected video)
+            const firstVideo = feedElement.querySelector('video');
+            if (firstVideo) {
+                firstVideo.currentTime = 0;
+                firstVideo.play().catch(e => {
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                        console.log('Auto-play prevented:', e);
+                    }
+                });
+            }
+        }, 200);
+        
+    } catch (error) {
+        console.error('Error creating video feed:', error);
+        
+        // Fallback: just create a card for the selected video
+        feedElement.innerHTML = '';
+        const videoCard = createTikTokStyleVideoCard(selectedVideo);
+        feedElement.appendChild(videoCard);
+        
+        setTimeout(() => {
+            const video = feedElement.querySelector('video');
+            if (video) {
+                video.currentTime = 0;
+                video.play().catch(e => {
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                        console.log('Auto-play prevented:', e);
+                    }
+                });
+            }
+        }, 200);
+    }
 }
 
 // Find and play a specific video in the current feed
