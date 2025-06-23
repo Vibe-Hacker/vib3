@@ -2577,108 +2577,131 @@ app.get('/api/user/activity', async (req, res) => {
         
         console.log('📱 Loading activity for user:', userId);
         
-        // Get user's activity from various collections
-        const [likes, comments, shares, uploads] = await Promise.all([
-            // User's likes
-            db.collection('likes').find({ userId }).sort({ createdAt: -1 }).limit(20).toArray(),
-            // User's comments  
-            db.collection('comments').find({ userId }).sort({ createdAt: -1 }).limit(20).toArray(),
-            // User's shares
-            db.collection('shares').find({ userId }).sort({ createdAt: -1 }).limit(20).toArray(),
-            // User's video uploads
-            db.collection('videos').find({ userId }).sort({ createdAt: -1 }).limit(10).toArray()
+        // Get user's videos first
+        const userVideos = await db.collection('videos').find({ userId }).toArray();
+        const userVideoIds = userVideos.map(v => v._id.toString());
+        
+        if (userVideoIds.length === 0) {
+            return res.json({ activities: [] });
+        }
+        
+        // Get interactions from others on user's content
+        const [likes, comments, shares, follows] = await Promise.all([
+            // Others' likes on user's videos
+            db.collection('likes').find({ 
+                videoId: { $in: userVideoIds },
+                userId: { $ne: userId } // Exclude user's own likes
+            }).sort({ createdAt: -1 }).limit(30).toArray(),
+            
+            // Others' comments on user's videos
+            db.collection('comments').find({ 
+                videoId: { $in: userVideoIds },
+                userId: { $ne: userId } // Exclude user's own comments
+            }).sort({ createdAt: -1 }).limit(30).toArray(),
+            
+            // Others' shares of user's videos
+            db.collection('shares').find({ 
+                videoId: { $in: userVideoIds },
+                userId: { $ne: userId } // Exclude user's own shares
+            }).sort({ createdAt: -1 }).limit(20).toArray(),
+            
+            // New follows
+            db.collection('follows').find({ 
+                followingId: userId,
+                createdAt: { $exists: true }
+            }).sort({ createdAt: -1 }).limit(20).toArray()
         ]);
         
         // Combine and format activities
         const activities = [];
         
-        // Add likes
+        // Add likes from others
         for (const like of likes) {
             try {
-                const video = await db.collection('videos').findOne({ _id: new ObjectId(like.videoId) });
+                const video = userVideos.find(v => v._id.toString() === like.videoId);
+                const liker = await db.collection('users').findOne({ _id: new ObjectId(like.userId) });
                 activities.push({
                     type: 'like',
                     timestamp: like.createdAt || new Date(),
                     videoId: like.videoId,
                     videoTitle: video?.title || video?.description?.substring(0, 50) || 'Untitled Video',
-                    details: video?.username ? `by ${video.username}` : null
+                    details: `${liker?.username || 'Someone'} liked your video`,
+                    username: liker?.username || 'VIB3 User',
+                    userId: like.userId
                 });
             } catch (error) {
                 console.error('Error processing like:', error);
             }
         }
         
-        // Add comments
+        // Add comments from others
         for (const comment of comments) {
             try {
-                const video = await db.collection('videos').findOne({ _id: new ObjectId(comment.videoId) });
+                const video = userVideos.find(v => v._id.toString() === comment.videoId);
+                const commenter = await db.collection('users').findOne({ _id: new ObjectId(comment.userId) });
                 activities.push({
                     type: 'comment',
                     timestamp: comment.createdAt || new Date(),
                     videoId: comment.videoId,
                     videoTitle: video?.title || video?.description?.substring(0, 50) || 'Untitled Video',
-                    details: `"${comment.text?.substring(0, 30)}${comment.text?.length > 30 ? '...' : ''}"`
+                    details: `${commenter?.username || 'Someone'} commented: "${comment.text?.substring(0, 30)}${comment.text?.length > 30 ? '...' : ''}"`,
+                    username: commenter?.username || 'VIB3 User',
+                    userId: comment.userId
                 });
             } catch (error) {
                 console.error('Error processing comment:', error);
             }
         }
         
-        // Add shares
+        // Add shares from others
         for (const share of shares) {
             try {
-                const video = await db.collection('videos').findOne({ _id: new ObjectId(share.videoId) });
+                const video = userVideos.find(v => v._id.toString() === share.videoId);
+                const sharer = await db.collection('users').findOne({ _id: new ObjectId(share.userId) });
                 activities.push({
                     type: 'share',
                     timestamp: share.createdAt || new Date(),
                     videoId: share.videoId,
                     videoTitle: video?.title || video?.description?.substring(0, 50) || 'Untitled Video',
-                    details: share.platform ? `on ${share.platform}` : null
+                    details: `${sharer?.username || 'Someone'} shared your video${share.platform ? ` on ${share.platform}` : ''}`,
+                    username: sharer?.username || 'VIB3 User',
+                    userId: share.userId
                 });
             } catch (error) {
                 console.error('Error processing share:', error);
             }
         }
         
-        // Add video uploads
-        for (const upload of uploads) {
-            activities.push({
-                type: 'video_uploaded',
-                timestamp: upload.createdAt || new Date(),
-                videoId: upload._id.toString(),
-                videoTitle: upload.title || upload.description?.substring(0, 50) || 'Untitled Video',
-                details: `${upload.views || 0} views • ${(upload.likes || []).length} likes`
-            });
+        // Add new follows
+        for (const follow of follows) {
+            try {
+                const follower = await db.collection('users').findOne({ _id: new ObjectId(follow.followerId) });
+                activities.push({
+                    type: 'follow',
+                    timestamp: follow.createdAt || new Date(),
+                    details: `${follower?.username || 'Someone'} started following you`,
+                    username: follower?.username || 'VIB3 User',
+                    userId: follow.followerId
+                });
+            } catch (error) {
+                console.error('Error processing follow:', error);
+            }
         }
         
-        // Sort by timestamp (newest first) and limit to 50
+        // Sort all activities by timestamp (newest first)
         activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        const limitedActivities = activities.slice(0, 50);
         
-        console.log(`📱 Found ${limitedActivities.length} activities for user`);
+        // Limit to most recent 50 activities
+        const recentActivities = activities.slice(0, 50);
         
-        // If no activities found, add some sample/demo activities for testing
-        if (limitedActivities.length === 0) {
-            console.log('📱 No activities found, adding demo activities');
-            limitedActivities.push(
-                {
-                    type: 'video_uploaded',
-                    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-                    videoTitle: 'Welcome to VIB3!',
-                    details: '0 views • 0 likes'
-                },
-                {
-                    type: 'like',
-                    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago  
-                    videoTitle: 'Sample Video',
-                    details: 'by demo_user'
-                }
-            );
-        }
+        // Log activity count
+        console.log(`📱 Found ${recentActivities.length} activities for user ${userId}`);
         
-        res.json({
-            activities: limitedActivities,
-            totalCount: activities.length
+        console.log(`📱 Returning ${recentActivities.length} activities`);
+        
+        res.json({ 
+            activities: recentActivities,
+            totalCount: recentActivities.length
         });
         
     } catch (error) {

@@ -5874,9 +5874,12 @@ function createActivityPage() {
         
         activityPage.innerHTML = `
             <div style="max-width: 600px; margin: 0 auto;">
-                <h2 style="color: var(--text-primary); margin-bottom: 20px; font-size: 24px; font-weight: 700;">
+                <h2 style="color: var(--text-primary); margin-bottom: 10px; font-size: 24px; font-weight: 700;">
                     🔔 Activity
                 </h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;">
+                    See how others are interacting with your content
+                </p>
                 
                 <div class="activity-tabs" style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 1px solid var(--border-primary); padding-bottom: 15px;">
                     <button class="activity-tab-btn active" data-filter="all" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 600;">All</button>
@@ -5970,19 +5973,24 @@ async function loadActivity(filter = 'all') {
                 <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
                     <div style="font-size: 48px; margin-bottom: 16px;">🌟</div>
                     <h3 style="margin-bottom: 8px; color: var(--text-primary);">No activity yet</h3>
-                    <p>Start engaging with videos to see your activity here!</p>
+                    <p>When others interact with your videos, you'll see it here!</p>
                 </div>
             `;
         } else {
             // Convert API data to the format expected by createActivityItem
             const formattedActivities = data.activities.map(activity => ({
-                id: activity.videoId || Math.random().toString(),
+                id: activity.videoId || activity.userId || Math.random().toString(),
                 type: activity.type,
-                user: { username: activity.details || 'VIB3', avatar: getActivityIcon(activity.type) },
-                action: getActivityAction(activity.type),
+                user: { 
+                    username: activity.username || 'VIB3 User', 
+                    avatar: getActivityIcon(activity.type),
+                    userId: activity.userId
+                },
+                action: activity.details || getActivityAction(activity.type),
                 target: activity.videoTitle,
                 time: getTimeAgo(new Date(activity.timestamp)),
-                timestamp: new Date(activity.timestamp).getTime()
+                timestamp: new Date(activity.timestamp).getTime(),
+                videoId: activity.videoId
             }));
             
             activityList.innerHTML = formattedActivities.map(createActivityItem).join('');
@@ -6174,9 +6182,8 @@ function createActivityItem(activity) {
                     line-height: 1.4;
                     margin-bottom: 4px;
                 ">
-                    <strong style="color: var(--accent-color);">@${activity.user.username}</strong> 
                     ${activity.action}
-                    ${activity.target ? `<span style="color: var(--text-secondary);">"${activity.target}"</span>` : ''}
+                    ${activity.target && activity.type !== 'follow' ? ` on <span style="color: var(--text-secondary);">"${activity.target}"</span>` : ''}
                 </div>
                 
                 ${activity.comment ? `
