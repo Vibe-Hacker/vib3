@@ -1241,8 +1241,27 @@
                 displayAnalyticsData(analytics);
                 
                 // Show content
+                console.log('📺 Showing analytics content...');
                 loading.style.display = 'none';
                 content.style.display = 'block';
+                content.style.visibility = 'visible';
+                content.style.opacity = '1';
+                console.log('👁️ Content visibility set to:', content.style.display);
+                console.log('📦 Content element:', content);
+                
+                // Force analytics page to be visible for debugging
+                const analyticsPage = document.getElementById('analyticsPage');
+                if (analyticsPage) {
+                    analyticsPage.style.display = 'block';
+                    analyticsPage.style.backgroundColor = '#161823'; // Force a visible background
+                    console.log('📊 Analytics page forced visible');
+                }
+                
+                // Force content to be visible with debugging styles
+                content.style.backgroundColor = '#161823';
+                content.style.border = '2px solid #fe2c55';
+                content.style.minHeight = '500px';
+                console.log('🔧 Applied debugging styles to content');
                 
             } catch (err) {
                 console.error('❌ Analytics error:', err);
@@ -1257,7 +1276,14 @@
             
             try {
                 // Overview stats
-                document.getElementById('avgEngagementScore').textContent = data.engagementStats.avgScore.toFixed(2);
+                const avgScoreEl = document.getElementById('avgEngagementScore');
+                console.log('🎯 Setting avgEngagementScore element:', avgScoreEl);
+                if (avgScoreEl) {
+                    avgScoreEl.textContent = data.engagementStats.avgScore.toFixed(2);
+                    console.log('✅ Set avgEngagementScore to:', data.engagementStats.avgScore.toFixed(2));
+                } else {
+                    console.error('❌ avgEngagementScore element not found!');
+                }
             document.getElementById('highEngagementCount').textContent = data.engagementStats.highEngagementCount;
             document.getElementById('freshContentCount').textContent = data.freshnessStats.last24h;
             document.getElementById('uniqueCreators').textContent = data.diversity.uniqueCreators;
