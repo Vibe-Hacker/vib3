@@ -56,6 +56,37 @@ async function signup(username, email, password) {
 // Logout function
 async function logout() {
     try {
+        // CRITICAL: Clean up all overlays and special pages before logout
+        const overlaysToRemove = [
+            'analyticsOverlay',
+            'activityPage',
+            document.querySelector('[style*="position: fixed"][style*="z-index: 99999"]'),
+            document.querySelector('[style*="position: fixed"][style*="z-index: 100000"]')
+        ];
+        
+        overlaysToRemove.forEach(overlay => {
+            if (typeof overlay === 'string') {
+                const element = document.getElementById(overlay);
+                if (element) {
+                    element.remove();
+                    console.log(`🧹 Removed ${overlay} on logout`);
+                }
+            } else if (overlay) {
+                overlay.remove();
+                console.log('🧹 Removed fixed overlay on logout');
+            }
+        });
+        
+        // Hide all special pages
+        document.querySelectorAll('.activity-page, .analytics-page, .messages-page, .profile-page').forEach(el => {
+            if (el) {
+                el.style.display = 'none';
+                el.style.visibility = 'hidden';
+                el.style.opacity = '0';
+                el.style.zIndex = '-1';
+            }
+        });
+        
         await window.signOut(window.auth);
         if (window.showNotification) {
             window.showNotification('Logged out successfully', 'info');
