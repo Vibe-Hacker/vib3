@@ -4557,9 +4557,23 @@ function showPage(page) {
         console.log('✅ Removed profile page for navigation');
     }
     
+    // CRITICAL: Clean up activity and analytics overlays FIRST before any early returns
+    const activityPageCleanup = document.getElementById('activityPage');
+    if (activityPageCleanup && page !== 'activity') {
+        activityPageCleanup.remove();
+        console.log('🧹 Pre-cleanup: Removed activity page');
+    }
+    
+    const analyticsOverlayCleanup = document.querySelector('[style*="position: fixed"][style*="z-index: 99999"]');
+    if (analyticsOverlayCleanup && page !== 'analytics') {
+        analyticsOverlayCleanup.remove();
+        console.log('🧹 Pre-cleanup: Removed analytics overlay');
+    }
+
     // Handle feed tabs - don't show "coming soon" for these
     if (page === 'foryou' || page === 'following' || page === 'explore' || page === 'friends') {
         // Make sure to show the main app for feed tabs
+        const mainApp = document.getElementById('mainApp');
         if (mainApp) {
             mainApp.style.display = 'block';
             mainApp.style.visibility = 'visible';
