@@ -3382,28 +3382,40 @@ async function publishContent() {
                 console.warn('⚠️ No currentUser found for upload');
             }
             
-            console.log('🚀 SENDING REQUEST TO:', `${window.API_BASE_URL}/api/upload/video`);
-            console.log('🚀 REQUEST HEADERS: Using session-based authentication');
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('🚀 SENDING REQUEST TO:', `${window.API_BASE_URL}/api/upload/video`);
+                console.log('🚀 REQUEST HEADERS: Using session-based authentication');
+                console.log('🔑 Auth token available:', !!window.authToken);
+                console.log('🔑 Current user available:', !!window.currentUser);
+            }
             
             const response = await fetch(`${window.API_BASE_URL}/api/upload/video`, {
                 method: 'POST',
                 credentials: 'include', // Include HTTP-only cookies for production auth
                 headers: {
-                    // Authorization header may still be needed if server expects it
-                    ...(window.authToken && window.authToken !== 'session-based' ? 
+                    // Always include Authorization header if we have a token
+                    ...(window.authToken ? 
                         { 'Authorization': `Bearer ${window.authToken}` } : {})
                 },
                 body: formData
             });
             
-            console.log('📡 RESPONSE STATUS:', response.status, response.statusText);
-            console.log('📡 RESPONSE HEADERS:', Object.fromEntries(response.headers.entries()));
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('📡 RESPONSE STATUS:', response.status, response.statusText);
+                console.log('📡 RESPONSE HEADERS:', Object.fromEntries(response.headers.entries()));
+            }
             
             updatePublishProgress('Processing video...', 60);
             
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('❌ UPLOAD ERROR RESPONSE:', errorText);
+                
+                // Handle authentication errors specifically
+                if (response.status === 401) {
+                    throw new Error('Please log in to upload videos. Your session may have expired.');
+                }
+                
                 try {
                     const error = JSON.parse(errorText);
                     throw new Error(error.error || 'Upload failed');
@@ -3413,25 +3425,31 @@ async function publishContent() {
             }
             
             const resultText = await response.text();
-            console.log('📥 RAW RESPONSE TEXT:', resultText);
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('📥 RAW RESPONSE TEXT:', resultText);
+            }
             
             let result;
             try {
                 result = JSON.parse(resultText);
-                console.log('✅ PARSED RESPONSE:', result);
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    console.log('✅ PARSED RESPONSE:', result);
+                }
                 
                 // CRITICAL DEBUG: Check what username was actually saved
-                if (result.video && result.video.username) {
-                    console.log('🎯 SERVER SAVED USERNAME:', result.video.username);
-                    console.log('🎯 EXPECTED USERNAME:', currentUser?.username || currentUser?.displayName || currentUser?.email?.split('@')[0]);
+                // Optional: Validate username if provided (but don't require it)
+                if (result.video && result.video.username && currentUser) {
+                    const expectedUsername = currentUser?.username || currentUser?.displayName || currentUser?.email?.split('@')[0];
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                        console.log('🎯 SERVER SAVED USERNAME:', result.video.username);
+                        console.log('🎯 EXPECTED USERNAME:', expectedUsername);
+                    }
                     
-                    if (result.video.username !== (currentUser?.username || currentUser?.displayName || currentUser?.email?.split('@')[0])) {
+                    if (result.video.username !== expectedUsername) {
                         console.error('🚨 USERNAME MISMATCH! Server saved different username than expected!');
-                        console.error('  - Sent:', currentUser?.username || currentUser?.displayName || currentUser?.email?.split('@')[0]);
+                        console.error('  - Sent:', expectedUsername);
                         console.error('  - Saved:', result.video.username);
                     }
-                } else {
-                    console.warn('⚠️ No username field in server response');
                 }
             } catch (parseError) {
                 console.error('❌ Failed to parse response as JSON:', parseError);
