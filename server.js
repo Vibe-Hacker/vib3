@@ -2585,8 +2585,12 @@ app.get('/api/user/activity', async (req, res) => {
             return res.json({ activities: [] });
         }
         
+        // Get user info for mentions detection
+        const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+        const username = user?.username || '';
+        
         // Get interactions from others on user's content
-        const [likes, comments, shares, follows] = await Promise.all([
+        const [likes, comments, shares, follows, mentions] = await Promise.all([
             // Others' likes on user's videos
             db.collection('likes').find({ 
                 videoId: { $in: userVideoIds },
@@ -2609,7 +2613,13 @@ app.get('/api/user/activity', async (req, res) => {
             db.collection('follows').find({ 
                 followingId: userId,
                 createdAt: { $exists: true }
-            }).sort({ createdAt: -1 }).limit(20).toArray()
+            }).sort({ createdAt: -1 }).limit(20).toArray(),
+            
+            // Mentions in comments (where user is mentioned with @username)
+            username ? db.collection('comments').find({
+                text: { $regex: `@${username}`, $options: 'i' },
+                userId: { $ne: userId } // Exclude user's own comments
+            }).sort({ createdAt: -1 }).limit(20).toArray() : []
         ]);
         
         // Combine and format activities
@@ -2685,6 +2695,25 @@ app.get('/api/user/activity', async (req, res) => {
                 });
             } catch (error) {
                 console.error('Error processing follow:', error);
+            }
+        }
+        
+        // Add mentions
+        for (const mention of mentions) {
+            try {
+                const mentioner = await db.collection('users').findOne({ _id: new ObjectId(mention.userId) });
+                const video = await db.collection('videos').findOne({ _id: new ObjectId(mention.videoId) });
+                activities.push({
+                    type: 'mention',
+                    timestamp: mention.createdAt || new Date(),
+                    videoId: mention.videoId,
+                    videoTitle: video?.title || video?.description?.substring(0, 50) || 'a video',
+                    details: `${mentioner?.username || 'Someone'} mentioned you: "${mention.text?.substring(0, 50)}${mention.text?.length > 50 ? '...' : ''}"`,
+                    username: mentioner?.username || 'VIB3 User',
+                    userId: mention.userId
+                });
+            } catch (error) {
+                console.error('Error processing mention:', error);
             }
         }
         

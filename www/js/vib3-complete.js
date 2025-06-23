@@ -5978,7 +5978,7 @@ async function loadActivity(filter = 'all') {
             `;
         } else {
             // Convert API data to the format expected by createActivityItem
-            const formattedActivities = data.activities.map(activity => ({
+            let formattedActivities = data.activities.map(activity => ({
                 id: activity.videoId || activity.userId || Math.random().toString(),
                 type: activity.type,
                 user: { 
@@ -5993,7 +5993,35 @@ async function loadActivity(filter = 'all') {
                 videoId: activity.videoId
             }));
             
-            activityList.innerHTML = formattedActivities.map(createActivityItem).join('');
+            // Filter activities based on selected filter
+            if (filter !== 'all') {
+                formattedActivities = formattedActivities.filter(activity => {
+                    switch(filter) {
+                        case 'likes':
+                            return activity.type === 'like';
+                        case 'comments':
+                            return activity.type === 'comment';
+                        case 'follows':
+                            return activity.type === 'follow';
+                        case 'mentions':
+                            return activity.type === 'mention';
+                        default:
+                            return true;
+                    }
+                });
+            }
+            
+            if (formattedActivities.length === 0) {
+                activityList.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                        <div style="font-size: 48px; margin-bottom: 16px;">${getFilterEmoji(filter)}</div>
+                        <h3 style="margin-bottom: 8px; color: var(--text-primary);">No ${filter} yet</h3>
+                        <p>When others ${getFilterAction(filter)} your content, you'll see it here!</p>
+                    </div>
+                `;
+            } else {
+                activityList.innerHTML = formattedActivities.map(createActivityItem).join('');
+            }
             
             // Add click handlers for activity items
             activityList.querySelectorAll('.activity-item').forEach(item => {
@@ -6021,8 +6049,29 @@ function getActivityIcon(type) {
         case 'comment': return '💬';
         case 'share': return '📤';
         case 'follow': return '👥';
+        case 'mention': return '📢';
         case 'video_uploaded': return '🎬';
         default: return '📱';
+    }
+}
+
+function getFilterEmoji(filter) {
+    switch(filter) {
+        case 'likes': return '❤️';
+        case 'comments': return '💬';
+        case 'follows': return '👥';
+        case 'mentions': return '📢';
+        default: return '🔔';
+    }
+}
+
+function getFilterAction(filter) {
+    switch(filter) {
+        case 'likes': return 'like';
+        case 'comments': return 'comment on';
+        case 'follows': return 'follow';
+        case 'mentions': return 'mention you in';
+        default: return 'interact with';
     }
 }
 
@@ -7179,12 +7228,6 @@ function createFriendsPage() {
     friendsPage.style.display = 'block';
 }
 
-function filterActivity(type) {
-    showNotification(`Showing ${type} activity`, 'info');
-    // Update tab styles
-    document.querySelectorAll('.activity-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-}
 
 function filterFriends(type) {
     showNotification(`Showing ${type} friends`, 'info');
