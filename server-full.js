@@ -12,6 +12,12 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
+// Request logging middleware
+app.use((req, res, next) => {
+    console.log(`📥 ${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+});
+
 // Session management (simple in-memory for now)
 const sessions = new Map();
 
@@ -2973,10 +2979,17 @@ app.get('/api/analytics/algorithm', async (req, res) => {
 
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`VIB3 Full server running on port ${PORT}`);
+    console.log('========================================');
+    console.log(`🚀 VIB3 FULL SERVER v2.0 WITH ANALYTICS`);
+    console.log('========================================');
+    console.log(`Port: ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`);
     console.log(`Database: ${process.env.DATABASE_URL ? 'MongoDB configured' : 'No database configured'}`);
+    console.log('');
+    console.log('📊 Analytics endpoint available at: /api/analytics/algorithm');
+    console.log('🧪 Test endpoint available at: /api/test');
+    console.log('========================================');
 });
 
 // Graceful shutdown
