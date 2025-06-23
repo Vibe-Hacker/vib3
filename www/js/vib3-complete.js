@@ -1627,13 +1627,13 @@ async function createVideoFeedWithSelectedVideo(selectedVideo) {
         
         // Create video cards for all videos
         allVideos.forEach((video, index) => {
-            const videoCard = createTikTokStyleVideoCard(video);
+            const videoCard = createAdvancedVideoCard(video);
             feedElement.appendChild(videoCard);
         });
         
         // Initialize video system for the new feed
         setTimeout(() => {
-            initializeTikTokStyleVideos();
+            initializeVideoObserver();
             
             // Auto-play the first video (which is our selected video)
             const firstVideo = feedElement.querySelector('video');
@@ -1652,7 +1652,7 @@ async function createVideoFeedWithSelectedVideo(selectedVideo) {
         
         // Fallback: just create a card for the selected video
         feedElement.innerHTML = '';
-        const videoCard = createTikTokStyleVideoCard(selectedVideo);
+        const videoCard = createAdvancedVideoCard(selectedVideo);
         feedElement.appendChild(videoCard);
         
         setTimeout(() => {
