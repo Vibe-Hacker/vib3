@@ -4599,6 +4599,19 @@ function showPage(page) {
         return;
     }
     
+    if (page === 'analytics') {
+        // Show analytics page specifically
+        const analyticsPage = document.getElementById('analyticsPage');
+        if (analyticsPage) {
+            analyticsPage.style.display = 'block';
+            // Trigger analytics data loading from the HTML page function
+            if (window.loadAnalyticsData) {
+                setTimeout(window.loadAnalyticsData, 100);
+            }
+        }
+        return;
+    }
+    
     // Show specific page
     const pageElement = document.getElementById(page + 'Page');
     if (pageElement) {
