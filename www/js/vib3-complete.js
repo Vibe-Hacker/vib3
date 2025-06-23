@@ -4600,14 +4600,22 @@ function showPage(page) {
     }
     
     if (page === 'analytics') {
+        console.log('📊 Analytics page case triggered');
         // Show analytics page specifically
         const analyticsPage = document.getElementById('analyticsPage');
+        console.log('📊 Analytics page element:', analyticsPage);
         if (analyticsPage) {
             analyticsPage.style.display = 'block';
+            console.log('📊 Analytics page display set to block');
             // Trigger analytics data loading from the HTML page function
             if (window.loadAnalyticsData) {
+                console.log('📊 Calling loadAnalyticsData');
                 setTimeout(window.loadAnalyticsData, 100);
+            } else {
+                console.log('❌ loadAnalyticsData function not found');
             }
+        } else {
+            console.log('❌ Analytics page element not found');
         }
         return;
     }
