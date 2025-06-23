@@ -34,6 +34,21 @@ class VideoProcessor {
             const videoInfo = await this.getVideoInfo(inputPath);
             console.log('📊 Video info:', videoInfo);
             
+            // Check if conversion is actually needed
+            const needsConversion = this.needsConversion(videoInfo, originalFilename);
+            if (!needsConversion) {
+                console.log('⚡ Video already in optimal format - skipping conversion');
+                this.cleanup([inputPath]);
+                return {
+                    success: true,
+                    buffer: inputBuffer,
+                    originalSize: inputBuffer.length,
+                    convertedSize: inputBuffer.length,
+                    videoInfo: videoInfo,
+                    skipped: true
+                };
+            }
+            
             // Convert video with optimized settings for web playback
             await this.performConversion(inputPath, outputPath, videoInfo);
             
@@ -110,9 +125,9 @@ class VideoProcessor {
                 // Video codec settings for maximum compatibility
                 .videoCodec('libx264')
                 .audioCodec('aac')
-                // Optimize for web streaming
-                .addOption('-preset', 'fast')           // Balance speed vs compression
-                .addOption('-crf', '23')                // Good quality (18-28 range)
+                // Optimize for speed and web streaming
+                .addOption('-preset', 'ultrafast')      // Prioritize speed over compression
+                .addOption('-crf', '26')                // Slightly lower quality for speed
                 .addOption('-movflags', '+faststart')   // Enable progressive download
                 .addOption('-profile:v', 'baseline')    // Maximum compatibility
                 .addOption('-level', '3.1')             // Wide device support
@@ -208,6 +223,25 @@ class VideoProcessor {
                 error: error.message
             };
         }
+    }
+
+    // Check if video needs conversion for optimization
+    needsConversion(videoInfo, originalFilename) {
+        const ext = path.extname(originalFilename).toLowerCase();
+        
+        // Skip conversion for already optimized MP4 files
+        if (ext === '.mp4' && videoInfo.video) {
+            const { codec, width, height } = videoInfo.video;
+            
+            // If it's already H.264 MP4 with reasonable dimensions, skip conversion
+            if (codec === 'h264' && width <= 1920 && height <= 1080 && 
+                width % 2 === 0 && height % 2 === 0) {
+                return false;
+            }
+        }
+        
+        // Convert all other formats and non-optimal MP4s
+        return true;
     }
 }
 

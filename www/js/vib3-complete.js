@@ -3681,10 +3681,12 @@ async function publishContent() {
             
             // Show processing details for video uploads
             if (result && result.processing && uploadType === 'video') {
-                if (result.processing.converted) {
+                if (result.processing.converted && !result.processing.skipped) {
                     const sizeSaved = result.processing.originalSize - result.processing.finalSize;
                     const sizeSavedMB = (sizeSaved / 1024 / 1024).toFixed(1);
                     successMessage = `Video published successfully! Converted to optimized ${result.processing.format} (${sizeSavedMB}MB smaller)`;
+                } else if (result.processing.skipped) {
+                    successMessage = 'Video published successfully! Already in optimal format';
                 } else {
                     successMessage = 'Video published successfully! Uploaded in original format';
                 }

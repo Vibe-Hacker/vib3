@@ -795,6 +795,7 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
             video: videoRecord,
             processing: {
                 converted: conversionResult.success,
+                skipped: conversionResult.skipped || false,
                 originalSize: req.file.size,
                 finalSize: finalBuffer.length,
                 sizeSaved: req.file.size - finalBuffer.length,
