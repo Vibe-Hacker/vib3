@@ -7610,26 +7610,36 @@ let mentionStartPosition = -1;
 
 // Handle comment input for @mentions
 async function handleCommentInput(input, videoId) {
+    console.log('🔍 handleCommentInput called for video:', videoId);
     const text = input.value;
     const cursorPosition = input.selectionStart;
+    console.log('📝 Input text:', text, 'Cursor position:', cursorPosition);
     
     // Find if we're in a mention context
     const beforeCursor = text.substring(0, cursorPosition);
     const mentionMatch = beforeCursor.match(/@(\w*)$/);
+    console.log('🔎 Mention match:', mentionMatch);
     
     if (mentionMatch) {
         mentionStartPosition = mentionMatch.index;
         mentionSearchTerm = mentionMatch[1];
+        console.log('✅ Found mention! Search term:', mentionSearchTerm);
         showMentionDropdown(videoId, mentionSearchTerm);
     } else {
+        console.log('❌ No mention found');
         hideMentionDropdown(videoId);
     }
 }
 
 // Show mention dropdown with user suggestions
 async function showMentionDropdown(videoId, searchTerm) {
+    console.log('🎯 showMentionDropdown called for video:', videoId, 'searchTerm:', searchTerm);
     const dropdown = document.getElementById(`mentionDropdown_${videoId}`);
-    if (!dropdown) return;
+    console.log('📦 Dropdown element:', dropdown);
+    if (!dropdown) {
+        console.error('❌ No dropdown element found for video:', videoId);
+        return;
+    }
     
     try {
         // Search for users
@@ -7637,8 +7647,11 @@ async function showMentionDropdown(videoId, searchTerm) {
             (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                 ? '' 
                 : 'https://vib3-production.up.railway.app');
+        
+        const searchUrl = `${apiBaseUrl}/api/users/search?q=${searchTerm}&limit=5`;
+        console.log('🌐 Searching users at:', searchUrl);
                 
-        const response = await fetch(`${apiBaseUrl}/api/users/search?q=${searchTerm}&limit=5`, {
+        const response = await fetch(searchUrl, {
             credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
@@ -7646,9 +7659,14 @@ async function showMentionDropdown(videoId, searchTerm) {
             }
         });
         
-        if (!response.ok) throw new Error('Failed to search users');
+        console.log('📡 API Response status:', response.status);
+        if (!response.ok) {
+            console.error('❌ API Error:', response.status, response.statusText);
+            throw new Error('Failed to search users');
+        }
         
         const users = await response.json();
+        console.log('👥 Users found:', users);
         
         if (users.length > 0) {
             dropdown.innerHTML = users.map((user, index) => `
@@ -7685,28 +7703,31 @@ async function showMentionDropdown(videoId, searchTerm) {
             `).join('');
             
             dropdown.style.cssText = `
-                display: block;
-                position: absolute;
-                bottom: 100%;
-                left: 0;
-                right: 0;
-                max-height: 200px;
-                overflow-y: auto;
-                background: var(--bg-secondary);
-                border: 1px solid var(--border-primary);
-                border-radius: 12px;
-                margin-bottom: 8px;
-                box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-                z-index: 1000;
+                display: block !important;
+                position: absolute !important;
+                bottom: 100% !important;
+                left: 0 !important;
+                right: 0 !important;
+                max-height: 200px !important;
+                overflow-y: auto !important;
+                background: #1a1a1a !important;
+                border: 1px solid #333 !important;
+                border-radius: 12px !important;
+                margin-bottom: 8px !important;
+                box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5) !important;
+                z-index: 10000 !important;
             `;
             
             mentionDropdownOpen = true;
             window.mentionDropdownOpen = true;
+            console.log('✅ Mention dropdown shown successfully!');
+            console.log('🎯 Dropdown HTML:', dropdown.innerHTML.substring(0, 200) + '...');
         } else {
+            console.log('⚠️ No users found, hiding dropdown');
             hideMentionDropdown(videoId);
         }
     } catch (error) {
-        console.error('Error searching users:', error);
+        console.error('❌ Error searching users:', error);
         hideMentionDropdown(videoId);
     }
 }
