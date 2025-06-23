@@ -1582,13 +1582,65 @@ function createExploreVideoCard(video) {
 
 // Open video in vertical feed (like TikTok)
 function openVideoModal(video) {
-    console.log('🎬 Opening video in vertical feed for:', video.title);
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('🎬 Opening video in vertical feed for:', video.title);
+    }
     
     // Switch to For You feed to show vertical layout
     switchFeedTab('foryou');
     
-    // Create a temporary feed with this video and related videos
-    createVideoFeed(video);
+    // Wait for feed to be ready, then find and play the specific video
+    setTimeout(() => {
+        playSpecificVideoInFeed(video);
+    }, 500);
+}
+
+// Find and play a specific video in the current feed
+function playSpecificVideoInFeed(targetVideo) {
+    const feedElement = document.getElementById('foryouFeed');
+    if (!feedElement) return;
+    
+    // Find the video element that matches the target video URL
+    const allVideoCards = feedElement.querySelectorAll('.video-card');
+    let targetVideoCard = null;
+    
+    for (let card of allVideoCards) {
+        const videoElement = card.querySelector('video');
+        if (videoElement && videoElement.src.includes(getVideoFilename(targetVideo.videoUrl))) {
+            targetVideoCard = card;
+            break;
+        }
+    }
+    
+    if (targetVideoCard) {
+        // Scroll to the target video
+        targetVideoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Pause all other videos
+        document.querySelectorAll('video').forEach(video => {
+            video.pause();
+            video.currentTime = 0;
+        });
+        
+        // Play the target video
+        const targetVideoElement = targetVideoCard.querySelector('video');
+        if (targetVideoElement) {
+            targetVideoElement.currentTime = 0;
+            targetVideoElement.play().catch(e => {
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    console.log('Video play prevented:', e);
+                }
+            });
+        }
+    } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('Target video not found in current feed, video might not be loaded yet');
+    }
+}
+
+// Helper function to extract filename from URL
+function getVideoFilename(url) {
+    if (!url) return '';
+    return url.split('/').pop().split('?')[0];
 }
 
 // Create vertical feed starting with selected video
