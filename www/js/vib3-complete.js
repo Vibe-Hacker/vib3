@@ -5943,30 +5943,58 @@ async function loadActivity(filter = 'all') {
     `;
     
     try {
-        // Simulate API call for now - in real app would fetch from /api/activity
-        const activities = generateSampleActivity(filter);
+        // Call the real API instead of using sample data
+        const apiBaseUrl = window.API_BASE_URL || 
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? '' 
+                : 'https://vib3-production.up.railway.app');
         
-        setTimeout(() => {
-            if (activities.length === 0) {
-                activityList.innerHTML = `
-                    <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
-                        <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
-                        <h3 style="margin-bottom: 8px; color: var(--text-primary);">No ${filter === 'all' ? '' : filter} activity yet</h3>
-                        <p>When people interact with your content, you'll see it here</p>
-                    </div>
-                `;
-            } else {
-                activityList.innerHTML = activities.map(createActivityItem).join('');
-                
-                // Add click handlers for activity items
-                activityList.querySelectorAll('.activity-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        const activityId = item.dataset.activityId;
-                        handleActivityClick(activityId);
-                    });
-                });
+        console.log('📱 Calling real activity API...');
+        const response = await fetch(`${apiBaseUrl}/api/user/activity`, {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {})
             }
-        }, 500);
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('📱 Real activity data received:', data);
+        
+        if (!data.activities || data.activities.length === 0) {
+            activityList.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🌟</div>
+                    <h3 style="margin-bottom: 8px; color: var(--text-primary);">No activity yet</h3>
+                    <p>Start engaging with videos to see your activity here!</p>
+                </div>
+            `;
+        } else {
+            // Convert API data to the format expected by createActivityItem
+            const formattedActivities = data.activities.map(activity => ({
+                id: activity.videoId || Math.random().toString(),
+                type: activity.type,
+                user: { username: activity.details || 'VIB3', avatar: getActivityIcon(activity.type) },
+                action: getActivityAction(activity.type),
+                target: activity.videoTitle,
+                time: getTimeAgo(new Date(activity.timestamp)),
+                timestamp: new Date(activity.timestamp).getTime()
+            }));
+            
+            activityList.innerHTML = formattedActivities.map(createActivityItem).join('');
+            
+            // Add click handlers for activity items
+            activityList.querySelectorAll('.activity-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const activityId = item.dataset.activityId;
+                    handleActivityClick(activityId);
+                });
+            });
+        }
         
     } catch (error) {
         console.error('Error loading activity:', error);
@@ -5976,6 +6004,41 @@ async function loadActivity(filter = 'all') {
             </div>
         `;
     }
+}
+
+// Helper functions for activity formatting
+function getActivityIcon(type) {
+    switch (type) {
+        case 'like': return '❤️';
+        case 'comment': return '💬';
+        case 'share': return '📤';
+        case 'follow': return '👥';
+        case 'video_uploaded': return '🎬';
+        default: return '📱';
+    }
+}
+
+function getActivityAction(type) {
+    switch (type) {
+        case 'like': return 'You liked';
+        case 'comment': return 'You commented on';
+        case 'share': return 'You shared';
+        case 'follow': return 'You followed';
+        case 'video_uploaded': return 'You uploaded';
+        default: return 'Activity';
+    }
+}
+
+// Use the same getTimeAgo function from navigation.js
+function getTimeAgo(date) {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return date.toLocaleDateString();
 }
 
 function generateSampleActivity(filter) {
