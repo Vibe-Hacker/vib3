@@ -2516,6 +2516,132 @@ app.get('/api/user/profile', async (req, res) => {
     }
 });
 
+// Get user activity feed
+app.get('/api/user/activity', async (req, res) => {
+    if (!db) {
+        return res.json({ activities: [] });
+    }
+    
+    try {
+        // Get current user ID from session
+        let userId = req.session?.userId;
+        
+        // Fallback to Authorization header
+        if (!userId && req.headers.authorization) {
+            const token = req.headers.authorization.replace('Bearer ', '');
+            const session = sessions.get(token);
+            if (session) {
+                userId = session.userId;
+            }
+        }
+        
+        // Check active sessions as fallback
+        if (!userId) {
+            for (const [sessionId, sessionData] of sessions.entries()) {
+                if (sessionData && sessionData.userId) {
+                    userId = sessionData.userId;
+                    break;
+                }
+            }
+        }
+        
+        if (!userId) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        
+        console.log('📱 Loading activity for user:', userId);
+        
+        // Get user's activity from various collections
+        const [likes, comments, shares, uploads] = await Promise.all([
+            // User's likes
+            db.collection('likes').find({ userId }).sort({ createdAt: -1 }).limit(20).toArray(),
+            // User's comments  
+            db.collection('comments').find({ userId }).sort({ createdAt: -1 }).limit(20).toArray(),
+            // User's shares
+            db.collection('shares').find({ userId }).sort({ createdAt: -1 }).limit(20).toArray(),
+            // User's video uploads
+            db.collection('videos').find({ userId }).sort({ createdAt: -1 }).limit(10).toArray()
+        ]);
+        
+        // Combine and format activities
+        const activities = [];
+        
+        // Add likes
+        for (const like of likes) {
+            try {
+                const video = await db.collection('videos').findOne({ _id: new ObjectId(like.videoId) });
+                activities.push({
+                    type: 'like',
+                    timestamp: like.createdAt || new Date(),
+                    videoId: like.videoId,
+                    videoTitle: video?.title || video?.description?.substring(0, 50) || 'Untitled Video',
+                    details: video?.username ? `by ${video.username}` : null
+                });
+            } catch (error) {
+                console.error('Error processing like:', error);
+            }
+        }
+        
+        // Add comments
+        for (const comment of comments) {
+            try {
+                const video = await db.collection('videos').findOne({ _id: new ObjectId(comment.videoId) });
+                activities.push({
+                    type: 'comment',
+                    timestamp: comment.createdAt || new Date(),
+                    videoId: comment.videoId,
+                    videoTitle: video?.title || video?.description?.substring(0, 50) || 'Untitled Video',
+                    details: `"${comment.text?.substring(0, 30)}${comment.text?.length > 30 ? '...' : ''}"`
+                });
+            } catch (error) {
+                console.error('Error processing comment:', error);
+            }
+        }
+        
+        // Add shares
+        for (const share of shares) {
+            try {
+                const video = await db.collection('videos').findOne({ _id: new ObjectId(share.videoId) });
+                activities.push({
+                    type: 'share',
+                    timestamp: share.createdAt || new Date(),
+                    videoId: share.videoId,
+                    videoTitle: video?.title || video?.description?.substring(0, 50) || 'Untitled Video',
+                    details: share.platform ? `on ${share.platform}` : null
+                });
+            } catch (error) {
+                console.error('Error processing share:', error);
+            }
+        }
+        
+        // Add video uploads
+        for (const upload of uploads) {
+            activities.push({
+                type: 'video_uploaded',
+                timestamp: upload.createdAt || new Date(),
+                videoId: upload._id.toString(),
+                videoTitle: upload.title || upload.description?.substring(0, 50) || 'Untitled Video',
+                details: `${upload.views || 0} views • ${(upload.likes || []).length} likes`
+            });
+        }
+        
+        // Sort by timestamp (newest first) and limit to 50
+        activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        const limitedActivities = activities.slice(0, 50);
+        
+        console.log(`📱 Found ${limitedActivities.length} activities for user`);
+        
+        res.json({
+            activities: limitedActivities,
+            totalCount: activities.length
+        });
+        
+    } catch (error) {
+        console.error('Error loading user activity:', error);
+        res.status(500).json({ error: 'Failed to load activity' });
+    }
+});
+
 // Configure multer for profile image uploads
 const profileImageUpload = multer({
     storage: multer.memoryStorage(),
@@ -3443,6 +3569,7 @@ app.post('/api/videos/:videoId/share', async (req, res) => {
                 videoId,
                 shareHash,
                 userAgent,
+                userId: req.user?.userId || null, // Include userId for activity tracking
                 createdAt: new Date()
             };
             

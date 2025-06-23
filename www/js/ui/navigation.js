@@ -164,18 +164,32 @@ export function showPage(page) {
             activityPage.className = 'activity-page';
             
             activityPage.innerHTML = `
-                <div style="font-size: 48px; margin-bottom: 20px;">🔔</div>
-                <h2 style="font-size: 24px; margin-bottom: 10px; color: var(--text-primary);">Activity</h2>
-                <p style="font-size: 16px; color: var(--text-secondary); max-width: 400px;">
-                    Notifications and activity updates will appear here soon! Stay tuned for likes, comments, follows, and more.
-                </p>
+                <div style="padding: 20px; max-width: 600px; margin: 0 auto;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🔔</div>
+                        <h2 style="font-size: 24px; margin-bottom: 10px; color: var(--text-primary);">Activity</h2>
+                        <p style="font-size: 14px; color: var(--text-secondary);">Stay updated with your latest interactions</p>
+                    </div>
+                    
+                    <div id="activityContent">
+                        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            <div class="spinner" style="margin: 0 auto 20px;"></div>
+                            <p>Loading your activity...</p>
+                        </div>
+                    </div>
+                </div>
             `;
             
             // Insert after main content
             const mainContent = document.querySelector('.main-content') || document.body;
             mainContent.appendChild(activityPage);
+            
+            // Load activity data
+            setTimeout(() => loadActivityData(), 500);
         } else {
             activityPage.style.display = 'flex';
+            // Refresh activity data if page already exists
+            setTimeout(() => loadActivityData(), 100);
         }
         
         return;
@@ -288,6 +302,145 @@ export function showPage(page) {
     }
 }
 
+// Activity data loading function
+async function loadActivityData() {
+    console.log('📱 Loading activity data...');
+    
+    const activityContent = document.getElementById('activityContent');
+    if (!activityContent) return;
+    
+    try {
+        const apiBaseUrl = window.API_BASE_URL || 
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? '' 
+                : 'https://vib3-production.up.railway.app');
+        
+        const response = await fetch(`${apiBaseUrl}/api/user/activity`, {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        displayActivityData(data);
+        
+    } catch (error) {
+        console.error('Error loading activity:', error);
+        activityContent.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                <div style="font-size: 24px; margin-bottom: 10px;">😔</div>
+                <p>Unable to load activity</p>
+                <button onclick="loadActivityData()" style="margin-top: 15px; padding: 8px 16px; background: var(--accent-primary); color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Try Again
+                </button>
+            </div>
+        `;
+    }
+}
+
+// Display activity data
+function displayActivityData(data) {
+    const activityContent = document.getElementById('activityContent');
+    if (!activityContent) return;
+    
+    if (!data.activities || data.activities.length === 0) {
+        activityContent.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                <div style="font-size: 32px; margin-bottom: 15px;">🌟</div>
+                <h3 style="color: var(--text-primary); margin-bottom: 10px;">No activity yet</h3>
+                <p>Start engaging with videos to see your activity here!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const activityItems = data.activities.map(activity => {
+        const timeAgo = getTimeAgo(new Date(activity.timestamp));
+        let icon, message, actionStyle = '';
+        
+        switch (activity.type) {
+            case 'like':
+                icon = '❤️';
+                message = `You liked "${activity.videoTitle || 'a video'}"`;
+                actionStyle = 'background: rgba(255, 69, 69, 0.1); border-left: 3px solid #ff4545;';
+                break;
+            case 'comment':
+                icon = '💬';
+                message = `You commented on "${activity.videoTitle || 'a video'}"`;
+                actionStyle = 'background: rgba(52, 152, 219, 0.1); border-left: 3px solid #3498db;';
+                break;
+            case 'share':
+                icon = '📤';
+                message = `You shared "${activity.videoTitle || 'a video'}"`;
+                actionStyle = 'background: rgba(46, 204, 113, 0.1); border-left: 3px solid #2ecc71;';
+                break;
+            case 'follow':
+                icon = '👥';
+                message = `You followed ${activity.targetUser || 'a user'}`;
+                actionStyle = 'background: rgba(155, 89, 182, 0.1); border-left: 3px solid #9b59b6;';
+                break;
+            case 'video_uploaded':
+                icon = '🎬';
+                message = `You uploaded "${activity.videoTitle || 'a video'}"`;
+                actionStyle = 'background: rgba(241, 196, 15, 0.1); border-left: 3px solid #f1c40f;';
+                break;
+            default:
+                icon = '📱';
+                message = activity.description || 'Activity occurred';
+                actionStyle = 'background: rgba(127, 140, 141, 0.1); border-left: 3px solid #7f8c8d;';
+        }
+        
+        return `
+            <div style="padding: 15px; margin-bottom: 10px; border-radius: 8px; ${actionStyle}">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center;">
+                        <span style="font-size: 20px; margin-right: 12px;">${icon}</span>
+                        <div>
+                            <p style="margin: 0; color: var(--text-primary); font-weight: 500;">${message}</p>
+                            ${activity.details ? `<p style="margin: 5px 0 0 0; font-size: 12px; color: var(--text-secondary);">${activity.details}</p>` : ''}
+                        </div>
+                    </div>
+                    <span style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;">${timeAgo}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    activityContent.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: var(--text-primary);">Recent Activity</h3>
+                <span style="font-size: 12px; color: var(--text-secondary);">${data.activities.length} activities</span>
+            </div>
+            ${activityItems}
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="loadActivityData()" style="background: var(--accent-primary); color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                🔄 Refresh
+            </button>
+        </div>
+    `;
+}
+
+// Helper function to format time ago
+function getTimeAgo(date) {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return date.toLocaleDateString();
+}
+
 // Make functions globally available for onclick handlers
 window.showPage = showPage;
+window.loadActivityData = loadActivityData;
 // Don't override switchFeedTab - let video manager handle it
