@@ -327,6 +327,7 @@ async function loadActivityData() {
         }
         
         const data = await response.json();
+        console.log('📱 Activity data received:', data);
         displayActivityData(data);
         
     } catch (error) {

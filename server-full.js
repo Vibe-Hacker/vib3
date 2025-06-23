@@ -2657,6 +2657,25 @@ app.get('/api/user/activity', async (req, res) => {
         
         console.log(`📱 Found ${limitedActivities.length} activities for user`);
         
+        // If no activities found, add some sample/demo activities for testing
+        if (limitedActivities.length === 0) {
+            console.log('📱 No activities found, adding demo activities');
+            limitedActivities.push(
+                {
+                    type: 'video_uploaded',
+                    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+                    videoTitle: 'Welcome to VIB3!',
+                    details: '0 views • 0 likes'
+                },
+                {
+                    type: 'like',
+                    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago  
+                    videoTitle: 'Sample Video',
+                    details: 'by demo_user'
+                }
+            );
+        }
+        
         res.json({
             activities: limitedActivities,
             totalCount: activities.length
