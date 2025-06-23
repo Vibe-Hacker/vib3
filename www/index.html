@@ -679,95 +679,129 @@
         
         <!-- Analytics Page -->
         <div class="analytics-page" id="analyticsPage" style="margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px; display: none;">
-            <h2 style="margin-bottom: 20px;">📊 Analytics</h2>
-            
-            <!-- Overview Stats -->
-            <div class="analytics-overview">
-                <div class="stat-card">
-                    <div class="stat-icon">👁️</div>
-                    <div class="stat-number">2.4M</div>
-                    <div class="stat-label">Total Views</div>
-                    <div class="stat-change">+15.3% vs last month</div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon">❤️</div>
-                    <div class="stat-number">847K</div>
-                    <div class="stat-label">Total Likes</div>
-                    <div class="stat-change">+22.1% vs last month</div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon">👥</div>
-                    <div class="stat-number">15.8K</div>
-                    <div class="stat-label">Followers</div>
-                    <div class="stat-change">+127 this week</div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon">📈</div>
-                    <div class="stat-number">94.2%</div>
-                    <div class="stat-label">Engagement Rate</div>
-                    <div class="stat-change">+5.7% vs last month</div>
-                </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">📊 Analytics Dashboard</h2>
+                <button onclick="loadAnalyticsData()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">🔄 Refresh</button>
             </div>
             
-            <!-- Detailed Analytics -->
-            <div class="analytics-charts">
-                <div class="chart-container">
-                    <h3>Views Over Time</h3>
-                    <div class="chart-placeholder">📈 Chart showing view trends over the last 30 days</div>
+            <!-- Loading State -->
+            <div id="analyticsLoading" style="text-align: center; color: #999; padding: 40px;">
+                <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+                <div>Loading analytics data...</div>
+            </div>
+            
+            <!-- Error State -->
+            <div id="analyticsError" style="display: none; background: #ff3333; color: white; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+                ❌ Failed to load analytics data
+            </div>
+            
+            <!-- Analytics Content -->
+            <div id="analyticsContent" style="display: none;">
+                <!-- Algorithm Performance Overview -->
+                <div class="analytics-overview">
+                    <div class="stat-card">
+                        <div class="stat-icon">🤖</div>
+                        <div class="stat-number" id="avgEngagementScore">-</div>
+                        <div class="stat-label">Avg Engagement Score</div>
+                        <div class="stat-change" id="engagementRange">-</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">🔥</div>
+                        <div class="stat-number" id="highEngagementCount">-</div>
+                        <div class="stat-label">High Engagement Videos</div>
+                        <div class="stat-change">Score > 1.0</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">⏰</div>
+                        <div class="stat-number" id="freshContentCount">-</div>
+                        <div class="stat-label">Fresh Content (24h)</div>
+                        <div class="stat-change" id="freshContentPercent">-</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-number" id="uniqueCreators">-</div>
+                        <div class="stat-label">Unique Creators</div>
+                        <div class="stat-change" id="diversityStatus">-</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">❤️</div>
+                        <div class="stat-number" id="totalLikes">-</div>
+                        <div class="stat-label">Total Likes</div>
+                        <div class="stat-change" id="avgLikeRate">-</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">💬</div>
+                        <div class="stat-number" id="totalComments">-</div>
+                        <div class="stat-label">Total Comments</div>
+                        <div class="stat-change" id="totalViews">-</div>
+                    </div>
                 </div>
-                
-                <div class="chart-container">
-                    <h3>Audience Demographics</h3>
-                    <div class="demographics">
-                        <div class="demo-item">
-                            <span>18-24 years</span>
-                            <div class="demo-bar" style="width: 45%;">45%</div>
+            
+                <!-- Algorithm Performance Details -->
+                <div class="analytics-charts">
+                    <div class="chart-container">
+                        <h3>🏆 Top Ranked Videos (Algorithm Order)</h3>
+                        <div id="topVideosList" style="max-height: 400px; overflow-y: auto;">
+                            <!-- Top videos will be populated here -->
                         </div>
-                        <div class="demo-item">
-                            <span>25-34 years</span>
-                            <div class="demo-bar" style="width: 32%;">32%</div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>📊 Engagement Distribution</h3>
+                        <div id="engagementDistribution">
+                            <div style="margin: 20px 0;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span>High Engagement (>1.0)</span>
+                                    <span id="highEngagementPercent">-</span>
+                                </div>
+                                <div style="background: #333; height: 20px; border-radius: 10px; overflow: hidden;">
+                                    <div id="highEngagementBar" style="background: linear-gradient(90deg, #fe2c55, #ff006e); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin: 20px 0;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span>Fresh Content (24h)</span>
+                                    <span id="freshContentPercent2">-</span>
+                                </div>
+                                <div style="background: #333; height: 20px; border-radius: 10px; overflow: hidden;">
+                                    <div id="freshContentBar" style="background: linear-gradient(90deg, #25f4ee, #1da1f2); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="demo-item">
-                            <span>13-17 years</span>
-                            <div class="demo-bar" style="width: 15%;">15%</div>
-                        </div>
-                        <div class="demo-item">
-                            <span>35+ years</span>
-                            <div class="demo-bar" style="width: 8%;">8%</div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>🎯 Algorithm Effectiveness</h3>
+                        <div id="algorithmMetrics">
+                            <div style="margin: 15px 0; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                <div style="font-weight: 600; margin-bottom: 8px;">Content Diversity</div>
+                                <div id="diversityMetric" style="color: #999;">-</div>
+                            </div>
+                            <div style="margin: 15px 0; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                <div style="font-weight: 600; margin-bottom: 8px;">Average Content Age</div>
+                                <div id="avgAgeMetric" style="color: #999;">-</div>
+                            </div>
+                            <div style="margin: 15px 0; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                <div style="font-weight: 600; margin-bottom: 8px;">Algorithm Version</div>
+                                <div style="color: #25f4ee;">v1.0.0-engagement</div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="chart-container">
-                    <h3>Top Performing Videos</h3>
-                    <div class="top-videos">
-                        <div class="video-performance">
-                            <div class="video-thumbnail">📹</div>
-                            <div class="video-stats">
-                                <div class="video-title">Dance Challenge #viral</div>
-                                <div class="video-metrics">1.2M views • 89K likes • 3.2K comments</div>
-                            </div>
-                        </div>
-                        <div class="video-performance">
-                            <div class="video-thumbnail">📹</div>
-                            <div class="video-stats">
-                                <div class="video-title">Cooking Hack Everyone Needs</div>
-                                <div class="video-metrics">876K views • 54K likes • 1.8K comments</div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Export Options -->
+                <div class="export-options">
+                    <h3>📈 Analytics Actions</h3>
+                    <button onclick="loadAnalyticsData()" class="export-btn">🔄 Refresh Data</button>
+                    <button onclick="window.open('/algorithm-analytics.html', '_blank')" class="export-btn">📊 Detailed View</button>
+                    <button onclick="exportAnalyticsData()" class="export-btn">📋 Copy Data</button>
                 </div>
-            </div>
-            
-            <!-- Export Options -->
-            <div class="export-options">
-                <h3>Export Data</h3>
-                <button onclick="exportAnalytics('pdf')" class="export-btn">📄 Export as PDF</button>
-                <button onclick="exportAnalytics('csv')" class="export-btn">📊 Export as CSV</button>
-                <button onclick="shareAnalytics()" class="export-btn">📤 Share Report</button>
             </div>
         </div>
         
@@ -1159,6 +1193,114 @@
         
         // Initialize autonomous system
         autoFix.init();
+        
+        // Analytics functionality
+        async function loadAnalyticsData() {
+            const loading = document.getElementById('analyticsLoading');
+            const content = document.getElementById('analyticsContent');
+            const error = document.getElementById('analyticsError');
+            
+            // Show loading state
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            error.style.display = 'none';
+            
+            try {
+                console.log('📊 Loading analytics data...');
+                const response = await fetch(`${window.API_BASE_URL}/api/analytics/algorithm`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const analytics = await response.json();
+                console.log('✅ Analytics data loaded:', analytics);
+                
+                displayAnalyticsData(analytics);
+                
+                // Show content
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                
+            } catch (err) {
+                console.error('❌ Analytics error:', err);
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = `❌ Failed to load analytics: ${err.message}`;
+            }
+        }
+        
+        function displayAnalyticsData(data) {
+            // Overview stats
+            document.getElementById('avgEngagementScore').textContent = data.engagementStats.avgScore.toFixed(2);
+            document.getElementById('highEngagementCount').textContent = data.engagementStats.highEngagementCount;
+            document.getElementById('freshContentCount').textContent = data.freshnessStats.last24h;
+            document.getElementById('uniqueCreators').textContent = data.diversity.uniqueCreators;
+            document.getElementById('totalLikes').textContent = data.totalEngagement.totalLikes.toLocaleString();
+            document.getElementById('totalComments').textContent = data.totalEngagement.totalComments.toLocaleString();
+            
+            // Additional stats
+            document.getElementById('engagementRange').textContent = `Range: ${data.engagementStats.minScore.toFixed(2)} - ${data.engagementStats.maxScore.toFixed(2)}`;
+            document.getElementById('freshContentPercent').textContent = `${Math.round(data.freshnessStats.last24h / data.totalVideos * 100)}% of total`;
+            document.getElementById('diversityStatus').textContent = data.diversity.contentSpread;
+            document.getElementById('avgLikeRate').textContent = `${(data.totalEngagement.avgLikeRate * 100).toFixed(2)}% like rate`;
+            document.getElementById('totalViews').textContent = `${data.totalEngagement.totalViews.toLocaleString()} total views`;
+            
+            // Engagement distribution bars
+            const highEngagementPercent = Math.round(data.engagementStats.highEngagementCount / data.totalVideos * 100);
+            const freshContentPercent = Math.round(data.freshnessStats.last24h / data.totalVideos * 100);
+            
+            document.getElementById('highEngagementPercent').textContent = `${highEngagementPercent}%`;
+            document.getElementById('freshContentPercent2').textContent = `${freshContentPercent}%`;
+            document.getElementById('highEngagementBar').style.width = `${highEngagementPercent}%`;
+            document.getElementById('freshContentBar').style.width = `${freshContentPercent}%`;
+            
+            // Algorithm metrics
+            document.getElementById('diversityMetric').textContent = `${data.diversity.uniqueCreators} unique creators in top 10 (${data.diversity.contentSpread})`;
+            document.getElementById('avgAgeMetric').textContent = `${data.freshnessStats.avgAgeHours.toFixed(1)} hours average`;
+            
+            // Top videos list
+            const topVideosList = document.getElementById('topVideosList');
+            topVideosList.innerHTML = data.topVideos.map((video, index) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border-primary); ${index === 0 ? 'background: linear-gradient(90deg, rgba(254, 44, 85, 0.1), rgba(255, 0, 110, 0.1));' : ''}">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">${index + 1}. ${video.title}</div>
+                        <div style="font-size: 12px; color: #999;">Score: ${video.engagementScore} • ${video.hoursOld}h old</div>
+                    </div>
+                    <div style="text-align: right; font-size: 12px; color: #999;">
+                        <div>❤️ ${video.likes} • 💬 ${video.comments}</div>
+                        <div>👁️ ${video.views} • 📊 ${(video.likeRate * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function exportAnalyticsData() {
+            // Simple export functionality
+            if (window.currentAnalyticsData) {
+                const dataStr = JSON.stringify(window.currentAnalyticsData, null, 2);
+                navigator.clipboard.writeText(dataStr).then(() => {
+                    alert('📋 Analytics data copied to clipboard!');
+                }).catch(() => {
+                    console.log('Analytics data:', dataStr);
+                    alert('📋 Analytics data logged to console');
+                });
+            }
+        }
+        
+        // Load analytics when page is shown
+        function showAnalyticsPage() {
+            loadAnalyticsData();
+        }
+        
+        // Auto-load analytics when analytics page is opened
+        const originalShowPage = window.showPage;
+        window.showPage = function(page) {
+            if (originalShowPage) originalShowPage(page);
+            if (page === 'analytics') {
+                setTimeout(loadAnalyticsData, 100);
+            }
+        };
     </script>
 </body>
 </html>
