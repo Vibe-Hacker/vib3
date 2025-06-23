@@ -6473,7 +6473,9 @@ function createMessagesPage() {
                                 font-size: 14px;
                                 outline: none;
                             "
-                            onkeypress="if(event.key==='Enter') sendMessage()"
+                            onkeypress="if(event.key==='Enter' && !window.mentionDropdownOpen) sendMessage()"
+                            oninput="handleMessageInput(this)"
+                            onkeydown="handleMessageMentionKeyDown(event)"
                         >
                         
                         <button onclick="sendMessage()" style="
@@ -6491,6 +6493,7 @@ function createMessagesPage() {
                             justify-content: center;
                         ">➤</button>
                     </div>
+                    <div id="messageMentionDropdown" class="mention-dropdown" style="display: none; position: absolute; bottom: 60px; left: 10px; right: 10px;"></div>
                 </div>
             </div>
         `;
@@ -7828,6 +7831,155 @@ function replyToComment(button) {
     }
 }
 
+// Message-specific mention handlers
+async function handleMessageInput(input) {
+    const text = input.value;
+    const cursorPosition = input.selectionStart;
+    
+    // Find if we're in a mention context
+    const beforeCursor = text.substring(0, cursorPosition);
+    const mentionMatch = beforeCursor.match(/@(\w*)$/);
+    
+    if (mentionMatch) {
+        mentionStartPosition = mentionMatch.index;
+        mentionSearchTerm = mentionMatch[1];
+        showMessageMentionDropdown(mentionSearchTerm);
+    } else {
+        hideMessageMentionDropdown();
+    }
+}
+
+async function showMessageMentionDropdown(searchTerm) {
+    const dropdown = document.getElementById('messageMentionDropdown');
+    if (!dropdown) return;
+    
+    try {
+        // Search for users
+        const apiBaseUrl = window.API_BASE_URL || 
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? '' 
+                : 'https://vib3-production.up.railway.app');
+                
+        const response = await fetch(`${apiBaseUrl}/api/users/search?q=${searchTerm}&limit=5`, {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to search users');
+        
+        const users = await response.json();
+        
+        if (users.length > 0) {
+            dropdown.innerHTML = users.map((user, index) => `
+                <div class="mention-item ${index === selectedMentionIndex ? 'selected' : ''}" 
+                     onclick="selectMessageMention('${user.username}')"
+                     onmouseover="selectedMentionIndex = ${index}"
+                     style="
+                        display: flex;
+                        align-items: center;
+                        padding: 12px 16px;
+                        cursor: pointer;
+                        transition: background 0.2s ease;
+                        ${index === selectedMentionIndex ? 'background: var(--bg-tertiary);' : ''}
+                     ">
+                    <div style="
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 50%;
+                        background: linear-gradient(135deg, var(--accent-color), #ff006e);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin-right: 12px;
+                        font-size: 14px;
+                        color: white;
+                    ">${user.username[0].toUpperCase()}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--text-primary); font-size: 14px;">
+                            @${user.username}
+                        </div>
+                        ${user.displayName ? `<div style="font-size: 12px; color: var(--text-secondary);">${user.displayName}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            dropdown.style.display = 'block';
+            mentionDropdownOpen = true;
+            window.mentionDropdownOpen = true;
+        } else {
+            hideMessageMentionDropdown();
+        }
+    } catch (error) {
+        console.error('Error searching users:', error);
+        hideMessageMentionDropdown();
+    }
+}
+
+function hideMessageMentionDropdown() {
+    const dropdown = document.getElementById('messageMentionDropdown');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+        dropdown.innerHTML = '';
+    }
+    mentionDropdownOpen = false;
+    window.mentionDropdownOpen = false;
+    selectedMentionIndex = 0;
+}
+
+function selectMessageMention(username) {
+    const input = document.getElementById('messageInput');
+    if (!input) return;
+    
+    const text = input.value;
+    const beforeMention = text.substring(0, mentionStartPosition);
+    const afterMention = text.substring(input.selectionStart);
+    
+    input.value = beforeMention + '@' + username + ' ' + afterMention;
+    input.focus();
+    
+    const newCursorPosition = beforeMention.length + username.length + 2;
+    input.setSelectionRange(newCursorPosition, newCursorPosition);
+    
+    hideMessageMentionDropdown();
+}
+
+function handleMessageMentionKeyDown(event) {
+    if (!mentionDropdownOpen) return;
+    
+    const dropdown = document.getElementById('messageMentionDropdown');
+    const items = dropdown?.querySelectorAll('.mention-item');
+    
+    if (!items || items.length === 0) return;
+    
+    switch(event.key) {
+        case 'ArrowDown':
+            event.preventDefault();
+            selectedMentionIndex = Math.min(selectedMentionIndex + 1, items.length - 1);
+            updateMentionSelection(items);
+            break;
+            
+        case 'ArrowUp':
+            event.preventDefault();
+            selectedMentionIndex = Math.max(selectedMentionIndex - 1, 0);
+            updateMentionSelection(items);
+            break;
+            
+        case 'Enter':
+            if (mentionDropdownOpen) {
+                event.preventDefault();
+                items[selectedMentionIndex]?.click();
+            }
+            break;
+            
+        case 'Escape':
+            hideMessageMentionDropdown();
+            break;
+    }
+}
+
 // ================ MUSIC AND AUDIO ================
 function recordVoiceover() {
     showNotification('Recording voiceover...', 'info');
@@ -8114,6 +8266,11 @@ window.handleMentionKeyDown = handleMentionKeyDown;
 window.selectMention = selectMention;
 window.likeComment = likeComment;
 window.replyToComment = replyToComment;
+
+// Message mention functions
+window.handleMessageInput = handleMessageInput;
+window.handleMessageMentionKeyDown = handleMessageMentionKeyDown;
+window.selectMessageMention = selectMessageMention;
 
 // Music and audio functions
 window.recordVoiceover = recordVoiceover;
