@@ -242,11 +242,15 @@ async function loadUserProfileData() {
 async function loadUserVideos() {
     try {
         const baseURL = getAPIBaseURL();
-        const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
-        console.log('🎬 Loading user videos:', { baseURL, hasToken: !!token });
+        console.log('🎬 Loading user videos:', { baseURL, hasAuthToken: !!window.authToken });
         
         const response = await fetch(`${baseURL}/api/user/videos`, {
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            credentials: 'include', // Use session-based auth
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
         });
         
         console.log('📡 Videos API response:', { status: response.status, ok: response.ok });
@@ -267,11 +271,15 @@ async function loadUserVideos() {
 async function loadUserStats() {
     try {
         const baseURL = getAPIBaseURL();
-        const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
-        console.log('📊 Loading user stats:', { baseURL, hasToken: !!token });
+        console.log('📊 Loading user stats:', { baseURL, hasAuthToken: !!window.authToken });
         
         const response = await fetch(`${baseURL}/api/user/stats`, {
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            credentials: 'include', // Use session-based auth
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
         });
         
         console.log('📊 Stats API response:', { status: response.status, ok: response.ok });
@@ -400,12 +408,16 @@ function setupProfileActions(profileUser) {
 }
 
 async function loadFollowStatus(userId) {
-    const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
-    if (!token) return;
+    if (!window.authToken) return;
     
     try {
         const response = await fetch(`${getAPIBaseURL()}/api/users/${userId}/follow-status`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
         });
         
         if (response.ok) {
@@ -435,8 +447,7 @@ function updateFollowButton(isFollowing) {
 }
 
 async function toggleFollow(userId) {
-    const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
-    if (!token) {
+    if (!window.authToken) {
         showNotification('Please login to follow users', 'error');
         return;
     }
@@ -444,7 +455,12 @@ async function toggleFollow(userId) {
     try {
         const response = await fetch(`${getAPIBaseURL()}/api/users/${userId}/follow`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
         });
         
         if (response.ok) {
@@ -627,9 +643,9 @@ async function deleteUserVideo(videoId, videoTitle) {
     
     try {
         const baseURL = getAPIBaseURL();
-        const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
         
-        if (!token) {
+        
+        if (!window.authToken) {
             showNotification('Please log in to delete videos', 'error');
             return;
         }
@@ -637,9 +653,11 @@ async function deleteUserVideo(videoId, videoTitle) {
         console.log('🗑️ Deleting video from server...');
         const response = await fetch(`${baseURL}/api/videos/${videoId}`, {
             method: 'DELETE',
+            credentials: 'include',
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
             }
         });
         
@@ -957,15 +975,16 @@ async function editBio() {
     if (newBio !== null && newBio.trim() !== '') {
         try {
             const baseURL = getAPIBaseURL();
-            const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
-            console.log('Updating bio with token:', !!token);
+            
+            console.log('Updating bio with token:', !!window.authToken);
             console.log('New bio:', newBio.trim());
             
             const response = await fetch(`${baseURL}/api/user/profile`, {
                 method: 'PUT',
+                credentials: 'include',
                 headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    ...(window.authToken && window.authToken !== 'session-based' ? { 'Authorization': `Bearer ${window.authToken}` } : {})
                 },
                 body: JSON.stringify({ bio: newBio.trim() })
             });
@@ -1004,12 +1023,13 @@ async function editUsername() {
         
         try {
             const baseURL = getAPIBaseURL();
-            const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
+            
             const response = await fetch(`${baseURL}/api/user/profile`, {
                 method: 'PUT',
+                credentials: 'include',
                 headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    ...(window.authToken && window.authToken !== 'session-based' ? { 'Authorization': `Bearer ${window.authToken}` } : {})
                 },
                 body: JSON.stringify({ username: cleanUsername })
             });
@@ -1095,14 +1115,15 @@ async function changeProfilePicture() {
                 formData.append('profileImage', file);
                 
                 const baseURL = getAPIBaseURL();
-                const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
+                
                 
                 showNotification('Uploading profile picture...', 'info');
                 
                 const response = await fetch(`${baseURL}/api/user/profile-image`, {
                     method: 'POST',
+                    credentials: 'include',
                     headers: { 
-                        'Authorization': `Bearer ${token}`
+                        ...(window.authToken && window.authToken !== 'session-based' ? { 'Authorization': `Bearer ${window.authToken}` } : {})
                     },
                     body: formData
                 });
@@ -1129,13 +1150,14 @@ async function changeProfilePicture() {
     window.selectProfilePicture = async (emoji) => {
         try {
             const baseURL = getAPIBaseURL();
-            const token = localStorage.getItem('authToken') || localStorage.getItem('vib3_token');
+            
             
             const response = await fetch(`${baseURL}/api/user/profile`, {
                 method: 'PUT',
+                credentials: 'include',
                 headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    ...(window.authToken && window.authToken !== 'session-based' ? { 'Authorization': `Bearer ${window.authToken}` } : {})
                 },
                 body: JSON.stringify({ profilePicture: emoji })
             });
