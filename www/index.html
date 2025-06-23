@@ -1299,10 +1299,18 @@
                 
                 window.addEventListener('resize', resizeHandler);
                 
-                // Store cleanup function for when overlay is closed
-                testElement.addEventListener('DOMNodeRemoved', () => {
-                    window.removeEventListener('resize', resizeHandler);
+                // Store cleanup function for when overlay is closed (modern approach)
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        mutation.removedNodes.forEach((node) => {
+                            if (node === testElement) {
+                                window.removeEventListener('resize', resizeHandler);
+                                observer.disconnect();
+                            }
+                        });
+                    });
                 });
+                observer.observe(document.body, { childList: true });
                 
                 // Show analytics page with proper positioning
                 const analyticsPage = document.getElementById('analyticsPage');
