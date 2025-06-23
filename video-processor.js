@@ -125,27 +125,32 @@ class VideoProcessor {
                 // Video codec settings for maximum compatibility
                 .videoCodec('libx264')
                 .audioCodec('aac')
-                // Optimize for speed and web streaming
-                .addOption('-preset', 'ultrafast')      // Prioritize speed over compression
-                .addOption('-crf', '26')                // Slightly lower quality for speed
+                // Optimize for maximum speed
+                .addOption('-preset', 'ultrafast')      // Fastest possible encoding
+                .addOption('-tune', 'fastdecode')       // Optimize for fast playback
+                .addOption('-crf', '28')                // Lower quality for speed
                 .addOption('-movflags', '+faststart')   // Enable progressive download
-                .addOption('-profile:v', 'baseline')    // Maximum compatibility
-                .addOption('-level', '3.1')             // Wide device support
+                .addOption('-profile:v', 'main')        // Less restrictive than baseline
                 .addOption('-pix_fmt', 'yuv420p')       // Compatible pixel format
-                // Audio settings
-                .audioBitrate('128k')
+                // Aggressive speed optimizations
+                .addOption('-threads', '0')             // Use all available CPU cores
+                .addOption('-slices', '4')              // Parallel processing
+                .addOption('-x264opts', 'no-cabac:ref=1:bframes=0:weightp=0:8x8dct=0:trellis=0')
+                // Simplified audio processing
+                .audioCodec('aac')
+                .audioBitrate('96k')                    // Lower audio bitrate for speed
                 .audioFrequency(44100)
                 .audioChannels(2);
 
-            // Handle different input video dimensions
+            // Handle different input video dimensions - aggressive scaling for speed
             if (videoInfo.video) {
                 const { width, height } = videoInfo.video;
                 
-                // If video is not in standard web-friendly resolution, scale it
-                if (width > 1920 || height > 1080) {
-                    // Scale down to max 1920x1080 while maintaining aspect ratio
-                    command.size('1920x1080').aspect('16:9');
-                    console.log('📐 Scaling video down to 1080p');
+                // Aggressively scale down for speed - most mobile videos don't need 4K
+                if (width > 1280 || height > 720) {
+                    // Scale down to 720p for fastest processing
+                    command.size('1280x720');
+                    console.log('📐 Scaling video down to 720p for speed');
                 } else if (width % 2 !== 0 || height % 2 !== 0) {
                     // Ensure even dimensions for H.264 compatibility
                     const newWidth = width % 2 === 0 ? width : width + 1;
@@ -229,19 +234,21 @@ class VideoProcessor {
     needsConversion(videoInfo, originalFilename) {
         const ext = path.extname(originalFilename).toLowerCase();
         
-        // Skip conversion for already optimized MP4 files
+        // Skip conversion for most MP4 files to prioritize speed
         if (ext === '.mp4' && videoInfo.video) {
             const { codec, width, height } = videoInfo.video;
             
-            // If it's already H.264 MP4 with reasonable dimensions, skip conversion
-            if (codec === 'h264' && width <= 1920 && height <= 1080 && 
-                width % 2 === 0 && height % 2 === 0) {
+            // Be much more lenient - skip conversion for any reasonably sized MP4
+            if (width <= 3840 && height <= 2160) { // Allow up to 4K without conversion
+                console.log(`⚡ Skipping conversion for ${originalFilename}: ${width}x${height}, codec: ${codec}`);
                 return false;
             }
         }
         
-        // Convert all other formats and non-optimal MP4s
-        return true;
+        // Only convert non-MP4 formats or extremely large videos
+        const shouldConvert = ext !== '.mp4' || (videoInfo.video && (videoInfo.video.width > 3840 || videoInfo.video.height > 2160));
+        console.log(`🔄 Conversion needed for ${originalFilename}: ${shouldConvert}`);
+        return shouldConvert;
     }
 }
 

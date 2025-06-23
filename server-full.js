@@ -684,36 +684,66 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
 
         console.log(`🎬 Processing video upload: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB)`);
 
-        // Step 1: Validate video file
-        console.log('📋 Step 1: Validating video...');
-        const validation = await videoProcessor.validateVideo(req.file.buffer, req.file.originalname);
-        if (!validation.valid) {
-            return res.status(400).json({ 
-                error: `Video validation failed: ${validation.error}`,
-                code: 'VALIDATION_FAILED',
-                details: validation.error
-            });
+        // Check for bypass flag for development/testing
+        const bypassProcessing = req.body.bypassProcessing === 'true' || process.env.BYPASS_VIDEO_PROCESSING === 'true';
+        
+        let conversionResult;
+        
+        if (bypassProcessing) {
+            console.log('⚡ BYPASSING video processing for speed');
+            conversionResult = {
+                success: true,
+                buffer: req.file.buffer,
+                originalSize: req.file.size,
+                convertedSize: req.file.size,
+                skipped: true,
+                bypassed: true
+            };
+        } else {
+            // Step 1: Validate video file
+            console.log('📋 Step 1: Validating video...');
+            const validation = await videoProcessor.validateVideo(req.file.buffer, req.file.originalname);
+            if (!validation.valid) {
+                return res.status(400).json({ 
+                    error: `Video validation failed: ${validation.error}`,
+                    code: 'VALIDATION_FAILED',
+                    details: validation.error
+                });
+            }
+
+            console.log('✅ Video validation passed');
+
+            // Step 2: Convert video to standard H.264 MP4
+            console.log('📋 Step 2: Converting video to standard MP4...');
+            conversionResult = await videoProcessor.convertToStandardMp4(req.file.buffer, req.file.originalname);
         }
-
-        console.log('✅ Video validation passed');
-
-        // Step 2: Convert video to standard H.264 MP4
-        console.log('📋 Step 2: Converting video to standard MP4...');
-        const conversionResult = await videoProcessor.convertToStandardMp4(req.file.buffer, req.file.originalname);
         
         let finalBuffer, finalMimeType, processingInfo;
         
         if (conversionResult.success) {
-            console.log('✅ Video conversion successful');
-            finalBuffer = conversionResult.buffer;
-            finalMimeType = 'video/mp4';
-            processingInfo = {
-                converted: true,
-                originalSize: conversionResult.originalSize,
-                convertedSize: conversionResult.convertedSize,
-                compressionRatio: (conversionResult.originalSize / conversionResult.convertedSize).toFixed(2),
-                videoInfo: conversionResult.videoInfo
-            };
+            if (conversionResult.bypassed) {
+                console.log('⚡ Video processing bypassed for speed');
+                finalBuffer = conversionResult.buffer;
+                finalMimeType = req.file.mimetype;
+                processingInfo = {
+                    converted: false,
+                    bypassed: true,
+                    originalSize: conversionResult.originalSize,
+                    convertedSize: conversionResult.convertedSize
+                };
+            } else {
+                console.log('✅ Video conversion successful');
+                finalBuffer = conversionResult.buffer;
+                finalMimeType = 'video/mp4';
+                processingInfo = {
+                    converted: true,
+                    skipped: conversionResult.skipped || false,
+                    originalSize: conversionResult.originalSize,
+                    convertedSize: conversionResult.convertedSize,
+                    compressionRatio: (conversionResult.originalSize / conversionResult.convertedSize).toFixed(2),
+                    videoInfo: conversionResult.videoInfo
+                };
+            }
         } else {
             console.log('⚠️ Video conversion failed, using original file');
             finalBuffer = conversionResult.originalBuffer;
