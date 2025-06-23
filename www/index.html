@@ -274,7 +274,13 @@
         </div>
         <div class="search-page" id="searchPage">
             <h2 style="margin-bottom: 20px;">🔍 Discover</h2>
-            <input type="text" class="auth-input" id="searchInput" placeholder="Search videos, users, sounds..." style="margin-bottom: 20px;" aria-label="Search videos" oninput="performSearch()">
+            <div style="position: relative; margin-bottom: 20px;">
+                <input type="text" class="auth-input" id="searchInput" placeholder="Search videos, users, sounds..." style="width: 100%;" aria-label="Search videos" 
+                       oninput="handleSidebarSearchInput(this)"
+                       onkeydown="handleSidebarSearchMentionKeyDown(event)"
+                       onkeypress="if(event.key==='Enter' && !window.mentionDropdownOpen) performSearch(this.value)">
+                <div id="sidebarSearchMentionDropdown" class="mention-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 5px;"></div>
+            </div>
             <div class="search-results" id="searchResults"></div>
             <div id="searchNoResults" style="color: #888; text-align: center; margin-top: 50px; display: none;">
                 🔍 No results found. Try a different search term.
