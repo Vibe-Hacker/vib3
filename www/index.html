@@ -1256,14 +1256,41 @@
                         display: analyticsPage.style.display,
                         computed: window.getComputedStyle(analyticsPage).display
                     });
+                    
+                    // Force extremely visible styling
                     analyticsPage.style.display = 'block';
-                    analyticsPage.style.backgroundColor = '#161823'; // Force a visible background
-                    analyticsPage.style.zIndex = '9999';
-                    console.log('📊 Analytics page forced visible');
+                    analyticsPage.style.backgroundColor = '#ff0000'; // Bright red background
+                    analyticsPage.style.zIndex = '99999';
+                    analyticsPage.style.position = 'fixed';
+                    analyticsPage.style.top = '0';
+                    analyticsPage.style.left = '0';
+                    analyticsPage.style.width = '100vw';
+                    analyticsPage.style.height = '100vh';
+                    analyticsPage.style.border = '10px solid #00ff00'; // Bright green border
+                    
+                    console.log('📊 Analytics page forced visible with red background');
                     console.log('📊 Analytics page new style:', {
                         display: analyticsPage.style.display,
                         computed: window.getComputedStyle(analyticsPage).display
                     });
+                    
+                    // Add a huge visible test element
+                    const testDiv = document.createElement('div');
+                    testDiv.innerHTML = 'ANALYTICS TEST - THIS SHOULD BE VISIBLE';
+                    testDiv.style.cssText = `
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        background: yellow;
+                        color: black;
+                        font-size: 48px;
+                        padding: 20px;
+                        border: 5px solid red;
+                        z-index: 999999;
+                    `;
+                    document.body.appendChild(testDiv);
+                    console.log('🚨 Added test element to body');
                 } else {
                     console.error('❌ Analytics page element not found!');
                 }
