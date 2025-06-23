@@ -1250,6 +1250,14 @@
                         <h2 style="color: white; margin: 0;">📊 VIB3 Analytics Dashboard</h2>
                         <p style="margin: 5px 0; opacity: 0.8;">Algorithm: ${analytics.algorithmVersion}</p>
                         ${analytics.hashtagAnalytics ? `<p style="margin: 5px 0; opacity: 0.8;">🏷️ Hashtag Recommendations: Active</p>` : ''}
+                        <div style="margin-top: 10px;">
+                            <button onclick="loadWatchTimeAnalytics()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; margin: 0 5px;">
+                                ⏱️ Watch Time Analytics
+                            </button>
+                            <button onclick="loadAlgorithmAnalytics()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; margin: 0 5px;">
+                                🤖 Algorithm Analytics
+                            </button>
+                        </div>
                     </div>
                     
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
@@ -1444,6 +1452,133 @@
         
         // Load analytics when page is shown
         function showAnalyticsPage() {
+            loadAnalyticsData();
+        }
+        
+        // Load watch time analytics
+        async function loadWatchTimeAnalytics() {
+            try {
+                const apiBaseUrl = window.API_BASE_URL || 
+                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                        ? '' 
+                        : 'https://vib3-production.up.railway.app');
+                
+                const response = await fetch(`${apiBaseUrl}/api/analytics/watchtime`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const watchTimeData = await response.json();
+                displayWatchTimeAnalytics(watchTimeData);
+                
+            } catch (err) {
+                console.error('Failed to load watch time analytics:', err);
+                alert('Failed to load watch time analytics');
+            }
+        }
+        
+        // Display watch time analytics
+        function displayWatchTimeAnalytics(data) {
+            // Remove existing overlay
+            const existingOverlay = document.getElementById('analyticsOverlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'analyticsOverlay';
+            overlay.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="color: white; margin: 0;">⏱️ Watch Time Analytics</h2>
+                    <p style="margin: 5px 0; opacity: 0.8;">Real-time viewing metrics</p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold;">${data.platformMetrics.daily.totalWatchTimeHours}h</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Watch Time (24h)</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold;">${data.platformMetrics.daily.totalViews}</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Views (24h)</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold;">${Math.round(data.platformMetrics.daily.avgWatchPercentage)}%</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Avg Completion</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold;">${data.platformMetrics.weekly.totalWatchTimeHours}h</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Watch Time (7d)</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold;">${data.platformMetrics.weekly.uniqueViewers}</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Unique Viewers (7d)</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold;">${Math.round(data.platformMetrics.weekly.avgWatchTime)}s</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Avg Watch Time</div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                        <h3 style="margin: 0 0 10px 0; color: white; font-size: 16px;">📹 Top Videos by Watch Time</h3>
+                        ${data.topVideosByWatchTime.slice(0, 5).map((video, index) => `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                                <span style="font-size: 12px;">${index + 1}. ${video.title}</span>
+                                <span style="font-size: 11px; opacity: 0.8;">${video.totalWatchTimeMinutes}m</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                        <h3 style="margin: 0 0 10px 0; color: white; font-size: 16px;">👤 Top Creators by Watch Time</h3>
+                        ${data.creatorAnalytics.slice(0, 5).map((creator, index) => `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                                <span style="font-size: 12px;">${index + 1}. ${creator.username}</span>
+                                <span style="font-size: 11px; opacity: 0.8;">${creator.totalWatchTimeHours}h</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h3 style="margin: 0 0 10px 0; color: white; font-size: 16px;">📊 Completion Rate Distribution</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px;">
+                        ${data.completionRates.map(range => `
+                            <div style="text-align: center;">
+                                <div style="font-size: 18px; font-weight: bold;">${range.percentage}%</div>
+                                <div style="font-size: 11px; opacity: 0.8;">${range.label}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                ${data.insights && data.insights.length > 0 ? `
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                    <h3 style="margin: 0 0 10px 0; color: white; font-size: 16px;">💡 Insights</h3>
+                    ${data.insights.map(insight => `
+                        <div style="margin-bottom: 8px; padding: 8px; background: rgba(${insight.type === 'success' ? '39, 174, 96' : '52, 152, 219'}, 0.2); border-radius: 4px;">
+                            <span style="font-size: 12px;">${insight.text}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                ` : ''}
+                
+                <div style="text-align: center; margin-top: 15px;">
+                    <button onclick="loadAlgorithmAnalytics()" style="background: #333; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                        🤖 Back to Algorithm Analytics
+                    </button>
+                </div>
+            `;
+            
+            overlay.style.cssText = 'position: fixed; top: 20px; left: 260px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; z-index: 99999; font-size: 14px; width: calc(100vw - 280px); height: calc(100vh - 40px); overflow: auto; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);';
+            document.body.appendChild(overlay);
+        }
+        
+        // Load algorithm analytics (back button)
+        function loadAlgorithmAnalytics() {
             loadAnalyticsData();
         }
         

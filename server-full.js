@@ -167,6 +167,519 @@ app.get('/api/analytics/algorithm', async (req, res) => {
     }
 });
 
+// ================ WATCH TIME ANALYTICS ================
+
+// Get comprehensive watch time analytics
+app.get('/api/analytics/watchtime', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    try {
+        console.log('⏱️ Generating watch time analytics...');
+        
+        const now = new Date();
+        const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000);
+        const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        const oneMonthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+        
+        // Get all views for different time periods
+        const [dayViews, weekViews, monthViews] = await Promise.all([
+            db.collection('views').find({ timestamp: { $gte: oneDayAgo } }).toArray(),
+            db.collection('views').find({ timestamp: { $gte: oneWeekAgo } }).toArray(),
+            db.collection('views').find({ timestamp: { $gte: oneMonthAgo } }).toArray()
+        ]);
+        
+        // Calculate platform-wide metrics
+        const platformMetrics = {
+            daily: calculateWatchTimeMetrics(dayViews, '24h'),
+            weekly: calculateWatchTimeMetrics(weekViews, '7d'),
+            monthly: calculateWatchTimeMetrics(monthViews, '30d')
+        };
+        
+        // Get top videos by watch time
+        const topVideosByWatchTime = await getTopVideosByWatchTime(db, oneWeekAgo);
+        
+        // Get creator analytics
+        const creatorAnalytics = await getCreatorWatchTimeAnalytics(db, oneWeekAgo);
+        
+        // Get hourly distribution
+        const hourlyDistribution = getHourlyWatchTimeDistribution(weekViews);
+        
+        // Get completion rate analytics
+        const completionRates = getCompletionRateAnalytics(weekViews);
+        
+        // Get device/platform breakdown
+        const deviceBreakdown = getDeviceBreakdown(weekViews);
+        
+        const analytics = {
+            timestamp: now.toISOString(),
+            platformMetrics,
+            topVideosByWatchTime,
+            creatorAnalytics,
+            hourlyDistribution,
+            completionRates,
+            deviceBreakdown,
+            insights: generateWatchTimeInsights(platformMetrics, completionRates)
+        };
+        
+        console.log('✅ Watch time analytics generated');
+        res.json(analytics);
+        
+    } catch (error) {
+        console.error('❌ Watch time analytics error:', error);
+        res.status(500).json({ 
+            error: 'Failed to generate watch time analytics',
+            details: error.message
+        });
+    }
+});
+
+// Get video-specific watch time analytics
+app.get('/api/analytics/watchtime/video/:videoId', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    try {
+        const { videoId } = req.params;
+        
+        // Get all views for this video
+        const views = await db.collection('views')
+            .find({ videoId })
+            .sort({ timestamp: -1 })
+            .toArray();
+        
+        if (views.length === 0) {
+            return res.json({ 
+                message: 'No views found for this video',
+                videoId 
+            });
+        }
+        
+        // Get video details
+        const video = await db.collection('videos').findOne({ 
+            _id: new require('mongodb').ObjectId(videoId) 
+        });
+        
+        const analytics = {
+            videoId,
+            title: video?.title || 'Unknown',
+            duration: video?.duration || 0,
+            totalViews: views.length,
+            metrics: {
+                totalWatchTime: views.reduce((sum, v) => sum + (v.watchTime || 0), 0),
+                avgWatchTime: views.reduce((sum, v) => sum + (v.watchTime || 0), 0) / views.length,
+                avgWatchPercentage: views.reduce((sum, v) => sum + (v.watchPercentage || 0), 0) / views.length,
+                completionRate: views.filter(v => v.watchPercentage >= 80).length / views.length * 100,
+                replayRate: views.filter(v => v.isReplay).length / views.length * 100
+            },
+            retention: calculateRetentionCurve(views, video?.duration || 30),
+            referrerBreakdown: getReferrerBreakdown(views),
+            timeDistribution: getViewTimeDistribution(views)
+        };
+        
+        res.json(analytics);
+        
+    } catch (error) {
+        console.error('Video watch time analytics error:', error);
+        res.status(500).json({ error: 'Failed to get video analytics' });
+    }
+});
+
+// Get creator watch time analytics
+app.get('/api/analytics/watchtime/creator/:userId', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not available' });
+    }
+    
+    try {
+        const { userId } = req.params;
+        const { period = '7d' } = req.query;
+        
+        const startDate = getPeriodStartDate(period);
+        
+        // Get all videos by this creator
+        const creatorVideos = await db.collection('videos')
+            .find({ userId })
+            .toArray();
+        
+        const videoIds = creatorVideos.map(v => v._id.toString());
+        
+        // Get all views for creator's videos
+        const views = await db.collection('views')
+            .find({ 
+                videoId: { $in: videoIds },
+                timestamp: { $gte: startDate }
+            })
+            .toArray();
+        
+        // Calculate metrics per video
+        const videoMetrics = creatorVideos.map(video => {
+            const videoViews = views.filter(v => v.videoId === video._id.toString());
+            return {
+                videoId: video._id,
+                title: video.title || 'Untitled',
+                uploadDate: video.createdAt,
+                views: videoViews.length,
+                totalWatchTime: videoViews.reduce((sum, v) => sum + (v.watchTime || 0), 0),
+                avgWatchTime: videoViews.length > 0 ? 
+                    videoViews.reduce((sum, v) => sum + (v.watchTime || 0), 0) / videoViews.length : 0,
+                completionRate: videoViews.length > 0 ?
+                    videoViews.filter(v => v.watchPercentage >= 80).length / videoViews.length * 100 : 0
+            };
+        }).sort((a, b) => b.totalWatchTime - a.totalWatchTime);
+        
+        const analytics = {
+            userId,
+            period,
+            summary: {
+                totalVideos: creatorVideos.length,
+                totalViews: views.length,
+                totalWatchTime: views.reduce((sum, v) => sum + (v.watchTime || 0), 0),
+                avgWatchTimePerView: views.length > 0 ?
+                    views.reduce((sum, v) => sum + (v.watchTime || 0), 0) / views.length : 0,
+                avgCompletionRate: views.length > 0 ?
+                    views.filter(v => v.watchPercentage >= 80).length / views.length * 100 : 0
+            },
+            topVideos: videoMetrics.slice(0, 10),
+            dailyTrend: getDailyWatchTimeTrend(views, period),
+            audienceRetention: {
+                avgFirstQuartile: calculateQuartileRetention(views, 25),
+                avgMidpoint: calculateQuartileRetention(views, 50),
+                avgThirdQuartile: calculateQuartileRetention(views, 75),
+                avgComplete: calculateQuartileRetention(views, 90)
+            }
+        };
+        
+        res.json(analytics);
+        
+    } catch (error) {
+        console.error('Creator watch time analytics error:', error);
+        res.status(500).json({ error: 'Failed to get creator analytics' });
+    }
+});
+
+// Helper functions for watch time analytics
+function calculateWatchTimeMetrics(views, period) {
+    const totalWatchTime = views.reduce((sum, v) => sum + (v.watchTime || 0), 0);
+    const uniqueViewers = new Set(views.filter(v => v.userId).map(v => v.userId)).size;
+    const totalViews = views.length;
+    
+    return {
+        period,
+        totalWatchTime,
+        totalWatchTimeHours: (totalWatchTime / 3600).toFixed(2),
+        totalViews,
+        uniqueViewers,
+        avgWatchTime: totalViews > 0 ? totalWatchTime / totalViews : 0,
+        avgSessionsPerViewer: uniqueViewers > 0 ? totalViews / uniqueViewers : 0,
+        avgWatchPercentage: totalViews > 0 ?
+            views.reduce((sum, v) => sum + (v.watchPercentage || 0), 0) / totalViews : 0
+    };
+}
+
+async function getTopVideosByWatchTime(db, since) {
+    const pipeline = [
+        { $match: { timestamp: { $gte: since } } },
+        { $group: {
+            _id: '$videoId',
+            totalWatchTime: { $sum: '$watchTime' },
+            viewCount: { $sum: 1 },
+            avgWatchTime: { $avg: '$watchTime' },
+            avgWatchPercentage: { $avg: '$watchPercentage' }
+        }},
+        { $sort: { totalWatchTime: -1 } },
+        { $limit: 10 }
+    ];
+    
+    const results = await db.collection('views').aggregate(pipeline).toArray();
+    
+    // Fetch video details
+    const videoIds = results.map(r => new require('mongodb').ObjectId(r._id));
+    const videos = await db.collection('videos').find({ 
+        _id: { $in: videoIds } 
+    }).toArray();
+    
+    return results.map(result => {
+        const video = videos.find(v => v._id.toString() === result._id);
+        return {
+            videoId: result._id,
+            title: video?.title || 'Unknown',
+            creator: video?.userId || 'Unknown',
+            totalWatchTime: Math.round(result.totalWatchTime),
+            totalWatchTimeMinutes: (result.totalWatchTime / 60).toFixed(1),
+            viewCount: result.viewCount,
+            avgWatchTime: Math.round(result.avgWatchTime),
+            avgWatchPercentage: Math.round(result.avgWatchPercentage)
+        };
+    });
+}
+
+async function getCreatorWatchTimeAnalytics(db, since) {
+    const pipeline = [
+        { $match: { timestamp: { $gte: since } } },
+        { $lookup: {
+            from: 'videos',
+            let: { videoId: { $toObjectId: '$videoId' } },
+            pipeline: [
+                { $match: { $expr: { $eq: ['$_id', '$$videoId'] } } }
+            ],
+            as: 'video'
+        }},
+        { $unwind: '$video' },
+        { $group: {
+            _id: '$video.userId',
+            totalWatchTime: { $sum: '$watchTime' },
+            viewCount: { $sum: 1 },
+            videoCount: { $addToSet: '$videoId' }
+        }},
+        { $project: {
+            _id: 1,
+            totalWatchTime: 1,
+            viewCount: 1,
+            videoCount: { $size: '$videoCount' },
+            avgWatchTimePerVideo: { $divide: ['$totalWatchTime', { $size: '$videoCount' }] }
+        }},
+        { $sort: { totalWatchTime: -1 } },
+        { $limit: 10 }
+    ];
+    
+    const results = await db.collection('views').aggregate(pipeline).toArray();
+    
+    // Fetch user details
+    const userIds = results.map(r => r._id);
+    const users = await db.collection('users').find({ 
+        _id: { $in: userIds } 
+    }).toArray();
+    
+    return results.map(result => {
+        const user = users.find(u => u._id === result._id);
+        return {
+            userId: result._id,
+            username: user?.username || 'Unknown',
+            totalWatchTime: Math.round(result.totalWatchTime),
+            totalWatchTimeHours: (result.totalWatchTime / 3600).toFixed(1),
+            viewCount: result.viewCount,
+            videoCount: result.videoCount,
+            avgWatchTimePerVideo: Math.round(result.avgWatchTimePerVideo)
+        };
+    });
+}
+
+function getHourlyWatchTimeDistribution(views) {
+    const hourlyData = {};
+    
+    views.forEach(view => {
+        const hour = view.hour || new Date(view.timestamp).getHours();
+        if (!hourlyData[hour]) {
+            hourlyData[hour] = { 
+                watchTime: 0, 
+                views: 0 
+            };
+        }
+        hourlyData[hour].watchTime += view.watchTime || 0;
+        hourlyData[hour].views += 1;
+    });
+    
+    return Object.entries(hourlyData).map(([hour, data]) => ({
+        hour: parseInt(hour),
+        totalWatchTime: Math.round(data.watchTime),
+        viewCount: data.views,
+        avgWatchTime: Math.round(data.watchTime / data.views)
+    })).sort((a, b) => a.hour - b.hour);
+}
+
+function getCompletionRateAnalytics(views) {
+    const ranges = [
+        { label: '0-10%', min: 0, max: 10, count: 0 },
+        { label: '10-25%', min: 10, max: 25, count: 0 },
+        { label: '25-50%', min: 25, max: 50, count: 0 },
+        { label: '50-75%', min: 50, max: 75, count: 0 },
+        { label: '75-90%', min: 75, max: 90, count: 0 },
+        { label: '90-100%', min: 90, max: 100, count: 0 }
+    ];
+    
+    views.forEach(view => {
+        const percentage = view.watchPercentage || 0;
+        const range = ranges.find(r => percentage >= r.min && percentage < r.max) ||
+                     ranges[ranges.length - 1]; // 90-100%
+        range.count++;
+    });
+    
+    const total = views.length;
+    return ranges.map(range => ({
+        ...range,
+        percentage: total > 0 ? (range.count / total * 100).toFixed(1) : 0
+    }));
+}
+
+function getDeviceBreakdown(views) {
+    const devices = {};
+    
+    views.forEach(view => {
+        const ua = view.userAgent || 'unknown';
+        let device = 'unknown';
+        
+        if (/mobile/i.test(ua)) device = 'mobile';
+        else if (/tablet/i.test(ua)) device = 'tablet';
+        else if (/desktop/i.test(ua) || /windows|mac|linux/i.test(ua)) device = 'desktop';
+        
+        devices[device] = (devices[device] || 0) + 1;
+    });
+    
+    const total = views.length;
+    return Object.entries(devices).map(([device, count]) => ({
+        device,
+        count,
+        percentage: total > 0 ? (count / total * 100).toFixed(1) : 0,
+        avgWatchTime: views
+            .filter(v => {
+                const ua = v.userAgent || '';
+                if (device === 'mobile') return /mobile/i.test(ua);
+                if (device === 'tablet') return /tablet/i.test(ua);
+                if (device === 'desktop') return /desktop/i.test(ua) || /windows|mac|linux/i.test(ua);
+                return device === 'unknown';
+            })
+            .reduce((sum, v, _, arr) => sum + (v.watchTime || 0) / arr.length, 0)
+    }));
+}
+
+function generateWatchTimeInsights(metrics, completionRates) {
+    const insights = [];
+    
+    // Daily watch time insight
+    if (metrics.daily.totalWatchTimeHours > 24) {
+        insights.push({
+            type: 'success',
+            text: `Strong engagement: ${metrics.daily.totalWatchTimeHours} hours watched in the last 24h`
+        });
+    }
+    
+    // Completion rate insight
+    const highCompletion = completionRates.find(r => r.label === '90-100%');
+    if (highCompletion && parseFloat(highCompletion.percentage) > 30) {
+        insights.push({
+            type: 'success',
+            text: `Excellent retention: ${highCompletion.percentage}% of views watch 90%+ of videos`
+        });
+    }
+    
+    // Growth insight
+    const weeklyGrowth = metrics.weekly.totalViews > 0 ? 
+        ((metrics.daily.totalViews * 7) / metrics.weekly.totalViews - 1) * 100 : 0;
+    if (weeklyGrowth > 20) {
+        insights.push({
+            type: 'growth',
+            text: `Watch time growing ${weeklyGrowth.toFixed(0)}% week-over-week`
+        });
+    }
+    
+    return insights;
+}
+
+function calculateRetentionCurve(views, duration) {
+    const points = 10; // Sample 10 points along the video
+    const interval = duration / points;
+    const retention = [];
+    
+    for (let i = 0; i <= points; i++) {
+        const timePoint = i * interval;
+        const viewersAtPoint = views.filter(v => 
+            (v.exitPoint || v.watchTime || 0) >= timePoint
+        ).length;
+        
+        retention.push({
+            time: Math.round(timePoint),
+            percentage: views.length > 0 ? 
+                (viewersAtPoint / views.length * 100).toFixed(1) : 0
+        });
+    }
+    
+    return retention;
+}
+
+function getReferrerBreakdown(views) {
+    const referrers = {};
+    
+    views.forEach(view => {
+        const referrer = view.referrer || 'unknown';
+        referrers[referrer] = (referrers[referrer] || 0) + 1;
+    });
+    
+    const total = views.length;
+    return Object.entries(referrers)
+        .map(([referrer, count]) => ({
+            referrer,
+            count,
+            percentage: total > 0 ? (count / total * 100).toFixed(1) : 0
+        }))
+        .sort((a, b) => b.count - a.count);
+}
+
+function getViewTimeDistribution(views) {
+    const distribution = {};
+    
+    views.forEach(view => {
+        const hour = new Date(view.timestamp).getHours();
+        distribution[hour] = (distribution[hour] || 0) + 1;
+    });
+    
+    return Object.entries(distribution)
+        .map(([hour, count]) => ({ hour: parseInt(hour), count }))
+        .sort((a, b) => a.hour - b.hour);
+}
+
+function getPeriodStartDate(period) {
+    const now = new Date();
+    switch (period) {
+        case '24h': return new Date(now - 24 * 60 * 60 * 1000);
+        case '7d': return new Date(now - 7 * 24 * 60 * 60 * 1000);
+        case '30d': return new Date(now - 30 * 24 * 60 * 60 * 1000);
+        default: return new Date(now - 7 * 24 * 60 * 60 * 1000);
+    }
+}
+
+function getDailyWatchTimeTrend(views, period) {
+    const days = period === '24h' ? 1 : period === '7d' ? 7 : 30;
+    const dailyData = {};
+    
+    // Initialize all days
+    for (let i = 0; i < days; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateKey = date.toISOString().split('T')[0];
+        dailyData[dateKey] = { watchTime: 0, views: 0 };
+    }
+    
+    // Aggregate data
+    views.forEach(view => {
+        const dateKey = new Date(view.timestamp).toISOString().split('T')[0];
+        if (dailyData[dateKey]) {
+            dailyData[dateKey].watchTime += view.watchTime || 0;
+            dailyData[dateKey].views += 1;
+        }
+    });
+    
+    return Object.entries(dailyData)
+        .map(([date, data]) => ({
+            date,
+            totalWatchTime: Math.round(data.watchTime),
+            viewCount: data.views,
+            avgWatchTime: data.views > 0 ? Math.round(data.watchTime / data.views) : 0
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function calculateQuartileRetention(views, quartile) {
+    const viewsReachingQuartile = views.filter(v => 
+        (v.watchPercentage || 0) >= quartile
+    ).length;
+    
+    return views.length > 0 ? 
+        (viewsReachingQuartile / views.length * 100).toFixed(1) : 0;
+}
+
 // Serve static files (AFTER API routes)
 app.use(express.static(path.join(__dirname, 'www')));
 
