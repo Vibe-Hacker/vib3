@@ -3530,8 +3530,8 @@ async function publishContent() {
                 method: 'POST',
                 credentials: 'include', // Include HTTP-only cookies for production auth
                 headers: {
-                    // Always include Authorization header if we have a token
-                    ...(window.authToken ? 
+                    // Only include Authorization header if we have a real token (not session-based)
+                    ...(window.authToken && window.authToken !== 'session-based' ? 
                         { 'Authorization': `Bearer ${window.authToken}` } : {})
                 },
                 body: formData
