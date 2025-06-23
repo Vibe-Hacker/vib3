@@ -1228,9 +1228,14 @@
                 
                 displayAnalyticsData(analytics);
                 
-                // Show content
+                // Show content and ensure visibility
                 loading.style.display = 'none';
                 content.style.display = 'block';
+                content.style.visibility = 'visible';
+                content.style.opacity = '1';
+                
+                // Store data globally for export function
+                window.currentAnalyticsData = analytics;
                 
                 // Show analytics page
                 const analyticsPage = document.getElementById('analyticsPage');
