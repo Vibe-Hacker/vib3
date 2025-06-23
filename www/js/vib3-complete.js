@@ -4559,6 +4559,12 @@ function showPage(page) {
     
     // Handle feed tabs - don't show "coming soon" for these
     if (page === 'foryou' || page === 'following' || page === 'explore' || page === 'friends') {
+        // Make sure to show the main app for feed tabs
+        if (mainApp) {
+            mainApp.style.display = 'block';
+            mainApp.style.visibility = 'visible';
+            mainApp.style.opacity = '1';
+        }
         switchFeedTab(page);
         return;
     }
@@ -4573,6 +4579,13 @@ function showPage(page) {
     document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
         el.style.display = 'none';
     });
+    
+    // CRITICAL: Also hide the analytics overlay if it exists
+    const analyticsOverlay = document.getElementById('analyticsOverlay');
+    if (analyticsOverlay) {
+        analyticsOverlay.remove();
+        console.log('🧹 Removed analytics overlay');
+    }
     
     // Hide main video feed for non-feed pages
     const mainApp = document.getElementById('mainApp');
@@ -4910,6 +4923,18 @@ function showNotification(message, type = 'info', duration = 3000) {
 }
 
 function switchFeedTab(feedType) {
+    // CRITICAL: Remove analytics overlay when switching feeds
+    const analyticsOverlay = document.getElementById('analyticsOverlay');
+    if (analyticsOverlay) {
+        analyticsOverlay.remove();
+        console.log('🧹 Removed analytics overlay when switching to:', feedType);
+    }
+    
+    // Also hide the analytics page
+    const analyticsPage = document.getElementById('analyticsPage');
+    if (analyticsPage) {
+        analyticsPage.style.display = 'none';
+    }
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         console.log(`🔄 Switching to ${feedType} feed`);
     }
