@@ -4587,6 +4587,13 @@ function showPage(page) {
         console.log('🧹 Removed analytics overlay');
     }
     
+    // CRITICAL: Also remove activity page if it exists when navigating away
+    const activityPage = document.getElementById('activityPage');
+    if (activityPage && page !== 'activity') {
+        activityPage.remove();
+        console.log('🧹 Removed activity page');
+    }
+    
     // Hide main video feed for non-feed pages
     const mainApp = document.getElementById('mainApp');
     if (mainApp && page !== 'foryou' && page !== 'explore' && page !== 'following' && page !== 'friends') {

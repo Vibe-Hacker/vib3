@@ -11,6 +11,20 @@ export function showPage(page) {
         console.log('Set current page in state:', page);
     }
     
+    // CRITICAL: Remove activity page if it exists when navigating away
+    const activityPage = document.getElementById('activityPage');
+    if (activityPage && page !== 'activity') {
+        activityPage.remove();
+        console.log('🧹 Removed activity page');
+    }
+    
+    // CRITICAL: Remove analytics overlay if it exists when navigating away  
+    const analyticsOverlay = document.querySelector('[style*="position: fixed"][style*="z-index: 99999"]');
+    if (analyticsOverlay && page !== 'analytics') {
+        analyticsOverlay.remove();
+        console.log('🧹 Removed analytics overlay');
+    }
+    
     // Update sidebar active state FIRST for all pages
     document.querySelectorAll('.sidebar-item').forEach(item => {
         item.classList.remove('active');
