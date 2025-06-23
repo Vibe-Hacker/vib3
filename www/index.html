@@ -1243,6 +1243,7 @@
                     <div style="text-align: center; margin-bottom: 20px;">
                         <h2 style="color: white; margin: 0;">📊 VIB3 Analytics Dashboard</h2>
                         <p style="margin: 5px 0; opacity: 0.8;">Algorithm: ${analytics.algorithmVersion}</p>
+                        ${analytics.hashtagAnalytics ? `<p style="margin: 5px 0; opacity: 0.8;">🏷️ Hashtag Recommendations: Active</p>` : ''}
                     </div>
                     
                     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
@@ -1271,6 +1272,32 @@
                             <div style="font-size: 12px; opacity: 0.8;">Unique Creators</div>
                         </div>
                     </div>
+                    
+                    ${analytics.hashtagAnalytics ? `
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h3 style="margin: 0 0 10px 0; color: white;">🏷️ Hashtag Analytics</h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 18px; font-weight: bold;">${analytics.hashtagAnalytics.videosWithHashtags}/${analytics.totalVideos}</div>
+                                <div style="font-size: 12px; opacity: 0.8;">Videos with Hashtags</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 18px; font-weight: bold;">${analytics.hashtagAnalytics.boostedVideos}</div>
+                                <div style="font-size: 12px; opacity: 0.8;">Personalized Videos</div>
+                            </div>
+                        </div>
+                        ${analytics.hashtagAnalytics.topHashtags && analytics.hashtagAnalytics.topHashtags.length > 0 ? `
+                        <div style="margin-top: 10px;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">Top Hashtags:</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                ${analytics.hashtagAnalytics.topHashtags.slice(0, 8).map(h => 
+                                    `<span style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 12px; font-size: 11px;">#${h.tag} (${h.count})</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
                     
                     <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                         <h3 style="margin: 0 0 10px 0; color: white;">🏆 Top Performing Videos</h3>

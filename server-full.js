@@ -95,7 +95,7 @@ app.get('/api/analytics/algorithm', async (req, res) => {
         console.log('📊 Calculating analytics metrics...');
         const analytics = {
             totalVideos: videos.length,
-            algorithmVersion: '1.0.0-engagement',
+            algorithmVersion: '1.1.0-engagement-hashtags',
             timestamp: now.toISOString(),
             
             // Engagement distribution
@@ -137,6 +137,18 @@ app.get('/api/analytics/algorithm', async (req, res) => {
             diversity: {
                 uniqueCreators: new Set(rankedVideos.map(v => v.userId)).size,
                 contentSpread: rankedVideos.slice(0, 10).map(v => v.userId).length === new Set(rankedVideos.slice(0, 10).map(v => v.userId)).size ? 'good' : 'needs_improvement'
+            },
+            
+            // Hashtag-based recommendation metrics
+            hashtagAnalytics: {
+                videosWithHashtags: rankedVideos.filter(v => v.hashtags && v.hashtags.length > 0).length,
+                totalHashtags: rankedVideos.reduce((sum, v) => sum + (v.hashtags ? v.hashtags.length : 0), 0),
+                avgHashtagsPerVideo: rankedVideos.length > 0 ? 
+                    rankedVideos.reduce((sum, v) => sum + (v.hashtags ? v.hashtags.length : 0), 0) / rankedVideos.length : 0,
+                boostedVideos: rankedVideos.filter(v => (v.hashtagBoost || 0) > 0).length,
+                avgHashtagBoost: rankedVideos.filter(v => (v.hashtagBoost || 0) > 0)
+                    .reduce((sum, v) => sum + (v.hashtagBoost || 0), 0) / Math.max(1, rankedVideos.filter(v => (v.hashtagBoost || 0) > 0).length),
+                topHashtags: getTopHashtags(rankedVideos, 10)
             }
         };
         
@@ -171,6 +183,151 @@ const BUCKET_NAME = process.env.DO_SPACES_BUCKET || 'vib3-videos';
 
 // Initialize video processor
 const videoProcessor = new VideoProcessor();
+
+// ================ ALGORITHM & RANKING FUNCTIONS ================
+
+// Extract hashtags from text content
+function extractHashtags(text) {
+    if (!text || typeof text !== 'string') return [];
+    
+    // Match hashtags (# followed by letters, numbers, underscore)
+    const hashtagRegex = /#[\w]+/g;
+    const matches = text.match(hashtagRegex);
+    
+    if (!matches) return [];
+    
+    // Clean and normalize hashtags
+    return matches.map(tag => tag.toLowerCase().replace('#', ''));
+}
+
+// Calculate hashtag similarity between two videos
+function calculateHashtagSimilarity(hashtags1, hashtags2) {
+    if (!hashtags1 || !hashtags2 || hashtags1.length === 0 || hashtags2.length === 0) {
+        return 0;
+    }
+    
+    const set1 = new Set(hashtags1);
+    const set2 = new Set(hashtags2);
+    
+    // Calculate Jaccard similarity (intersection over union)
+    const intersection = [...set1].filter(tag => set2.has(tag)).length;
+    const union = new Set([...set1, ...set2]).size;
+    
+    return union > 0 ? intersection / union : 0;
+}
+
+// Apply hashtag-based recommendations to boost similar content
+async function applyHashtagRecommendations(videos, currentUser, db) {
+    if (!currentUser || !currentUser._id) {
+        return videos; // No user context for recommendations
+    }
+    
+    console.log('🏷️ Applying hashtag-based recommendations...');
+    
+    try {
+        // Get user's interaction history (liked/viewed videos) to build interest profile
+        const userLikes = await db.collection('likes')
+            .find({ userId: currentUser._id.toString() })
+            .sort({ createdAt: -1 })
+            .limit(50) // Last 50 liked videos
+            .toArray();
+        
+        const likedVideoIds = userLikes.map(like => like.videoId);
+        
+        if (likedVideoIds.length === 0) {
+            console.log('🏷️ No user interaction history found for hashtag recommendations');
+            return videos;
+        }
+        
+        // Get hashtags from liked videos to build user interest profile
+        const likedVideos = await db.collection('videos')
+            .find({ _id: { $in: likedVideoIds.map(id => new require('mongodb').ObjectId(id)) } })
+            .toArray();
+        
+        // Extract and count hashtags from user's liked videos
+        const userHashtagCounts = {};
+        let totalUserHashtags = 0;
+        
+        likedVideos.forEach(video => {
+            const hashtags = extractHashtags(video.description || video.title || '');
+            hashtags.forEach(tag => {
+                userHashtagCounts[tag] = (userHashtagCounts[tag] || 0) + 1;
+                totalUserHashtags++;
+            });
+        });
+        
+        if (totalUserHashtags === 0) {
+            console.log('🏷️ No hashtags found in user interaction history');
+            return videos;
+        }
+        
+        // Calculate hashtag interest scores (frequency-based)
+        const userHashtagInterests = {};
+        for (const [tag, count] of Object.entries(userHashtagCounts)) {
+            userHashtagInterests[tag] = count / totalUserHashtags;
+        }
+        
+        console.log(`🏷️ User hashtag interests: ${Object.keys(userHashtagInterests).slice(0, 10).join(', ')}...`);
+        
+        // Apply hashtag similarity boost to each video
+        videos.forEach(video => {
+            if (!video.hashtags || video.hashtags.length === 0) {
+                video.hashtagBoost = 0;
+                return;
+            }
+            
+            // Calculate relevance score based on user's hashtag interests
+            let hashtagRelevance = 0;
+            video.hashtags.forEach(tag => {
+                if (userHashtagInterests[tag]) {
+                    hashtagRelevance += userHashtagInterests[tag];
+                }
+            });
+            
+            // Normalize by video hashtag count to prevent spam
+            const avgRelevance = hashtagRelevance / video.hashtags.length;
+            
+            // Calculate hashtag boost (max 0.5 points to not overwhelm engagement score)
+            video.hashtagBoost = Math.min(avgRelevance * 2, 0.5);
+            
+            // Apply boost to engagement score
+            video.engagementScore = (video.engagementScore || 0) + video.hashtagBoost;
+            
+            if (video.hashtagBoost > 0.1) {
+                console.log(`🏷️ Hashtag boost for "${video.title}": +${video.hashtagBoost.toFixed(3)} (tags: ${video.hashtags.join(', ')})`);
+            }
+        });
+        
+        // Re-sort with new hashtag-boosted scores
+        videos.sort((a, b) => (b.engagementScore || 0) - (a.engagementScore || 0));
+        
+        const boostedVideos = videos.filter(v => (v.hashtagBoost || 0) > 0).length;
+        console.log(`🏷️ Applied hashtag boost to ${boostedVideos}/${videos.length} videos`);
+        
+    } catch (error) {
+        console.error('🏷️ Error applying hashtag recommendations:', error);
+    }
+    
+    return videos;
+}
+
+// Get top hashtags from videos for analytics
+function getTopHashtags(videos, limit = 10) {
+    const hashtagCounts = {};
+    
+    videos.forEach(video => {
+        if (video.hashtags && video.hashtags.length > 0) {
+            video.hashtags.forEach(tag => {
+                hashtagCounts[tag] = (hashtagCounts[tag] || 0) + 1;
+            });
+        }
+    });
+    
+    return Object.entries(hashtagCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, limit)
+        .map(([tag, count]) => ({ tag, count, usage: (count / videos.length * 100).toFixed(1) + '%' }));
+}
 
 // Engagement-based ranking algorithm for For You feed
 async function applyEngagementRanking(videos, db) {
@@ -219,6 +376,9 @@ async function applyEngagementRanking(videos, db) {
             // Total engagement boost (10% of score)
             const totalEngagement = likeCount + commentCount + shareCount;
             engagementScore += Math.log(totalEngagement + 1) * 0.10;
+            
+            // Extract hashtags from description for recommendation tracking
+            video.hashtags = extractHashtags(video.description || video.title || '');
             
             // Store metrics on video object
             video.engagementScore = engagementScore;
@@ -832,6 +992,11 @@ app.get('/api/videos', async (req, res) => {
                 
                 // Apply engagement-based ranking
                 videos = await applyEngagementRanking(videos, db);
+                
+                // Apply hashtag-based recommendations (personalization)
+                if (req.user) {
+                    videos = await applyHashtagRecommendations(videos, req.user, db);
+                }
                 
                 // Apply pagination after ranking
                 const startIndex = actualSkip;
