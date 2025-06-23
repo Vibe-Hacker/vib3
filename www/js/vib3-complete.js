@@ -3537,22 +3537,54 @@ async function publishContent() {
                 console.log('📡 RESPONSE HEADERS:', Object.fromEntries(response.headers.entries()));
             }
             
-            updatePublishProgress('Processing video...', 60);
+            updatePublishProgress('Processing and converting video...', 60);
             
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('❌ UPLOAD ERROR RESPONSE:', errorText);
                 
-                // Handle authentication errors specifically
-                if (response.status === 401) {
-                    throw new Error('Please log in to upload videos. Your session may have expired.');
-                }
-                
                 try {
-                    const error = JSON.parse(errorText);
-                    throw new Error(error.error || 'Upload failed');
-                } catch {
-                    throw new Error(errorText || 'Upload failed');
+                    const errorData = JSON.parse(errorText);
+                    
+                    // Enhanced error handling with specific feedback
+                    let userMessage = errorData.error || 'Upload failed';
+                    
+                    switch(errorData.code) {
+                        case 'NO_FILE':
+                            userMessage = 'No video file was selected. Please choose a video to upload.';
+                            break;
+                        case 'NO_TITLE':
+                            userMessage = 'Please enter a title for your video.';
+                            break;
+                        case 'VALIDATION_FAILED':
+                            userMessage = `Video validation failed: ${errorData.details}`;
+                            break;
+                        case 'FFMPEG_NOT_FOUND':
+                            userMessage = 'Video processing is temporarily unavailable. Please try again in a few minutes.';
+                            break;
+                        case 'INVALID_VIDEO':
+                            userMessage = 'This video file appears to be corrupted or in an unsupported format. Please try a different video.';
+                            break;
+                        case 'FILE_TOO_LARGE':
+                            userMessage = 'Video file is too large (max 500MB). Please compress your video or upload a shorter clip.';
+                            break;
+                        case 'VIDEO_TOO_LONG':
+                            userMessage = 'Video is too long (max 3 minutes). Please trim your video to under 3 minutes.';
+                            break;
+                        default:
+                            if (response.status === 401) {
+                                userMessage = 'Please log in to upload videos. Your session may have expired.';
+                            }
+                    }
+                    
+                    throw new Error(userMessage);
+                    
+                } catch (parseError) {
+                    // If we can't parse the error, use the raw text
+                    if (response.status === 401) {
+                        throw new Error('Please log in to upload videos. Your session may have expired.');
+                    }
+                    throw new Error(errorText || 'Upload failed. Please try again.');
                 }
             }
             
@@ -3643,9 +3675,30 @@ async function publishContent() {
         
         updatePublishProgress('Complete!', 100);
         
-        // Success
+        // Enhanced success feedback with processing information
         setTimeout(() => {
-            showNotification('Content published successfully!', 'success');
+            let successMessage = 'Content published successfully!';
+            
+            // Show processing details for video uploads
+            if (result && result.processing && uploadType === 'video') {
+                if (result.processing.converted) {
+                    const sizeSaved = result.processing.originalSize - result.processing.finalSize;
+                    const sizeSavedMB = (sizeSaved / 1024 / 1024).toFixed(1);
+                    successMessage = `Video published successfully! Converted to optimized ${result.processing.format} (${sizeSavedMB}MB smaller)`;
+                } else {
+                    successMessage = 'Video published successfully! Uploaded in original format';
+                }
+                
+                // Log detailed processing info
+                console.log('🎬 Video Processing Results:');
+                console.log('  ✅ Format:', result.processing.format);
+                console.log('  📦 Original size:', (result.processing.originalSize / 1024 / 1024).toFixed(2), 'MB');
+                console.log('  📦 Final size:', (result.processing.finalSize / 1024 / 1024).toFixed(2), 'MB');
+                console.log('  💾 Space saved:', ((result.processing.originalSize - result.processing.finalSize) / 1024 / 1024).toFixed(2), 'MB');
+                console.log('  🎯 Quality:', result.processing.quality);
+            }
+            
+            showNotification(successMessage, 'success');
             
             // Clear recorded video
             if (window.selectedVideoFile) {

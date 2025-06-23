@@ -3,6 +3,7 @@ const multer = require('multer');
 const AWS = require('aws-sdk');
 const path = require('path');
 const crypto = require('crypto');
+const VideoProcessor = require('./video-processor');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,18 +37,26 @@ const s3 = new AWS.S3({
 
 const BUCKET_NAME = process.env.DO_SPACES_BUCKET || 'vib3-videos';
 
-// Configure multer for video uploads
+// Initialize video processor
+const videoProcessor = new VideoProcessor();
+
+// Configure multer for video uploads with enhanced format support
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 100 * 1024 * 1024 // 100MB limit
+        fileSize: 500 * 1024 * 1024 // 500MB limit for 4K videos
     },
     fileFilter: (req, file, cb) => {
-        const allowedTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
-        if (allowedTypes.includes(file.mimetype)) {
+        // Accept all common video formats - we'll convert them to standard MP4
+        const allowedTypes = [
+            'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm',
+            'video/3gpp', 'video/x-flv', 'video/x-ms-wmv', 'video/x-msvideo',
+            'video/avi', 'video/mov', 'video/mkv', 'video/x-matroska'
+        ];
+        if (allowedTypes.includes(file.mimetype) || file.mimetype.startsWith('video/')) {
             cb(null, true);
         } else {
-            cb(new Error('Invalid file type. Only MP4, MOV, AVI, and WebM are allowed.'));
+            cb(new Error('Invalid file type. Please upload a video file.'));
         }
     }
 });
@@ -655,46 +664,112 @@ app.get('/api/videos', async (req, res) => {
     }
 });
 
-// Upload video file to DigitalOcean Spaces
+// Upload and process video file to DigitalOcean Spaces
 app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ error: 'No video file provided' });
+            return res.status(400).json({ 
+                error: 'No video file provided',
+                code: 'NO_FILE'
+            });
         }
 
-        const { title, description } = req.body;
+        const { title, description, username, userId } = req.body;
         if (!title) {
-            return res.status(400).json({ error: 'Video title is required' });
+            return res.status(400).json({ 
+                error: 'Video title is required',
+                code: 'NO_TITLE'
+            });
         }
 
-        // Generate unique filename
-        const fileExtension = path.extname(req.file.originalname);
+        console.log(`🎬 Processing video upload: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB)`);
+
+        // Step 1: Validate video file
+        console.log('📋 Step 1: Validating video...');
+        const validation = await videoProcessor.validateVideo(req.file.buffer, req.file.originalname);
+        if (!validation.valid) {
+            return res.status(400).json({ 
+                error: `Video validation failed: ${validation.error}`,
+                code: 'VALIDATION_FAILED',
+                details: validation.error
+            });
+        }
+
+        console.log('✅ Video validation passed');
+
+        // Step 2: Convert video to standard H.264 MP4
+        console.log('📋 Step 2: Converting video to standard MP4...');
+        const conversionResult = await videoProcessor.convertToStandardMp4(req.file.buffer, req.file.originalname);
+        
+        let finalBuffer, finalMimeType, processingInfo;
+        
+        if (conversionResult.success) {
+            console.log('✅ Video conversion successful');
+            finalBuffer = conversionResult.buffer;
+            finalMimeType = 'video/mp4';
+            processingInfo = {
+                converted: true,
+                originalSize: conversionResult.originalSize,
+                convertedSize: conversionResult.convertedSize,
+                compressionRatio: (conversionResult.originalSize / conversionResult.convertedSize).toFixed(2),
+                videoInfo: conversionResult.videoInfo
+            };
+        } else {
+            console.log('⚠️ Video conversion failed, using original file');
+            finalBuffer = conversionResult.originalBuffer;
+            finalMimeType = req.file.mimetype;
+            processingInfo = {
+                converted: false,
+                error: conversionResult.error,
+                originalSize: req.file.size
+            };
+        }
+
+        // Step 3: Generate unique filename (always .mp4 for converted videos)
+        const fileExtension = conversionResult.success ? '.mp4' : path.extname(req.file.originalname);
         const fileName = `videos/${Date.now()}-${crypto.randomBytes(16).toString('hex')}${fileExtension}`;
 
-        // Upload to DigitalOcean Spaces
+        console.log('📋 Step 3: Uploading to DigitalOcean Spaces...');
+
+        // Step 4: Upload to DigitalOcean Spaces
         const uploadParams = {
             Bucket: BUCKET_NAME,
             Key: fileName,
-            Body: req.file.buffer,
-            ContentType: req.file.mimetype,
-            ACL: 'public-read'
+            Body: finalBuffer,
+            ContentType: finalMimeType,
+            ACL: 'public-read',
+            Metadata: {
+                'original-filename': req.file.originalname,
+                'processed': conversionResult.success.toString(),
+                'upload-timestamp': Date.now().toString()
+            }
         };
 
         const uploadResult = await s3.upload(uploadParams).promise();
         const videoUrl = uploadResult.Location;
 
-        // Save to database if connected
+        console.log('✅ Upload completed to:', videoUrl);
+
+        // Step 5: Save to database with processing information
         let videoRecord = null;
         if (db) {
             const video = {
-                userId: req.user.userId,
+                userId: req.user.userId || userId,
+                username: username || 'unknown',
                 title,
                 description: description || '',
                 videoUrl,
                 fileName,
-                fileSize: req.file.size,
-                mimeType: req.file.mimetype,
+                originalFilename: req.file.originalname,
+                fileSize: finalBuffer.length,
+                originalFileSize: req.file.size,
+                mimeType: finalMimeType,
+                originalMimeType: req.file.mimetype,
+                processed: conversionResult.success,
+                processingInfo: processingInfo,
                 views: 0,
+                likes: [],
+                comments: [],
                 createdAt: new Date(),
                 updatedAt: new Date()
             };
@@ -702,17 +777,52 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
             const result = await db.collection('videos').insertOne(video);
             video._id = result.insertedId;
             videoRecord = video;
+            
+            console.log('✅ Video record saved to database');
         }
 
+        // Step 6: Return success response with detailed information
         res.json({
-            message: 'Video uploaded successfully',
+            success: true,
+            message: 'Video uploaded and processed successfully',
             videoUrl,
-            video: videoRecord
+            video: videoRecord,
+            processing: {
+                converted: conversionResult.success,
+                originalSize: req.file.size,
+                finalSize: finalBuffer.length,
+                sizeSaved: req.file.size - finalBuffer.length,
+                format: conversionResult.success ? 'H.264 MP4' : 'Original format',
+                quality: conversionResult.success ? 'Optimized for web streaming' : 'Original quality'
+            }
         });
 
     } catch (error) {
-        console.error('Upload error:', error);
-        res.status(500).json({ error: 'Upload failed: ' + error.message });
+        console.error('❌ Upload error:', error);
+        
+        // Enhanced error reporting
+        let errorCode = 'UNKNOWN_ERROR';
+        let userMessage = 'Upload failed. Please try again.';
+        
+        if (error.message.includes('ENOENT')) {
+            errorCode = 'FFMPEG_NOT_FOUND';
+            userMessage = 'Video processing is temporarily unavailable. Please try again later.';
+        } else if (error.message.includes('Invalid')) {
+            errorCode = 'INVALID_VIDEO';
+            userMessage = 'The video file appears to be corrupted or in an unsupported format.';
+        } else if (error.message.includes('size')) {
+            errorCode = 'FILE_TOO_LARGE';
+            userMessage = 'Video file is too large. Please upload a file smaller than 500MB.';
+        } else if (error.message.includes('duration')) {
+            errorCode = 'VIDEO_TOO_LONG';
+            userMessage = 'Video is too long. Please upload a video shorter than 3 minutes.';
+        }
+        
+        res.status(500).json({ 
+            error: userMessage,
+            code: errorCode,
+            technical: error.message // For debugging
+        });
     }
 });
 
