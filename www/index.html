@@ -1274,17 +1274,19 @@
                 content.style.minHeight = '500px';
                 console.log('🔧 Applied debugging styles to content');
                 
-                // Check for overlapping elements
+                // Check for overlapping elements and hide them
                 console.log('🔍 Checking for overlapping pages...');
                 const allPages = document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page');
                 allPages.forEach(page => {
                     const style = window.getComputedStyle(page);
                     if (style.display !== 'none') {
-                        console.log('⚠️ Page still visible:', page.className, {
+                        console.log('⚠️ Page still visible, hiding:', page.className, {
                             display: style.display,
                             zIndex: style.zIndex,
                             position: style.position
                         });
+                        page.style.display = 'none';
+                        console.log('✅ Hidden page:', page.className);
                     }
                 });
                 
