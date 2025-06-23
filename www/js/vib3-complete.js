@@ -7261,6 +7261,13 @@ function toggleVideoPlayback(videoElement) {
 }
 
 function openCommentsModal(videoId) {
+    console.log('💬 Opening comments modal for video:', videoId);
+    console.log('🧪 Mention functions available:', {
+        handleCommentInput: typeof window.handleCommentInput,
+        handleMentionKeyDown: typeof window.handleMentionKeyDown,
+        selectMention: typeof window.selectMention
+    });
+    
     const modal = document.createElement('div');
     modal.className = 'modal comments-modal';
     modal.innerHTML = `
@@ -7306,6 +7313,31 @@ function openCommentsModal(videoId) {
         </div>
     `;
     document.body.appendChild(modal);
+    
+    // Ensure input handlers are attached after modal is added to DOM
+    setTimeout(() => {
+        const input = document.getElementById(`commentInput_${videoId}`);
+        if (input) {
+            console.log('🎯 Attaching mention handlers to input:', input);
+            // Remove any existing handlers first
+            input.oninput = null;
+            input.onkeydown = null;
+            
+            // Attach new handlers
+            input.addEventListener('input', function(e) {
+                console.log('📝 Input event fired, value:', e.target.value);
+                handleCommentInput(e.target, videoId);
+            });
+            
+            input.addEventListener('keydown', function(e) {
+                handleMentionKeyDown(e, videoId);
+            });
+            
+            console.log('✅ Mention handlers attached successfully');
+        } else {
+            console.error('❌ Could not find comment input for video:', videoId);
+        }
+    }, 100);
 }
 
 function openShareModal(videoId) {
@@ -8133,6 +8165,12 @@ function playVideo(videoId) {
 function showMoreOptions() {
     showNotification('More options...', 'info');
 }
+
+// Test mention system on load
+console.log('🧪 Testing mention system availability:');
+console.log('  - handleCommentInput:', typeof handleCommentInput);
+console.log('  - showMentionDropdown:', typeof showMentionDropdown);
+console.log('  - window.handleCommentInput:', typeof window.handleCommentInput);
 
 // Make all functions globally available
 window.initializeAuth = initializeAuth;
