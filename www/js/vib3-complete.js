@@ -8408,9 +8408,16 @@ function handleSearchMentionKeyDown(event) {
 // Sidebar search input handlers with @mention support
 async function handleSidebarSearchInput(input) {
     console.log('🔍 handleSidebarSearchInput called');
+    console.log('🎯 Input element:', input);
+    console.log('🎯 Input ID:', input?.id);
     const text = input.value;
     const cursorPosition = input.selectionStart;
     console.log('📝 Sidebar search input text:', text, 'Cursor position:', cursorPosition);
+    
+    // Quick test - show alert
+    if (text.includes('@')) {
+        console.log('🚨 DETECTED @ CHARACTER IN SIDEBAR SEARCH!');
+    }
     
     // Find if we're in a mention context
     const beforeCursor = text.substring(0, cursorPosition);
