@@ -468,8 +468,15 @@ class FeedManager {
             background: #000;
         `;
         
+        // Store the complete video data on the card for later access
+        card.videoData = videoData;
+        card.dataset.videoId = videoData.id;
+        card.dataset.userId = videoData.userId;
+        
         // Add click handler for video modal
         card.addEventListener('click', () => {
+            console.log('🎬 Explore video clicked:', videoData.description || videoData.title || 'Untitled');
+            console.log('📋 Video data being passed:', videoData);
             if (window.openVideoModal) {
                 window.openVideoModal(videoData);
             }

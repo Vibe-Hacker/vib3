@@ -1582,8 +1582,13 @@ function createExploreVideoCard(video) {
 
 // Open video in vertical feed (like TikTok)
 function openVideoModal(video) {
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        console.log('🎬 Opening video in vertical feed for:', video.title);
+    console.log('🎬 Opening video in vertical feed for:', video.description || video.title || 'Untitled');
+    console.log('📋 Video data received:', video);
+    
+    // Validate video data
+    if (!video || !video.videoUrl) {
+        console.error('❌ Invalid video data passed to openVideoModal:', video);
+        return;
     }
     
     // Switch to For You feed to show vertical layout
@@ -1597,8 +1602,13 @@ function openVideoModal(video) {
 
 // Create a vertical feed starting with a specific video
 async function createVideoFeedWithSelectedVideo(selectedVideo) {
+    console.log('🔄 Creating video feed with selected video:', selectedVideo.description || selectedVideo.title || 'Untitled');
+    
     const feedElement = document.getElementById('foryouFeed');
-    if (!feedElement) return;
+    if (!feedElement) {
+        console.error('❌ foryouFeed element not found');
+        return;
+    }
     
     // Clear the feed
     feedElement.innerHTML = '<div class="loading-container"><div class="spinner"></div><p>Loading video...</p></div>';
@@ -1607,32 +1617,63 @@ async function createVideoFeedWithSelectedVideo(selectedVideo) {
     const exploreGrid = document.getElementById('exploreVideoGrid');
     let allVideos = [selectedVideo]; // Start with the selected video
     
+    console.log('🎯 Selected video will be first in feed:', selectedVideo.videoUrl);
+    
     if (exploreGrid) {
-        // Get all explore videos from the DOM
+        // Get all explore videos from the DOM using stored video data
         const exploreCards = exploreGrid.querySelectorAll('.explore-video-card');
         exploreCards.forEach(card => {
-            const video = card.querySelector('video');
-            if (video && video.src !== selectedVideo.videoUrl) {
-                // Create a video object from the DOM data
-                const videoData = {
-                    videoUrl: video.src,
-                    title: 'Video from Explore',
-                    username: 'vib3user',
-                    user: { username: 'vib3user', profilePicture: '👤' },
-                    _id: getVideoFilename(video.src)
+            // Use the stored video data instead of reconstructing from DOM
+            const videoData = card.videoData;
+            if (videoData) {
+                // Create a normalized URL for comparison
+                const normalizeUrl = (url) => {
+                    if (!url) return '';
+                    // Remove protocol and www prefix for comparison
+                    return url.replace(/^https?:\/\/(www\.)?/, '').toLowerCase();
                 };
-                allVideos.push(videoData);
+                
+                const selectedVideoNormalized = normalizeUrl(selectedVideo.videoUrl);
+                const cardVideoNormalized = normalizeUrl(videoData.videoUrl);
+                
+                // Only add if it's not the same video as the selected one
+                if (cardVideoNormalized !== selectedVideoNormalized) {
+                    console.log('📹 Adding video to feed:', videoData.description || videoData.title || 'Untitled');
+                    console.log('   URL:', videoData.videoUrl);
+                    allVideos.push(videoData);
+                } else {
+                    console.log('🎯 Skipping selected video (already first in feed):', videoData.description || videoData.title || 'Untitled');
+                    console.log('   Selected URL normalized:', selectedVideoNormalized); 
+                    console.log('   Card URL normalized:', cardVideoNormalized);
+                }
+            } else {
+                console.warn('⚠️ Explore card missing video data:', card);
             }
         });
+        
+        console.log(`📊 Feed summary: ${allVideos.length} total videos (1 selected + ${allVideos.length - 1} from explore grid)`);
+    } else {
+        console.warn('⚠️ exploreVideoGrid not found - feed will only contain the selected video');
     }
     
     // Clear and rebuild the feed
     feedElement.innerHTML = '';
     
     // Create video cards for all videos
+    console.log('🎬 Creating video cards for', allVideos.length, 'videos');
     allVideos.forEach((video, index) => {
-        const videoCard = createAdvancedVideoCard(video);
-        feedElement.appendChild(videoCard);
+        console.log(`   ${index + 1}. Creating card for:`, video.description || video.title || 'Untitled');
+        try {
+            const videoCard = createAdvancedVideoCard(video);
+            if (videoCard) {
+                feedElement.appendChild(videoCard);
+                console.log(`   ✅ Card ${index + 1} created successfully`);
+            } else {
+                console.error(`   ❌ Card ${index + 1} creation failed - returned null`);
+            }
+        } catch (error) {
+            console.error(`   ❌ Error creating card ${index + 1}:`, error);
+        }
     });
     
     // Initialize video system for the new feed
