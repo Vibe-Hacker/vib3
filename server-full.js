@@ -2168,29 +2168,54 @@ app.get('/api/user/profile', async (req, res) => {
     try {
         const { userId } = req.query;
         
-        // Get current user from auth token if no userId provided
+        // Get current user from session or auth token
         let targetUserId = userId;
+        
+        // Check session first (session-based auth)
+        if (!targetUserId && req.session?.userId) {
+            targetUserId = req.session.userId;
+            console.log('🔑 Using session userId:', targetUserId);
+        }
+        
+        // Fallback to Authorization header
         if (!targetUserId && req.headers.authorization) {
             const token = req.headers.authorization.replace('Bearer ', '');
             const session = sessions.get(token);
             if (session) {
                 targetUserId = session.userId;
+                console.log('🔑 Using token userId:', targetUserId);
+            }
+        }
+        
+        // Check if we have a logged in session via simple auth
+        if (!targetUserId) {
+            // Try to get from the sessions map using any existing session
+            for (const [sessionId, sessionData] of sessions.entries()) {
+                if (sessionData && sessionData.userId) {
+                    targetUserId = sessionData.userId;
+                    console.log('🔑 Found userId in active session:', targetUserId);
+                    break;
+                }
             }
         }
         
         if (!targetUserId) {
-            return res.status(400).json({ error: 'User ID required' });
+            console.log('❌ No user ID found in session, headers, or active sessions');
+            return res.status(400).json({ error: 'User ID required - please log in' });
         }
         
+        console.log('🔍 Looking up user with ID:', targetUserId);
         const user = await db.collection('users').findOne(
             { _id: new ObjectId(targetUserId) },
             { projection: { password: 0 } }
         );
         
         if (!user) {
+            console.log('❌ User not found in database:', targetUserId);
             return res.status(404).json({ error: 'User not found' });
         }
         
+        console.log('✅ User profile found:', user.username);
         res.json({ user });
         
     } catch (error) {
