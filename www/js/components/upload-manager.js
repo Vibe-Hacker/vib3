@@ -314,42 +314,51 @@ class UploadManager {
         
         console.log('=== PAGE RESTORATION COMPLETE ===');
         
-        // Important: Restore video playback after upload completion
+        // Important: Restore video playback after upload completion with proper sequencing
         setTimeout(() => {
             console.log('Restoring video playback after upload completion');
             
-            // First try to restore the specific video that was playing
-            const videoRestored = this.restoreCurrentVideoState();
+            // First, ensure all videos are completely stopped to prevent conflicts
+            document.querySelectorAll('video').forEach(video => {
+                video.pause();
+                video.currentTime = 0;
+            });
             
-            if (!videoRestored) {
-                console.log('Could not restore specific video, using general restoration');
+            // Wait a bit for all videos to fully stop
+            setTimeout(() => {
+                // Now try to restore the specific video that was playing
+                const videoRestored = this.restoreCurrentVideoState();
                 
-                // Use the dedicated restoration function
-                if (window.restoreVideoPlaybackAfterUpload) {
-                    window.restoreVideoPlaybackAfterUpload();
-                } else {
-                    // Fallback to manual restoration
-                    const activeFeedTab = window.stateManager ? 
-                        window.stateManager.getState('ui.activeFeedTab') : 
-                        'foryou';
+                if (!videoRestored) {
+                    console.log('Could not restore specific video, using general restoration');
                     
-                    console.log(`Refreshing ${activeFeedTab} tab to restore videos`);
-                    
-                    if (window.switchFeedTab) {
-                        window.switchFeedTab(activeFeedTab);
-                    } else if (window.loadAllVideosForFeed) {
-                        window.loadAllVideosForFeed();
+                    // Use the dedicated restoration function
+                    if (window.restoreVideoPlaybackAfterUpload) {
+                        window.restoreVideoPlaybackAfterUpload();
+                    } else {
+                        // Fallback to manual restoration
+                        const activeFeedTab = window.stateManager ? 
+                            window.stateManager.getState('ui.activeFeedTab') : 
+                            'foryou';
+                        
+                        console.log(`Refreshing ${activeFeedTab} tab to restore videos`);
+                        
+                        if (window.switchFeedTab) {
+                            window.switchFeedTab(activeFeedTab);
+                        } else if (window.loadAllVideosForFeed) {
+                            window.loadAllVideosForFeed();
+                        }
                     }
                 }
-            }
-            
-            // Also refresh feed data to include the newly uploaded video
-            setTimeout(() => {
-                console.log('Reloading video feed to include new upload');
-                if (window.loadAllVideosForFeed) {
-                    window.loadAllVideosForFeed();
-                }
-            }, 1500);
+                
+                // Also refresh feed data to include the newly uploaded video
+                setTimeout(() => {
+                    console.log('Reloading video feed to include new upload');
+                    if (window.loadAllVideosForFeed) {
+                        window.loadAllVideosForFeed();
+                    }
+                }, 1500);
+            }, 100);
         }, 200);
         
         // Final verification of what's visible
@@ -479,12 +488,32 @@ class UploadManager {
                     block: 'center' 
                 });
                 
-                // Start playing the video after scroll
+                // Start playing the video after scroll with better error handling
                 setTimeout(() => {
                     if (window.stateManager && window.stateManager.getState('video.userHasInteracted')) {
-                        targetVideo.play().catch(e => {
-                            console.log('Could not autoplay restored video:', e);
-                        });
+                        // Use a more robust play method that handles interruptions
+                        const playVideo = async () => {
+                            try {
+                                // First ensure the video is not paused by other systems
+                                if (targetVideo.paused) {
+                                    const playPromise = targetVideo.play();
+                                    if (playPromise !== undefined) {
+                                        await playPromise;
+                                    }
+                                }
+                            } catch (error) {
+                                // Handle AbortError and other play interruptions gracefully
+                                if (error.name === 'AbortError') {
+                                    console.log('Video play was interrupted during restoration - this is normal');
+                                } else if (error.name === 'NotAllowedError') {
+                                    console.log('Autoplay not allowed - user interaction required');
+                                } else {
+                                    console.log('Could not autoplay restored video:', error.name, error.message);
+                                }
+                            }
+                        };
+                        
+                        playVideo();
                     }
                     
                     // Update state to track this as current video
