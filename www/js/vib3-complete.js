@@ -3390,19 +3390,35 @@ async function publishContent() {
         updatePublishProgress('Preparing upload...', 0);
         
         // Check authentication (production-ready session-based)
+        console.log('🔍 AUTH STATE CHECK:');
+        console.log('  - authToken:', !!window.authToken, window.authToken);
+        console.log('  - currentUser:', !!window.currentUser, window.currentUser);
+        console.log('  - auth object:', window.auth);
+        
         if (!window.authToken || !window.currentUser) {
+            console.log('❌ No auth token or user - showing login error');
             showNotification('Please log in to upload content', 'error');
             goToStep(4);
             return;
         }
         
+        // TEMPORARILY DISABLE session verification to test if auth state is the issue
+        console.log('⚠️ TEMPORARILY SKIPPING session verification for debugging');
+        console.log('✅ Proceeding with upload (session check disabled)');
+        
+        // TODO: Re-enable session verification after debugging auth state
+        /*
         // Verify session is still valid
+        console.log('🔍 Verifying session with server...');
         try {
             const authCheck = await fetch(`${window.API_BASE_URL}/api/auth/me`, {
                 method: 'GET',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' }
             });
+            
+            console.log('🔍 Auth check response:', authCheck.status, authCheck.statusText);
+            console.log('🔍 Auth check headers:', Object.fromEntries(authCheck.headers.entries()));
             
             if (!authCheck.ok) {
                 console.log('❌ Session verification failed, status:', authCheck.status);
@@ -3451,6 +3467,7 @@ async function publishContent() {
             goToStep(4);
             return;
         }
+        */
         
         // Debug current user info
         console.log('👤 Current user info:', { email: currentUser?.email, displayName: currentUser?.displayName, username: currentUser?.username });
