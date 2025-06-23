@@ -1326,6 +1326,29 @@
                 analyticsPage.insertBefore(testText, analyticsPage.firstChild);
                 console.log('🔴 Added red test header to analytics page');
                 
+                // Last resort: Add text directly to document body
+                const emergencyTest = document.createElement('div');
+                emergencyTest.innerHTML = `
+                    <h1>🚨 EMERGENCY ANALYTICS TEST 🚨</h1>
+                    <p>Total Videos: ${data.totalVideos}</p>
+                    <p>Avg Engagement: ${data.engagementStats.avgScore.toFixed(2)}</p>
+                    <p>Algorithm Version: ${data.algorithmVersion}</p>
+                `;
+                emergencyTest.style.cssText = `
+                    position: fixed !important;
+                    top: 50px !important;
+                    left: 250px !important;
+                    background: #ff0000 !important;
+                    color: #ffffff !important;
+                    padding: 20px !important;
+                    border: 5px solid #ffffff !important;
+                    z-index: 999999 !important;
+                    font-size: 18px !important;
+                    width: 400px !important;
+                `;
+                document.body.appendChild(emergencyTest);
+                console.log('🚨 Emergency test added to body');
+                
                 // Log the actual computed styles to see what browser thinks
                 const computedStyles = window.getComputedStyle(analyticsPage);
                 console.log('🖥️ Browser computed styles for analytics page:', {
