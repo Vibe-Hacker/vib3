@@ -1257,17 +1257,18 @@
                         computed: window.getComputedStyle(analyticsPage).display
                     });
                     
-                    // Force visible styling with lighter analytics theme for debugging
+                    // Force visible styling with proper positioning
                     analyticsPage.style.display = 'block';
                     analyticsPage.style.backgroundColor = '#2a2a2a'; // Lighter dark background
                     analyticsPage.style.color = '#ffffff'; // White text
-                    analyticsPage.style.zIndex = '9999';
-                    analyticsPage.style.position = 'fixed';
+                    analyticsPage.style.zIndex = '99999';
+                    analyticsPage.style.position = 'absolute';
                     analyticsPage.style.top = '0';
                     analyticsPage.style.left = '240px'; // Account for sidebar
                     analyticsPage.style.width = 'calc(100vw - 240px)';
                     analyticsPage.style.height = '100vh';
                     analyticsPage.style.overflow = 'auto';
+                    analyticsPage.style.boxSizing = 'border-box';
                     
                     console.log('📊 Analytics page forced visible with proper styling');
                     console.log('📊 Analytics page new style:', {
