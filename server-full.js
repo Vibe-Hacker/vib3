@@ -2704,6 +2704,11 @@ app.post('/api/admin/cleanup-likes', async (req, res) => {
     }
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`VIB3 Full server running on port ${PORT}`);
