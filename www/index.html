@@ -1307,6 +1307,39 @@
                 });
                 console.log('📋 Styled', headers.length, 'headers');
                 
+                // Add a simple test text at the very top
+                const testText = document.createElement('div');
+                testText.innerHTML = '🔴 ANALYTICS DASHBOARD - IF YOU SEE THIS, STYLING IS WORKING 🔴';
+                testText.style.cssText = `
+                    background: #ff0000;
+                    color: #ffffff;
+                    font-size: 24px;
+                    font-weight: bold;
+                    text-align: center;
+                    padding: 20px;
+                    margin: 20px;
+                    border: 5px solid #ffffff;
+                    position: relative;
+                    z-index: 10000;
+                `;
+                analyticsPage.insertBefore(testText, analyticsPage.firstChild);
+                console.log('🔴 Added red test header to analytics page');
+                
+                // Log the actual computed styles to see what browser thinks
+                const computedStyles = window.getComputedStyle(analyticsPage);
+                console.log('🖥️ Browser computed styles for analytics page:', {
+                    display: computedStyles.display,
+                    visibility: computedStyles.visibility,
+                    opacity: computedStyles.opacity,
+                    zIndex: computedStyles.zIndex,
+                    position: computedStyles.position,
+                    top: computedStyles.top,
+                    left: computedStyles.left,
+                    width: computedStyles.width,
+                    height: computedStyles.height,
+                    backgroundColor: computedStyles.backgroundColor
+                });
+                
                 // Check for overlapping elements and hide them
                 console.log('🔍 Checking for overlapping pages...');
                 const allPages = document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page');
