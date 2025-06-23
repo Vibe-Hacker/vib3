@@ -40,6 +40,85 @@ const BUCKET_NAME = process.env.DO_SPACES_BUCKET || 'vib3-videos';
 // Initialize video processor
 const videoProcessor = new VideoProcessor();
 
+// Engagement-based ranking algorithm for For You feed
+async function applyEngagementRanking(videos, db) {
+    console.log(`📊 Calculating engagement scores for ${videos.length} videos`);
+    
+    // Calculate engagement metrics for each video
+    for (const video of videos) {
+        try {
+            // Get engagement data
+            const likeCount = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
+            const commentCount = await db.collection('comments').countDocuments({ videoId: video._id.toString() });
+            const shareCount = await db.collection('shares').countDocuments({ videoId: video._id.toString() });
+            const views = video.views || 0;
+            
+            // Time factors
+            const now = new Date();
+            const createdAt = new Date(video.createdAt);
+            const hoursOld = (now - createdAt) / (1000 * 60 * 60);
+            const daysOld = hoursOld / 24;
+            
+            // Engagement ratios (prevent division by zero)
+            const likeRate = views > 0 ? likeCount / views : 0;
+            const commentRate = views > 0 ? commentCount / views : 0;
+            const shareRate = views > 0 ? shareCount / views : 0;
+            
+            // View velocity (views per hour)
+            const viewVelocity = hoursOld > 0 ? views / hoursOld : views;
+            
+            // Recency decay (newer content gets higher score)
+            const recencyBoost = Math.exp(-daysOld / 3); // Decays over ~3 days
+            
+            // Engagement score calculation
+            let engagementScore = 0;
+            
+            // Base engagement (40% of score)
+            engagementScore += (likeRate * 100) * 0.25;        // Like engagement
+            engagementScore += (commentRate * 200) * 0.10;     // Comment engagement (worth 2x likes)
+            engagementScore += (shareRate * 300) * 0.05;       // Share engagement (worth 3x likes)
+            
+            // View velocity (30% of score)
+            engagementScore += Math.log(viewVelocity + 1) * 0.30;
+            
+            // Recency boost (20% of score)
+            engagementScore += recencyBoost * 0.20;
+            
+            // Total engagement boost (10% of score)
+            const totalEngagement = likeCount + commentCount + shareCount;
+            engagementScore += Math.log(totalEngagement + 1) * 0.10;
+            
+            // Store metrics on video object
+            video.engagementScore = engagementScore;
+            video.likeCount = likeCount;
+            video.commentCount = commentCount;
+            video.shareCount = shareCount;
+            video.likeRate = likeRate;
+            video.commentRate = commentRate;
+            video.viewVelocity = viewVelocity;
+            video.hoursOld = hoursOld;
+            
+            if (video.title && video.title.includes('test')) {
+                console.log(`📈 ${video.title}: score=${engagementScore.toFixed(2)}, likes=${likeCount}, views=${views}, velocity=${viewVelocity.toFixed(1)}/hr`);
+            }
+            
+        } catch (error) {
+            console.error('Error calculating engagement for video:', video._id, error);
+            video.engagementScore = 0;
+            video.likeCount = 0;
+            video.commentCount = 0;
+            video.shareCount = 0;
+        }
+    }
+    
+    // Sort by engagement score (highest first)
+    videos.sort((a, b) => b.engagementScore - a.engagementScore);
+    
+    console.log(`📊 Top 3 engagement scores: ${videos.slice(0, 3).map(v => v.engagementScore?.toFixed(2)).join(', ')}`);
+    
+    return videos;
+}
+
 // Configure multer for video uploads with enhanced format support
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -569,14 +648,25 @@ app.get('/api/videos', async (req, res) => {
                 break;
                 
             default:
-                // Default to For You algorithm - show all users' videos
+                // For You algorithm with engagement-based ranking
+                console.log('🤖 For You Algorithm: Engagement-based ranking');
                 query = { status: { $ne: 'deleted' } };
+                
+                // Get more videos than needed for better ranking algorithm
+                const algorithmLimit = Math.max(parseInt(limit) * 3, 50);
                 videos = await db.collection('videos')
                     .find(query)
                     .sort({ createdAt: -1 })
-                    .skip(actualSkip)
-                    .limit(parseInt(limit))
+                    .limit(algorithmLimit)
                     .toArray();
+                
+                // Apply engagement-based ranking
+                videos = await applyEngagementRanking(videos, db);
+                
+                // Apply pagination after ranking
+                const startIndex = actualSkip;
+                const endIndex = startIndex + parseInt(limit);
+                videos = videos.slice(startIndex, endIndex);
         }
             
         console.log(`Fetching page ${page}, skip: ${actualSkip}, limit: ${limit}`);
