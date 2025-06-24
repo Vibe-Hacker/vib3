@@ -11261,14 +11261,75 @@ async function loadUserVideosGrid(userId) {
 }
 
 function playVideoFromProfile(videoId) {
-    // Close the profile modal and navigate to the video
-    const modal = document.getElementById('userProfileModal');
-    if (modal) modal.remove();
+    console.log(`🎬 Playing video from profile: ${videoId}`);
     
-    // Find and scroll to the video in the feed
-    const videoCard = document.querySelector(`[data-video-id="${videoId}"]`);
-    if (videoCard) {
-        videoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Close the profile page and go back to main feed
+    const profilePage = document.getElementById('profilePage');
+    if (profilePage) {
+        profilePage.remove();
+    }
+    
+    // Navigate to For You page and find the video
+    showPage('foryou');
+    
+    // Wait a moment for the feed to load, then try to find and play the video
+    setTimeout(() => {
+        const videoCard = document.querySelector(`[data-video-id="${videoId}"]`);
+        if (videoCard) {
+            console.log(`✅ Found video in feed, scrolling to it`);
+            videoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Try to play the video
+            const video = videoCard.querySelector('video');
+            if (video) {
+                video.play().catch(e => console.log('Video play failed:', e));
+            }
+        } else {
+            console.log(`❌ Video not found in current feed, loading it...`);
+            // If video not in current feed, we could implement specific video loading here
+            showNotification('Loading video...', 'info');
+            loadSpecificVideo(videoId);
+        }
+    }, 500);
+}
+
+async function loadSpecificVideo(videoId) {
+    try {
+        // Fetch the specific video data
+        const response = await fetch(`${API_BASE_URL}/api/videos/${videoId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
+        
+        if (response.ok) {
+            const video = await response.json();
+            console.log(`📹 Loaded specific video:`, video);
+            
+            // Add this video to the top of the feed
+            const feedContainer = document.getElementById('foryouFeed');
+            if (feedContainer) {
+                const videoCard = createAdvancedVideoCard(video);
+                feedContainer.insertAdjacentElement('afterbegin', videoCard);
+                
+                // Scroll to and play the new video
+                setTimeout(() => {
+                    const newVideoCard = document.querySelector(`[data-video-id="${videoId}"]`);
+                    if (newVideoCard) {
+                        newVideoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        const videoElement = newVideoCard.querySelector('video');
+                        if (videoElement) {
+                            videoElement.play().catch(e => console.log('Video play failed:', e));
+                        }
+                    }
+                }, 100);
+            }
+        } else {
+            showNotification('Video not found', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading specific video:', error);
+        showNotification('Error loading video', 'error');
     }
 }
 

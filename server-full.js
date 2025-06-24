@@ -2323,6 +2323,47 @@ app.get('/api/posts', async (req, res) => {
     }
 });
 
+// Get single video by ID
+app.get('/api/videos/:videoId', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { videoId } = req.params;
+    
+    try {
+        const video = await db.collection('videos').findOne(
+            { _id: new ObjectId(videoId), status: { $ne: 'deleted' } }
+        );
+        
+        if (!video) {
+            return res.status(404).json({ error: 'Video not found' });
+        }
+        
+        // Get user info
+        const user = await db.collection('users').findOne(
+            { _id: new ObjectId(video.userId) },
+            { projection: { password: 0 } }
+        );
+        
+        if (user) {
+            video.user = user;
+            video.username = user.username || user.displayName || 'anonymous';
+        }
+        
+        // Get engagement counts
+        video.likeCount = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
+        video.commentCount = await db.collection('comments').countDocuments({ videoId: video._id.toString() });
+        video.views = video.views || 0;
+        
+        res.json(video);
+        
+    } catch (error) {
+        console.error('Get single video error:', error);
+        res.status(500).json({ error: 'Failed to get video' });
+    }
+});
+
 // Get user's videos for profile page
 app.get('/api/user/videos', async (req, res) => {
     if (!db) {
