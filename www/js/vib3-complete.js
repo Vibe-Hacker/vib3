@@ -8251,6 +8251,13 @@ function selectMentionDash(videoId, username) {
 }
 
 function handleMentionKeyDownDash(event, videoId) {
+    // Handle Enter key for comment submission when dropdown is not open
+    if (event.key === 'Enter' && !mentionDropdownOpen) {
+        event.preventDefault();
+        submitComment(videoId);
+        return;
+    }
+    
     if (!mentionDropdownOpen) return;
     
     const dropdown = document.getElementById(`mentionDropdownDash-${videoId}`);
