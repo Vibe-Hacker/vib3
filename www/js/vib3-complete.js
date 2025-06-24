@@ -5185,6 +5185,19 @@ function refreshForYou() {
 function performSearch(query) {
     if (!query || !query.trim()) return;
     
+    console.log(`🔍 Performing search for: "${query}"`);
+    
+    // Check if searching for a specific user with @
+    if (query.startsWith('@')) {
+        const username = query.substring(1);
+        console.log(`👤 Searching for user: ${username}`);
+        showNotification(`Looking for @${username}...`, 'info');
+        
+        // Try to find and navigate to user profile
+        searchAndNavigateToUser(username);
+        return;
+    }
+    
     showNotification(`Searching for: ${query}`, 'info');
     showPage('search');
     
@@ -5208,13 +5221,13 @@ function performSearch(query) {
                             <div class="video-stats">2.3M views • @dancer_pro</div>
                         </div>
                     </div>
-                    <div class="search-item user-result">
+                    <div class="search-item user-result" onclick="searchAndNavigateToUser('${query}')">
                         <div class="user-avatar">👤</div>
                         <div class="user-info">
                             <div class="user-name">${query}_official</div>
                             <div class="user-stats">1.2M followers</div>
                         </div>
-                        <button class="follow-btn" onclick="toggleFollow('${query}_official')">Follow</button>
+                        <button class="follow-btn" onclick="event.stopPropagation(); toggleFollow('${query}_official')">Follow</button>
                     </div>
                     <div class="search-item hashtag-result">
                         <div class="hashtag-icon">#</div>
@@ -5226,6 +5239,45 @@ function performSearch(query) {
                 </div>
             </div>
         `;
+    }
+}
+
+async function searchAndNavigateToUser(username) {
+    console.log(`🔍 Searching for user: ${username}`);
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/users/search?q=${encodeURIComponent(username)}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
+        
+        if (response.ok) {
+            const users = await response.json();
+            console.log(`📋 Found ${users.length} users matching: ${username}`);
+            
+            // Find exact username match
+            const exactMatch = users.find(user => user.username.toLowerCase() === username.toLowerCase());
+            
+            if (exactMatch) {
+                console.log(`✅ Found exact match: ${exactMatch.username} (${exactMatch._id})`);
+                showNotification(`Found @${exactMatch.username}!`, 'success');
+                viewUserProfile(exactMatch._id);
+            } else if (users.length > 0) {
+                console.log(`📋 No exact match, showing first result: ${users[0].username}`);
+                showNotification(`Found @${users[0].username}`, 'success');
+                viewUserProfile(users[0]._id);
+            } else {
+                console.log(`❌ No users found for: ${username}`);
+                showNotification(`No user found with username: @${username}`, 'error');
+            }
+        } else {
+            console.log(`❌ Search failed with status: ${response.status}`);
+            showNotification('Search failed. Please try again.', 'error');
+        }
+    } catch (error) {
+        console.error('Error searching for user:', error);
+        showNotification('Error searching for user. Please try again.', 'error');
     }
 }
 
