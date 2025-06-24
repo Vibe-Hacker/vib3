@@ -5189,7 +5189,7 @@ function performSearch(query) {
     
     // Check if searching for a specific user with @
     if (query.startsWith('@')) {
-        const username = query.substring(1);
+        const username = query.substring(1).trim();
         console.log(`👤 Searching for user: ${username}`);
         showNotification(`Looking for @${username}...`, 'info');
         
