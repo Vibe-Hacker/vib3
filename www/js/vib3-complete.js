@@ -10859,11 +10859,17 @@ async function showUserProfile(userId) {
     document.body.appendChild(modal);
     
     try {
-        // Fetch user data
-        const response = await fetch(`${API_BASE_URL}/api/users/${userId}`);
+        // Fetch user data with proper authentication
+        const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+            headers: {
+                'Authorization': `Bearer ${window.authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
         if (!response.ok) throw new Error('User not found');
         
         const userData = await response.json();
+        console.log('👤 User profile data received:', userData);
         
         // Update modal with user profile
         modal.innerHTML = `
