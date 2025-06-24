@@ -10807,15 +10807,17 @@ function viewUserProfile(userId) {
         return;
     }
     
+    console.log(`👤 Viewing profile for userId: ${userId}`);
+    console.log(`👤 Current user ID: ${currentUser?._id}`);
+    
     if (userId === currentUser?._id) {
         // Navigate to own profile page
+        console.log('📱 Showing own profile page');
         showPage('profile');
     } else {
-        // For other users, also navigate to their profile (not modal)
-        // In a full app, this would show their profile page
-        // For now, just navigate to profile page
-        showPage('profile');
-        showNotification(`Viewing ${userId}'s profile`, 'info');
+        // Show other user's profile in modal
+        console.log('📱 Showing other user profile modal');
+        showUserProfile(userId);
     }
 }
 
