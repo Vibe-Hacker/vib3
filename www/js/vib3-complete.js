@@ -396,6 +396,12 @@ function initializeVideoObserver() {
         entries.forEach(entry => {
             const video = entry.target;
             if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
+                // Don't auto-play videos in profile video feed
+                const profileFeed = document.getElementById('profileVideoFeed');
+                if (profileFeed && profileFeed.contains(video)) {
+                    return; // Let profile video observer handle this
+                }
+                
                 // Clear manual play flags from all other videos when a new video comes into view
                 document.querySelectorAll('video[data-manual-play]').forEach(v => {
                     if (v !== video) {
@@ -415,6 +421,12 @@ function initializeVideoObserver() {
                     }
                 }
             } else {
+                // Don't pause videos in profile video feed
+                const profileFeed = document.getElementById('profileVideoFeed');
+                if (profileFeed && profileFeed.contains(video)) {
+                    return; // Let profile video observer handle this
+                }
+                
                 // Only pause if not manually playing and not manually selected
                 if (!video.hasAttribute('data-manually-paused') && !video.hasAttribute('data-manual-play')) {
                     video.pause();
@@ -11334,8 +11346,15 @@ async function createProfileVideoFeed(userId, startVideoId) {
     `;
     backButton.innerHTML = '← Back to Profile';
     backButton.onclick = () => {
+        // Clean up the profile video observer
+        if (window.profileVideoObserver) {
+            window.profileVideoObserver.disconnect();
+            window.profileVideoObserver = null;
+        }
+        
         feedContainer.remove();
         backButton.remove();
+        
         // Re-open the profile page
         if (window.currentProfileContext?.userId) {
             showProfilePage(window.currentProfileContext.userId);
@@ -11390,15 +11409,15 @@ async function createProfileVideoFeed(userId, startVideoId) {
             console.log(`➕ Added profile video ${index + 1}: ${video.title || 'Untitled'}`);
         });
         
-        // Initialize video observer
+        // Initialize video observer for the profile feed
         setTimeout(() => {
-            initializeVideoObserver();
+            initializeProfileVideoObserver(feedContainer);
             
             // Auto-play the first video (selected video)
             const firstVideo = feedContainer.querySelector('video');
             if (firstVideo) {
                 firstVideo.play().catch(e => console.log('Auto-play failed:', e));
-                firstVideo.setAttribute('data-manual-play', 'true');
+                console.log('🎬 Starting profile video playback');
             }
         }, 200);
         
@@ -11408,6 +11427,90 @@ async function createProfileVideoFeed(userId, startVideoId) {
         console.error('Error creating profile video feed:', error);
         feedContainer.innerHTML = '<div style="padding: 50px; text-align: center; color: white;"><p>Error loading videos</p></div>';
     }
+}
+
+function initializeProfileVideoObserver(feedContainer) {
+    console.log('🔧 Initializing profile video observer');
+    
+    // Disconnect existing observer if any
+    if (window.profileVideoObserver) {
+        window.profileVideoObserver.disconnect();
+        window.profileVideoObserver = null;
+    }
+    
+    const profileVideoObserver = window.profileVideoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const video = entry.target;
+            if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
+                // Pause all other videos in the profile feed first
+                feedContainer.querySelectorAll('video').forEach(v => {
+                    if (v !== video && !v.paused) {
+                        v.pause();
+                        console.log('⏸️ Pausing other profile video:', v.src.split('/').pop());
+                    }
+                });
+                
+                // Play the current video
+                video.play().catch(e => console.log('Profile video play failed:', e));
+                console.log('🎬 Auto-playing profile video:', video.src.split('/').pop());
+                
+                // Track video view start
+                const videoCard = video.closest('.video-card');
+                if (videoCard && videoCard.videoData) {
+                    startVideoTracking(videoCard.videoData._id, video);
+                }
+            } else if (!entry.isIntersecting) {
+                // Pause when out of view
+                if (!video.paused) {
+                    video.pause();
+                    console.log('⏸️ Auto-pausing profile video (out of view):', video.src.split('/').pop());
+                }
+            }
+        });
+    }, {
+        threshold: [0, 0.7, 1],
+        rootMargin: '-10% 0px -10% 0px',
+        root: feedContainer
+    });
+    
+    // Setup all videos in the profile feed
+    const videos = feedContainer.querySelectorAll('video');
+    videos.forEach((video, index) => {
+        console.log(`🔧 Setting up profile video ${index + 1}:`, video.src.split('/').pop());
+        
+        // Force video properties
+        video.muted = false;
+        video.volume = 0.8;
+        video.loop = true;
+        video.controls = false;
+        video.playsInline = true;
+        video.preload = 'metadata';
+        
+        // Remove any existing manual play flags
+        video.removeAttribute('data-manual-play');
+        video.removeAttribute('data-manually-paused');
+        
+        // Observe this video
+        profileVideoObserver.observe(video);
+        
+        // Add click handler for manual pause/play
+        video.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (this.paused) {
+                this.play().catch(e => console.log('Manual play failed:', e));
+                this.removeAttribute('data-manually-paused');
+                console.log('▶️ Manual play:', this.src.split('/').pop());
+            } else {
+                this.pause();
+                this.setAttribute('data-manually-paused', 'true');
+                console.log('⏸️ Manual pause:', this.src.split('/').pop());
+            }
+        });
+    });
+    
+    console.log(`✅ Profile video observer initialized for ${videos.length} videos`);
 }
 
 // This function is now only used for fallback when video not found in main feed
