@@ -3945,8 +3945,33 @@ app.get('/api/users/:userId', async (req, res) => {
     }
     
     const { userId } = req.params;
+    console.log(`👤 API: Getting user profile for ID: ${userId}`);
+    
+    // Handle demo users (IDs 1-5)
+    if (['1', '2', '3', '4', '5'].includes(userId)) {
+        console.log(`🎭 Returning demo user data for ID: ${userId}`);
+        const demoUsers = {
+            '1': { _id: '1', username: 'demo_user', displayName: 'Demo User', profilePicture: '👤' },
+            '2': { _id: '2', username: 'test_creator', displayName: 'Test Creator', profilePicture: '🎬' },
+            '3': { _id: '3', username: 'vib3_official', displayName: 'VIB3 Official', profilePicture: '✨' },
+            '4': { _id: '4', username: 'creator_oldergenx', displayName: 'Creator Oldergenx', profilePicture: '🎯' },
+            '5': { _id: '5', username: 'oldergenx_user', displayName: 'Oldergenx User', profilePicture: '🎪' }
+        };
+        
+        const demoUser = demoUsers[userId];
+        if (demoUser) {
+            demoUser.stats = {
+                followers: Math.floor(Math.random() * 50000) + 1000,
+                following: Math.floor(Math.random() * 1000) + 100,
+                likes: Math.floor(Math.random() * 100000) + 5000,
+                videos: Math.floor(Math.random() * 50) + 10
+            };
+            return res.json(demoUser);
+        }
+    }
     
     try {
+        // Try to find real user with ObjectId
         const user = await db.collection('users').findOne(
             { _id: new ObjectId(userId) },
             { projection: { password: 0 } }
