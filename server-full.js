@@ -3920,6 +3920,28 @@ app.get('/api/user/following', requireAuth, async (req, res) => {
     }
 });
 
+// Check follow status
+app.get('/api/users/:userId/follow-status', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { userId } = req.params;
+    
+    try {
+        const followRecord = await db.collection('follows').findOne({
+            followerId: req.user.userId,
+            followingId: userId
+        });
+        
+        res.json({ isFollowing: !!followRecord });
+        
+    } catch (error) {
+        console.error('Check follow status error:', error);
+        res.status(500).json({ error: 'Failed to check follow status' });
+    }
+});
+
 // Get user profile
 app.get('/api/users/:userId', async (req, res) => {
     if (!db) {

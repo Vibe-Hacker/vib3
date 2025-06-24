@@ -10818,6 +10818,12 @@ function viewUserProfile(userId) {
 async function showProfilePage(userId) {
     console.log(`📄 Creating profile page for user: ${userId}`);
     
+    // Pause all videos first
+    document.querySelectorAll('video').forEach(video => {
+        video.pause();
+        video.currentTime = 0;
+    });
+    
     // Remove existing profile page
     const existingProfile = document.getElementById('profilePage');
     if (existingProfile) {
@@ -10887,7 +10893,7 @@ async function showProfilePage(userId) {
                     </div>
                     ${isOwnProfile ? 
                         `<button onclick="editProfile()" style="background: #fe2c55; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">Edit Profile</button>` :
-                        `<button onclick="toggleFollow('${userId}')" style="background: #fe2c55; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">Follow</button>`
+                        `<button id="profileFollowBtn" onclick="handleProfileFollow('${userId}', '@${userData.username}')" style="background: #fe2c55; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">Follow</button>`
                     }
                 </div>
                 
@@ -10902,6 +10908,11 @@ async function showProfilePage(userId) {
         
         // Load user's videos
         loadProfileVideos(userId);
+        
+        // Check follow status if not own profile
+        if (!isOwnProfile) {
+            checkProfileFollowStatus(userId);
+        }
         
     } catch (error) {
         console.error('Error loading profile:', error);
@@ -10967,6 +10978,67 @@ async function loadProfileVideos(userId) {
         
     } catch (error) {
         console.error('Error loading profile videos:', error);
+    }
+}
+
+async function checkProfileFollowStatus(userId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/users/${userId}/follow-status`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const followBtn = document.getElementById('profileFollowBtn');
+            if (followBtn) {
+                if (data.isFollowing) {
+                    followBtn.textContent = 'Following';
+                    followBtn.style.background = '#666';
+                } else {
+                    followBtn.textContent = 'Follow';
+                    followBtn.style.background = '#fe2c55';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error checking follow status:', error);
+    }
+}
+
+async function handleProfileFollow(userId, username) {
+    const followBtn = document.getElementById('profileFollowBtn');
+    if (!followBtn) return;
+    
+    const isCurrentlyFollowing = followBtn.textContent === 'Following';
+    
+    try {
+        const endpoint = isCurrentlyFollowing ? 'unfollow' : 'follow';
+        const response = await fetch(`${API_BASE_URL}/api/users/${userId}/${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            if (isCurrentlyFollowing) {
+                followBtn.textContent = 'Follow';
+                followBtn.style.background = '#fe2c55';
+                showNotification(`Unfollowed ${username}`, 'info');
+            } else {
+                followBtn.textContent = 'Following';
+                followBtn.style.background = '#666';
+                showNotification(`Now following ${username}!`, 'success');
+            }
+        } else {
+            throw new Error('Follow action failed');
+        }
+    } catch (error) {
+        console.error('Error handling follow:', error);
+        showNotification('Unable to follow/unfollow user', 'error');
     }
 }
 
