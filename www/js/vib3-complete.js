@@ -10810,14 +10810,163 @@ function viewUserProfile(userId) {
     console.log(`👤 Viewing profile for userId: ${userId}`);
     console.log(`👤 Current user ID: ${currentUser?._id}`);
     
-    if (userId === currentUser?._id) {
-        // Navigate to own profile page
-        console.log('📱 Showing own profile page');
-        showPage('profile');
-    } else {
-        // Show other user's profile in modal
-        console.log('📱 Showing other user profile modal');
-        showUserProfile(userId);
+    // Always navigate to full profile page for any user
+    console.log('📱 Showing full profile page');
+    showProfilePage(userId);
+}
+
+async function showProfilePage(userId) {
+    console.log(`📄 Creating profile page for user: ${userId}`);
+    
+    // Remove existing profile page
+    const existingProfile = document.getElementById('profilePage');
+    if (existingProfile) {
+        existingProfile.remove();
+    }
+    
+    // Create new profile page
+    const profilePage = document.createElement('div');
+    profilePage.id = 'profilePage';
+    profilePage.className = 'profile-page';
+    profilePage.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 240px; 
+        width: calc(100vw - 240px); 
+        height: 100vh; 
+        overflow-y: auto;
+        background: #161823;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        z-index: 1000;
+        display: block;
+    `;
+    
+    // Show loading state
+    profilePage.innerHTML = `
+        <div style="padding: 50px; text-align: center; color: white;">
+            <div class="spinner" style="margin: 50px auto;"></div>
+            <p>Loading profile...</p>
+        </div>
+    `;
+    
+    document.body.appendChild(profilePage);
+    
+    try {
+        // Fetch user data
+        const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) throw new Error('User not found');
+        
+        const userData = await response.json();
+        console.log('👤 Profile page user data:', userData);
+        
+        const isOwnProfile = userId === currentUser?._id;
+        
+        // Update with actual profile content
+        profilePage.innerHTML = `
+            <div style="padding: 50px; text-align: center; color: white;">
+                <h1 style="color: #fe2c55; font-size: 48px; margin-bottom: 20px;">
+                    🎵 VIB3 PROFILE 🎵
+                </h1>
+                <div style="background: #333; padding: 30px; border-radius: 15px; margin: 20px auto; max-width: 600px;">
+                    <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #fe2c55, #ff006e); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 48px;">
+                        ${userData.profilePicture || '👤'}
+                    </div>
+                    <h2 style="color: white; margin-bottom: 10px;">@${userData.username || 'user'}</h2>
+                    <p style="color: #ccc; margin-bottom: 20px;">${userData.bio || userData.displayName || 'No bio yet'}</p>
+                    <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 20px;">
+                        <div><strong style="color: white;">${formatCount(userData.stats?.following || 0)}</strong> <span style="color: #ccc;">following</span></div>
+                        <div><strong style="color: white;">${formatCount(userData.stats?.followers || 0)}</strong> <span style="color: #ccc;">followers</span></div>
+                        <div><strong style="color: white;">${formatCount(userData.stats?.likes || 0)}</strong> <span style="color: #ccc;">likes</span></div>
+                    </div>
+                    ${isOwnProfile ? 
+                        `<button onclick="editProfile()" style="background: #fe2c55; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">Edit Profile</button>` :
+                        `<button onclick="toggleFollow('${userId}')" style="background: #fe2c55; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">Follow</button>`
+                    }
+                </div>
+                
+                <div style="margin-top: 40px;">
+                    <h3 style="color: white; margin-bottom: 20px;">Videos</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; max-width: 800px; margin: 0 auto;" id="profileVideosGrid">
+                        <!-- Videos will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Load user's videos
+        loadProfileVideos(userId);
+        
+    } catch (error) {
+        console.error('Error loading profile:', error);
+        profilePage.innerHTML = `
+            <div style="padding: 50px; text-align: center; color: white;">
+                <h2 style="color: #fe2c55;">Profile Not Found</h2>
+                <p>Unable to load this user's profile.</p>
+                <button onclick="showPage('foryou')" style="background: #fe2c55; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">Go Back</button>
+            </div>
+        `;
+    }
+}
+
+async function loadProfileVideos(userId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/user/videos?userId=${userId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
+        
+        const data = await response.json();
+        const videos = data.videos || [];
+        
+        const grid = document.getElementById('profileVideosGrid');
+        if (!grid) return;
+        
+        if (videos.length === 0) {
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No videos yet</p>';
+            return;
+        }
+        
+        grid.innerHTML = videos.map(video => `
+            <div style="
+                aspect-ratio: 9/16;
+                background: #000;
+                position: relative;
+                cursor: pointer;
+                overflow: hidden;
+                border-radius: 8px;
+            " onclick="playVideoFromProfile('${video._id}')">
+                <video src="${video.videoUrl}" style="
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                "></video>
+                <div style="
+                    position: absolute;
+                    bottom: 5px;
+                    left: 5px;
+                    color: white;
+                    font-size: 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+                ">
+                    <span>▶</span>
+                    <span>${formatCount(video.views || 0)}</span>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading profile videos:', error);
     }
 }
 
