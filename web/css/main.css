@@ -1,0 +1,38 @@
+/* VIB3 Main CSS File */
+
+/* Base Styles */
+@import 'themes/variables.css';
+@import 'base/reset.css';
+
+/* Layouts */
+@import 'layouts/app-container.css';
+@import 'layouts/responsive.css';
+
+/* Components */
+@import 'components/auth.css';
+@import 'components/sidebar.css';
+@import 'components/navigation.css';
+@import 'components/video-feed.css';
+@import 'components/video-item.css';
+@import 'components/video-actions.css';
+@import 'components/theme-selector.css';
+@import 'components/modals.css';
+@import 'components/duetStitch.css';
+@import 'components/liveStream.css';
+@import 'components/musicLibrary.css';
+@import 'components/videoEditor.css';
+@import 'components/analytics.css';
+
+/* Pages */
+@import 'pages/profile.css';
+@import 'pages/search.css';
+@import 'pages/messages.css';
+@import 'pages/settings.css';
+@import 'pages/activity.css';
+
+/* Utilities */
+@import 'utils/animations.css';
+@import 'utils/utilities.css';
+
+/* Fixes */
+@import 'fixes/video-feed-visibility.css';

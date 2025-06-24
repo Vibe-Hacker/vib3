@@ -699,7 +699,11 @@ function calculateQuartileRetention(views, quartile) {
 }
 
 // Serve static files (AFTER API routes)
-app.use(express.static(path.join(__dirname, 'www')));
+// Route mobile app requests to app directory
+app.use('/app', express.static(path.join(__dirname, 'app')));
+
+// Route web requests to web directory (default)
+app.use(express.static(path.join(__dirname, 'web')));
 
 // DigitalOcean Spaces configuration
 const spacesEndpoint = new AWS.Endpoint(process.env.DO_SPACES_ENDPOINT || 'nyc3.digitaloceanspaces.com');

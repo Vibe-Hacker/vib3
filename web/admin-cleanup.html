@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIB3 Admin Cleanup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .warning {
+            background: rgba(255, 68, 68, 0.2);
+            border: 2px solid #ff4444;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .warning h2 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+        
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .section h3 {
+            margin-bottom: 15px;
+            color: #64b5f6;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 140px;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #ff4757, #ff3742);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(45deg, #ff3742, #ff2f3a);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+        }
+        
+        .btn-info {
+            background: linear-gradient(45deg, #3742fa, #2f3542);
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: linear-gradient(45deg, #2f3542, #2c2c54);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(55, 66, 250, 0.4);
+        }
+        
+        .btn-nuclear {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: white;
+            font-size: 18px;
+            padding: 15px 30px;
+        }
+        
+        .btn-nuclear:hover {
+            background: linear-gradient(45deg, #f7931e, #ff6b35);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 107, 53, 0.5);
+        }
+        
+        .results {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #64b5f6;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #64b5f6;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            color: #ccc;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 VIB3 Admin Cleanup</h1>
+        
+        <div class="warning">
+            <h2>⚠️ DANGER ZONE ⚠️</h2>
+            <p>These operations will permanently delete data from both the database and Digital Ocean storage.</p>
+            <p><strong>This action cannot be undone!</strong></p>
+        </div>
+        
+        <div class="section">
+            <h3>📊 Current System Status</h3>
+            <div class="button-group">
+                <button class="btn btn-info" onclick="getStatus()">Refresh Status</button>
+            </div>
+            <div id="statusResults" class="results" style="display: none;"></div>
+            <div id="statsDisplay" class="stats"></div>
+        </div>
+        
+        <div class="section">
+            <h3>🎥 Video Cleanup</h3>
+            <p>Delete all videos from database and storage</p>
+            <div class="button-group">
+                <button class="btn btn-danger" onclick="cleanupVideos()">Delete All Videos</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>📸 Posts Cleanup</h3>
+            <p>Delete all photo posts and slideshows from database and storage</p>
+            <div class="button-group">
+                <button class="btn btn-danger" onclick="cleanupPosts()">Delete All Posts</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>💥 Nuclear Option</h3>
+            <p>Complete system wipe - delete EVERYTHING (videos, posts, files, related data)</p>
+            <div class="button-group">
+                <button class="btn btn-nuclear" onclick="nuclearCleanup()">🚨 NUCLEAR CLEANUP 🚨</button>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing cleanup operation...</p>
+        </div>
+        
+        <div id="results" class="results" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? '' 
+            : 'https://vib3-production.up.railway.app';
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showResults(data) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.textContent = JSON.stringify(data, null, 2);
+            resultsDiv.style.display = 'block';
+            hideLoading();
+        }
+
+        function updateStats(stats) {
+            const statsDiv = document.getElementById('statsDisplay');
+            if (!stats || !stats.database) {
+                statsDiv.innerHTML = '<p>No statistics available</p>';
+                return;
+            }
+
+            const db = stats.database;
+            const storage = stats.storage;
+            
+            statsDiv.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${db.videos || 0}</div>
+                    <div class="stat-label">Videos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${db.posts || 0}</div>
+                    <div class="stat-label">Posts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${db.users || 0}</div>
+                    <div class="stat-label">Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${storage.totalFiles || 0}</div>
+                    <div class="stat-label">Storage Files</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${storage.totalSizeMB || 0} MB</div>
+                    <div class="stat-label">Storage Size</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${db.likes + db.comments + db.views || 0}</div>
+                    <div class="stat-label">Related Records</div>
+                </div>
+            `;
+        }
+
+        async function getStatus() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/cleanup/status`);
+                const data = await response.json();
+                
+                const statusDiv = document.getElementById('statusResults');
+                statusDiv.textContent = JSON.stringify(data, null, 2);
+                statusDiv.style.display = 'block';
+                
+                if (data.success && data.statistics) {
+                    updateStats(data.statistics);
+                }
+                
+                hideLoading();
+            } catch (error) {
+                showResults({ error: error.message });
+            }
+        }
+
+        async function cleanupVideos() {
+            if (!confirm('Are you sure you want to delete ALL videos? This cannot be undone!')) {
+                return;
+            }
+            
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/cleanup/videos`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                showResults(data);
+                
+                // Refresh status after cleanup
+                setTimeout(getStatus, 1000);
+            } catch (error) {
+                showResults({ error: error.message });
+            }
+        }
+
+        async function cleanupPosts() {
+            if (!confirm('Are you sure you want to delete ALL posts and photos? This cannot be undone!')) {
+                return;
+            }
+            
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/cleanup/posts`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                showResults(data);
+                
+                // Refresh status after cleanup
+                setTimeout(getStatus, 1000);
+            } catch (error) {
+                showResults({ error: error.message });
+            }
+        }
+
+        async function nuclearCleanup() {
+            const confirmText = 'NUCLEAR CLEANUP';
+            const userInput = prompt(`This will delete EVERYTHING! Type "${confirmText}" to confirm:`);
+            
+            if (userInput !== confirmText) {
+                alert('Cleanup cancelled - incorrect confirmation text.');
+                return;
+            }
+            
+            if (!confirm('Last chance! Are you absolutely sure you want to delete EVERYTHING?')) {
+                return;
+            }
+            
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/cleanup/all`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                showResults(data);
+                
+                // Refresh status after cleanup
+                setTimeout(getStatus, 2000);
+            } catch (error) {
+                showResults({ error: error.message });
+            }
+        }
+
+        // Load initial status
+        window.addEventListener('load', getStatus);
+    </script>
+</body>
+</html>

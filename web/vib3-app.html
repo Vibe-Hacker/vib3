@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIB3 - Video Social App</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div class="auth-container" id="authContainer">
+        <div class="auth-form">
+            <h2>Welcome to VIB3</h2>
+            <div class="auth-error" id="authError"></div>
+            <div class="auth-loading" id="authLoading">Loading...</div>
+            <div id="loginForm">
+                <input type="email" class="auth-input" id="loginEmail" placeholder="Email" required aria-label="Email">
+                <input type="password" class="auth-input" id="loginPassword" placeholder="Password" required aria-label="Password">
+                <button class="auth-btn" onclick="login()" aria-label="Sign In">Sign In</button>
+                <div class="auth-switch">
+                    Don't have an account? <a onclick="showSignup()">Sign up</a>
+                </div>
+            </div>
+            <div id="signupForm" style="display: none;">
+                <input type="text" class="auth-input" id="signupName" placeholder="Display Name" required aria-label="Display Name">
+                <input type="email" class="auth-input" id="signupEmail" placeholder="Email" required aria-label="Email">
+                <input type="password" class="auth-input" id="signupPassword" placeholder="Password (min 6 chars)" required aria-label="Password">
+                <button class="auth-btn" onclick="signup()" aria-label="Create Account">Create Account</button>
+                <div class="auth-switch">
+                    Already have an account? <a onclick="showLogin()">Sign in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Your original VIB3 layout -->
+    <div class="app-container hidden" id="appContainer">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-logo" onclick="refreshForYou()" style="cursor: pointer; padding: 0 20px 20px 20px;">
+                <h1 style="font-size: 32px; font-weight: 900; letter-spacing: -1px; color: var(--text-primary);">VIB3</h1>
+            </div>
+            
+            <div style="padding: 0 20px 20px 20px;">
+                <input type="text" placeholder="Search" style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); font-size: 14px;" onkeypress="if(event.key==='Enter') performSearch(this.value)">
+            </div>
+            
+            <button class="sidebar-item active" onclick="switchFeedTab('foryou')" id="sidebarHome">
+                <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <div class="sidebar-text">For You</div>
+            </button>
+            
+            <button class="sidebar-item" onclick="showUploadModal()">
+                <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V9h-3V7H5c-1.1 0-2 .9-2 2v9c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2v-3h2v5c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2h8v2H8v2h8z"/>
+                </svg>
+                <div class="sidebar-text">Upload</div>
+            </button>
+            
+            <button class="sidebar-item" onclick="showProfile()">
+                <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                <div class="sidebar-text">Profile</div>
+            </button>
+            
+            <button class="sidebar-item" onclick="logout()">
+                <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                </svg>
+                <div class="sidebar-text">Logout</div>
+            </button>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Video Feed -->
+            <div class="video-feed" id="videoFeed">
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <p>Loading videos...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Load MongoDB adapter first -->
+    <script src="js/mongodb-adapter.js"></script>
+    
+    <!-- Then load your existing video code -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/video.js"></script>
+    <script src="js/user.js"></script>
+    <script src="js/feed.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/comments.js"></script>
+    
+    <!-- Simple initialization -->
+    <script>
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('VIB3 with MongoDB starting...');
+            
+            // Check authentication
+            auth.onAuthStateChanged(function(user) {
+                if (user) {
+                    // User is signed in
+                    document.getElementById('authContainer').style.display = 'none';
+                    document.getElementById('appContainer').classList.remove('hidden');
+                    
+                    // Load video feed
+                    if (window.loadVideoFeed) {
+                        window.loadVideoFeed('foryou');
+                    }
+                } else {
+                    // User is signed out
+                    document.getElementById('authContainer').style.display = 'flex';
+                    document.getElementById('appContainer').classList.add('hidden');
+                }
+            });
+        });
+        
+        // Auth functions
+        function showLogin() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('signupForm').style.display = 'none';
+        }
+        
+        function showSignup() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+        }
+        
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                document.getElementById('authError').textContent = error.message;
+            }
+        }
+        
+        async function signup() {
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const displayName = document.getElementById('signupName').value;
+            
+            try {
+                const result = await createUserWithEmailAndPassword(auth, email, password);
+                if (result.user && displayName) {
+                    await updateProfile(result.user, { displayName });
+                }
+            } catch (error) {
+                document.getElementById('authError').textContent = error.message;
+            }
+        }
+        
+        async function logout() {
+            await signOut(auth);
+        }
+        
+        // Placeholder functions for features
+        function refreshForYou() {
+            if (window.loadVideoFeed) {
+                window.loadVideoFeed('foryou', true);
+            }
+        }
+        
+        function switchFeedTab(tab) {
+            if (window.loadVideoFeed) {
+                window.loadVideoFeed(tab);
+            }
+        }
+        
+        function showUploadModal() {
+            alert('Upload feature coming soon! Video uploads will use DigitalOcean Spaces.');
+        }
+        
+        function showProfile() {
+            alert('Profile page coming soon!');
+        }
+        
+        function performSearch(query) {
+            alert('Search for: ' + query);
+        }
+    </script>
+</body>
+</html>

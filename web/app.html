@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIB3 - Video Social App</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        /* Auth Modal */
+        .auth-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .auth-form {
+            background: #161823;
+            padding: 40px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        .auth-form h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #ff0050;
+        }
+        
+        .auth-form input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 16px;
+            background: #2f2f2f;
+            border: 1px solid #3f3f3f;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+        }
+        
+        .auth-form button {
+            width: 100%;
+            padding: 14px;
+            background: #ff0050;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .auth-form button:hover {
+            opacity: 0.9;
+        }
+        
+        .auth-switch {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .auth-switch a {
+            color: #ff0050;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .error-message {
+            color: #ff4444;
+            text-align: center;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        
+        /* Main App */
+        .app-container {
+            display: none;
+            height: 100vh;
+            position: relative;
+        }
+        
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: 900;
+            color: #ff0050;
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .user-info {
+            font-size: 14px;
+        }
+        
+        .logout-btn {
+            padding: 8px 16px;
+            background: #ff0050;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        /* Feed */
+        .feed-container {
+            padding-top: 60px;
+            height: 100vh;
+            overflow-y: auto;
+            scroll-snap-type: y mandatory;
+        }
+        
+        .video-item {
+            height: calc(100vh - 60px);
+            scroll-snap-align: start;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: #161823;
+            border-bottom: 1px solid #2f2f2f;
+        }
+        
+        .video-content {
+            max-width: 600px;
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .video-placeholder {
+            width: 100%;
+            height: 400px;
+            background: #2f2f2f;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 48px;
+            color: #666;
+        }
+        
+        .video-info {
+            text-align: left;
+        }
+        
+        .video-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .video-author {
+            color: #aaa;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        
+        .video-actions {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #2f2f2f;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .action-btn:hover {
+            background: #3f3f3f;
+        }
+        
+        .action-btn.liked {
+            background: #ff0050;
+        }
+        
+        /* Upload Section */
+        .upload-section {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 100;
+        }
+        
+        .upload-btn {
+            width: 60px;
+            height: 60px;
+            background: #ff0050;
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(255,0,80,0.4);
+            transition: transform 0.2s;
+        }
+        
+        .upload-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        /* No videos message */
+        .no-videos {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Modal -->
+    <div class="auth-modal" id="authModal">
+        <div class="auth-form">
+            <h2 id="authTitle">Welcome to VIB3</h2>
+            <div class="error-message" id="authError"></div>
+            
+            <!-- Login Form -->
+            <div id="loginForm">
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <button onclick="login()">Sign In</button>
+                <div class="auth-switch">
+                    Don't have an account? <a onclick="showRegister()">Sign up</a>
+                </div>
+            </div>
+            
+            <!-- Register Form -->
+            <div id="registerForm" class="hidden">
+                <input type="text" id="registerUsername" placeholder="Username" required>
+                <input type="email" id="registerEmail" placeholder="Email" required>
+                <input type="password" id="registerPassword" placeholder="Password" required>
+                <button onclick="register()">Create Account</button>
+                <div class="auth-switch">
+                    Already have an account? <a onclick="showLogin()">Sign in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main App -->
+    <div class="app-container" id="appContainer">
+        <header class="header">
+            <div class="logo">VIB3</div>
+            <div class="user-menu">
+                <div class="user-info">
+                    Welcome, <span id="currentUsername">User</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </header>
+        
+        <div class="feed-container" id="feedContainer">
+            <div class="no-videos">
+                <h2>No videos yet!</h2>
+                <p>Be the first to upload a video</p>
+            </div>
+        </div>
+        
+        <div class="upload-section">
+            <button class="upload-btn" onclick="uploadVideo()">+</button>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let authToken = localStorage.getItem('vib3_token');
+        let currentUser = null;
+        let videos = [];
+        
+        // Check auth on load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (authToken) {
+                checkAuth();
+            }
+        });
+        
+        // Auth functions
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('authTitle').textContent = 'Sign In to VIB3';
+            clearError();
+        }
+        
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+            document.getElementById('authTitle').textContent = 'Join VIB3';
+            clearError();
+        }
+        
+        function clearError() {
+            document.getElementById('authError').textContent = '';
+        }
+        
+        function showError(message) {
+            document.getElementById('authError').textContent = message;
+        }
+        
+        async function register() {
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            
+            if (!username || !email || !password) {
+                showError('Please fill all fields');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Registration failed');
+                }
+                
+                authToken = data.token;
+                currentUser = data.user;
+                localStorage.setItem('vib3_token', authToken);
+                
+                showApp();
+                
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+        
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showError('Please enter email and password');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Login failed');
+                }
+                
+                authToken = data.token;
+                currentUser = data.user;
+                localStorage.setItem('vib3_token', authToken);
+                
+                showApp();
+                
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+        
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Not authenticated');
+                }
+                
+                const data = await response.json();
+                currentUser = data.user;
+                
+                showApp();
+                
+            } catch (error) {
+                authToken = null;
+                localStorage.removeItem('vib3_token');
+            }
+        }
+        
+        function logout() {
+            if (authToken) {
+                fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+            }
+            
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('vib3_token');
+            
+            document.getElementById('authModal').classList.remove('hidden');
+            document.getElementById('appContainer').style.display = 'none';
+            showLogin();
+        }
+        
+        function showApp() {
+            document.getElementById('authModal').classList.add('hidden');
+            document.getElementById('appContainer').style.display = 'block';
+            document.getElementById('currentUsername').textContent = currentUser.username;
+            
+            loadVideos();
+        }
+        
+        // Video functions
+        async function loadVideos() {
+            try {
+                const response = await fetch('/api/videos');
+                const data = await response.json();
+                
+                videos = data.videos || [];
+                renderVideos();
+                
+            } catch (error) {
+                console.error('Failed to load videos:', error);
+            }
+        }
+        
+        function renderVideos() {
+            const container = document.getElementById('feedContainer');
+            
+            if (videos.length === 0) {
+                container.innerHTML = `
+                    <div class="no-videos">
+                        <h2>No videos yet!</h2>
+                        <p>Be the first to upload a video</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = videos.map(video => `
+                <div class="video-item">
+                    <div class="video-content">
+                        <div class="video-placeholder">📹</div>
+                        <div class="video-info">
+                            <h3 class="video-title">${video.title}</h3>
+                            <p class="video-author">@${video.user?.username || 'anonymous'}</p>
+                            <div class="video-actions">
+                                <button class="action-btn ${video.liked ? 'liked' : ''}" onclick="toggleLike('${video._id}')">
+                                    ❤️ ${video.likeCount || 0}
+                                </button>
+                                <button class="action-btn" onclick="showComments('${video._id}')">
+                                    💬 ${video.commentCount || 0}
+                                </button>
+                                <button class="action-btn" onclick="shareVideo('${video._id}')">
+                                    🔗 Share
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        async function toggleLike(videoId) {
+            if (!authToken) {
+                alert('Please login to like videos');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/videos/${videoId}/like`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const data = await response.json();
+                
+                // Update UI
+                const video = videos.find(v => v._id === videoId);
+                if (video) {
+                    video.liked = data.liked;
+                    video.likeCount = (video.likeCount || 0) + (data.liked ? 1 : -1);
+                    renderVideos();
+                }
+                
+            } catch (error) {
+                console.error('Failed to like video:', error);
+            }
+        }
+        
+        function showComments(videoId) {
+            alert('Comments feature coming soon!');
+        }
+        
+        function shareVideo(videoId) {
+            const url = `${window.location.origin}/video/${videoId}`;
+            navigator.clipboard.writeText(url);
+            alert('Video link copied to clipboard!');
+        }
+        
+        async function uploadVideo() {
+            if (!authToken) {
+                alert('Please login to upload videos');
+                return;
+            }
+            
+            const title = prompt('Enter video title:');
+            if (!title) return;
+            
+            const description = prompt('Enter video description (optional):');
+            
+            try {
+                const response = await fetch('/api/videos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        title,
+                        description,
+                        videoUrl: 'https://example.com/video.mp4', // Placeholder
+                        thumbnailUrl: 'https://example.com/thumb.jpg' // Placeholder
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Upload failed');
+                }
+                
+                alert('Video uploaded successfully!');
+                loadVideos();
+                
+            } catch (error) {
+                alert('Failed to upload video: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
