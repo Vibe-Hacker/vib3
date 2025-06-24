@@ -10983,7 +10983,12 @@ async function showUserProfile(userId) {
 async function loadUserVideosGrid(userId) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/user/videos?userId=${userId}`);
-        const videos = await response.json();
+        const data = await response.json();
+        
+        // Handle server response format: { videos: [] } or { error: 'message' }
+        const videos = data.videos || [];
+        
+        console.log(`📹 Loading videos for user ${userId}:`, videos.length, 'videos found');
         
         const grid = document.getElementById('userVideosGrid');
         if (!grid) return;
