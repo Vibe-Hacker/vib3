@@ -10862,7 +10862,7 @@ async function showUserProfile(userId) {
         // Fetch user data with proper authentication
         const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
             headers: {
-                'Authorization': `Bearer ${window.authToken}`,
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                 'Content-Type': 'application/json'
             }
         });
