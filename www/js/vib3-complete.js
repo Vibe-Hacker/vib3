@@ -8547,7 +8547,7 @@ function hideSidebarSearchMentionDropdown() {
 }
 
 function selectSidebarSearchMention(username) {
-    const input = document.getElementById('searchInput');
+    const input = document.getElementById('sidebarSearchInput');
     if (!input) return;
     
     const text = input.value;
