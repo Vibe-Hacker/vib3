@@ -396,6 +396,13 @@ function initializeVideoObserver() {
         entries.forEach(entry => {
             const video = entry.target;
             if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
+                // Clear manual play flags from all other videos when a new video comes into view
+                document.querySelectorAll('video[data-manual-play]').forEach(v => {
+                    if (v !== video) {
+                        v.removeAttribute('data-manual-play');
+                    }
+                });
+                
                 // Only play if not manually paused
                 if (!video.hasAttribute('data-manually-paused')) {
                     video.play().catch(e => console.log('Play failed:', e));
@@ -408,10 +415,12 @@ function initializeVideoObserver() {
                     }
                 }
             } else {
-                // Only pause if not manually playing
-                if (!video.hasAttribute('data-manually-paused')) {
+                // Only pause if not manually playing and not manually selected
+                if (!video.hasAttribute('data-manually-paused') && !video.hasAttribute('data-manual-play')) {
                     video.pause();
                     console.log('⏸️ Auto-pausing video:', video.src.split('/').pop());
+                } else if (video.hasAttribute('data-manual-play')) {
+                    console.log('🎯 Keeping manually selected video playing:', video.src.split('/').pop());
                 }
             }
         });
@@ -11277,13 +11286,27 @@ function playVideoFromProfile(videoId) {
         const videoCard = document.querySelector(`[data-video-id="${videoId}"]`);
         if (videoCard) {
             console.log(`✅ Found video in feed, scrolling to it`);
+            
+            // Pause all other videos first
+            document.querySelectorAll('video').forEach(v => {
+                if (v !== videoCard.querySelector('video')) {
+                    v.pause();
+                }
+            });
+            
             videoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
             
-            // Try to play the video
-            const video = videoCard.querySelector('video');
-            if (video) {
-                video.play().catch(e => console.log('Video play failed:', e));
-            }
+            // Wait for scroll to complete, then play
+            setTimeout(() => {
+                const video = videoCard.querySelector('video');
+                if (video) {
+                    console.log(`▶️ Playing existing video: ${videoId}`);
+                    video.play().catch(e => console.log('Video play failed:', e));
+                    
+                    // Mark this video as manually selected to prevent auto-pause
+                    video.setAttribute('data-manual-play', 'true');
+                }
+            }, 800);
         } else {
             console.log(`❌ Video not found in current feed, loading it...`);
             // If video not in current feed, we could implement specific video loading here
@@ -11316,11 +11339,29 @@ async function loadSpecificVideo(videoId) {
                 setTimeout(() => {
                     const newVideoCard = document.querySelector(`[data-video-id="${videoId}"]`);
                     if (newVideoCard) {
+                        console.log(`🎯 Focusing on specific video: ${videoId}`);
+                        
+                        // Pause all other videos first
+                        document.querySelectorAll('video').forEach(v => {
+                            if (v !== newVideoCard.querySelector('video')) {
+                                v.pause();
+                            }
+                        });
+                        
+                        // Scroll to target video
                         newVideoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        const videoElement = newVideoCard.querySelector('video');
-                        if (videoElement) {
-                            videoElement.play().catch(e => console.log('Video play failed:', e));
-                        }
+                        
+                        // Wait for scroll to complete, then play
+                        setTimeout(() => {
+                            const videoElement = newVideoCard.querySelector('video');
+                            if (videoElement) {
+                                console.log(`▶️ Playing target video: ${videoId}`);
+                                videoElement.play().catch(e => console.log('Video play failed:', e));
+                                
+                                // Mark this video as manually selected to prevent auto-pause
+                                videoElement.setAttribute('data-manual-play', 'true');
+                            }
+                        }, 800);
                     }
                 }, 100);
             }
