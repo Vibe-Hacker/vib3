@@ -33,7 +33,11 @@ async function toggleLike(videoId) {
 
 // Share video with TikTok-style modal - WORKING VERSION
 function shareVideo(videoId) {
+    alert('VIDEO-SIMPLE.JS SHARE FUNCTION CALLED FOR VIDEO: ' + videoId);
     console.log('🔗 Creating share modal for video:', videoId);
+    console.log('📍 shareVideo function called from video-simple.js');
+    
+    try {
     
     // Remove any existing modals
     document.querySelectorAll('.share-modal').forEach(m => m.remove());
@@ -102,6 +106,12 @@ function shareVideo(videoId) {
     
     document.body.appendChild(modal);
     console.log('✅ Share modal created and displayed');
+    
+    } catch (error) {
+        console.error('❌ Error creating share modal:', error);
+        // Fallback to simple alert
+        alert('Share Video: ' + videoId);
+    }
 }
 
 // Share helper functions
