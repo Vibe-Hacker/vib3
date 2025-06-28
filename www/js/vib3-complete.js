@@ -7450,25 +7450,63 @@ function openCommentsModal(videoId) {
 
 function openShareModal(videoId) {
     console.log('📱 Creating share modal for video:', videoId);
+    
+    // Remove any existing share modals first
+    document.querySelectorAll('.share-modal').forEach(m => m.remove());
+    
+    // Create a simple, highly visible test modal first
     const modal = document.createElement('div');
     modal.className = 'modal share-modal';
     modal.style.cssText = `
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        background: rgba(0,0,0,0.8) !important;
-        display: flex !important;
-        align-items: flex-end !important;
-        z-index: 999999 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: red !important;
+        z-index: 99999999 !important;
+        display: block !important;
         pointer-events: all !important;
     `;
     
-    const videoUrl = `${window.location.origin}/?video=${videoId}`;
-    const shareText = 'Check out this amazing video on VIB3!';
-    
     modal.innerHTML = `
+        <div style="
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            background: white !important;
+            color: black !important;
+            padding: 40px !important;
+            border-radius: 10px !important;
+            font-size: 20px !important;
+            z-index: 999999999 !important;
+        ">
+            <h2>SHARE MODAL TEST</h2>
+            <p>Video ID: ${videoId}</p>
+            <button onclick="this.closest('.modal').remove()" style="
+                padding: 10px 20px !important;
+                background: #ff0050 !important;
+                color: white !important;
+                border: none !important;
+                border-radius: 5px !important;
+                cursor: pointer !important;
+                margin-top: 20px !important;
+            ">Close</button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    console.log('✅ TEST modal added - should be RED and visible');
+    
+    // Auto-remove after 5 seconds as safety
+    setTimeout(() => {
+        if (modal.parentNode) {
+            modal.remove();
+            console.log('🧹 Auto-removed test modal');
+        }
+    }, 5000);
+}
         <div class="modal-content" style="
             background: var(--bg-secondary, #161823) !important;
             width: 100% !important;
