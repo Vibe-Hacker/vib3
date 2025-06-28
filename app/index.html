@@ -1990,97 +1990,98 @@
     <script src="js/auth-simple.js"></script>
     <script src="js/vib3-complete.js"></script>
     <script>
+        // Define navigation functions FIRST to prevent reference errors
+        let currentUser = null;
+        let currentFeed = 'foryou';
+        let currentPage = 'home';
+        let videos = [];
+        let isLoading = false;
+        let currentVideoIndex = 0;
+        
+        window.showHome = function() {
+            hideAllPages();
+            document.getElementById('mainApp').style.display = 'block';
+            currentPage = 'home';
+            updateNavigation();
+        };
+        
+        window.showDiscover = function() {
+            hideAllPages();
+            document.getElementById('discoverPage').style.display = 'block';
+            currentPage = 'discover';
+            updateNavigation();
+        };
+        
+        window.showInbox = function() {
+            hideAllPages();
+            document.getElementById('inboxPage').style.display = 'block';
+            currentPage = 'inbox';
+            updateNavigation();
+        };
+        
+        window.showProfile = function() {
+            hideAllPages();
+            document.getElementById('profilePage').style.display = 'block';
+            currentPage = 'profile';
+            updateNavigation();
+            loadProfileContent();
+        };
+        
+        window.hideAllPages = function() {
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('discoverPage').style.display = 'none';
+            document.getElementById('inboxPage').style.display = 'none';
+            document.getElementById('profilePage').style.display = 'none';
+        };
+        
+        window.updateNavigation = function() {
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to current page nav item
+            const navItems = document.querySelectorAll('.nav-item');
+            if (currentPage === 'home' && navItems[0]) navItems[0].classList.add('active');
+            if (currentPage === 'discover' && navItems[1]) navItems[1].classList.add('active');
+            if (currentPage === 'inbox' && navItems[3]) navItems[3].classList.add('active');
+            if (currentPage === 'profile' && navItems[4]) navItems[4].classList.add('active');
+        };
+        
+        window.openSearch = function() {
+            console.log('🔍 Opening search');
+            // Search implementation
+        };
+        
+        window.openQRScanner = function() {
+            console.log('📱 Opening QR scanner');
+            const qrScanner = document.getElementById('qrScanner');
+            if (qrScanner) qrScanner.style.display = 'block';
+        };
+        
+        window.goToLive = function() {
+            console.log('📺 Going live');
+            // Live functionality
+        };
+
         // Initialize app with error handling
-        try {
-            console.log('🟢 App initialization started');
-            
-            // Check for existing token for persistent login
-            console.log('🔍 Checking for existing authentication...');
-            const existingToken = localStorage.getItem('token');
-            
-            let currentUser = null;
-            let currentFeed = 'foryou';
-            let currentPage = 'home';
-            let videos = [];
-            let isLoading = false;
-            let currentVideoIndex = 0;
-            
-            // Try to restore session if token exists
-            if (existingToken) {
-                console.log('🔐 Found existing token, validating...');
-                window.authToken = existingToken;
-                await validateAndRestoreSession();
-            } else {
-                console.log('🔒 No token found, showing login screen');
-                showLoginScreen();
-            }
-            
-            // Define navigation functions early to prevent reference errors
-            window.showHome = function() {
-                hideAllPages();
-                document.getElementById('mainApp').style.display = 'block';
-                currentPage = 'home';
-                updateNavigation();
-            };
-            
-            window.showDiscover = function() {
-                hideAllPages();
-                document.getElementById('discoverPage').style.display = 'block';
-                currentPage = 'discover';
-                updateNavigation();
-            };
-            
-            window.showInbox = function() {
-                hideAllPages();
-                document.getElementById('inboxPage').style.display = 'block';
-                currentPage = 'inbox';
-                updateNavigation();
-            };
-            
-            window.showProfile = function() {
-                hideAllPages();
-                document.getElementById('profilePage').style.display = 'block';
-                currentPage = 'profile';
-                updateNavigation();
-                loadProfileContent();
-            };
-            
-            window.hideAllPages = function() {
-                document.getElementById('mainApp').style.display = 'none';
-                document.getElementById('discoverPage').style.display = 'none';
-                document.getElementById('inboxPage').style.display = 'none';
-                document.getElementById('profilePage').style.display = 'none';
-            };
-            
-            window.updateNavigation = function() {
-                // Remove active class from all nav items
-                document.querySelectorAll('.nav-item').forEach(item => {
-                    item.classList.remove('active');
-                });
+        (async function() {
+            try {
+                console.log('🟢 App initialization started');
                 
-                // Add active class to current page nav item
-                const navItems = document.querySelectorAll('.nav-item');
-                if (currentPage === 'home' && navItems[0]) navItems[0].classList.add('active');
-                if (currentPage === 'discover' && navItems[1]) navItems[1].classList.add('active');
-                if (currentPage === 'inbox' && navItems[3]) navItems[3].classList.add('active');
-                if (currentPage === 'profile' && navItems[4]) navItems[4].classList.add('active');
-            };
-            
-            window.openSearch = function() {
-                console.log('🔍 Opening search');
-                // Search implementation
-            };
-            
-            window.openQRScanner = function() {
-                console.log('📱 Opening QR scanner');
-                const qrScanner = document.getElementById('qrScanner');
-                if (qrScanner) qrScanner.style.display = 'block';
-            };
-            
-            window.goToLive = function() {
-                console.log('📺 Going live');
-                // Live functionality
-            };
+                // Check for existing token for persistent login
+                console.log('🔍 Checking for existing authentication...');
+                const existingToken = localStorage.getItem('token');
+                
+                // Try to restore session if token exists
+                if (existingToken) {
+                    console.log('🔐 Found existing token, validating...');
+                    window.authToken = existingToken;
+                    await validateAndRestoreSession();
+                } else {
+                    console.log('🔒 No token found, showing login screen');
+                    showLoginScreen();
+                }
 
         // Auth functions
         function showLoginScreen() {
@@ -3037,10 +3038,11 @@
         // Call after DOM is loaded
         setTimeout(initializeSettingsToggles, 1000);
         
-        } catch (error) {
-            console.error('🔴 App initialization failed:', error);
-            console.error('🔴 Error stack:', error.stack);
-        }
+            } catch (error) {
+                console.error('🔴 App initialization failed:', error);
+                console.error('🔴 Error stack:', error.stack);
+            }
+        })(); // Close the async IIFE
         
         // Final safety net
         window.addEventListener('unhandledrejection', function(event) {
