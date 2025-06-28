@@ -10215,29 +10215,11 @@ async function submitComment(videoId) {
 }
 
 function shareVideo(videoId, video) {
-    const videoUrl = `${window.location.origin}/?video=${videoId}`;
-    const shareText = `Check out this video on VIB3! ${video.title || 'Amazing video'}`;
+    // Always use our custom TikTok-style share modal instead of native browser sharing
+    openShareModal(videoId);
     
-    if (navigator.share) {
-        navigator.share({
-            title: video.title || 'VIB3 Video',
-            text: shareText,
-            url: videoUrl
-        }).then(() => {
-            showNotification('Video shared!', 'success');
-            
-            // Record the share on server and update count
-            recordVideoShare(videoId);
-        }).catch(console.error);
-    } else {
-        // Fallback to copy link
-        navigator.clipboard.writeText(videoUrl).then(() => {
-            showNotification('Video link copied to clipboard!', 'success');
-            
-            // Record the share on server and update count
-            recordVideoShare(videoId);
-        });
-    }
+    // Record the share on server and update count
+    recordVideoShare(videoId);
 }
 
 // Record video share on server and update UI
