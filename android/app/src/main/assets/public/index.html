@@ -281,23 +281,20 @@
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
+            if (!email || !password) {
+                const errorEl = document.getElementById('authError');
+                if (errorEl) errorEl.textContent = 'Please enter both email and password';
+                return;
+            }
+            
             try {
                 console.log('🔐 Attempting login...');
-                const result = await login(email, password);
+                const result = await signInWithEmailAndPassword(auth, email, password);
                 console.log('✅ Login successful:', result);
                 
-                if (result.success) {
-                    window.currentUser = result.user;
-                    
-                    // Store auth token
-                    if (result.token) {
-                        localStorage.setItem('token', result.token);
-                    }
-                    
-                    showApp();
-                } else {
-                    throw new Error(result.error || 'Login failed');
-                }
+                // signInWithEmailAndPassword sets window.currentUser and auth.currentUser
+                showApp();
+                
             } catch (error) {
                 console.error('🔴 Login failed:', error);
                 const errorEl = document.getElementById('authError');
@@ -310,28 +307,44 @@
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
             
+            if (!username || !email || !password) {
+                const errorEl = document.getElementById('authError');
+                if (errorEl) errorEl.textContent = 'Please fill in all fields';
+                return;
+            }
+            
             try {
                 console.log('📝 Attempting signup...');
-                const result = await signup(email, password, username);
+                const result = await createUserWithEmailAndPassword(auth, email, password);
                 console.log('✅ Signup successful:', result);
                 
-                if (result.success) {
-                    window.currentUser = result.user;
-                    
-                    // Store auth token
-                    if (result.token) {
-                        localStorage.setItem('token', result.token);
-                    }
-                    
-                    showApp();
-                } else {
-                    throw new Error(result.error || 'Signup failed');
+                // Update user profile with username
+                if (result.user) {
+                    await updateProfile(result.user, { displayName: username });
                 }
+                
+                showApp();
+                
             } catch (error) {
                 console.error('🔴 Signup failed:', error);
                 const errorEl = document.getElementById('authError');
                 if (errorEl) errorEl.textContent = error.message;
             }
+        };
+        
+        // Form switching functions
+        window.showLogin = function() {
+            console.log('📋 Switching to login form');
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('signupForm').style.display = 'none';
+            document.getElementById('authError').textContent = '';
+        };
+        
+        window.showSignup = function() {
+            console.log('📋 Switching to signup form');
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+            document.getElementById('authError').textContent = '';
         };
         
         console.log('✅ Navigation and auth functions loaded in HEAD');
