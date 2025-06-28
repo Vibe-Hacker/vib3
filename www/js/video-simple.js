@@ -43,87 +43,77 @@ async function shareVideo(videoId) {
     modal.className = 'share-modal';
     modal.style.cssText = `
         position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
+        top: 0px !important;
+        left: 0px !important;
+        right: 0px !important;
+        bottom: 0px !important;
         width: 100vw !important;
         height: 100vh !important;
-        background: rgba(0,0,0,0.9) !important;
-        z-index: 999999 !important;
-        display: flex !important;
-        align-items: flex-end !important;
-        justify-content: center !important;
-        backdrop-filter: blur(10px) !important;
+        background: rgba(255,0,0,0.9) !important;
+        z-index: 9999999 !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
         pointer-events: all !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        outline: none !important;
+        overflow: visible !important;
+        transform: none !important;
     `;
     
     const videoUrl = `${window.location.origin}/?video=${videoId}`;
     
     modal.innerHTML = `
         <div style="
-            background: #161823 !important;
-            width: 100% !important;
-            max-width: 500px !important;
-            max-height: 70vh !important;
-            border-radius: 20px 20px 0 0 !important;
-            padding: 30px !important;
-            overflow-y: auto !important;
-            position: relative !important;
-            z-index: 9999999 !important;
-            animation: slideUp 0.3s ease !important;
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            background: white !important;
+            color: black !important;
+            padding: 50px !important;
+            border-radius: 10px !important;
+            font-size: 24px !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            z-index: 99999999 !important;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5) !important;
         ">
-            <div style="text-align: center; margin-bottom: 25px;">
-                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 0 auto 20px;"></div>
-                <h3 style="margin: 0; color: white; font-size: 20px; font-weight: 600;">Share to</h3>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
-                <button onclick="shareToTwitter('${videoId}'); this.closest('.share-modal').remove();" style="
-                    text-align: center; cursor: pointer; padding: 15px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
-                    <div style="width: 50px; height: 50px; background: #1da1f2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">🐦</div>
-                    <span style="color: white; font-size: 12px; display: block;">Twitter</span>
-                </button>
-                
-                <button onclick="shareToFacebook('${videoId}'); this.closest('.share-modal').remove();" style="
-                    text-align: center; cursor: pointer; padding: 15px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
-                    <div style="width: 50px; height: 50px; background: #4267b2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">📘</div>
-                    <span style="color: white; font-size: 12px; display: block;">Facebook</span>
-                </button>
-                
-                <button onclick="shareToWhatsApp('${videoId}'); this.closest('.share-modal').remove();" style="
-                    text-align: center; cursor: pointer; padding: 15px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
-                    <div style="width: 50px; height: 50px; background: #25d366; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">💬</div>
-                    <span style="color: white; font-size: 12px; display: block;">WhatsApp</span>
-                </button>
-                
-                <button onclick="copyVideoLink('${videoId}'); this.closest('.share-modal').remove();" style="
-                    text-align: center; cursor: pointer; padding: 15px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
-                    <div style="width: 50px; height: 50px; background: #666; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">🔗</div>
-                    <span style="color: white; font-size: 12px; display: block;">Copy Link</span>
-                </button>
-                
-                <button onclick="shareViaEmail('${videoId}'); this.closest('.share-modal').remove();" style="
-                    text-align: center; cursor: pointer; padding: 15px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
-                    <div style="width: 50px; height: 50px; background: #ea4335; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">📧</div>
-                    <span style="color: white; font-size: 12px; display: block;">Email</span>
-                </button>
-                
-                <button onclick="downloadVideo('${videoId}'); this.closest('.share-modal').remove();" style="
-                    text-align: center; cursor: pointer; padding: 15px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
-                    <div style="width: 50px; height: 50px; background: #4caf50; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">⬇️</div>
-                    <span style="color: white; font-size: 12px; display: block;">Save</span>
-                </button>
-            </div>
-            
-            <button onclick="this.closest('.share-modal').remove()" style="
-                width: 100%; padding: 16px; background: rgba(255,255,255,0.1); border: none; border-radius: 12px;
-                color: white; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 12px;
-            ">Cancel</button>
+            <h2 style="margin: 0 0 20px 0 !important; color: black !important;">SHARE MODAL TEST</h2>
+            <p style="margin: 0 0 20px 0 !important; color: black !important;">Video ID: ${videoId}</p>
+            <button onclick="shareToTwitter('${videoId}'); this.closest('.share-modal').remove();" style="
+                padding: 15px 30px !important;
+                background: #1da1f2 !important;
+                color: white !important;
+                border: none !important;
+                border-radius: 5px !important;
+                cursor: pointer !important;
+                margin: 10px !important;
+                font-size: 16px !important;
+            ">Twitter</button>
+            <button onclick="copyVideoLink('${videoId}'); this.closest('.share-modal').remove();" style="
+                padding: 15px 30px !important;
+                background: #666 !important;
+                color: white !important;
+                border: none !important;
+                border-radius: 5px !important;
+                cursor: pointer !important;
+                margin: 10px !important;
+                font-size: 16px !important;
+            ">Copy Link</button>
+            <br>
+            <button onclick="this.closest('.share-modal').remove();" style="
+                padding: 15px 30px !important;
+                background: #ff0050 !important;
+                color: white !important;
+                border: none !important;
+                border-radius: 5px !important;
+                cursor: pointer !important;
+                margin: 10px !important;
+                font-size: 16px !important;
+            ">Close</button>
         </div>
     `;
     
@@ -136,6 +126,19 @@ async function shareVideo(videoId) {
     
     document.body.appendChild(modal);
     console.log('✅ TikTok-style share modal added to page');
+    console.log('🔍 Modal element:', modal);
+    console.log('🔍 Modal in DOM:', document.querySelector('.share-modal'));
+    console.log('🔍 Modal styles:', modal.style.cssText);
+    console.log('🔍 Modal computed styles:', window.getComputedStyle(modal));
+    
+    // Force visibility check
+    setTimeout(() => {
+        console.log('🔍 Modal still in DOM after 1s:', document.querySelector('.share-modal'));
+        const modalInDom = document.querySelector('.share-modal');
+        if (modalInDom) {
+            console.log('🔍 Modal dimensions:', modalInDom.getBoundingClientRect());
+        }
+    }, 1000);
 }
 
 // Share helper functions
