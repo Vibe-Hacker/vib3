@@ -71,7 +71,9 @@
             
             console.log('👤 Current user found:', currentUser);
             console.log('👤 User ID:', currentUser?.id);
+            console.log('👤 User _id:', currentUser?._id);
             console.log('👤 Username:', currentUser?.username);
+            console.log('👤 Full user object:', JSON.stringify(currentUser, null, 2));
             
             if (currentUser && (currentUser.username || currentUser.email)) {
                 const username = currentUser.username || currentUser.email?.split('@')[0];
@@ -86,12 +88,17 @@
                     console.error('❌ profileUsername element not found');
                 }
                 
+                // Try multiple user ID fields - MongoDB might use _id instead of id
+                const userId = currentUser.id || currentUser._id || currentUser.userId;
+                console.log('👤 Resolved user ID:', userId);
+                
                 // Load user stats from API
-                if (currentUser.id) {
-                    loadUserStats(currentUser.id);
-                    loadUserVideos(currentUser.id);
+                if (userId) {
+                    loadUserStats(userId);
+                    loadUserVideos(userId);
                 } else {
                     console.error('❌ No user ID found for API calls');
+                    console.log('👤 Available user fields:', Object.keys(currentUser));
                     // Try to get user data from token
                     loadCurrentUserFromToken();
                 }
@@ -2913,7 +2920,6 @@
                            playsinline 
                            webkit-playsinline
                            preload="auto"
-                           muted
                            onclick="togglePlayPause(this)"
                            ondblclick="likeVideo('${videoId}', event)"
                            onloadstart="console.log('🎥 Video loading started for:', '${videoSrc}')"
