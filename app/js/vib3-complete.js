@@ -10965,7 +10965,7 @@ async function loadProfileVideos(userId) {
         const data = await response.json();
         const videos = data.videos || [];
         
-        const grid = document.getElementById('profileVideosGrid');
+        const grid = document.getElementById('profileGrid');
         if (!grid) return;
         
         if (videos.length === 0) {
@@ -10974,19 +10974,15 @@ async function loadProfileVideos(userId) {
         }
         
         grid.innerHTML = videos.map(video => `
-            <div style="
-                aspect-ratio: 9/16;
-                background: #000;
-                position: relative;
-                cursor: pointer;
-                overflow: hidden;
-                border-radius: 8px;
-            " onclick="playVideoFromProfile('${video._id}')">
-                <video src="${video.videoUrl}" style="
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                "></video>
+            <div class="profile-video-item" onclick="playVideoFromProfile('${video._id}')">
+                <div class="profile-video-thumb" style="
+                    background-image: url('${video.thumbnailUrl || ''}');
+                    background-size: cover;
+                    background-position: center;
+                    background-color: #1a1a1a;
+                ">
+                    ${!video.thumbnailUrl ? `<video src="${video.videoUrl}#t=0.1" muted preload="metadata" style="width: 100%; height: 100%; object-fit: cover;" onloadeddata="this.currentTime=0"></video>` : ''}
+                </div>
                 <div style="
                     position: absolute;
                     bottom: 5px;
