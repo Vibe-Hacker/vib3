@@ -230,19 +230,50 @@
                     
                     // Update profile grid with user videos
                     const profileGrid = document.getElementById('profileGrid');
+                    console.log('🎬 Profile grid element:', profileGrid);
+                    console.log('🎬 Profile grid parent:', profileGrid?.parentElement);
+                    console.log('🎬 Profile grid computed style:', window.getComputedStyle(profileGrid));
+                    
                     if (profileGrid && userVideos.length > 0) {
-                        profileGrid.innerHTML = userVideos.map(video => `
-                            <div class="profile-video-item" onclick="playVideo('${video._id || video.id}')">
-                                <video class="profile-video-thumb" src="${video.videoUrl || video.url}" muted>
-                                </video>
-                                <div class="video-overlay">
-                                    <div class="video-stats">
-                                        <span>❤️ ${video.likeCount || 0}</span>
+                        // Clear any existing content first
+                        profileGrid.innerHTML = '';
+                        profileGrid.style.cssText = 'display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 1px !important;';
+                        
+                        profileGrid.innerHTML = userVideos.map((video, index) => {
+                            const videoId = video._id || video.id;
+                            const videoUrl = video.videoUrl || video.url;
+                            const thumbnailUrl = video.thumbnailUrl || video.thumbnail || `${videoUrl}#t=0.5`;
+                            const viewCount = video.viewCount || video.views || 0;
+                            
+                            return `
+                            <div class="profile-video-item" 
+                                 data-video-id="${videoId}"
+                                 onclick="openVideoFullscreen('${videoId}', '${videoUrl}')">
+                                <img 
+                                    class="profile-video-thumbnail"
+                                    src="${thumbnailUrl}"
+                                    alt="Video thumbnail"
+                                    loading="lazy"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div class="thumbnail-fallback" style="display: none; width: 100%; height: 100%; background: #333; align-items: center; justify-content: center; font-size: 24px; opacity: 0.5;">
+                                    📹
+                                </div>
+                                ${viewCount > 0 ? `
+                                <div class="profile-thumbnail-overlay">
+                                    <div class="profile-view-count">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                                            <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.85-1.26l3.03-7.08c.09-.23.12-.47.12-.66v-2z"/>
+                                        </svg>
+                                        ${formatCount(viewCount)}
                                     </div>
                                 </div>
-                            </div>
-                        `).join('');
-                        console.log('✅ Updated profile grid with', userVideos.length, 'videos');
+                                ` : ''}
+                            </div>`;
+                        }).join('');
+                        console.log('✅ Updated profile grid with', userVideos.length, 'video thumbnails');
+                        
+                        // No auto-play needed - using static image thumbnails
+                        
                     } else if (profileGrid) {
                         profileGrid.innerHTML = '<div style="text-align: center; padding: 50px; color: #666;">No videos yet</div>';
                         console.log('✅ Set no videos message');
@@ -415,6 +446,96 @@
             // Currently just prevent errors
         };
         
+        // Capture video frame for thumbnail
+        window.captureVideoFrame = function(video, index) {
+            try {
+                const parent = video.parentElement;
+                if (parent && parent.classList.contains('profile-video-thumb')) {
+                    // Create a temporary canvas
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth || 480;
+                    canvas.height = video.videoHeight || 640;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Draw the current frame
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // Convert to data URL and set as background
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    parent.style.backgroundImage = `url('${dataUrl}')`;
+                    
+                    console.log(`🖼️ Captured frame for video ${index}`);
+                }
+            } catch (error) {
+                console.error('❌ Error capturing frame:', error);
+            }
+        };
+        
+        // Format count numbers (1K, 1M, etc.)
+        window.formatCount = function(count) {
+            if (count < 1000) return count.toString();
+            if (count < 1000000) return (count / 1000).toFixed(1) + 'K';
+            return (count / 1000000).toFixed(1) + 'M';
+        };
+        
+        // Open video in fullscreen from profile grid
+        window.openVideoFullscreen = function(videoId, videoUrl) {
+            console.log('🎬 Opening video fullscreen:', videoId);
+            
+            // Hide profile page
+            const profilePage = document.getElementById('profilePage');
+            if (profilePage) profilePage.style.display = 'none';
+            
+            // Show main app (video feed)
+            const mainApp = document.getElementById('mainApp');
+            if (mainApp) {
+                mainApp.style.display = 'block';
+                
+                // Create fullscreen video player
+                const videoFeed = document.getElementById('videoFeed');
+                if (videoFeed) {
+                    videoFeed.innerHTML = `
+                        <div class="video-container" style="position: relative; width: 100%; height: 100vh; background: #000;">
+                            <video 
+                                id="fullscreenVideo"
+                                src="${videoUrl}"
+                                autoplay
+                                loop
+                                muted
+                                playsinline
+                                controls
+                                style="width: 100%; height: 100%; object-fit: contain;">
+                            </video>
+                            <button onclick="closeFullscreenVideo()" 
+                                    style="position: absolute; top: 20px; right: 20px; 
+                                           background: rgba(0,0,0,0.5); border: none; 
+                                           color: white; font-size: 24px; width: 40px; height: 40px; 
+                                           border-radius: 50%; cursor: pointer; z-index: 1000;">
+                                ×
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        };
+        
+        // Close fullscreen video and return to profile
+        window.closeFullscreenVideo = function() {
+            console.log('🔙 Closing fullscreen video');
+            
+            // Hide main app
+            const mainApp = document.getElementById('mainApp');
+            if (mainApp) mainApp.style.display = 'none';
+            
+            // Show profile page
+            const profilePage = document.getElementById('profilePage');
+            if (profilePage) profilePage.style.display = 'block';
+            
+            // Clear video feed
+            const videoFeed = document.getElementById('videoFeed');
+            if (videoFeed) videoFeed.innerHTML = '';
+        };
+        
         console.log('✅ Navigation and auth functions loaded in HEAD');
     </script>
     
@@ -459,14 +580,45 @@
             padding: 40px 20px;
         }
 
-        .auth-form h2 {
-            font-size: 48px;
+        .vib3-logo {
+            font-size: 72px;
             font-weight: 900;
             text-align: center;
-            margin-bottom: 40px;
-            background: linear-gradient(45deg, #FF0050, #00F2EA);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            margin: 0 0 40px 0;
+            color: #FF0050;
+            display: block;
+            -webkit-animation: vibeAnimation 2s linear infinite;
+            animation: vibeAnimation 2s linear infinite;
+        }
+
+        @-webkit-keyframes vibeAnimation {
+            0% {
+                -webkit-transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                -webkit-transform: scale(1.2);
+                opacity: 0.5;
+            }
+            100% {
+                -webkit-transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes vibeAnimation {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .auth-input {
@@ -998,6 +1150,7 @@
             display: none;
             overflow-y: auto;
             padding-bottom: 60px;
+            z-index: 1000;
         }
 
         .profile-header {
@@ -1287,7 +1440,79 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 2px;
+            background: #000;
             padding: 2px;
+        }
+
+        .profile-video-item {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 9/16; /* TikTok vertical aspect ratio */
+            background: #1a1a1a;
+            overflow: hidden;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .profile-video-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            border-radius: 4px;
+        }
+
+        .profile-thumbnail-overlay {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            right: 4px;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .profile-view-count {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .video-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            padding: 8px;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .video-stats {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .video-stats .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 13px;
+            color: white;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .video-stats svg {
+            width: 14px;
+            height: 14px;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
         }
 
         /* Upload Modal */
@@ -1924,7 +2149,7 @@
     <!-- Auth Container -->
     <div class="auth-container" id="authContainer">
         <div class="auth-form">
-            <h2>VIB3</h2>
+            <h2 class="vib3-logo">VIB3</h2>
             <div class="auth-error" id="authError"></div>
             <div id="loginForm">
                 <input type="email" class="auth-input" id="loginEmail" placeholder="Email" autocomplete="email">

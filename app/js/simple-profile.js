@@ -601,9 +601,9 @@ function displayUserVideos(videos) {
         `;
         console.log('📹 Displayed empty state');
     } else {
-        // Create grid container
+        // Create grid container - TikTok style 3-column grid
         const gridContainer = document.createElement('div');
-        gridContainer.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;';
+        gridContainer.style.cssText = 'display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;';
         
         // Create video cards
         videos.forEach((video, index) => {
@@ -651,33 +651,22 @@ function createVideoCard(video) {
         </div>`;
     
     const cardHtml = `
-        <div class="profile-video-card" style="background: #222; border-radius: 8px; overflow: hidden; cursor: pointer; position: relative; aspect-ratio: 9/16;" data-video-id="${videoId}">
+        <div class="profile-video-card" style="background: #222; border-radius: 6px; overflow: hidden; cursor: pointer; position: relative; aspect-ratio: 2/3; height: 150px;" data-video-id="${videoId}">
             ${videoElement}
             
             <!-- Duration -->
-            <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+            <div style="position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.8); color: white; padding: 2px 4px; border-radius: 2px; font-size: 10px;">
                 ${formatDuration(video.duration)}
             </div>
             
             <!-- Views -->
-            <div style="position: absolute; bottom: 8px; left: 8px; color: white; font-size: 12px; background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 4px;">
-                👁️ ${formatNumber(video.views || 0)}
-            </div>
-            
-            <!-- Likes -->
-            <div style="position: absolute; top: 8px; right: 8px; color: white; font-size: 12px; background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 4px;">
-                ❤️ ${formatNumber(video.likeCount || video.likes || 0)}
+            <div style="position: absolute; bottom: 4px; left: 4px; color: white; font-size: 10px; background: rgba(0,0,0,0.8); padding: 2px 4px; border-radius: 2px;">
+                ${formatNumber(video.views || 0)}
             </div>
             
             <!-- Play indicator -->
-            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; opacity: 0.8;">
-                <div style="color: white; font-size: 24px; margin-left: 4px;">▶️</div>
-            </div>
-            
-            <!-- Delete button -->
-            <div class="delete-button" style="position: absolute; top: 8px; left: 8px; background: rgba(255,0,0,0.8); color: white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; opacity: 0.9; transition: all 0.3s ease;" 
-                 title="Delete video">
-                🗑️
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; opacity: 0.8;">
+                <div style="color: white; font-size: 14px; margin-left: 2px;">▶</div>
             </div>
         </div>
     `;
@@ -1590,7 +1579,7 @@ function displayLikedVideos(videos) {
         `;
     } else {
         likedContent.innerHTML = `
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
                 ${videos.map(video => createVideoCard(video)).join('')}
             </div>
             <div style="display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 20px;">
@@ -1631,7 +1620,7 @@ function displayFavoriteVideos(videos) {
         `;
     } else {
         favoritesContent.innerHTML = `
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
                 ${videos.map(video => createVideoCard(video)).join('')}
             </div>
         `;
