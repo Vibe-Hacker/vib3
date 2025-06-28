@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>VIB3</title>
     <style>
         * {
@@ -1985,10 +1988,10 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/style-error-fix.js"></script>
-    <script src="js/mongodb-adapter.js"></script>
-    <script src="js/auth-simple.js"></script>
-    <script src="js/vib3-complete.js"></script>
+    <script src="js/style-error-fix.js?v=20250628-1"></script>
+    <script src="js/mongodb-adapter.js?v=20250628-1"></script>
+    <script src="js/auth-simple.js?v=20250628-1"></script>
+    <script src="js/vib3-complete.js?v=20250628-1"></script>
     <script>
         // Define navigation functions FIRST to prevent reference errors
         let currentUser = null;
@@ -2020,12 +2023,20 @@
         };
         
         window.showProfile = function() {
+            console.log('🎯 showProfile called');
             hideAllPages();
             document.getElementById('profilePage').style.display = 'block';
             currentPage = 'profile';
             updateNavigation();
             loadProfileContent();
         };
+        
+        // Log that functions are defined
+        console.log('✅ Navigation functions defined:', {
+            showProfile: typeof window.showProfile,
+            showHome: typeof window.showHome,
+            showDiscover: typeof window.showDiscover
+        });
         
         window.hideAllPages = function() {
             document.getElementById('mainApp').style.display = 'none';
