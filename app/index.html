@@ -666,11 +666,191 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
+            color: #fff;
         }
 
         .profile-btn.primary {
             background: #FF0050;
             border-color: #FF0050;
+            color: #fff;
+        }
+        
+        .profile-settings-btn {
+            position: absolute;
+            right: 16px;
+            top: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            z-index: 10;
+        }
+        
+        .profile-settings-btn:active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Profile Settings Menu */
+        .profile-settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            z-index: 10000;
+            overflow-y: auto;
+        }
+        
+        .profile-settings-menu {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a1a;
+            border-radius: 16px 16px 0 0;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .profile-settings-overlay.open .profile-settings-menu {
+            transform: translateY(0);
+        }
+        
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .settings-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .settings-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .settings-section {
+            padding: 16px 0;
+        }
+        
+        .settings-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            padding: 0 20px 12px;
+            opacity: 0.8;
+        }
+        
+        .settings-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .settings-item:active {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .settings-item-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .settings-icon {
+            width: 24px;
+            height: 24px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .settings-text {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .settings-label {
+            font-size: 16px;
+            color: #fff;
+            font-weight: 500;
+        }
+        
+        .settings-description {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 2px;
+        }
+        
+        .settings-arrow {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+        }
+        
+        .settings-toggle {
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .settings-toggle.active {
+            background: #FF0050;
+        }
+        
+        .settings-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        
+        .settings-toggle.active::after {
+            transform: translateX(20px);
+        }
+        
+        .settings-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 0 20px;
         }
 
         .profile-tabs {
@@ -1472,6 +1652,7 @@
     <div class="profile-page" id="profilePage">
         <div class="profile-header">
             <button class="profile-back-btn" onclick="goBackFromProfile()">←</button>
+            <button class="profile-settings-btn" onclick="openProfileSettings()">⚙️</button>
             <div class="profile-avatar" id="profileAvatar"></div>
             <h2 class="profile-username" id="profileUsername">@username</h2>
             
@@ -1633,6 +1814,169 @@
 
     <!-- Modal Overlay -->
     <div class="modal-overlay" id="modalOverlay" onclick="closeAllModals()"></div>
+
+    <!-- Profile Settings Menu -->
+    <div class="profile-settings-overlay" id="profileSettingsOverlay" onclick="closeProfileSettings()">
+        <div class="profile-settings-menu" onclick="event.stopPropagation()">
+            <div class="settings-header">
+                <div class="settings-title">Settings and privacy</div>
+                <button class="settings-close" onclick="closeProfileSettings()">×</button>
+            </div>
+            
+            <div class="settings-section">
+                <div class="settings-section-title">Account</div>
+                <div class="settings-item" onclick="openManageAccount()">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">👤</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Manage account</div>
+                        </div>
+                    </div>
+                    <div class="settings-arrow">›</div>
+                </div>
+                <div class="settings-item" onclick="openPrivacySettings()">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">🔒</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Privacy</div>
+                        </div>
+                    </div>
+                    <div class="settings-arrow">›</div>
+                </div>
+                <div class="settings-item" onclick="openSecuritySettings()">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">🛡️</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Security</div>
+                        </div>
+                    </div>
+                    <div class="settings-arrow">›</div>
+                </div>
+            </div>
+            
+            <div class="settings-divider"></div>
+            
+            <div class="settings-section">
+                <div class="settings-section-title">Content & Activity</div>
+                <div class="settings-item" onclick="toggleNotifications()" data-toggle="notifications">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">🔔</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Push notifications</div>
+                        </div>
+                    </div>
+                    <div class="settings-toggle" id="notificationsToggle"></div>
+                </div>
+                <div class="settings-item" onclick="openContentPreferences()">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">🎯</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Content preferences</div>
+                        </div>
+                    </div>
+                    <div class="settings-arrow">›</div>
+                </div>
+                <div class="settings-item" onclick="openDigitalWellbeing()">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">⏰</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Digital Wellbeing</div>
+                        </div>
+                    </div>
+                    <div class="settings-arrow">›</div>
+                </div>
+            </div>
+            
+            <div class="settings-divider"></div>
+            
+            <div class="settings-section">
+                <div class="settings-section-title">Data</div>
+                <div class="settings-item" onclick="toggleDataSaver()" data-toggle="dataSaver">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">📱</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Data Saver</div>
+                            <div class="settings-description">Use less data</div>
+                        </div>
+                    </div>
+                    <div class="settings-toggle" id="dataSaverToggle"></div>
+                </div>
+                <div class="settings-item" onclick="openDownloadSettings()">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">📥</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Downloads</div>
+                        </div>
+                    </div>
+                    <div class="settings-arrow">›</div>
+                </div>
+            </div>
+            
+            <div class="settings-divider"></div>
+            
+            <div class="settings-section">
+                <div class="settings-section-title">Support & About</div>
+                <div class="settings-item" onclick="openReportProblem()">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">❗</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Report a problem</div>
+                        </div>
+                    </div>
+                    <div class="settings-arrow">›</div>
+                </div>
+                <div class="settings-item" onclick="openHelpCenter()">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">❓</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Help Center</div>
+                        </div>
+                    </div>
+                    <div class="settings-arrow">›</div>
+                </div>
+                <div class="settings-item" onclick="openCommunityGuidelines()">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">📋</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Community Guidelines</div>
+                        </div>
+                    </div>
+                    <div class="settings-arrow">›</div>
+                </div>
+                <div class="settings-item" onclick="openTermsOfService()">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">📄</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Terms of Service</div>
+                        </div>
+                    </div>
+                    <div class="settings-arrow">›</div>
+                </div>
+                <div class="settings-item" onclick="openPrivacyPolicy()">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">📜</div>
+                        <div class="settings-text">
+                            <div class="settings-label">Privacy Policy</div>
+                        </div>
+                    </div>
+                    <div class="settings-arrow">›</div>
+                </div>
+            </div>
+            
+            <div class="settings-divider"></div>
+            
+            <div class="settings-section">
+                <div class="settings-item" onclick="handleLogout()" style="color: #FF0050;">
+                    <div class="settings-item-left">
+                        <div class="settings-icon">🚪</div>
+                        <div class="settings-text">
+                            <div class="settings-label" style="color: #FF0050;">Log out</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- QR Scanner -->
     <div class="qr-scanner" id="qrScanner">
@@ -2517,6 +2861,141 @@
         function showFollowers() {
             console.log('👥 Show followers');
         }
+        
+        // Profile Settings Functions
+        function openProfileSettings() {
+            console.log('⚙️ Opening profile settings');
+            hapticFeedback();
+            const overlay = document.getElementById('profileSettingsOverlay');
+            if (overlay) {
+                overlay.style.display = 'block';
+                setTimeout(() => overlay.classList.add('open'), 10);
+            }
+        }
+        
+        function closeProfileSettings() {
+            console.log('⚙️ Closing profile settings');
+            const overlay = document.getElementById('profileSettingsOverlay');
+            if (overlay) {
+                overlay.classList.remove('open');
+                setTimeout(() => overlay.style.display = 'none', 300);
+            }
+        }
+        
+        // Settings Menu Functions
+        function openManageAccount() {
+            console.log('👤 Manage account');
+            hapticFeedback();
+            // Implementation for account management
+        }
+        
+        function openPrivacySettings() {
+            console.log('🔒 Privacy settings');
+            hapticFeedback();
+            // Implementation for privacy settings
+        }
+        
+        function openSecuritySettings() {
+            console.log('🛡️ Security settings');
+            hapticFeedback();
+            // Implementation for security settings
+        }
+        
+        function toggleNotifications() {
+            console.log('🔔 Toggle notifications');
+            hapticFeedback();
+            const toggle = document.getElementById('notificationsToggle');
+            if (toggle) {
+                toggle.classList.toggle('active');
+                // Save preference to localStorage
+                const isActive = toggle.classList.contains('active');
+                localStorage.setItem('notifications', isActive);
+            }
+        }
+        
+        function openContentPreferences() {
+            console.log('🎯 Content preferences');
+            hapticFeedback();
+            // Implementation for content preferences
+        }
+        
+        function openDigitalWellbeing() {
+            console.log('⏰ Digital Wellbeing');
+            hapticFeedback();
+            // Implementation for digital wellbeing
+        }
+        
+        function toggleDataSaver() {
+            console.log('📱 Toggle data saver');
+            hapticFeedback();
+            const toggle = document.getElementById('dataSaverToggle');
+            if (toggle) {
+                toggle.classList.toggle('active');
+                // Save preference to localStorage
+                const isActive = toggle.classList.contains('active');
+                localStorage.setItem('dataSaver', isActive);
+            }
+        }
+        
+        function openDownloadSettings() {
+            console.log('📥 Download settings');
+            hapticFeedback();
+            // Implementation for download settings
+        }
+        
+        function openReportProblem() {
+            console.log('❗ Report problem');
+            hapticFeedback();
+            // Implementation for reporting problems
+        }
+        
+        function openHelpCenter() {
+            console.log('❓ Help Center');
+            hapticFeedback();
+            // Implementation for help center
+        }
+        
+        function openCommunityGuidelines() {
+            console.log('📋 Community Guidelines');
+            hapticFeedback();
+            // Implementation for community guidelines
+        }
+        
+        function openTermsOfService() {
+            console.log('📄 Terms of Service');
+            hapticFeedback();
+            // Implementation for terms of service
+        }
+        
+        function openPrivacyPolicy() {
+            console.log('📜 Privacy Policy');
+            hapticFeedback();
+            // Implementation for privacy policy
+        }
+        
+        // Initialize settings toggles based on saved preferences
+        function initializeSettingsToggles() {
+            // Initialize notifications toggle
+            const notificationsToggle = document.getElementById('notificationsToggle');
+            if (notificationsToggle) {
+                const notificationsEnabled = localStorage.getItem('notifications') === 'true';
+                if (notificationsEnabled) {
+                    notificationsToggle.classList.add('active');
+                }
+            }
+            
+            // Initialize data saver toggle
+            const dataSaverToggle = document.getElementById('dataSaverToggle');
+            if (dataSaverToggle) {
+                const dataSaverEnabled = localStorage.getItem('dataSaver') === 'true';
+                if (dataSaverEnabled) {
+                    dataSaverToggle.classList.add('active');
+                }
+            }
+        }
+        
+        // Call after DOM is loaded
+        setTimeout(initializeSettingsToggles, 1000);
         
         } catch (error) {
             console.error('🔴 App initialization failed:', error);
