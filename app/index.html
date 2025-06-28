@@ -32,8 +32,23 @@
                 profilePage.style.display = 'block';
                 console.log('✅ Profile page shown from HEAD');
                 
+                // Debug current user state
+                console.log('👤 Current user state:', {
+                    windowCurrentUser: window.currentUser,
+                    hasId: window.currentUser?.id,
+                    hasUsername: window.currentUser?.username,
+                    localStorage: localStorage.getItem('currentUser'),
+                    token: !!localStorage.getItem('token')
+                });
+                
                 // Load profile content immediately
-                loadProfileData();
+                if (typeof window.loadProfileData === 'function') {
+                    window.loadProfileData();
+                } else {
+                    console.error('❌ loadProfileData function not found');
+                    // Try to call it directly
+                    loadProfileData();
+                }
             } else {
                 console.error('❌ Profile page element not found');
             }
@@ -2891,9 +2906,13 @@
                            loop 
                            playsinline 
                            webkit-playsinline
-                           preload="metadata"
+                           preload="auto"
+                           muted
                            onclick="togglePlayPause(this)"
-                           ondblclick="likeVideo('${videoId}', event)">
+                           ondblclick="likeVideo('${videoId}', event)"
+                           onloadstart="console.log('🎥 Video loading started for:', '${videoSrc}')"
+                           onloadeddata="console.log('🎥 Video data loaded for:', '${videoSrc}')"
+                           oncanplay="console.log('🎥 Video can play:', '${videoSrc}')">
                     </video>
                     
                     <div class="video-progress">
