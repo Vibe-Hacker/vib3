@@ -1570,14 +1570,14 @@
 
         <!-- Bottom Navigation -->
         <div class="bottom-nav">
-            <div class="nav-item active" onclick="showHome()">
+            <div class="nav-item active" data-nav="home">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
                 </svg>
                 <span class="nav-label">Home</span>
             </div>
             
-            <div class="nav-item" onclick="showDiscover()">
+            <div class="nav-item" data-nav="discover">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
@@ -1590,7 +1590,7 @@
                 </div>
             </div>
             
-            <div class="nav-item" onclick="showInbox()">
+            <div class="nav-item" data-nav="inbox">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z"/>
                 </svg>
@@ -1598,7 +1598,7 @@
                 <div class="notification-badge" id="inboxBadge"></div>
             </div>
             
-            <div class="nav-item" onclick="showProfile()">
+            <div class="nav-item" data-nav="profile">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
@@ -2038,6 +2038,38 @@
             showDiscover: typeof window.showDiscover
         });
         
+        // Add event delegation for navigation after DOM loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 Setting up navigation event delegation');
+            
+            // Handle navigation clicks with event delegation
+            document.addEventListener('click', function(e) {
+                const navItem = e.target.closest('[data-nav]');
+                if (navItem) {
+                    const nav = navItem.getAttribute('data-nav');
+                    console.log('🎯 Navigation clicked:', nav);
+                    
+                    switch(nav) {
+                        case 'home':
+                            if (window.showHome) window.showHome();
+                            break;
+                        case 'discover':
+                            if (window.showDiscover) window.showDiscover();
+                            break;
+                        case 'inbox':
+                            if (window.showInbox) window.showInbox();
+                            break;
+                        case 'profile':
+                            if (window.showProfile) window.showProfile();
+                            break;
+                        case 'upload':
+                            if (window.openUploadModal) window.openUploadModal();
+                            break;
+                    }
+                }
+            });
+        });
+        
         window.hideAllPages = function() {
             document.getElementById('mainApp').style.display = 'none';
             document.getElementById('discoverPage').style.display = 'none';
@@ -2073,6 +2105,14 @@
         window.goToLive = function() {
             console.log('📺 Going live');
             // Live functionality
+        };
+        
+        window.openUploadModal = function() {
+            console.log('📤 Opening upload modal');
+            const uploadModal = document.getElementById('uploadModal');
+            const modalOverlay = document.getElementById('modalOverlay');
+            if (uploadModal) uploadModal.style.display = 'block';
+            if (modalOverlay) modalOverlay.style.display = 'block';
         };
 
         // Initialize app with error handling
