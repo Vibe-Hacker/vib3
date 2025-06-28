@@ -4659,14 +4659,18 @@ app.post('/api/admin/cleanup-likes', async (req, res) => {
 // Duplicate endpoints removed - they are now defined before static files
 
 // Start server
-const server = app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', async () => {
     console.log('========================================');
     console.log(`🚀 VIB3 FULL SERVER v2.0 WITH ANALYTICS`);
     console.log('========================================');
     console.log(`Port: ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`);
-    console.log(`Database: ${process.env.DATABASE_URL ? 'MongoDB configured' : 'No database configured'}`);
+    
+    // Connect to database
+    const dbConnected = await connectDB();
+    console.log(`Database: ${dbConnected ? 'Connected successfully' : 'No database configured'}`);
+    
     console.log('');
     console.log('📊 Analytics endpoint available at: /api/analytics/algorithm');
     console.log('🧪 Test endpoint available at: /api/test');
