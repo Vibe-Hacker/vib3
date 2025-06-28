@@ -135,17 +135,17 @@
         
         // Load user statistics
         window.loadUserStats = async function(userId) {
-            if (!userId) return;
-            
             try {
                 console.log('📊 Fetching user stats for:', userId);
                 const token = localStorage.getItem('token');
-                const response = await fetch(`https://vib3-production.up.railway.app/api/users/${userId}/stats`, {
+                const response = await fetch(`https://vib3-production.up.railway.app/api/user/stats`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
+                
+                console.log('📊 Stats response status:', response.status);
                 
                 if (response.ok) {
                     const stats = await response.json();
@@ -160,9 +160,10 @@
                     if (followersCount) followersCount.textContent = stats.followers || 0;
                     if (likesCount) likesCount.textContent = stats.likes || 0;
                     
-                    console.log('✅ Updated profile stats');
+                    console.log('✅ Updated profile stats - following:', stats.following, 'followers:', stats.followers, 'likes:', stats.likes);
                 } else {
-                    console.error('❌ Failed to load user stats:', response.status);
+                    const errorText = await response.text();
+                    console.error('❌ Failed to load user stats:', response.status, errorText);
                 }
             } catch (error) {
                 console.error('❌ Error loading user stats:', error);
@@ -171,22 +172,23 @@
         
         // Load user videos
         window.loadUserVideos = async function(userId) {
-            if (!userId) return;
-            
             try {
                 console.log('🎥 Fetching user videos for:', userId);
                 const token = localStorage.getItem('token');
-                const response = await fetch(`https://vib3-production.up.railway.app/api/users/${userId}/videos`, {
+                const response = await fetch(`https://vib3-production.up.railway.app/api/user/videos`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
                 
+                console.log('🎥 Videos response status:', response.status);
+                
                 if (response.ok) {
                     const data = await response.json();
                     const userVideos = data.videos || data.data || data || [];
                     console.log('✅ User videos loaded:', userVideos.length, 'videos');
+                    console.log('✅ Video data sample:', userVideos[0]);
                     
                     // Update profile grid with user videos
                     const profileGrid = document.getElementById('profileGrid');
@@ -202,12 +204,14 @@
                                 </div>
                             </div>
                         `).join('');
-                        console.log('✅ Updated profile grid with videos');
+                        console.log('✅ Updated profile grid with', userVideos.length, 'videos');
                     } else if (profileGrid) {
                         profileGrid.innerHTML = '<div style="text-align: center; padding: 50px; color: #666;">No videos yet</div>';
+                        console.log('✅ Set no videos message');
                     }
                 } else {
-                    console.error('❌ Failed to load user videos:', response.status);
+                    const errorText = await response.text();
+                    console.error('❌ Failed to load user videos:', response.status, errorText);
                 }
             } catch (error) {
                 console.error('❌ Error loading user videos:', error);
