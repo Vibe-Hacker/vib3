@@ -1598,7 +1598,7 @@
                 <div class="notification-badge" id="inboxBadge"></div>
             </div>
             
-            <div class="nav-item" data-nav="profile">
+            <div class="nav-item" data-nav="profile" onclick="if(window.showProfile) window.showProfile()">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
@@ -2038,37 +2038,56 @@
             showDiscover: typeof window.showDiscover
         });
         
-        // Add event delegation for navigation after DOM loads
-        document.addEventListener('DOMContentLoaded', function() {
+        // Add event delegation for navigation - use both DOMContentLoaded and immediate setup
+        function setupNavigation() {
             console.log('🎯 Setting up navigation event delegation');
             
             // Handle navigation clicks with event delegation
             document.addEventListener('click', function(e) {
+                console.log('🎯 Click detected on:', e.target);
                 const navItem = e.target.closest('[data-nav]');
+                console.log('🎯 Nav item found:', navItem);
+                
                 if (navItem) {
                     const nav = navItem.getAttribute('data-nav');
                     console.log('🎯 Navigation clicked:', nav);
                     
                     switch(nav) {
                         case 'home':
+                            console.log('🏠 Calling showHome');
                             if (window.showHome) window.showHome();
+                            else console.error('showHome not found');
                             break;
                         case 'discover':
+                            console.log('🔍 Calling showDiscover');
                             if (window.showDiscover) window.showDiscover();
+                            else console.error('showDiscover not found');
                             break;
                         case 'inbox':
+                            console.log('📥 Calling showInbox');
                             if (window.showInbox) window.showInbox();
+                            else console.error('showInbox not found');
                             break;
                         case 'profile':
+                            console.log('👤 Calling showProfile');
                             if (window.showProfile) window.showProfile();
+                            else console.error('showProfile not found');
                             break;
                         case 'upload':
+                            console.log('📤 Calling openUploadModal');
                             if (window.openUploadModal) window.openUploadModal();
+                            else console.error('openUploadModal not found');
                             break;
                     }
+                } else {
+                    console.log('🎯 No nav item found for click');
                 }
             });
-        });
+        }
+        
+        // Set up navigation immediately and also on DOM ready
+        setupNavigation();
+        document.addEventListener('DOMContentLoaded', setupNavigation);
         
         window.hideAllPages = function() {
             document.getElementById('mainApp').style.display = 'none';
