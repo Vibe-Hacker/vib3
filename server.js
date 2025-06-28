@@ -705,6 +705,18 @@ app.use('/app', express.static(path.join(__dirname, 'app')));
 // Route web requests to web directory (default)
 app.use(express.static(path.join(__dirname, 'web')));
 
+// Fallback route for debugging
+app.get('/', (req, res) => {
+    console.log('Fallback route hit - static files not found');
+    console.log('__dirname:', __dirname);
+    console.log('Looking for web at:', path.join(__dirname, 'web'));
+    res.status(500).json({ 
+        error: 'Static files not found', 
+        dirname: __dirname,
+        webPath: path.join(__dirname, 'web')
+    });
+});
+
 // DigitalOcean Spaces configuration
 const spacesEndpoint = new AWS.Endpoint(process.env.DO_SPACES_ENDPOINT || 'nyc3.digitaloceanspaces.com');
 const s3 = new AWS.S3({
