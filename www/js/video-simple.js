@@ -31,9 +31,10 @@ async function toggleLike(videoId) {
     }
 }
 
-// Share video with TikTok-style modal
+// Share video with TikTok-style modal - UPDATED v2.0
 async function shareVideo(videoId) {
-    console.log('🔗 Opening TikTok-style share modal for video:', videoId);
+    console.log('🔗 FIXED SHARE MODAL v2.0 - Opening TikTok-style share modal for video:', videoId);
+    console.log('📍 This is the CORRECT shareVideo function from video-simple.js');
     
     // Remove any existing share modals
     document.querySelectorAll('.share-modal').forEach(m => m.remove());
@@ -214,3 +215,7 @@ async function uploadVideo(file, description, tags) {
 window.toggleLike = toggleLike;
 window.shareVideo = shareVideo;
 window.uploadVideo = uploadVideo;
+
+// Debug log to confirm this file is loading
+console.log('✅ video-simple.js loaded with FIXED shareVideo v2.0');
+console.log('🔍 Current shareVideo function:', typeof window.shareVideo);
