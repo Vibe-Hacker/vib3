@@ -1978,6 +1978,11 @@ app.get('/api/videos', async (req, res) => {
                 // Add feed metadata without changing titles
                 video.feedType = feed;
                 
+                // Add thumbnail URL if video has a videoUrl
+                if (video.videoUrl && !video.thumbnailUrl) {
+                    video.thumbnailUrl = video.videoUrl + '#t=1';
+                }
+                
             } catch (userError) {
                 console.error('Error getting user info for video:', video._id, userError);
                 // Set default user info if error
@@ -1990,6 +1995,11 @@ app.get('/api/videos', async (req, res) => {
                 video.username = 'anonymous';
                 video.likeCount = 0;
                 video.commentCount = 0;
+                
+                // Add thumbnail URL if video has a videoUrl
+                if (video.videoUrl && !video.thumbnailUrl) {
+                    video.thumbnailUrl = video.videoUrl + '#t=1';
+                }
             }
         }
         
@@ -2425,6 +2435,11 @@ app.get('/api/user/videos', async (req, res) => {
                 video.likeCount = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
                 video.commentCount = await db.collection('comments').countDocuments({ videoId: video._id.toString() });
                 video.views = video.views || 0;
+                
+                // Add thumbnail URL if video has a videoUrl
+                if (video.videoUrl && !video.thumbnailUrl) {
+                    video.thumbnailUrl = video.videoUrl + '#t=1';
+                }
             } catch (userError) {
                 console.error('Error getting user info for video:', video._id, userError);
                 video.user = { 
@@ -2437,6 +2452,11 @@ app.get('/api/user/videos', async (req, res) => {
                 video.likeCount = 0;
                 video.commentCount = 0;
                 video.views = 0;
+                
+                // Add thumbnail URL if video has a videoUrl
+                if (video.videoUrl && !video.thumbnailUrl) {
+                    video.thumbnailUrl = video.videoUrl + '#t=1';
+                }
             }
         }
         

@@ -277,6 +277,13 @@ async function loadUserVideos() {
             const data = await response.json();
             console.log('✅ User videos loaded:', data);
             console.log('🎬 Video count:', (data.videos || []).length);
+            
+            // Debug: log video structure to understand thumbnail data
+            if (data.videos && data.videos.length > 0) {
+                console.log('🎬 Sample video data:', data.videos[0]);
+                console.log('🎬 Available video properties:', Object.keys(data.videos[0]));
+            }
+            
             displayUserVideos(data.videos || []);
         } else {
             const text = await response.text();
@@ -630,6 +637,13 @@ function createVideoCard(video) {
     // Try to get thumbnail from video data - check multiple possible properties
     const thumbnailUrl = video.thumbnailUrl || video.thumbnail || video.posterUrl || video.poster;
     
+    console.log('🖼️ Thumbnail check:', {
+        thumbnailUrl: thumbnailUrl,
+        videoUrl: video.videoUrl,
+        hasVideoUrl: !!video.videoUrl,
+        videoUrlStart: video.videoUrl ? video.videoUrl.substring(0, 50) + '...' : 'none'
+    });
+    
     let videoElement;
     if (thumbnailUrl) {
         // Use actual thumbnail image
@@ -643,17 +657,21 @@ function createVideoCard(video) {
                 <div style="color: white; font-size: 10px; text-align: center; padding: 0 5px;">${video.title || 'Video'}</div>
             </div>`;
     } else if (video.videoUrl) {
-        // Try to generate thumbnail from video
+        // Create a poster image URL by appending #t=1 (seek to 1 second)
+        const posterUrl = video.videoUrl + '#t=1';
+        console.log('🖼️ Using video poster URL:', posterUrl);
+        
         videoElement = `
             <video 
                 style="width: 100%; height: 100%; object-fit: cover;" 
                 muted 
                 preload="metadata"
+                poster=""
                 onloadedmetadata="this.currentTime=1"
                 oncanplay="this.style.opacity='1'"
                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
             >
-                <source src="${video.videoUrl}#t=1" type="video/mp4">
+                <source src="${posterUrl}" type="video/mp4">
             </video>
             <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #333, #555); display: none; align-items: center; justify-content: center; flex-direction: column; position: absolute; top: 0; left: 0;">
                 <div style="font-size: 24px; margin-bottom: 5px;">🎬</div>
