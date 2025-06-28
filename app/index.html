@@ -1598,7 +1598,7 @@
                 <div class="notification-badge" id="inboxBadge"></div>
             </div>
             
-            <div class="nav-item" data-nav="profile" onclick="alert('Profile clicked!'); if(window.showProfile) window.showProfile(); else alert('showProfile not found')">
+            <div class="nav-item" data-nav="profile" onclick="showProfile()">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
@@ -1993,7 +1993,10 @@
     <script src="js/auth-simple.js?v=20250628-1"></script>
     <script src="js/vib3-complete.js?v=20250628-1"></script>
     <script>
-        // Define navigation functions FIRST to prevent reference errors
+        // IMMEDIATELY define all functions as the very first thing
+        console.log('🟢 Defining navigation functions immediately...');
+        
+        // Global variables
         let currentUser = null;
         let currentFeed = 'foryou';
         let currentPage = 'home';
@@ -2001,35 +2004,90 @@
         let isLoading = false;
         let currentVideoIndex = 0;
         
-        window.showHome = function() {
+        // Core navigation functions - defined IMMEDIATELY
+        function hideAllPages() {
+            const mainApp = document.getElementById('mainApp');
+            const discoverPage = document.getElementById('discoverPage');
+            const inboxPage = document.getElementById('inboxPage');
+            const profilePage = document.getElementById('profilePage');
+            
+            if (mainApp) mainApp.style.display = 'none';
+            if (discoverPage) discoverPage.style.display = 'none';
+            if (inboxPage) inboxPage.style.display = 'none';
+            if (profilePage) profilePage.style.display = 'none';
+        }
+        
+        function updateNavigation() {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            
+            const navArray = Array.from(navItems);
+            if (currentPage === 'home' && navArray[0]) navArray[0].classList.add('active');
+            if (currentPage === 'discover' && navArray[1]) navArray[1].classList.add('active');
+            if (currentPage === 'inbox' && navArray[3]) navArray[3].classList.add('active');
+            if (currentPage === 'profile' && navArray[4]) navArray[4].classList.add('active');
+        }
+        
+        function showHome() {
+            console.log('🏠 showHome called');
             hideAllPages();
-            document.getElementById('mainApp').style.display = 'block';
+            const mainApp = document.getElementById('mainApp');
+            if (mainApp) mainApp.style.display = 'block';
             currentPage = 'home';
             updateNavigation();
-        };
+        }
         
-        window.showDiscover = function() {
+        function showDiscover() {
+            console.log('🔍 showDiscover called');
             hideAllPages();
-            document.getElementById('discoverPage').style.display = 'block';
+            const discoverPage = document.getElementById('discoverPage');
+            if (discoverPage) discoverPage.style.display = 'block';
             currentPage = 'discover';
             updateNavigation();
-        };
+        }
         
-        window.showInbox = function() {
+        function showInbox() {
+            console.log('📥 showInbox called');
             hideAllPages();
-            document.getElementById('inboxPage').style.display = 'block';
+            const inboxPage = document.getElementById('inboxPage');
+            if (inboxPage) inboxPage.style.display = 'block';
             currentPage = 'inbox';
             updateNavigation();
-        };
+        }
         
-        window.showProfile = function() {
-            console.log('🎯 showProfile called');
+        function showProfile() {
+            console.log('👤 showProfile called');
             hideAllPages();
-            document.getElementById('profilePage').style.display = 'block';
+            const profilePage = document.getElementById('profilePage');
+            if (profilePage) {
+                profilePage.style.display = 'block';
+                console.log('✅ Profile page shown');
+            } else {
+                console.error('❌ Profile page element not found');
+            }
             currentPage = 'profile';
             updateNavigation();
-            loadProfileContent();
-        };
+            if (typeof loadProfileContent === 'function') {
+                loadProfileContent();
+            }
+        }
+        
+        function openUploadModal() {
+            console.log('📤 openUploadModal called');
+            const uploadModal = document.getElementById('uploadModal');
+            const modalOverlay = document.getElementById('modalOverlay');
+            if (uploadModal) uploadModal.style.display = 'block';
+            if (modalOverlay) modalOverlay.style.display = 'block';
+        }
+        
+        // Make functions globally available IMMEDIATELY
+        window.showHome = showHome;
+        window.showDiscover = showDiscover;
+        window.showInbox = showInbox;
+        window.showProfile = showProfile;
+        window.hideAllPages = hideAllPages;
+        window.updateNavigation = updateNavigation;
+        window.openUploadModal = openUploadModal;
         
         // Log that functions are defined
         console.log('✅ Navigation functions defined:', {
