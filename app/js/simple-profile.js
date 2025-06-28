@@ -242,47 +242,93 @@ async function loadUserProfileData() {
 async function loadUserVideos() {
     try {
         const baseURL = getAPIBaseURL();
-        console.log('🎬 Loading user videos:', { baseURL, hasAuthToken: !!window.authToken });
-        
-        const response = await fetch(`${baseURL}/api/user/videos`, {
-            credentials: 'include', // Use session-based auth
-            headers: {
-                'Content-Type': 'application/json',
-                ...(window.authToken && window.authToken !== 'session-based' ? 
-                    { 'Authorization': `Bearer ${window.authToken}` } : {})
-            }
+        console.log('🎬 Loading user videos:', { 
+            baseURL, 
+            hasAuthToken: !!window.authToken,
+            authToken: window.authToken ? window.authToken.substring(0, 10) + '...' : 'none',
+            currentUser: window.currentUser?.username || 'none'
         });
         
-        console.log('📡 Videos API response:', { status: response.status, ok: response.ok });
+        // Prepare headers with both auth methods
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        // Add Bearer token if available
+        if (window.authToken && window.authToken !== 'session-based') {
+            headers['Authorization'] = `Bearer ${window.authToken}`;
+        }
+        
+        console.log('🎬 Videos request headers:', headers);
+        
+        const response = await fetch(`${baseURL}/api/user/videos`, {
+            credentials: 'include', // Use session-based auth as fallback
+            headers
+        });
+        
+        console.log('📡 Videos API response:', { 
+            status: response.status, 
+            ok: response.ok,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries())
+        });
         
         if (response.ok) {
             const data = await response.json();
             console.log('✅ User videos loaded:', data);
+            console.log('🎬 Video count:', (data.videos || []).length);
             displayUserVideos(data.videos || []);
         } else {
             const text = await response.text();
-            console.error('❌ Videos API failed:', { status: response.status, text: text.substring(0, 200) });
+            console.error('❌ Videos API failed:', { 
+                status: response.status, 
+                statusText: response.statusText,
+                text: text.substring(0, 500) 
+            });
+            
+            // Show empty state on error
+            displayUserVideos([]);
         }
     } catch (error) {
-        console.error('Error loading user videos:', error);
+        console.error('🎬 Error loading user videos:', error);
+        // Show empty state on error
+        displayUserVideos([]);
     }
 }
 
 async function loadUserStats() {
     try {
         const baseURL = getAPIBaseURL();
-        console.log('📊 Loading user stats:', { baseURL, hasAuthToken: !!window.authToken });
-        
-        const response = await fetch(`${baseURL}/api/user/stats`, {
-            credentials: 'include', // Use session-based auth
-            headers: {
-                'Content-Type': 'application/json',
-                ...(window.authToken && window.authToken !== 'session-based' ? 
-                    { 'Authorization': `Bearer ${window.authToken}` } : {})
-            }
+        console.log('📊 Loading user stats:', { 
+            baseURL, 
+            hasAuthToken: !!window.authToken, 
+            authToken: window.authToken ? window.authToken.substring(0, 10) + '...' : 'none',
+            currentUser: window.currentUser?.username || 'none'
         });
         
-        console.log('📊 Stats API response:', { status: response.status, ok: response.ok });
+        // Prepare headers with both auth methods
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        // Add Bearer token if available
+        if (window.authToken && window.authToken !== 'session-based') {
+            headers['Authorization'] = `Bearer ${window.authToken}`;
+        }
+        
+        console.log('📊 Stats request headers:', headers);
+        
+        const response = await fetch(`${baseURL}/api/user/stats`, {
+            credentials: 'include', // Use session-based auth as fallback
+            headers
+        });
+        
+        console.log('📊 Stats API response:', { 
+            status: response.status, 
+            ok: response.ok,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries())
+        });
         
         if (response.ok) {
             const stats = await response.json();
@@ -290,10 +336,26 @@ async function loadUserStats() {
             updateStatsDisplay(stats);
         } else {
             const text = await response.text();
-            console.error('📊 Stats API failed:', { status: response.status, text: text.substring(0, 200) });
+            console.error('📊 Stats API failed:', { 
+                status: response.status, 
+                statusText: response.statusText,
+                text: text.substring(0, 500) 
+            });
+            
+            // Try to show fallback data from currentUser
+            if (window.currentUser && window.currentUser.stats) {
+                console.log('📊 Using fallback stats from currentUser');
+                updateStatsDisplay(window.currentUser.stats);
+            } else {
+                // Show zeros as fallback
+                console.log('📊 Using zero stats as fallback');
+                updateStatsDisplay({ followers: 0, following: 0, likes: 0, videoCount: 0 });
+            }
         }
     } catch (error) {
-        console.error('Error loading user stats:', error);
+        console.error('📊 Error loading user stats:', error);
+        // Show zeros as fallback on error
+        updateStatsDisplay({ followers: 0, following: 0, likes: 0, videoCount: 0 });
     }
 }
 
@@ -334,29 +396,55 @@ function updateStatsDisplay(stats) {
     const followersEl = document.getElementById('followersCount');
     const likesEl = document.getElementById('likesCount');
     
-    if (followingEl && stats.following !== undefined) {
-        followingEl.textContent = formatNumber(stats.following);
-    }
-    if (followersEl && stats.followers !== undefined) {
-        followersEl.textContent = formatNumber(stats.followers);
-    }
-    if (likesEl && stats.likes !== undefined) {
-        likesEl.textContent = formatNumber(stats.likes);
+    console.log('📊 DOM elements found:', {
+        followingEl: !!followingEl,
+        followersEl: !!followersEl, 
+        likesEl: !!likesEl
+    });
+    
+    // Update with explicit checks and logging
+    if (followingEl) {
+        const followingCount = stats.following !== undefined ? stats.following : 0;
+        followingEl.textContent = formatNumber(followingCount);
+        console.log('📊 Set following count to:', followingCount);
     }
     
-    // Also try to use currentUser data if stats are empty
-    if (window.currentUser) {
+    if (followersEl) {
+        const followersCount = stats.followers !== undefined ? stats.followers : 0;
+        followersEl.textContent = formatNumber(followersCount);
+        console.log('📊 Set followers count to:', followersCount);
+    }
+    
+    if (likesEl) {
+        const likesCount = stats.likes !== undefined ? stats.likes : 0;
+        likesEl.textContent = formatNumber(likesCount);
+        console.log('📊 Set likes count to:', likesCount);
+    }
+    
+    // Also try to use currentUser data if stats are empty/zero
+    if (window.currentUser && window.currentUser.stats) {
         const user = window.currentUser;
-        if (followingEl && !stats.following && user.following !== undefined) {
-            followingEl.textContent = formatNumber(user.following);
+        console.log('📊 Checking currentUser fallback stats:', user.stats);
+        
+        if (followingEl && (!stats.following || stats.following === 0) && user.stats.following !== undefined) {
+            followingEl.textContent = formatNumber(user.stats.following);
+            console.log('📊 Used currentUser following count:', user.stats.following);
         }
-        if (followersEl && !stats.followers && user.followers !== undefined) {
-            followersEl.textContent = formatNumber(user.followers);
+        if (followersEl && (!stats.followers || stats.followers === 0) && user.stats.followers !== undefined) {
+            followersEl.textContent = formatNumber(user.stats.followers);
+            console.log('📊 Used currentUser followers count:', user.stats.followers);
         }
-        if (likesEl && !stats.likes && user.likes !== undefined) {
-            likesEl.textContent = formatNumber(user.likes);
+        if (likesEl && (!stats.likes || stats.likes === 0) && user.stats.likes !== undefined) {
+            likesEl.textContent = formatNumber(user.stats.likes);
+            console.log('📊 Used currentUser likes count:', user.stats.likes);
         }
     }
+    
+    console.log('📊 Final displayed values:', {
+        following: followingEl?.textContent,
+        followers: followersEl?.textContent,
+        likes: likesEl?.textContent
+    });
 }
 
 function formatNumber(num) {
@@ -490,7 +578,15 @@ function messageUser(userId) {
 
 function displayUserVideos(videos) {
     const videosContent = document.getElementById('videosContent');
-    if (!videosContent) return;
+    if (!videosContent) {
+        console.error('📹 videosContent element not found!');
+        return;
+    }
+    
+    console.log('📹 Displaying videos:', { 
+        videosCount: videos.length, 
+        videos: videos.map(v => ({ id: v._id, title: v.title }))
+    });
     
     if (videos.length === 0) {
         videosContent.innerHTML = `
@@ -503,21 +599,27 @@ function displayUserVideos(videos) {
                 </button>
             </div>
         `;
+        console.log('📹 Displayed empty state');
     } else {
         // Create grid container
         const gridContainer = document.createElement('div');
         gridContainer.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;';
         
         // Create video cards
-        videos.forEach(video => {
+        videos.forEach((video, index) => {
+            console.log(`📹 Creating card ${index + 1}/${videos.length} for video:`, video.title || 'Untitled');
             const cardElement = createVideoCard(video);
             if (cardElement) {
                 gridContainer.appendChild(cardElement);
+            } else {
+                console.error('📹 Failed to create card for video:', video);
             }
         });
         
         videosContent.innerHTML = '';
         videosContent.appendChild(gridContainer);
+        
+        console.log('📹 Grid container appended with', gridContainer.children.length, 'video cards');
     }
 }
 
@@ -1617,6 +1719,80 @@ function formatTimeAgo(dateString) {
     return date.toLocaleDateString();
 }
 
+// Debug function to test API endpoints
+async function debugProfileAPI() {
+    console.log('🐛 DEBUG: Testing profile API endpoints...');
+    
+    // Check current auth state
+    console.log('🐛 Current auth state:', {
+        authToken: window.authToken ? window.authToken.substring(0, 10) + '...' : 'none',
+        currentUser: window.currentUser?.username || 'none',
+        sessionStorage: sessionStorage.getItem('authToken') ? 'present' : 'none',
+        localStorage: localStorage.getItem('authToken') ? 'present' : 'none'
+    });
+    
+    const baseURL = getAPIBaseURL();
+    console.log('🐛 API Base URL:', baseURL);
+    
+    // Test stats endpoint
+    try {
+        console.log('🐛 Testing /api/user/stats...');
+        const statsResponse = await fetch(`${baseURL}/api/user/stats`, {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
+        });
+        
+        console.log('🐛 Stats response:', {
+            status: statsResponse.status,
+            ok: statsResponse.ok,
+            statusText: statsResponse.statusText
+        });
+        
+        if (statsResponse.ok) {
+            const statsData = await statsResponse.json();
+            console.log('🐛 Stats data:', statsData);
+        } else {
+            const statsError = await statsResponse.text();
+            console.log('🐛 Stats error:', statsError.substring(0, 300));
+        }
+    } catch (error) {
+        console.error('🐛 Stats request failed:', error);
+    }
+    
+    // Test videos endpoint
+    try {
+        console.log('🐛 Testing /api/user/videos...');
+        const videosResponse = await fetch(`${baseURL}/api/user/videos`, {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
+        });
+        
+        console.log('🐛 Videos response:', {
+            status: videosResponse.status,
+            ok: videosResponse.ok,
+            statusText: videosResponse.statusText
+        });
+        
+        if (videosResponse.ok) {
+            const videosData = await videosResponse.json();
+            console.log('🐛 Videos data:', videosData);
+        } else {
+            const videosError = await videosResponse.text();
+            console.log('🐛 Videos error:', videosError.substring(0, 300));
+        }
+    } catch (error) {
+        console.error('🐛 Videos request failed:', error);
+    }
+}
+
 // Make functions globally available
 window.createSimpleProfilePage = createSimpleProfilePage;
 window.goBackToFeed = goBackToFeed;
@@ -1643,3 +1819,4 @@ window.loadUserStats = loadUserStats;
 window.loadLikedVideos = loadLikedVideos;
 window.loadFavoriteVideos = loadFavoriteVideos;
 window.loadFollowingFeed = loadFollowingFeed;
+window.debugProfileAPI = debugProfileAPI;
