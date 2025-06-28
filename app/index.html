@@ -2918,7 +2918,7 @@
                     <div class="video-actions">
                         <div class="action-item">
                             <div class="creator-avatar" onclick="viewProfile('${userId}')">
-                                <div class="add-icon">+</div>
+                                ${userId === window.currentUser?.id || username === window.currentUser?.username ? '' : '<div class="add-icon">+</div>'}
                             </div>
                         </div>
                         
