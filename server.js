@@ -704,7 +704,46 @@ function calculateQuartileRetention(views, quartile) {
 app.use('/app', express.static(path.join(__dirname, 'app')));
 
 // Route web requests to web directory (default)
-app.use(express.static(path.join(__dirname, 'web')));
+const webDir = path.join(__dirname, 'web');
+console.log('Serving static files from:', webDir);
+console.log('Current directory:', process.cwd());
+console.log('__dirname:', __dirname);
+
+// Try multiple possible paths
+const possiblePaths = [
+    path.join(__dirname, 'web'),
+    path.join(process.cwd(), 'web'),
+    './web',
+    'web'
+];
+
+let staticPath = null;
+const fs = require('fs');
+for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+        staticPath = p;
+        console.log('Found web directory at:', p);
+        break;
+    }
+}
+
+if (staticPath) {
+    app.use(express.static(staticPath));
+} else {
+    console.error('ERROR: Could not find web directory in any of:', possiblePaths);
+    app.use((req, res, next) => {
+        if (req.path === '/') {
+            res.status(500).json({ 
+                error: 'Web directory not found',
+                tried: possiblePaths,
+                cwd: process.cwd(),
+                dirname: __dirname
+            });
+        } else {
+            next();
+        }
+    });
+}
 
 
 // DigitalOcean Spaces configuration
