@@ -627,28 +627,46 @@ function createVideoCard(video) {
     const videoId = video._id || video.id;
     console.log('🎬 Creating video card for:', video.title || 'Untitled', video);
     
-    // Use video preview with poster frame
-    const videoElement = video.videoUrl ? 
-        `<video 
-            style="width: 100%; height: 100%; object-fit: cover;" 
-            muted 
-            preload="metadata"
-            onloadedmetadata="this.currentTime=1"
-            poster=""
-            oncanplay="this.style.opacity='1'"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-        >
-            <source src="${video.videoUrl}#t=1" type="video/mp4">
-            <source src="${video.videoUrl}#t=1" type="video/webm">
-        </video>
-        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #333, #555); display: none; align-items: center; justify-content: center; flex-direction: column; position: absolute; top: 0; left: 0;">
-            <div style="font-size: 48px; margin-bottom: 10px;">🎬</div>
-            <div style="color: white; font-size: 14px; text-align: center; padding: 0 10px;">${video.title || 'Video'}</div>
-        </div>` :
-        `<div style="width: 100%; height: 100%; background: linear-gradient(135deg, #333, #555); display: flex; align-items: center; justify-content: center; flex-direction: column;">
-            <div style="font-size: 48px; margin-bottom: 10px;">🎬</div>
-            <div style="color: white; font-size: 14px; text-align: center; padding: 0 10px;">${video.title || 'Video'}</div>
-        </div>`;
+    // Try to get thumbnail from video data - check multiple possible properties
+    const thumbnailUrl = video.thumbnailUrl || video.thumbnail || video.posterUrl || video.poster;
+    
+    let videoElement;
+    if (thumbnailUrl) {
+        // Use actual thumbnail image
+        videoElement = `
+            <img src="${thumbnailUrl}" 
+                 style="width: 100%; height: 100%; object-fit: cover;" 
+                 alt="Video thumbnail"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #333, #555); display: none; align-items: center; justify-content: center; flex-direction: column; position: absolute; top: 0; left: 0;">
+                <div style="font-size: 24px; margin-bottom: 5px;">🎬</div>
+                <div style="color: white; font-size: 10px; text-align: center; padding: 0 5px;">${video.title || 'Video'}</div>
+            </div>`;
+    } else if (video.videoUrl) {
+        // Try to generate thumbnail from video
+        videoElement = `
+            <video 
+                style="width: 100%; height: 100%; object-fit: cover;" 
+                muted 
+                preload="metadata"
+                onloadedmetadata="this.currentTime=1"
+                oncanplay="this.style.opacity='1'"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            >
+                <source src="${video.videoUrl}#t=1" type="video/mp4">
+            </video>
+            <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #333, #555); display: none; align-items: center; justify-content: center; flex-direction: column; position: absolute; top: 0; left: 0;">
+                <div style="font-size: 24px; margin-bottom: 5px;">🎬</div>
+                <div style="color: white; font-size: 10px; text-align: center; padding: 0 5px;">${video.title || 'Video'}</div>
+            </div>`;
+    } else {
+        // Fallback placeholder
+        videoElement = `
+            <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #333, #555); display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                <div style="font-size: 24px; margin-bottom: 5px;">🎬</div>
+                <div style="color: white; font-size: 10px; text-align: center; padding: 0 5px;">${video.title || 'Video'}</div>
+            </div>`;
+    }
     
     const cardHtml = `
         <div class="profile-video-card" style="background: #222; border-radius: 6px; overflow: hidden; cursor: pointer; position: relative; aspect-ratio: 2/3; height: 150px;" data-video-id="${videoId}">
@@ -708,7 +726,72 @@ function createVideoCard(video) {
         });
     }
     
+    // If no thumbnail URL but we have video URL, try to generate thumbnail
+    if (!thumbnailUrl && video.videoUrl) {
+        generateVideoThumbnail(card, video.videoUrl);
+    }
+    
     return card;
+}
+
+// Function to generate thumbnail from video URL
+function generateVideoThumbnail(cardElement, videoUrl) {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.preload = 'metadata';
+    
+    video.onloadedmetadata = function() {
+        // Seek to 1 second into the video
+        video.currentTime = 1;
+    };
+    
+    video.onseeked = function() {
+        try {
+            // Create canvas to capture video frame
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size to match thumbnail
+            canvas.width = 100;
+            canvas.height = 150;
+            
+            // Draw video frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to data URL
+            const thumbnailDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            
+            // Update the card with the generated thumbnail
+            const img = cardElement.querySelector('img');
+            const videoEl = cardElement.querySelector('video');
+            
+            if (img) {
+                img.src = thumbnailDataUrl;
+            } else if (videoEl) {
+                // Replace video element with img
+                const newImg = document.createElement('img');
+                newImg.src = thumbnailDataUrl;
+                newImg.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+                newImg.alt = 'Video thumbnail';
+                videoEl.parentNode.replaceChild(newImg, videoEl);
+            }
+            
+            console.log('✅ Generated thumbnail for video');
+        } catch (error) {
+            console.log('❌ Failed to generate thumbnail:', error);
+        }
+        
+        // Clean up
+        video.remove();
+    };
+    
+    video.onerror = function() {
+        console.log('❌ Video load failed for thumbnail generation');
+        video.remove();
+    };
+    
+    video.src = videoUrl;
 }
 
 // Open video from profile page using the same reliable method as explore
