@@ -234,35 +234,27 @@
                         profileGrid.innerHTML = userVideos.map((video, index) => {
                             const videoSrc = video.videoUrl || video.url;
                             const videoId = video._id || video.id;
+                            const thumbnailUrl = video.thumbnailUrl || video.thumbnail || videoSrc;
                             const likeCount = video.likeCount || video.likes || 0;
-                            const viewCount = video.viewCount || video.views || 0;
                             
                             return `
                             <div class="profile-video-item" onclick="playVideo('${videoId}')">
-                                <video class="profile-video-thumb" 
-                                       src="${videoSrc}"
-                                       preload="metadata"
-                                       muted
-                                       onloadedmetadata="generateThumbnail(this, ${index})"
-                                       style="object-fit: cover; width: 100%; height: 100%;">
-                                </video>
-                                <canvas class="profile-video-canvas" id="canvas-${index}" style="display: none;"></canvas>
+                                <div class="profile-video-thumb" style="background-image: url('${thumbnailUrl}');">
+                                    <video src="${videoSrc}" 
+                                           preload="none" 
+                                           style="display: none;"
+                                           onloadedmetadata="this.currentTime=0.1"
+                                           onseeked="captureVideoFrame(this, ${index})">
+                                    </video>
+                                </div>
                                 <div class="video-overlay">
                                     <div class="video-stats">
                                         <span class="stat-item">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                                            <svg viewBox="0 0 24 24" fill="white">
                                                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                                             </svg>
                                             ${formatCount(likeCount)}
                                         </span>
-                                        ${viewCount > 0 ? `
-                                        <span class="stat-item">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
-                                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                                            </svg>
-                                            ${formatCount(viewCount)}
-                                        </span>
-                                        ` : ''}
                                     </div>
                                 </div>
                             </div>`;
@@ -440,33 +432,28 @@
             // Currently just prevent errors
         };
         
-        // Generate thumbnail from video first frame
-        window.generateThumbnail = function(video, index) {
+        // Capture video frame for thumbnail
+        window.captureVideoFrame = function(video, index) {
             try {
-                const canvas = document.getElementById(`canvas-${index}`);
-                if (!canvas) return;
-                
-                const ctx = canvas.getContext('2d');
-                canvas.width = video.videoWidth || 300;
-                canvas.height = video.videoHeight || 400;
-                
-                // Set video to first frame
-                video.currentTime = 0.1;
-                
-                video.onseeked = function() {
+                const parent = video.parentElement;
+                if (parent && parent.classList.contains('profile-video-thumb')) {
+                    // Create a temporary canvas
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth || 480;
+                    canvas.height = video.videoHeight || 640;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Draw the current frame
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     
-                    // Convert canvas to blob and set as video poster
-                    canvas.toBlob(function(blob) {
-                        const url = URL.createObjectURL(blob);
-                        video.poster = url;
-                        video.style.display = 'block';
-                        
-                        console.log(`🖼️ Generated thumbnail for video ${index}`);
-                    }, 'image/jpeg', 0.8);
-                };
+                    // Convert to data URL and set as background
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    parent.style.backgroundImage = `url('${dataUrl}')`;
+                    
+                    console.log(`🖼️ Captured frame for video ${index}`);
+                }
             } catch (error) {
-                console.error('❌ Error generating thumbnail:', error);
+                console.error('❌ Error capturing frame:', error);
             }
         };
         
@@ -1403,17 +1390,16 @@
         .profile-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 2px;
-            padding: 2px;
+            gap: 1px;
+            background: #000;
+            padding: 0;
         }
 
         .profile-video-item {
             position: relative;
             width: 100%;
-            height: 0;
-            padding-bottom: 177.78%; /* 16:9 aspect ratio */
-            background: #1a1a1a;
-            border-radius: 4px;
+            padding-bottom: 133.33%; /* 4:3 aspect ratio like TikTok */
+            background: #000;
             overflow: hidden;
             cursor: pointer;
         }
@@ -1426,6 +1412,13 @@
             height: 100%;
             object-fit: cover;
             display: block;
+            background-size: cover;
+            background-position: center;
+            background-color: #1a1a1a;
+        }
+
+        .profile-video-thumb[poster] {
+            background-image: none !important;
         }
 
         .profile-video-canvas {
@@ -1437,28 +1430,32 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
             padding: 8px;
+            display: flex;
+            align-items: flex-end;
         }
 
         .video-stats {
             display: flex;
-            gap: 8px;
+            gap: 12px;
             align-items: center;
         }
 
         .video-stats .stat-item {
             display: flex;
             align-items: center;
-            gap: 4px;
-            font-size: 12px;
+            gap: 3px;
+            font-size: 13px;
             color: white;
             font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
         }
 
         .video-stats svg {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
         }
 
         /* Upload Modal */
