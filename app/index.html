@@ -529,6 +529,18 @@
             background: linear-gradient(45deg, #FF0050, #00F2EA);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            animation: vibePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes vibePulse {
+            0%, 100% {
+                transform: scale(1);
+                filter: brightness(1);
+            }
+            50% {
+                transform: scale(1.05);
+                filter: brightness(1.2);
+            }
         }
 
         .auth-input {
@@ -1350,6 +1362,55 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 2px;
             padding: 2px;
+        }
+
+        .profile-video-item {
+            position: relative;
+            aspect-ratio: 9/16;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .profile-video-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .profile-video-canvas {
+            display: none;
+        }
+
+        .video-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            padding: 8px;
+        }
+
+        .video-stats {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .video-stats .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .video-stats svg {
+            width: 12px;
+            height: 12px;
         }
 
         /* Upload Modal */
