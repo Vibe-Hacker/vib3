@@ -173,8 +173,16 @@ async function handleSignup() {
 async function handleLogout() {
     const result = await logout();
     if (result.success) {
-        // Redirect to login or refresh page
-        window.location.reload();
+        // Clear session and show login screen instead of reloading
+        if (window.clearSession) {
+            window.clearSession();
+        }
+        if (window.showLoginScreen) {
+            window.showLoginScreen();
+        } else {
+            // Fallback to reload if functions not available
+            window.location.reload();
+        }
     }
 }
 

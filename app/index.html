@@ -591,6 +591,29 @@
         .profile-header {
             padding: 16px;
             text-align: center;
+            position: relative;
+        }
+        
+        .profile-back-btn {
+            position: absolute;
+            left: 16px;
+            top: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            z-index: 10;
+        }
+        
+        .profile-back-btn:active {
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .profile-avatar {
@@ -1448,6 +1471,7 @@
     <!-- Profile Page -->
     <div class="profile-page" id="profilePage">
         <div class="profile-header">
+            <button class="profile-back-btn" onclick="goBackFromProfile()">←</button>
             <div class="profile-avatar" id="profileAvatar"></div>
             <h2 class="profile-username" id="profileUsername">@username</h2>
             
@@ -1626,12 +1650,9 @@
         try {
             console.log('🟢 App initialization started');
             
-            // FORCE CLEAR ALL TOKENS - no bypass allowed
-            console.log('🧹 Force clearing all tokens to prevent bypass');
-            localStorage.removeItem('token');
-            localStorage.clear(); // Clear everything
-            window.authToken = null;
-            window.currentUser = null;
+            // Check for existing token for persistent login
+            console.log('🔍 Checking for existing authentication...');
+            const existingToken = localStorage.getItem('token');
             
             let currentUser = null;
             let currentFeed = 'foryou';
@@ -1640,11 +1661,65 @@
             let isLoading = false;
             let currentVideoIndex = 0;
             
-            // Force show login screen
-            document.getElementById('authContainer').style.display = 'flex';
-            document.getElementById('mainApp').style.display = 'none';
+            // Try to restore session if token exists
+            if (existingToken) {
+                console.log('🔐 Found existing token, validating...');
+                window.authToken = existingToken;
+                await validateAndRestoreSession();
+            } else {
+                console.log('🔒 No token found, showing login screen');
+                showLoginScreen();
+            }
 
         // Auth functions
+        function showLoginScreen() {
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
+        }
+        
+        async function validateAndRestoreSession() {
+            try {
+                console.log('🔍 Validating existing session...');
+                const response = await fetch(`${window.API_BASE_URL}/api/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${window.authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Session restored for user:', data.user?.username || data.user?.email);
+                    currentUser = data.user;
+                    window.currentUser = data.user;
+                    auth.currentUser = data.user;
+                    
+                    // Load user profile data
+                    await loadUserProfile();
+                    showApp();
+                } else {
+                    console.log('❌ Invalid token, clearing session');
+                    clearSession();
+                    showLoginScreen();
+                }
+            } catch (error) {
+                console.error('🔴 Session validation failed:', error);
+                clearSession();
+                showLoginScreen();
+            }
+        }
+        
+        function clearSession() {
+            localStorage.removeItem('token');
+            window.authToken = null;
+            window.currentUser = null;
+            auth.currentUser = null;
+        }
+        
+        // Make functions globally available
+        window.clearSession = clearSession;
+        window.showLoginScreen = showLoginScreen;
+        
         function showLogin() {
             document.getElementById('loginForm').style.display = 'block';
             document.getElementById('signupForm').style.display = 'none';
@@ -2398,6 +2473,49 @@
         function closeQRScanner() {
             const qrScanner = document.getElementById('qrScanner');
             if (qrScanner) qrScanner.style.display = 'none';
+        }
+        
+        function goBackFromProfile() {
+            console.log('🔙 Going back from profile page');
+            hapticFeedback();
+            
+            // Hide profile page
+            const profilePage = document.getElementById('profilePage');
+            if (profilePage) profilePage.style.display = 'none';
+            
+            // Show home page
+            const mainApp = document.getElementById('mainApp');
+            if (mainApp) mainApp.style.display = 'block';
+            
+            // Reset navigation to home
+            currentPage = 'home';
+            switchPage('home');
+        }
+        
+        function editProfile() {
+            console.log('✏️ Edit profile');
+            hapticFeedback();
+        }
+        
+        function shareProfile() {
+            console.log('📤 Share profile');
+            hapticFeedback();
+        }
+        
+        function switchProfileTab(tab) {
+            console.log('📑 Switching profile tab to:', tab);
+            // Profile tab switching implementation
+            const tabs = document.querySelectorAll('.profile-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        
+        function showFollowing() {
+            console.log('👥 Show following');
+        }
+        
+        function showFollowers() {
+            console.log('👥 Show followers');
         }
         
         } catch (error) {
