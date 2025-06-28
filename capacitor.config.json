@@ -1,5 +1,8 @@
 {
   "appId": "com.yourname.vib3",
   "appName": "VIBE",
-  "webDir": "www"
+  "webDir": "app",
+  "server": {
+    "url": "https://vib3-production.up.railway.app"
+  }
 }
