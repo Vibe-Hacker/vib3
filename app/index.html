@@ -501,68 +501,43 @@
             padding: 40px 20px;
         }
 
-        .logo-wrapper {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .auth-form h2 {
-            font-size: 48px;
+        .vib3-logo {
+            font-size: 72px;
             font-weight: 900;
-            margin: 0;
-            display: inline-block;
+            text-align: center;
+            margin: 0 0 40px 0;
             color: #FF0050;
-            -webkit-animation: colorBlink 1s ease-in-out infinite;
-            animation: colorBlink 1s ease-in-out infinite;
+            display: block;
+            -webkit-animation: vibeAnimation 2s linear infinite;
+            animation: vibeAnimation 2s linear infinite;
         }
 
-        .auth-form h2::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 200px;
-            height: 80px;
-            background: radial-gradient(circle, rgba(255, 0, 80, 0.3) 0%, transparent 70%);
-            border-radius: 50%;
-            z-index: -1;
-            animation: vibeGlow 1.2s ease-in-out infinite;
-        }
-
-        @keyframes vibeGlow {
-            0%, 100% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 0.3;
-                background: radial-gradient(circle, rgba(255, 0, 80, 0.3) 0%, transparent 70%);
-            }
-            50% {
-                transform: translate(-50%, -50%) scale(1.8);
-                opacity: 0.8;
-                background: radial-gradient(circle, rgba(0, 242, 234, 0.5) 0%, rgba(255, 0, 80, 0.3) 40%, transparent 70%);
-            }
-        }
-
-        @-webkit-keyframes colorBlink {
+        @-webkit-keyframes vibeAnimation {
             0% {
+                -webkit-transform: scale(1);
                 opacity: 1;
             }
             50% {
-                opacity: 0.3;
+                -webkit-transform: scale(1.2);
+                opacity: 0.5;
             }
             100% {
+                -webkit-transform: scale(1);
                 opacity: 1;
             }
         }
         
-        @keyframes colorBlink {
+        @keyframes vibeAnimation {
             0% {
+                transform: scale(1);
                 opacity: 1;
             }
             50% {
-                opacity: 0.3;
+                transform: scale(1.2);
+                opacity: 0.5;
             }
             100% {
+                transform: scale(1);
                 opacity: 1;
             }
         }
@@ -2103,9 +2078,7 @@
     <!-- Auth Container -->
     <div class="auth-container" id="authContainer">
         <div class="auth-form">
-            <div class="logo-wrapper">
-                <h2>VIB3</h2>
-            </div>
+            <h2 class="vib3-logo">VIB3</h2>
             <div class="auth-error" id="authError"></div>
             <div id="loginForm">
                 <input type="email" class="auth-input" id="loginEmail" placeholder="Email" autocomplete="email">
