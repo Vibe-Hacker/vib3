@@ -5514,37 +5514,65 @@ function copyVideoLink() {
     });
 }
 
-function shareToInstagram() {
-    window.open('https://instagram.com', '_blank');
-    showNotification('Opening Instagram...', 'info');
+function shareToInstagram(videoId) {
+    const videoUrl = `${window.location.origin}/?video=${videoId}`;
+    const text = 'Check out this amazing video on VIB3!';
+    
+    // Try to use Web Share API first (works on mobile)
+    if (navigator.share) {
+        navigator.share({
+            title: 'VIB3 Video',
+            text: text,
+            url: videoUrl
+        }).then(() => {
+            showNotification('Shared successfully!', 'success');
+        }).catch(() => {
+            // Fallback: copy link and show Instagram
+            copyToClipboard(videoUrl);
+            window.open('https://instagram.com', '_blank');
+            showNotification('Link copied! Paste in Instagram Stories', 'info');
+        });
+    } else {
+        // Desktop fallback
+        copyToClipboard(videoUrl);
+        window.open('https://instagram.com', '_blank');
+        showNotification('Link copied! Paste in Instagram', 'info');
+    }
 }
 
-function shareToTwitter() {
-    const text = 'Check out this video on VIB3!';
-    const url = window.location.href;
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+function shareToTwitter(videoId) {
+    const videoUrl = `${window.location.origin}/?video=${videoId}`;
+    const text = 'Check out this amazing video on VIB3! 🔥';
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(videoUrl)}`, '_blank');
+    showNotification('Opening Twitter...', 'info');
 }
 
-function shareToFacebook() {
-    const url = window.location.href;
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+function shareToFacebook(videoId) {
+    const videoUrl = `${window.location.origin}/?video=${videoId}`;
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(videoUrl)}`, '_blank');
+    showNotification('Opening Facebook...', 'info');
 }
 
-function shareToWhatsApp() {
-    const text = 'Check out this video on VIB3! ' + window.location.href;
+function shareToWhatsApp(videoId) {
+    const videoUrl = `${window.location.origin}/?video=${videoId}`;
+    const text = 'Check out this amazing video on VIB3! 🔥 ' + videoUrl;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    showNotification('Opening WhatsApp...', 'info');
 }
 
-function shareToTelegram() {
-    const url = window.location.href;
-    const text = 'Check out this video on VIB3!';
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+function shareToTelegram(videoId) {
+    const videoUrl = `${window.location.origin}/?video=${videoId}`;
+    const text = 'Check out this amazing video on VIB3! 🔥';
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(videoUrl)}&text=${encodeURIComponent(text)}`, '_blank');
+    showNotification('Opening Telegram...', 'info');
 }
 
-function shareViaEmail() {
-    const subject = 'Check out this VIB3 video!';
-    const body = 'I thought you might enjoy this video: ' + window.location.href;
+function shareViaEmail(videoId) {
+    const videoUrl = `${window.location.origin}/?video=${videoId}`;
+    const subject = 'Check out this amazing VIB3 video! 🔥';
+    const body = 'I thought you might enjoy this video on VIB3:\n\n' + videoUrl;
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    showNotification('Opening email app...', 'info');
 }
 
 function downloadVideo() {
@@ -7423,22 +7451,143 @@ function openCommentsModal(videoId) {
 function openShareModal(videoId) {
     const modal = document.createElement('div');
     modal.className = 'modal share-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        align-items: flex-end;
+        z-index: 10000;
+    `;
+    
+    const videoUrl = `${window.location.origin}/?video=${videoId}`;
+    const shareText = 'Check out this amazing video on VIB3!';
+    
     modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Share</h3>
-                <button onclick="this.closest('.modal').remove()" class="close-btn">&times;</button>
+        <div class="modal-content" style="
+            background: var(--bg-secondary, #161823);
+            width: 100%;
+            max-height: 80vh;
+            border-radius: 20px 20px 0 0;
+            padding: 24px;
+            overflow-y: auto;
+        ">
+            <div class="modal-header" style="text-align: center; margin-bottom: 20px;">
+                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 0 auto 16px;"></div>
+                <h3 style="margin: 0; color: var(--text-primary, #fff); font-size: 18px; font-weight: 600;">Share to</h3>
             </div>
-            <div class="share-options">
-                <button onclick="shareToInstagram(); this.closest('.modal').remove();">📷 Instagram</button>
-                <button onclick="shareToTwitter(); this.closest('.modal').remove();">🐦 Twitter</button>
-                <button onclick="shareToFacebook(); this.closest('.modal').remove();">📘 Facebook</button>
-                <button onclick="shareToWhatsApp(); this.closest('.modal').remove();">💬 WhatsApp</button>
-                <button onclick="copyVideoLink(); this.closest('.modal').remove();">🔗 Copy Link</button>
-                <button onclick="downloadVideo(); this.closest('.modal').remove();">⬇️ Download</button>
+            <div class="share-options" style="
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+                margin-bottom: 20px;
+            ">
+                <div onclick="shareToInstagram('${videoId}'); this.closest('.modal').remove();" style="
+                    text-align: center;
+                    cursor: pointer;
+                    padding: 12px;
+                    border-radius: 12px;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 48px; height: 48px; background: linear-gradient(45deg, #ff6b6b, #ee5a24); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">📷</div>
+                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Instagram</span>
+                </div>
+                <div onclick="shareToTwitter('${videoId}'); this.closest('.modal').remove();" style="
+                    text-align: center;
+                    cursor: pointer;
+                    padding: 12px;
+                    border-radius: 12px;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 48px; height: 48px; background: #1da1f2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">🐦</div>
+                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Twitter</span>
+                </div>
+                <div onclick="shareToFacebook('${videoId}'); this.closest('.modal').remove();" style="
+                    text-align: center;
+                    cursor: pointer;
+                    padding: 12px;
+                    border-radius: 12px;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 48px; height: 48px; background: #4267b2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">📘</div>
+                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Facebook</span>
+                </div>
+                <div onclick="shareToWhatsApp('${videoId}'); this.closest('.modal').remove();" style="
+                    text-align: center;
+                    cursor: pointer;
+                    padding: 12px;
+                    border-radius: 12px;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 48px; height: 48px; background: #25d366; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">💬</div>
+                    <span style="color: var(--text-primary, #fff); font-size: 12px;">WhatsApp</span>
+                </div>
+                <div onclick="shareToTelegram('${videoId}'); this.closest('.modal').remove();" style="
+                    text-align: center;
+                    cursor: pointer;
+                    padding: 12px;
+                    border-radius: 12px;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 48px; height: 48px; background: #0088cc; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">✈️</div>
+                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Telegram</span>
+                </div>
+                <div onclick="shareViaEmail('${videoId}'); this.closest('.modal').remove();" style="
+                    text-align: center;
+                    cursor: pointer;
+                    padding: 12px;
+                    border-radius: 12px;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 48px; height: 48px; background: #ea4335; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">📧</div>
+                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Email</span>
+                </div>
+                <div onclick="copyVideoLink('${videoId}'); this.closest('.modal').remove();" style="
+                    text-align: center;
+                    cursor: pointer;
+                    padding: 12px;
+                    border-radius: 12px;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 48px; height: 48px; background: #666; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">🔗</div>
+                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Copy Link</span>
+                </div>
+                <div onclick="downloadVideo('${videoId}'); this.closest('.modal').remove();" style="
+                    text-align: center;
+                    cursor: pointer;
+                    padding: 12px;
+                    border-radius: 12px;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
+                    <div style="width: 48px; height: 48px; background: #4caf50; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">⬇️</div>
+                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Save Video</span>
+                </div>
             </div>
+            <button onclick="this.closest('.modal').remove()" style="
+                width: 100%;
+                padding: 16px;
+                background: rgba(255,255,255,0.1);
+                border: none;
+                border-radius: 12px;
+                color: var(--text-primary, #fff);
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                margin-top: 12px;
+            ">Cancel</button>
         </div>
     `;
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+    
     document.body.appendChild(modal);
 }
 
