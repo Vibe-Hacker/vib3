@@ -718,18 +718,18 @@ function calculateQuartileRetention(views, quartile) {
 // Route mobile app requests to app directory
 app.use('/app', express.static(path.join(__dirname, 'app')));
 
-// Route web requests to web directory (default)
-const webDir = path.join(__dirname, 'web');
+// Route web requests to www directory (default)
+const webDir = path.join(__dirname, 'www');
 console.log('Serving static files from:', webDir);
 console.log('Current directory:', process.cwd());
 console.log('__dirname:', __dirname);
 
 // Try multiple possible paths
 const possiblePaths = [
-    path.join(__dirname, 'web'),
-    path.join(process.cwd(), 'web'),
-    './web',
-    'web'
+    path.join(__dirname, 'www'),
+    path.join(process.cwd(), 'www'),
+    './www',
+    'www'
 ];
 
 let staticPath = null;
