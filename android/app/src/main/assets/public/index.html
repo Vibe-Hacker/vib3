@@ -347,6 +347,18 @@
             document.getElementById('authError').textContent = '';
         };
         
+        // App transition function
+        window.showApp = function() {
+            console.log('🚀 Showing main app');
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            
+            // Load feed after auth
+            if (typeof loadFeed === 'function') {
+                loadFeed();
+            }
+        };
+        
         console.log('✅ Navigation and auth functions loaded in HEAD');
     </script>
     
@@ -2717,11 +2729,6 @@
             window.currentUserStats = stats;
         }
         
-        function showApp() {
-            document.getElementById('authContainer').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
-            loadFeed();
-        }
 
         // Feed functions
         async function loadFeed() {
