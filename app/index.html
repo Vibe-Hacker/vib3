@@ -242,82 +242,37 @@
                         profileGrid.innerHTML = userVideos.map((video, index) => {
                             const videoId = video._id || video.id;
                             const videoUrl = video.videoUrl || video.url;
-                            const likeCount = video.likeCount || video.likes || 0;
+                            const thumbnailUrl = video.thumbnailUrl || video.thumbnail || `${videoUrl}#t=0.5`;
                             const viewCount = video.viewCount || video.views || 0;
                             
                             return `
-                            <div class="profile-video-item profile-thumbnail-only" 
-                                 style="position: relative; width: 100%; height: 0; padding-bottom: 133.33%; background: #000; overflow: hidden;"
+                            <div class="profile-video-item" 
                                  data-video-id="${videoId}"
-                                 onclick="playProfileVideo('${videoId}', '${videoUrl}')">
-                                <video 
+                                 onclick="openVideoFullscreen('${videoId}', '${videoUrl}')">
+                                <img 
                                     class="profile-video-thumbnail"
-                                    src="${videoUrl}#t=0.1"
-                                    preload="metadata"
-                                    muted
-                                    playsinline
-                                    poster=""
-                                    data-profile-video="true"
-                                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block;">
-                                </video>
-                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 8px;">
-                                    <div style="display: flex; gap: 12px; align-items: center;">
-                                        <span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: white;">
-                                            ❤️ ${formatCount(likeCount)}
-                                        </span>
-                                        ${viewCount > 0 ? `
-                                        <span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: white;">
-                                            👁️ ${formatCount(viewCount)}
-                                        </span>
-                                        ` : ''}
+                                    src="${thumbnailUrl}"
+                                    alt="Video thumbnail"
+                                    loading="lazy"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div class="thumbnail-fallback" style="display: none; width: 100%; height: 100%; background: #333; align-items: center; justify-content: center; font-size: 24px; opacity: 0.5;">
+                                    📹
+                                </div>
+                                ${viewCount > 0 ? `
+                                <div class="profile-thumbnail-overlay">
+                                    <div class="profile-view-count">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                                            <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.85-1.26l3.03-7.08c.09-.23.12-.47.12-.66v-2z"/>
+                                        </svg>
+                                        ${formatCount(viewCount)}
                                     </div>
                                 </div>
+                                ` : ''}
                             </div>`;
                         }).join('');
                         console.log('✅ Updated profile grid with', userVideos.length, 'video thumbnails');
                         
-                        // Generate thumbnails from video first frames
-                        setTimeout(() => {
-                            const profileVideos = profileGrid.querySelectorAll('video[data-profile-video="true"]');
-                            profileVideos.forEach((video, index) => {
-                                video.addEventListener('loadedmetadata', function() {
-                                    console.log(`🎬 Video ${index} metadata loaded, generating thumbnail`);
-                                    this.currentTime = 0.1;
-                                });
-                                
-                                video.addEventListener('seeked', function() {
-                                    console.log(`🖼️ Video ${index} seeked to 0.1s for thumbnail`);
-                                    // Pause immediately after seeking to prevent autoplay
-                                    this.pause();
-                                    
-                                    // Create canvas to capture frame as poster
-                                    const canvas = document.createElement('canvas');
-                                    canvas.width = this.videoWidth || 480;
-                                    canvas.height = this.videoHeight || 640;
-                                    const ctx = canvas.getContext('2d');
-                                    
-                                    try {
-                                        ctx.drawImage(this, 0, 0, canvas.width, canvas.height);
-                                        const posterUrl = canvas.toDataURL('image/jpeg', 0.8);
-                                        this.poster = posterUrl;
-                                        console.log(`✅ Generated poster for video ${index}`);
-                                    } catch (e) {
-                                        console.error(`❌ Failed to generate poster for video ${index}:`, e);
-                                    }
-                                });
-                                
-                                video.addEventListener('play', function(e) {
-                                    // Prevent autoplay - keep as thumbnail only
-                                    e.preventDefault();
-                                    this.pause();
-                                    this.currentTime = 0.1;
-                                });
-                                
-                                // Force load metadata
-                                video.load();
-                            });
-                            console.log('🖼️ Started thumbnail generation for', profileVideos.length, 'profile videos');
-                        }, 100);
+                        // No auto-play needed - using static image thumbnails
                         
                     } else if (profileGrid) {
                         profileGrid.innerHTML = '<div style="text-align: center; padding: 50px; color: #666;">No videos yet</div>';
@@ -523,11 +478,62 @@
             return (count / 1000000).toFixed(1) + 'M';
         };
         
-        // Play video from profile grid
-        window.playProfileVideo = function(videoId, videoUrl) {
-            console.log('Playing video:', videoId, videoUrl);
-            // For now, just prevent navigation
-            // Later this will open video in feed view
+        // Open video in fullscreen from profile grid
+        window.openVideoFullscreen = function(videoId, videoUrl) {
+            console.log('🎬 Opening video fullscreen:', videoId);
+            
+            // Hide profile page
+            const profilePage = document.getElementById('profilePage');
+            if (profilePage) profilePage.style.display = 'none';
+            
+            // Show main app (video feed)
+            const mainApp = document.getElementById('mainApp');
+            if (mainApp) {
+                mainApp.style.display = 'block';
+                
+                // Create fullscreen video player
+                const videoFeed = document.getElementById('videoFeed');
+                if (videoFeed) {
+                    videoFeed.innerHTML = `
+                        <div class="video-container" style="position: relative; width: 100%; height: 100vh; background: #000;">
+                            <video 
+                                id="fullscreenVideo"
+                                src="${videoUrl}"
+                                autoplay
+                                loop
+                                muted
+                                playsinline
+                                controls
+                                style="width: 100%; height: 100%; object-fit: contain;">
+                            </video>
+                            <button onclick="closeFullscreenVideo()" 
+                                    style="position: absolute; top: 20px; right: 20px; 
+                                           background: rgba(0,0,0,0.5); border: none; 
+                                           color: white; font-size: 24px; width: 40px; height: 40px; 
+                                           border-radius: 50%; cursor: pointer; z-index: 1000;">
+                                ×
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        };
+        
+        // Close fullscreen video and return to profile
+        window.closeFullscreenVideo = function() {
+            console.log('🔙 Closing fullscreen video');
+            
+            // Hide main app
+            const mainApp = document.getElementById('mainApp');
+            if (mainApp) mainApp.style.display = 'none';
+            
+            // Show profile page
+            const profilePage = document.getElementById('profilePage');
+            if (profilePage) profilePage.style.display = 'block';
+            
+            // Clear video feed
+            const videoFeed = document.getElementById('videoFeed');
+            if (videoFeed) videoFeed.innerHTML = '';
         };
         
         console.log('✅ Navigation and auth functions loaded in HEAD');
@@ -1433,29 +1439,47 @@
         .profile-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1px;
+            gap: 2px;
             background: #000;
-            padding: 0;
+            padding: 2px;
         }
 
         .profile-video-item {
             position: relative;
             width: 100%;
-            height: 0;
-            padding-bottom: 177.78%; /* 16:9 aspect ratio for vertical videos */
+            aspect-ratio: 9/16; /* TikTok vertical aspect ratio */
             background: #1a1a1a;
             overflow: hidden;
             cursor: pointer;
+            border-radius: 4px;
         }
 
         .profile-video-thumbnail {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
+            border-radius: 4px;
+        }
+
+        .profile-thumbnail-overlay {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            right: 4px;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .profile-view-count {
+            display: flex;
+            align-items: center;
+            gap: 2px;
         }
 
         .video-overlay {
