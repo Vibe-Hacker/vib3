@@ -452,6 +452,13 @@ function initializeVideoObserver() {
         video.playsInline = true;
         video.preload = 'metadata';
         
+        // Add click handler to ensure audio plays on user interaction
+        video.addEventListener('click', function() {
+            this.muted = false;
+            this.volume = 0.8;
+            console.log('🔊 Audio enabled on user click');
+        });
+        
         // Force style overrides
         video.style.cssText += `
             display: block !important;
@@ -1042,6 +1049,13 @@ function createAdvancedVideoCard(video) {
     video_elem.muted = false;  // Enable audio by default
     video_elem.volume = 0.8;   // Set reasonable volume
     video_elem.playsInline = true;
+    
+    // Add click handler to ensure audio plays on user interaction
+    video_elem.addEventListener('click', function() {
+        this.muted = false;
+        this.volume = 0.8;
+        console.log('🔊 Audio enabled on video click');
+    });
     video_elem.style.cssText = `
         position: absolute !important;
         top: 0 !important;
