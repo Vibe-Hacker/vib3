@@ -511,17 +511,16 @@
         .logo-wrapper {
             text-align: center;
             margin-bottom: 40px;
-            -webkit-animation: spin360 2s linear infinite;
-            animation: spin360 2s linear infinite;
         }
 
         .auth-form h2 {
             font-size: 48px;
             font-weight: 900;
-            color: #FF0050;
-            text-shadow: 0 0 20px rgba(255, 0, 80, 0.8);
             margin: 0;
             display: inline-block;
+            color: #FF0050;
+            -webkit-animation: colorBlink 1s ease-in-out infinite;
+            animation: colorBlink 1s ease-in-out infinite;
         }
 
         .auth-form h2::before {
@@ -551,25 +550,27 @@
             }
         }
 
-        @-webkit-keyframes spin360 {
+        @-webkit-keyframes colorBlink {
             0% {
-                -webkit-transform: rotate(0deg);
-                transform: rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
             }
             100% {
-                -webkit-transform: rotate(360deg);
-                transform: rotate(360deg);
+                opacity: 1;
             }
         }
         
-        @keyframes spin360 {
+        @keyframes colorBlink {
             0% {
-                -webkit-transform: rotate(0deg);
-                transform: rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
             }
             100% {
-                -webkit-transform: rotate(360deg);
-                transform: rotate(360deg);
+                opacity: 1;
             }
         }
 
