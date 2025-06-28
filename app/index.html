@@ -353,10 +353,22 @@
             document.getElementById('authContainer').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
             
-            // Load feed after auth
-            if (typeof loadFeed === 'function') {
-                loadFeed();
-            }
+            // Load feed after auth - delay to ensure functions are loaded
+            setTimeout(() => {
+                console.log('📺 About to load video feed...');
+                if (window.loadFeed) {
+                    window.loadFeed();
+                } else {
+                    console.log('🔍 loadFeed not yet available, will retry...');
+                    setTimeout(() => {
+                        if (window.loadFeed) {
+                            window.loadFeed();
+                        } else {
+                            console.error('❌ loadFeed function not found');
+                        }
+                    }, 1000);
+                }
+            }, 100);
         };
         
         console.log('✅ Navigation and auth functions loaded in HEAD');
@@ -2731,7 +2743,7 @@
         
 
         // Feed functions
-        async function loadFeed() {
+        window.loadFeed = async function loadFeed() {
             if (isLoading) return;
             isLoading = true;
             
