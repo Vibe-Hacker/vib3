@@ -7449,6 +7449,7 @@ function openCommentsModal(videoId) {
 }
 
 function openShareModal(videoId) {
+    console.log('📱 Creating share modal for video:', videoId);
     const modal = document.createElement('div');
     modal.className = 'modal share-modal';
     modal.style.cssText = `
@@ -7589,6 +7590,7 @@ function openShareModal(videoId) {
     });
     
     document.body.appendChild(modal);
+    console.log('✅ Share modal added to page');
 }
 
 function viewProfile(username) {
@@ -10215,8 +10217,23 @@ async function submitComment(videoId) {
 }
 
 function shareVideo(videoId, video) {
-    // Always use our custom TikTok-style share modal instead of native browser sharing
-    openShareModal(videoId);
+    console.log('🔗 Share button clicked for video:', videoId);
+    
+    try {
+        // Always use our custom TikTok-style share modal instead of native browser sharing
+        console.log('📤 Opening share modal...');
+        openShareModal(videoId);
+        console.log('✅ Share modal opened successfully');
+    } catch (error) {
+        console.error('❌ Error opening share modal:', error);
+        // Fallback: copy link to clipboard
+        const videoUrl = `${window.location.origin}/?video=${videoId}`;
+        navigator.clipboard.writeText(videoUrl).then(() => {
+            showNotification('Link copied to clipboard!', 'success');
+        }).catch(() => {
+            showNotification('Error opening share options', 'error');
+        });
+    }
     
     // Record the share on server and update count
     recordVideoShare(videoId);
