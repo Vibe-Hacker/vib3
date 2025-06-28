@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const AWS = require('aws-sdk');
@@ -705,17 +706,6 @@ app.use('/app', express.static(path.join(__dirname, 'app')));
 // Route web requests to web directory (default)
 app.use(express.static(path.join(__dirname, 'web')));
 
-// Fallback route for debugging
-app.get('/', (req, res) => {
-    console.log('Fallback route hit - static files not found');
-    console.log('__dirname:', __dirname);
-    console.log('Looking for web at:', path.join(__dirname, 'web'));
-    res.status(500).json({ 
-        error: 'Static files not found', 
-        dirname: __dirname,
-        webPath: path.join(__dirname, 'web')
-    });
-});
 
 // DigitalOcean Spaces configuration
 const spacesEndpoint = new AWS.Endpoint(process.env.DO_SPACES_ENDPOINT || 'nyc3.digitaloceanspaces.com');
@@ -4702,8 +4692,20 @@ process.on('SIGINT', () => {
     });
 });
 
+// Catch-all route for unhandled requests
+app.use('*', (req, res) => {
+    console.log('Unhandled request:', req.method, req.originalUrl);
+    res.status(404).json({ 
+        error: 'Not found', 
+        path: req.originalUrl,
+        message: 'No route or static file found for this path'
+    });
+});
+
 // Error handling - MUST be last middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('ERROR CAUGHT:', err.message);
+    console.error('Stack:', err.stack);
+    console.error('URL:', req.url);
     res.status(500).json({ error: 'Something broke!', memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB' });
 });
