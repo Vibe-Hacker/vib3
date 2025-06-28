@@ -233,21 +233,36 @@
                     if (profileGrid && userVideos.length > 0) {
                         profileGrid.innerHTML = userVideos.map((video, index) => {
                             const videoId = video._id || video.id;
+                            const videoUrl = video.videoUrl || video.url;
                             const likeCount = video.likeCount || video.likes || 0;
+                            const viewCount = video.viewCount || video.views || 0;
                             
                             return `
-                            <div class="profile-video-item" data-video-id="${videoId}">
-                                <div class="profile-video-thumb">
-                                    <div class="video-placeholder">📹</div>
-                                </div>
+                            <div class="profile-video-item" onclick="playProfileVideo('${videoId}', '${videoUrl}')">
+                                <video 
+                                    class="profile-video-thumbnail"
+                                    src="${videoUrl}#t=0.1"
+                                    preload="metadata"
+                                    muted
+                                    playsinline
+                                    webkit-playsinline>
+                                </video>
                                 <div class="video-overlay">
                                     <div class="video-stats">
                                         <span class="stat-item">
                                             <svg viewBox="0 0 24 24" fill="white">
-                                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                                <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.85-1.26l3.03-7.08c.09-.23.12-.47.12-.66v-2z"/>
                                             </svg>
                                             ${formatCount(likeCount)}
                                         </span>
+                                        ${viewCount > 0 ? `
+                                        <span class="stat-item">
+                                            <svg viewBox="0 0 24 24" fill="white">
+                                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                            </svg>
+                                            ${formatCount(viewCount)}
+                                        </span>
+                                        ` : ''}
                                     </div>
                                 </div>
                             </div>`;
@@ -455,6 +470,13 @@
             if (count < 1000) return count.toString();
             if (count < 1000000) return (count / 1000).toFixed(1) + 'K';
             return (count / 1000000).toFixed(1) + 'M';
+        };
+        
+        // Play video from profile grid
+        window.playProfileVideo = function(videoId, videoUrl) {
+            console.log('Playing video:', videoId, videoUrl);
+            // For now, just prevent navigation
+            // Later this will open video in feed view
         };
         
         console.log('✅ Navigation and auth functions loaded in HEAD');
@@ -1370,13 +1392,12 @@
             width: 100%;
             height: 0;
             padding-bottom: 177.78%; /* 16:9 aspect ratio for vertical videos */
-            background: #000;
+            background: #1a1a1a;
             overflow: hidden;
             cursor: pointer;
-            border: 0.5px solid #222;
         }
 
-        .profile-video-thumb {
+        .profile-video-thumbnail {
             position: absolute;
             top: 0;
             left: 0;
@@ -1384,31 +1405,6 @@
             height: 100%;
             object-fit: cover;
             display: block;
-            background-size: cover;
-            background-position: center;
-            background-color: #1a1a1a;
-            background-repeat: no-repeat;
-        }
-        
-        .profile-video-thumb video {
-            display: block;
-        }
-
-        .profile-video-thumb[poster] {
-            background-image: none !important;
-        }
-        
-        .video-placeholder {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 40px;
-            opacity: 0.5;
-        }
-
-        .profile-video-canvas {
-            display: none;
         }
 
         .video-overlay {
