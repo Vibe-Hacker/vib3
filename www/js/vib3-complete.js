@@ -7453,15 +7453,16 @@ function openShareModal(videoId) {
     const modal = document.createElement('div');
     modal.className = 'modal share-modal';
     modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.8);
-        display: flex;
-        align-items: flex-end;
-        z-index: 10000;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: rgba(0,0,0,0.8) !important;
+        display: flex !important;
+        align-items: flex-end !important;
+        z-index: 999999 !important;
+        pointer-events: all !important;
     `;
     
     const videoUrl = `${window.location.origin}/?video=${videoId}`;
@@ -7469,12 +7470,15 @@ function openShareModal(videoId) {
     
     modal.innerHTML = `
         <div class="modal-content" style="
-            background: var(--bg-secondary, #161823);
-            width: 100%;
-            max-height: 80vh;
-            border-radius: 20px 20px 0 0;
-            padding: 24px;
-            overflow-y: auto;
+            background: var(--bg-secondary, #161823) !important;
+            width: 100% !important;
+            max-height: 80vh !important;
+            border-radius: 20px 20px 0 0 !important;
+            padding: 24px !important;
+            overflow-y: auto !important;
+            position: relative !important;
+            z-index: 1000000 !important;
+            pointer-events: all !important;
         ">
             <div class="modal-header" style="text-align: center; margin-bottom: 20px;">
                 <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 0 auto 16px;"></div>
