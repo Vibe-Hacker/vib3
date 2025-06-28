@@ -1,0 +1,182 @@
+/* Comprehensive Responsive Design */
+
+/* Large Desktop (1200px+) */
+@media (min-width: 1200px) {
+    .sidebar {
+        display: flex;
+        width: 260px;
+    }
+    
+    .video-header {
+        left: 260px;
+        width: calc(100vw - 260px);
+    }
+    
+    .video-feed {
+        margin-left: 260px;
+        width: calc(100vw - 260px);
+    }
+    
+    .bottom-nav {
+        display: none;
+    }
+}
+
+/* Medium Desktop (992px - 1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+    .sidebar {
+        display: flex;
+        width: 220px;
+    }
+    
+    .video-header {
+        left: 220px;
+        width: calc(100vw - 220px);
+    }
+    
+    .video-feed {
+        margin-left: 220px;
+        width: calc(100vw - 220px);
+    }
+    
+    .sidebar-text {
+        font-size: 16px;
+    }
+    
+    .bottom-nav {
+        display: none;
+    }
+}
+
+/* Small Desktop/Tablet (768px - 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+    .sidebar {
+        display: flex;
+        width: 180px;
+    }
+    
+    .sidebar-text {
+        display: none; /* Hide text, show only icons */
+    }
+    
+    .sidebar-item {
+        padding: 8px 15px;
+        justify-content: center;
+    }
+    
+    .video-header {
+        left: 180px;
+        width: calc(100vw - 180px);
+    }
+    
+    .video-feed {
+        margin-left: 180px;
+        width: calc(100vw - 180px);
+    }
+    
+    .header-search {
+        max-width: 300px;
+    }
+    
+    .bottom-nav {
+        display: none;
+    }
+}
+
+/* Large Mobile (600px - 767px) */
+@media (min-width: 600px) and (max-width: 767px) {
+    .sidebar {
+        display: none;
+    }
+    
+    .video-header {
+        left: 0;
+        width: 100vw;
+        padding: 0 15px;
+    }
+    
+    .video-feed {
+        margin-left: 0;
+        margin-top: 60px;
+        width: 100vw;
+        height: calc(100vh - 60px - 80px);
+    }
+    
+    .header-search {
+        max-width: 250px;
+    }
+    
+    .bottom-nav {
+        display: flex;
+    }
+}
+
+/* Small Mobile (up to 599px) */
+@media (max-width: 599px) {
+    .sidebar {
+        display: none;
+    }
+    
+    .video-header {
+        display: none;
+    }
+    
+    .video-feed {
+        margin-left: 0;
+        margin-top: 0;
+        width: 100vw;
+        height: calc(100vh - 80px);
+    }
+    
+    .bottom-nav {
+        display: flex;
+    }
+}
+
+/* Viewport height adjustments for console/dev tools */
+@media (max-height: 600px) {
+    .sidebar {
+        font-size: 14px;
+    }
+    
+    .sidebar-item {
+        height: 40px;
+        padding: 6px 20px;
+    }
+    
+    .video-header {
+        height: 50px;
+    }
+    
+    .video-feed {
+        margin-top: 50px;
+        height: calc(100vh - 50px);
+    }
+}
+
+/* Very short viewport (dev tools taking most of screen) */
+@media (max-height: 400px) {
+    .sidebar {
+        padding: 10px 0 0 0;
+    }
+    
+    .sidebar-item {
+        height: 35px;
+        padding: 4px 15px;
+        font-size: 14px;
+    }
+    
+    .video-header {
+        height: 40px;
+        padding: 0 15px;
+    }
+    
+    .video-feed {
+        margin-top: 40px;
+        height: calc(100vh - 40px);
+    }
+    
+    .theme-options {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

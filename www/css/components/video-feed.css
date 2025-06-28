@@ -1,0 +1,181 @@
+/* Video Feed Styles - TikTok Layout */
+.video-feed {
+    height: 100vh;
+    margin-top: 0;
+    margin-left: 240px;
+    width: calc(100vw - 240px);
+    overflow: hidden;
+    background: #000;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.video-feed::-webkit-scrollbar {
+    display: none;
+}
+
+.feed-tabs {
+    display: none; /* vertical video - no tabs in feed */
+}
+
+@media (min-width: 768px) {
+    .feed-tabs {
+        border-radius: 15px 15px 0 0;
+    }
+}
+
+.feed-tab {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.feed-tab.active {
+    color: white;
+}
+
+.feed-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 3px;
+    background: #ff006e;
+    border-radius: 2px;
+}
+
+.feed-tab:hover {
+    color: #ccc;
+}
+
+.feed-content {
+    display: none;
+    height: 100vh;
+    width: 100%;
+    max-width: 500px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    margin: 0 auto;
+    position: relative;
+    padding: 20px 20px 20px 20px;
+}
+
+.feed-content::-webkit-scrollbar {
+    display: none;
+}
+
+.feed-content.active {
+    display: block;
+}
+
+.feed-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888;
+}
+
+/* Explore Feed - Full Screen Layout */
+#exploreFeed {
+    max-width: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.explore-header {
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+/* Explore Grid Styles */
+.explore-video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 4px;
+    padding: 8px;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+.explore-video-card {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 9/16;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.explore-video-card:hover {
+    transform: scale(1.05);
+}
+
+.explore-video-card video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
+}
+
+/* Responsive grid for different screen sizes */
+@media (min-width: 1400px) {
+    .explore-video-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 6px;
+        padding: 12px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .explore-video-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 4px;
+        padding: 8px;
+    }
+}
+
+@media (max-width: 768px) {
+    .explore-video-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 3px;
+        padding: 6px;
+    }
+    
+    .explore-header {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .explore-video-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 2px;
+        padding: 4px;
+    }
+    
+    .explore-header {
+        padding: 12px;
+    }
+}

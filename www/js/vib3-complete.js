@@ -396,6 +396,19 @@ function initializeVideoObserver() {
         entries.forEach(entry => {
             const video = entry.target;
             if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
+                // Don't auto-play videos in profile video feed
+                const profileFeed = document.getElementById('profileVideoFeed');
+                if (profileFeed && profileFeed.contains(video)) {
+                    return; // Let profile video observer handle this
+                }
+                
+                // Clear manual play flags from all other videos when a new video comes into view
+                document.querySelectorAll('video[data-manual-play]').forEach(v => {
+                    if (v !== video) {
+                        v.removeAttribute('data-manual-play');
+                    }
+                });
+                
                 // Only play if not manually paused
                 if (!video.hasAttribute('data-manually-paused')) {
                     video.play().catch(e => console.log('Play failed:', e));
@@ -408,10 +421,18 @@ function initializeVideoObserver() {
                     }
                 }
             } else {
-                // Only pause if not manually playing
-                if (!video.hasAttribute('data-manually-paused')) {
+                // Don't pause videos in profile video feed
+                const profileFeed = document.getElementById('profileVideoFeed');
+                if (profileFeed && profileFeed.contains(video)) {
+                    return; // Let profile video observer handle this
+                }
+                
+                // Only pause if not manually playing and not manually selected
+                if (!video.hasAttribute('data-manually-paused') && !video.hasAttribute('data-manual-play')) {
                     video.pause();
                     console.log('⏸️ Auto-pausing video:', video.src.split('/').pop());
+                } else if (video.hasAttribute('data-manual-play')) {
+                    console.log('🎯 Keeping manually selected video playing:', video.src.split('/').pop());
                 }
             }
         });
@@ -8230,6 +8251,13 @@ function selectMentionDash(videoId, username) {
 }
 
 function handleMentionKeyDownDash(event, videoId) {
+    // Handle Enter key for comment submission when dropdown is not open
+    if (event.key === 'Enter' && !mentionDropdownOpen) {
+        event.preventDefault();
+        submitComment(videoId);
+        return;
+    }
+    
     if (!mentionDropdownOpen) return;
     
     const dropdown = document.getElementById(`mentionDropdownDash-${videoId}`);
@@ -11263,39 +11291,245 @@ async function loadUserVideosGrid(userId) {
 function playVideoFromProfile(videoId) {
     console.log(`🎬 Playing video from profile: ${videoId}`);
     
-    // Close the profile page and go back to main feed
+    // Get the current profile user data before closing profile
     const profilePage = document.getElementById('profilePage');
+    let currentProfileUserId = null;
+    
     if (profilePage) {
+        // Extract user ID from the follow button or other elements
+        const followBtn = profilePage.querySelector('#profileFollowBtn');
+        if (followBtn) {
+            currentProfileUserId = followBtn.getAttribute('onclick').match(/'([^']+)'/)[1];
+        }
+        
+        // Store profile context in global state
+        window.currentProfileContext = {
+            userId: currentProfileUserId,
+            isInProfileVideoMode: true
+        };
+        
         profilePage.remove();
     }
     
-    // Navigate to For You page and find the video
-    showPage('foryou');
-    
-    // Wait a moment for the feed to load, then try to find and play the video
-    setTimeout(() => {
-        const videoCard = document.querySelector(`[data-video-id="${videoId}"]`);
-        if (videoCard) {
-            console.log(`✅ Found video in feed, scrolling to it`);
-            videoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
-            // Try to play the video
-            const video = videoCard.querySelector('video');
-            if (video) {
-                video.play().catch(e => console.log('Video play failed:', e));
-            }
-        } else {
-            console.log(`❌ Video not found in current feed, loading it...`);
-            // If video not in current feed, we could implement specific video loading here
-            showNotification('Loading video...', 'info');
-            loadSpecificVideo(videoId);
-        }
-    }, 500);
+    // Create profile video feed instead of going to main feed
+    createProfileVideoFeed(currentProfileUserId, videoId);
 }
 
+async function createProfileVideoFeed(userId, startVideoId) {
+    console.log(`📱 Creating profile video feed for user: ${userId}, starting with: ${startVideoId}`);
+    
+    // Create a feed container similar to the main feed
+    const feedContainer = document.createElement('div');
+    feedContainer.id = 'profileVideoFeed';
+    feedContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 240px;
+        width: calc(100vw - 240px);
+        height: 100vh;
+        background: #161823;
+        z-index: 1000;
+        overflow-y: auto;
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+    `;
+    
+    // Add back button
+    const backButton = document.createElement('div');
+    backButton.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 260px;
+        z-index: 1001;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    `;
+    backButton.innerHTML = '← Back to Profile';
+    backButton.onclick = () => {
+        // Clean up the profile video observer
+        if (window.profileVideoObserver) {
+            window.profileVideoObserver.disconnect();
+            window.profileVideoObserver = null;
+        }
+        
+        feedContainer.remove();
+        backButton.remove();
+        
+        // Re-open the profile page
+        if (window.currentProfileContext?.userId) {
+            showProfilePage(window.currentProfileContext.userId);
+        }
+        window.currentProfileContext = null;
+    };
+    
+    document.body.appendChild(feedContainer);
+    document.body.appendChild(backButton);
+    
+    // Show loading
+    feedContainer.innerHTML = '<div style="padding: 50px; text-align: center; color: white;"><div class="spinner" style="margin: 50px auto;"></div><p>Loading videos...</p></div>';
+    
+    try {
+        // Fetch all videos from this user
+        const response = await fetch(`${API_BASE_URL}/api/user/videos?userId=${userId}&limit=50`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
+        
+        const data = await response.json();
+        const videos = data.videos || [];
+        
+        if (videos.length === 0) {
+            feedContainer.innerHTML = '<div style="padding: 50px; text-align: center; color: white;"><p>No videos found</p></div>';
+            return;
+        }
+        
+        // Clear loading
+        feedContainer.innerHTML = '';
+        
+        // Reorder videos to start with the selected one
+        const startVideoIndex = videos.findIndex(v => v._id === startVideoId);
+        let orderedVideos = [];
+        
+        if (startVideoIndex !== -1) {
+            // Put the selected video first, then the rest
+            orderedVideos = [
+                videos[startVideoIndex],
+                ...videos.slice(0, startVideoIndex),
+                ...videos.slice(startVideoIndex + 1)
+            ];
+        } else {
+            orderedVideos = videos;
+        }
+        
+        // Create video cards for all user's videos
+        orderedVideos.forEach((video, index) => {
+            const videoCard = createAdvancedVideoCard(video);
+            feedContainer.appendChild(videoCard);
+            console.log(`➕ Added profile video ${index + 1}: ${video.title || 'Untitled'}`);
+        });
+        
+        // Initialize video observer for the profile feed
+        setTimeout(() => {
+            initializeProfileVideoObserver(feedContainer);
+            
+            // Auto-play the first video (selected video)
+            const firstVideo = feedContainer.querySelector('video');
+            if (firstVideo) {
+                firstVideo.play().catch(e => console.log('Auto-play failed:', e));
+                console.log('🎬 Starting profile video playback');
+            }
+        }, 200);
+        
+        console.log('✅ Profile video feed created with', orderedVideos.length, 'videos');
+        
+    } catch (error) {
+        console.error('Error creating profile video feed:', error);
+        feedContainer.innerHTML = '<div style="padding: 50px; text-align: center; color: white;"><p>Error loading videos</p></div>';
+    }
+}
+
+function initializeProfileVideoObserver(feedContainer) {
+    console.log('🔧 Initializing profile video observer');
+    
+    // Disconnect existing observer if any
+    if (window.profileVideoObserver) {
+        window.profileVideoObserver.disconnect();
+        window.profileVideoObserver = null;
+    }
+    
+    const profileVideoObserver = window.profileVideoObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const video = entry.target;
+            if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
+                // Pause all other videos in the profile feed first
+                feedContainer.querySelectorAll('video').forEach(v => {
+                    if (v !== video && !v.paused) {
+                        v.pause();
+                        console.log('⏸️ Pausing other profile video:', v.src.split('/').pop());
+                    }
+                });
+                
+                // Play the current video
+                video.play().catch(e => console.log('Profile video play failed:', e));
+                console.log('🎬 Auto-playing profile video:', video.src.split('/').pop());
+                
+                // Track video view start
+                const videoCard = video.closest('.video-card');
+                if (videoCard && videoCard.videoData) {
+                    startVideoTracking(videoCard.videoData._id, video);
+                }
+            } else if (!entry.isIntersecting) {
+                // Pause when out of view
+                if (!video.paused) {
+                    video.pause();
+                    console.log('⏸️ Auto-pausing profile video (out of view):', video.src.split('/').pop());
+                }
+            }
+        });
+    }, {
+        threshold: [0, 0.7, 1],
+        rootMargin: '-10% 0px -10% 0px',
+        root: feedContainer
+    });
+    
+    // Setup all videos in the profile feed
+    const videos = feedContainer.querySelectorAll('video');
+    videos.forEach((video, index) => {
+        console.log(`🔧 Setting up profile video ${index + 1}:`, video.src.split('/').pop());
+        
+        // Force video properties
+        video.muted = false;
+        video.volume = 0.8;
+        video.loop = true;
+        video.controls = false;
+        video.playsInline = true;
+        video.preload = 'metadata';
+        
+        // Remove any existing manual play flags
+        video.removeAttribute('data-manual-play');
+        video.removeAttribute('data-manually-paused');
+        
+        // Observe this video
+        profileVideoObserver.observe(video);
+        
+        // Add click handler for manual pause/play
+        video.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (this.paused) {
+                this.play().catch(e => console.log('Manual play failed:', e));
+                this.removeAttribute('data-manually-paused');
+                console.log('▶️ Manual play:', this.src.split('/').pop());
+            } else {
+                this.pause();
+                this.setAttribute('data-manually-paused', 'true');
+                console.log('⏸️ Manual pause:', this.src.split('/').pop());
+            }
+        });
+    });
+    
+    console.log(`✅ Profile video observer initialized for ${videos.length} videos`);
+}
+
+// This function is now only used for fallback when video not found in main feed
 async function loadSpecificVideo(videoId) {
     try {
-        // Fetch the specific video data
+        // If we're in profile video mode, this shouldn't happen
+        if (window.currentProfileContext?.isInProfileVideoMode) {
+            console.log('Already in profile video mode, skipping loadSpecificVideo');
+            return;
+        }
+        
+        // Fetch the specific video data for main feed
         const response = await fetch(`${API_BASE_URL}/api/videos/${videoId}`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -11304,9 +11538,9 @@ async function loadSpecificVideo(videoId) {
         
         if (response.ok) {
             const video = await response.json();
-            console.log(`📹 Loaded specific video:`, video);
+            console.log(`📹 Loaded specific video for main feed:`, video);
             
-            // Add this video to the top of the feed
+            // Add this video to the top of the main feed
             const feedContainer = document.getElementById('foryouFeed');
             if (feedContainer) {
                 const videoCard = createAdvancedVideoCard(video);
@@ -11316,11 +11550,29 @@ async function loadSpecificVideo(videoId) {
                 setTimeout(() => {
                     const newVideoCard = document.querySelector(`[data-video-id="${videoId}"]`);
                     if (newVideoCard) {
+                        console.log(`🎯 Focusing on specific video: ${videoId}`);
+                        
+                        // Pause all other videos first
+                        document.querySelectorAll('video').forEach(v => {
+                            if (v !== newVideoCard.querySelector('video')) {
+                                v.pause();
+                            }
+                        });
+                        
+                        // Scroll to target video
                         newVideoCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        const videoElement = newVideoCard.querySelector('video');
-                        if (videoElement) {
-                            videoElement.play().catch(e => console.log('Video play failed:', e));
-                        }
+                        
+                        // Wait for scroll to complete, then play
+                        setTimeout(() => {
+                            const videoElement = newVideoCard.querySelector('video');
+                            if (videoElement) {
+                                console.log(`▶️ Playing target video: ${videoId}`);
+                                videoElement.play().catch(e => console.log('Video play failed:', e));
+                                
+                                // Mark this video as manually selected to prevent auto-pause
+                                videoElement.setAttribute('data-manual-play', 'true');
+                            }
+                        }, 800);
                     }
                 }, 100);
             }
