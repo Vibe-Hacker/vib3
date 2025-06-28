@@ -7449,12 +7449,11 @@ function openCommentsModal(videoId) {
 }
 
 function openShareModal(videoId) {
-    console.log('📱 Creating share modal for video:', videoId);
+    console.log('📱 Creating TikTok-style share modal for video:', videoId);
     
     // Remove any existing share modals first
     document.querySelectorAll('.share-modal').forEach(m => m.remove());
     
-    // Create a simple, highly visible test modal first
     const modal = document.createElement('div');
     modal.className = 'modal share-modal';
     modal.style.cssText = `
@@ -7463,163 +7462,82 @@ function openShareModal(videoId) {
         left: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
-        background: red !important;
-        z-index: 99999999 !important;
-        display: block !important;
+        background: rgba(0,0,0,0.9) !important;
+        z-index: 999999 !important;
+        display: flex !important;
+        align-items: flex-end !important;
+        justify-content: center !important;
+        backdrop-filter: blur(10px) !important;
         pointer-events: all !important;
     `;
     
+    const videoUrl = `${window.location.origin}/?video=${videoId}`;
+    
     modal.innerHTML = `
         <div style="
-            position: absolute !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            background: white !important;
-            color: black !important;
-            padding: 40px !important;
-            border-radius: 10px !important;
-            font-size: 20px !important;
-            z-index: 999999999 !important;
-        ">
-            <h2>SHARE MODAL TEST</h2>
-            <p>Video ID: ${videoId}</p>
-            <button onclick="this.closest('.modal').remove()" style="
-                padding: 10px 20px !important;
-                background: #ff0050 !important;
-                color: white !important;
-                border: none !important;
-                border-radius: 5px !important;
-                cursor: pointer !important;
-                margin-top: 20px !important;
-            ">Close</button>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    console.log('✅ TEST modal added - should be RED and visible');
-    
-    // Auto-remove after 5 seconds as safety
-    setTimeout(() => {
-        if (modal.parentNode) {
-            modal.remove();
-            console.log('🧹 Auto-removed test modal');
-        }
-    }, 5000);
-}
-        <div class="modal-content" style="
-            background: var(--bg-secondary, #161823) !important;
+            background: #161823 !important;
             width: 100% !important;
-            max-height: 80vh !important;
+            max-width: 500px !important;
+            max-height: 70vh !important;
             border-radius: 20px 20px 0 0 !important;
-            padding: 24px !important;
+            padding: 30px !important;
             overflow-y: auto !important;
             position: relative !important;
-            z-index: 1000000 !important;
-            pointer-events: all !important;
+            z-index: 9999999 !important;
+            animation: slideUp 0.3s ease !important;
         ">
-            <div class="modal-header" style="text-align: center; margin-bottom: 20px;">
-                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 0 auto 16px;"></div>
-                <h3 style="margin: 0; color: var(--text-primary, #fff); font-size: 18px; font-weight: 600;">Share to</h3>
+            <div style="text-align: center; margin-bottom: 25px;">
+                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 0 auto 20px;"></div>
+                <h3 style="margin: 0; color: white; font-size: 20px; font-weight: 600;">Share to</h3>
             </div>
-            <div class="share-options" style="
-                display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                gap: 20px;
-                margin-bottom: 20px;
-            ">
-                <div onclick="shareToInstagram('${videoId}'); this.closest('.modal').remove();" style="
-                    text-align: center;
-                    cursor: pointer;
-                    padding: 12px;
-                    border-radius: 12px;
-                    transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
-                    <div style="width: 48px; height: 48px; background: linear-gradient(45deg, #ff6b6b, #ee5a24); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">📷</div>
-                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Instagram</span>
-                </div>
-                <div onclick="shareToTwitter('${videoId}'); this.closest('.modal').remove();" style="
-                    text-align: center;
-                    cursor: pointer;
-                    padding: 12px;
-                    border-radius: 12px;
-                    transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
-                    <div style="width: 48px; height: 48px; background: #1da1f2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">🐦</div>
-                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Twitter</span>
-                </div>
-                <div onclick="shareToFacebook('${videoId}'); this.closest('.modal').remove();" style="
-                    text-align: center;
-                    cursor: pointer;
-                    padding: 12px;
-                    border-radius: 12px;
-                    transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
-                    <div style="width: 48px; height: 48px; background: #4267b2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">📘</div>
-                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Facebook</span>
-                </div>
-                <div onclick="shareToWhatsApp('${videoId}'); this.closest('.modal').remove();" style="
-                    text-align: center;
-                    cursor: pointer;
-                    padding: 12px;
-                    border-radius: 12px;
-                    transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
-                    <div style="width: 48px; height: 48px; background: #25d366; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">💬</div>
-                    <span style="color: var(--text-primary, #fff); font-size: 12px;">WhatsApp</span>
-                </div>
-                <div onclick="shareToTelegram('${videoId}'); this.closest('.modal').remove();" style="
-                    text-align: center;
-                    cursor: pointer;
-                    padding: 12px;
-                    border-radius: 12px;
-                    transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
-                    <div style="width: 48px; height: 48px; background: #0088cc; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">✈️</div>
-                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Telegram</span>
-                </div>
-                <div onclick="shareViaEmail('${videoId}'); this.closest('.modal').remove();" style="
-                    text-align: center;
-                    cursor: pointer;
-                    padding: 12px;
-                    border-radius: 12px;
-                    transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
-                    <div style="width: 48px; height: 48px; background: #ea4335; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">📧</div>
-                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Email</span>
-                </div>
-                <div onclick="copyVideoLink('${videoId}'); this.closest('.modal').remove();" style="
-                    text-align: center;
-                    cursor: pointer;
-                    padding: 12px;
-                    border-radius: 12px;
-                    transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
-                    <div style="width: 48px; height: 48px; background: #666; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">🔗</div>
-                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Copy Link</span>
-                </div>
-                <div onclick="downloadVideo('${videoId}'); this.closest('.modal').remove();" style="
-                    text-align: center;
-                    cursor: pointer;
-                    padding: 12px;
-                    border-radius: 12px;
-                    transition: background 0.2s;
-                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">
-                    <div style="width: 48px; height: 48px; background: #4caf50; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">⬇️</div>
-                    <span style="color: var(--text-primary, #fff); font-size: 12px;">Save Video</span>
-                </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
+                <button onclick="shareToTwitter('${videoId}'); this.closest('.share-modal').remove();" style="
+                    text-align: center; cursor: pointer; padding: 15px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                    <div style="width: 50px; height: 50px; background: #1da1f2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">🐦</div>
+                    <span style="color: white; font-size: 12px; display: block;">Twitter</span>
+                </button>
+                
+                <button onclick="shareToFacebook('${videoId}'); this.closest('.share-modal').remove();" style="
+                    text-align: center; cursor: pointer; padding: 15px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                    <div style="width: 50px; height: 50px; background: #4267b2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">📘</div>
+                    <span style="color: white; font-size: 12px; display: block;">Facebook</span>
+                </button>
+                
+                <button onclick="shareToWhatsApp('${videoId}'); this.closest('.share-modal').remove();" style="
+                    text-align: center; cursor: pointer; padding: 15px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                    <div style="width: 50px; height: 50px; background: #25d366; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">💬</div>
+                    <span style="color: white; font-size: 12px; display: block;">WhatsApp</span>
+                </button>
+                
+                <button onclick="copyVideoLink('${videoId}'); this.closest('.share-modal').remove();" style="
+                    text-align: center; cursor: pointer; padding: 15px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                    <div style="width: 50px; height: 50px; background: #666; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">🔗</div>
+                    <span style="color: white; font-size: 12px; display: block;">Copy Link</span>
+                </button>
+                
+                <button onclick="shareViaEmail('${videoId}'); this.closest('.share-modal').remove();" style="
+                    text-align: center; cursor: pointer; padding: 15px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                    <div style="width: 50px; height: 50px; background: #ea4335; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">📧</div>
+                    <span style="color: white; font-size: 12px; display: block;">Email</span>
+                </button>
+                
+                <button onclick="downloadVideo('${videoId}'); this.closest('.share-modal').remove();" style="
+                    text-align: center; cursor: pointer; padding: 15px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+                " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                    <div style="width: 50px; height: 50px; background: #4caf50; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 24px;">⬇️</div>
+                    <span style="color: white; font-size: 12px; display: block;">Save</span>
+                </button>
             </div>
-            <button onclick="this.closest('.modal').remove()" style="
-                width: 100%;
-                padding: 16px;
-                background: rgba(255,255,255,0.1);
-                border: none;
-                border-radius: 12px;
-                color: var(--text-primary, #fff);
-                font-size: 16px;
-                font-weight: 600;
-                cursor: pointer;
-                margin-top: 12px;
+            
+            <button onclick="this.closest('.share-modal').remove()" style="
+                width: 100%; padding: 16px; background: rgba(255,255,255,0.1); border: none; border-radius: 12px;
+                color: white; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 12px;
             ">Cancel</button>
         </div>
     `;
@@ -7632,7 +7550,7 @@ function openShareModal(videoId) {
     });
     
     document.body.appendChild(modal);
-    console.log('✅ Share modal added to page');
+    console.log('✅ TikTok-style share modal created and visible');
 }
 
 function viewProfile(username) {
@@ -8996,9 +8914,6 @@ function notInterested(videoId) {
     showNotification('Marked as not interested', 'info');
 }
 
-function shareVideo(videoId) {
-    openShareModal(videoId);
-}
 
 function useSound(soundId) {
     showNotification(`Using sound ${soundId}`, 'success');
