@@ -276,7 +276,65 @@
             window.showHome();
         };
         
-        console.log('✅ Navigation functions loaded in HEAD');
+        // Authentication functions
+        window.handleLogin = async function() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                console.log('🔐 Attempting login...');
+                const result = await login(email, password);
+                console.log('✅ Login successful:', result);
+                
+                if (result.success) {
+                    window.currentUser = result.user;
+                    
+                    // Store auth token
+                    if (result.token) {
+                        localStorage.setItem('token', result.token);
+                    }
+                    
+                    showApp();
+                } else {
+                    throw new Error(result.error || 'Login failed');
+                }
+            } catch (error) {
+                console.error('🔴 Login failed:', error);
+                const errorEl = document.getElementById('authError');
+                if (errorEl) errorEl.textContent = error.message;
+            }
+        };
+        
+        window.handleSignup = async function() {
+            const username = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            
+            try {
+                console.log('📝 Attempting signup...');
+                const result = await signup(email, password, username);
+                console.log('✅ Signup successful:', result);
+                
+                if (result.success) {
+                    window.currentUser = result.user;
+                    
+                    // Store auth token
+                    if (result.token) {
+                        localStorage.setItem('token', result.token);
+                    }
+                    
+                    showApp();
+                } else {
+                    throw new Error(result.error || 'Signup failed');
+                }
+            } catch (error) {
+                console.error('🔴 Signup failed:', error);
+                const errorEl = document.getElementById('authError');
+                if (errorEl) errorEl.textContent = error.message;
+            }
+        };
+        
+        console.log('✅ Navigation and auth functions loaded in HEAD');
     </script>
     
     <style>
@@ -2538,39 +2596,6 @@
             document.getElementById('signupForm').style.display = 'block';
         }
 
-        async function handleLogin() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            try {
-                console.log('🔐 Attempting login...');
-                const result = await signInWithEmailAndPassword(auth, email, password);
-                console.log('✅ Login successful:', result);
-                currentUser = result.user;
-                window.currentUser = result.user;
-                
-                // Load user profile data
-                await loadUserProfile();
-                showApp();
-            } catch (error) {
-                console.error('🔴 Login failed:', error);
-                document.getElementById('authError').textContent = error.message;
-            }
-        }
-
-        async function handleSignup() {
-            const username = document.getElementById('signupName').value;
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-            
-            try {
-                const { user } = await signup(email, password, username);
-                currentUser = user;
-                showApp();
-            } catch (error) {
-                document.getElementById('authError').textContent = error.message;
-            }
-        }
 
         async function loadUserProfile() {
             if (!currentUser || !currentUser.id) {
