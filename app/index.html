@@ -232,20 +232,13 @@
                     const profileGrid = document.getElementById('profileGrid');
                     if (profileGrid && userVideos.length > 0) {
                         profileGrid.innerHTML = userVideos.map((video, index) => {
-                            const videoSrc = video.videoUrl || video.url;
                             const videoId = video._id || video.id;
-                            const thumbnailUrl = video.thumbnailUrl || video.thumbnail || videoSrc;
                             const likeCount = video.likeCount || video.likes || 0;
                             
                             return `
-                            <div class="profile-video-item" onclick="playVideo('${videoId}')">
-                                <div class="profile-video-thumb" style="background-image: url('${thumbnailUrl}');">
-                                    <video src="${videoSrc}" 
-                                           preload="none" 
-                                           style="display: none;"
-                                           onloadedmetadata="this.currentTime=0.1"
-                                           onseeked="captureVideoFrame(this, ${index})">
-                                    </video>
+                            <div class="profile-video-item" data-video-id="${videoId}">
+                                <div class="profile-video-thumb">
+                                    <div class="video-placeholder">📹</div>
                                 </div>
                                 <div class="video-overlay">
                                     <div class="video-stats">
@@ -1103,6 +1096,7 @@
             display: none;
             overflow-y: auto;
             padding-bottom: 60px;
+            z-index: 1000;
         }
 
         .profile-header {
@@ -1399,10 +1393,12 @@
         .profile-video-item {
             position: relative;
             width: 100%;
-            padding-bottom: 133.33%; /* 4:3 aspect ratio like TikTok */
+            height: 0;
+            padding-bottom: 177.78%; /* 16:9 aspect ratio for vertical videos */
             background: #000;
             overflow: hidden;
             cursor: pointer;
+            border: 0.5px solid #222;
         }
 
         .profile-video-thumb {
@@ -1416,10 +1412,24 @@
             background-size: cover;
             background-position: center;
             background-color: #1a1a1a;
+            background-repeat: no-repeat;
+        }
+        
+        .profile-video-thumb video {
+            display: none !important;
         }
 
         .profile-video-thumb[poster] {
             background-image: none !important;
+        }
+        
+        .video-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+            opacity: 0.5;
         }
 
         .profile-video-canvas {
