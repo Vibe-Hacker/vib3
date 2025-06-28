@@ -1,10 +1,20 @@
 require('dotenv').config();
-const express = require('express');
-const multer = require('multer');
-const AWS = require('aws-sdk');
-const path = require('path');
-const crypto = require('crypto');
-const VideoProcessor = require('./video-processor');
+
+// Wrap requires in try-catch to identify issues
+let express, multer, AWS, path, crypto, VideoProcessor;
+
+try {
+    express = require('express');
+    multer = require('multer');
+    AWS = require('aws-sdk');
+    path = require('path');
+    crypto = require('crypto');
+    VideoProcessor = require('./video-processor');
+} catch (error) {
+    console.error('FATAL: Failed to load dependencies:', error.message);
+    console.error('Stack:', error.stack);
+    process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,8 +25,13 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Request logging middleware
 app.use((req, res, next) => {
-    console.log(`📥 ${new Date().toISOString()} - ${req.method} ${req.url}`);
-    next();
+    try {
+        console.log(`📥 ${new Date().toISOString()} - ${req.method} ${req.url}`);
+        next();
+    } catch (error) {
+        console.error('Error in logging middleware:', error);
+        next(error);
+    }
 });
 
 // Session management (simple in-memory for now)
@@ -4695,6 +4710,24 @@ app.post('/api/admin/cleanup-likes', async (req, res) => {
 
 // Duplicate endpoints removed - they are now defined before static files
 
+// Catch-all route for unhandled requests
+app.use('*', (req, res) => {
+    console.log('Unhandled request:', req.method, req.originalUrl);
+    res.status(404).json({ 
+        error: 'Not found', 
+        path: req.originalUrl,
+        message: 'No route or static file found for this path'
+    });
+});
+
+// Error handling - MUST be last middleware BEFORE server.listen
+app.use((err, req, res, next) => {
+    console.error('ERROR CAUGHT:', err.message);
+    console.error('Stack:', err.stack);
+    console.error('URL:', req.url);
+    res.status(500).json({ error: 'Something broke!', memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB' });
+});
+
 // Start server
 const server = app.listen(PORT, '0.0.0.0', async () => {
     console.log('========================================');
@@ -4731,20 +4764,3 @@ process.on('SIGINT', () => {
     });
 });
 
-// Catch-all route for unhandled requests
-app.use('*', (req, res) => {
-    console.log('Unhandled request:', req.method, req.originalUrl);
-    res.status(404).json({ 
-        error: 'Not found', 
-        path: req.originalUrl,
-        message: 'No route or static file found for this path'
-    });
-});
-
-// Error handling - MUST be last middleware
-app.use((err, req, res, next) => {
-    console.error('ERROR CAUGHT:', err.message);
-    console.error('Stack:', err.stack);
-    console.error('URL:', req.url);
-    res.status(500).json({ error: 'Something broke!', memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB' });
-});
