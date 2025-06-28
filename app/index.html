@@ -9,6 +9,67 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>VIB3</title>
+    
+    <!-- Load navigation functions in HEAD before HTML is parsed -->
+    <script>
+        console.log('🟢 Loading navigation functions in HEAD...');
+        
+        // Define navigation functions BEFORE HTML is parsed
+        window.showProfile = function() {
+            console.log('👤 showProfile called from HEAD');
+            const profilePage = document.getElementById('profilePage');
+            const mainApp = document.getElementById('mainApp');
+            
+            // Hide all pages
+            if (mainApp) mainApp.style.display = 'none';
+            const discoverPage = document.getElementById('discoverPage');
+            const inboxPage = document.getElementById('inboxPage');
+            if (discoverPage) discoverPage.style.display = 'none';
+            if (inboxPage) inboxPage.style.display = 'none';
+            
+            // Show profile page
+            if (profilePage) {
+                profilePage.style.display = 'block';
+                console.log('✅ Profile page shown from HEAD');
+            } else {
+                console.error('❌ Profile page element not found');
+            }
+        };
+        
+        window.showHome = function() {
+            console.log('🏠 showHome called from HEAD');
+            const mainApp = document.getElementById('mainApp');
+            const profilePage = document.getElementById('profilePage');
+            const discoverPage = document.getElementById('discoverPage');
+            const inboxPage = document.getElementById('inboxPage');
+            
+            if (profilePage) profilePage.style.display = 'none';
+            if (discoverPage) discoverPage.style.display = 'none';
+            if (inboxPage) inboxPage.style.display = 'none';
+            if (mainApp) mainApp.style.display = 'block';
+        };
+        
+        window.showDiscover = function() {
+            console.log('🔍 showDiscover called from HEAD');
+            // Similar implementation
+        };
+        
+        window.showInbox = function() {
+            console.log('📥 showInbox called from HEAD');
+            // Similar implementation  
+        };
+        
+        window.openUploadModal = function() {
+            console.log('📤 openUploadModal called from HEAD');
+            const uploadModal = document.getElementById('uploadModal');
+            const modalOverlay = document.getElementById('modalOverlay');
+            if (uploadModal) uploadModal.style.display = 'block';
+            if (modalOverlay) modalOverlay.style.display = 'block';
+        };
+        
+        console.log('✅ Navigation functions loaded in HEAD');
+    </script>
+    
     <style>
         * {
             margin: 0;
