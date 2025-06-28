@@ -136,8 +136,10 @@
         // Load user statistics
         window.loadUserStats = async function(userId) {
             try {
-                console.log('📊 Fetching user stats for:', userId);
+                console.log('📊 Fetching user stats for userId:', userId);
                 const token = localStorage.getItem('token');
+                console.log('📊 Token available:', !!token);
+                
                 const response = await fetch(`https://vib3-production.up.railway.app/api/user/stats`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -149,18 +151,32 @@
                 
                 if (response.ok) {
                     const stats = await response.json();
-                    console.log('✅ User stats loaded:', stats);
+                    console.log('✅ User stats raw response:', stats);
                     
                     // Update stats in UI
                     const followingCount = document.getElementById('followingCount');
                     const followersCount = document.getElementById('followersCount');
                     const likesCount = document.getElementById('likesCount');
                     
-                    if (followingCount) followingCount.textContent = stats.following || 0;
-                    if (followersCount) followersCount.textContent = stats.followers || 0;
-                    if (likesCount) likesCount.textContent = stats.likes || 0;
+                    console.log('📊 Found UI elements:', {
+                        followingCount: !!followingCount,
+                        followersCount: !!followersCount, 
+                        likesCount: !!likesCount
+                    });
                     
-                    console.log('✅ Updated profile stats - following:', stats.following, 'followers:', stats.followers, 'likes:', stats.likes);
+                    if (followingCount) {
+                        followingCount.textContent = stats.following || 0;
+                        console.log('✅ Set following count to:', stats.following || 0);
+                    }
+                    if (followersCount) {
+                        followersCount.textContent = stats.followers || 0;
+                        console.log('✅ Set followers count to:', stats.followers || 0);
+                    }
+                    if (likesCount) {
+                        likesCount.textContent = stats.likes || 0;
+                        console.log('✅ Set likes count to:', stats.likes || 0);
+                    }
+                    
                 } else {
                     const errorText = await response.text();
                     console.error('❌ Failed to load user stats:', response.status, errorText);
@@ -2871,9 +2887,11 @@
                 <div class="video-item" data-index="${index}">
                     <video class="video-player" 
                            src="${videoSrc}" 
+                           ${video.thumbnail ? `poster="${video.thumbnail}"` : ''}
                            loop 
                            playsinline 
                            webkit-playsinline
+                           preload="metadata"
                            onclick="togglePlayPause(this)"
                            ondblclick="likeVideo('${videoId}', event)">
                     </video>
@@ -2885,7 +2903,8 @@
                     <div class="video-info">
                         <div class="video-username">
                             @${username}
-                            ${video.isFollowing ? '' : '<span class="follow-btn" onclick="followUser(\'' + userId + '\')">Follow</span>'}
+                            ${userId === window.currentUser?.id || username === window.currentUser?.username ? '' : 
+                              (video.isFollowing ? '' : '<span class="follow-btn" onclick="followUser(\'' + userId + '\')">Follow</span>')}
                         </div>
                         <div class="video-description">${description}</div>
                         <div class="video-music">
