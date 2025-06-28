@@ -521,17 +521,20 @@
             padding: 40px 20px;
         }
 
+        .logo-wrapper {
+            text-align: center;
+            margin-bottom: 40px;
+            -webkit-animation: spin360 2s linear infinite;
+            animation: spin360 2s linear infinite;
+        }
+
         .auth-form h2 {
             font-size: 48px;
             font-weight: 900;
-            text-align: center;
-            margin-bottom: 40px;
             color: #FF0050;
-            animation: vibePulse 1s linear infinite;
-            position: relative;
-            z-index: 10;
+            text-shadow: 0 0 20px rgba(255, 0, 80, 0.8);
+            margin: 0;
             display: inline-block;
-            transform-origin: center center;
         }
 
         .auth-form h2::before {
@@ -561,26 +564,25 @@
             }
         }
 
-        @keyframes vibePulse {
+        @-webkit-keyframes spin360 {
             0% {
-                transform: scale(1) rotate(0deg);
-                opacity: 1;
-            }
-            25% {
-                transform: scale(1.5) rotate(-5deg);
-                opacity: 0.8;
-            }
-            50% {
-                transform: scale(2) rotate(5deg);
-                opacity: 1;
-            }
-            75% {
-                transform: scale(1.5) rotate(-5deg);
-                opacity: 0.8;
+                -webkit-transform: rotate(0deg);
+                transform: rotate(0deg);
             }
             100% {
-                transform: scale(1) rotate(0deg);
-                opacity: 1;
+                -webkit-transform: rotate(360deg);
+                transform: rotate(360deg);
+            }
+        }
+        
+        @keyframes spin360 {
+            0% {
+                -webkit-transform: rotate(0deg);
+                transform: rotate(0deg);
+            }
+            100% {
+                -webkit-transform: rotate(360deg);
+                transform: rotate(360deg);
             }
         }
 
@@ -2093,7 +2095,9 @@
     <!-- Auth Container -->
     <div class="auth-container" id="authContainer">
         <div class="auth-form">
-            <h2>VIB3</h2>
+            <div class="logo-wrapper">
+                <h2>VIB3</h2>
+            </div>
             <div class="auth-error" id="authError"></div>
             <div id="loginForm">
                 <input type="email" class="auth-input" id="loginEmail" placeholder="Email" autocomplete="email">
