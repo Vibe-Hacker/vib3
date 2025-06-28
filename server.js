@@ -4550,11 +4550,7 @@ app.get('/api/admin/cleanup/status', async (req, res) => {
     }
 });
 
-// Error handling
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Something broke!', memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB' });
-});
+// Error handling moved to end of file
 
 // Nuclear likes reset endpoint
 app.post('/api/admin/reset-likes', async (req, res) => {
@@ -4692,4 +4688,10 @@ process.on('SIGINT', () => {
         if (client) client.close();
         process.exit(0);
     });
+});
+
+// Error handling - MUST be last middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Something broke!', memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB' });
 });
