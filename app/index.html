@@ -230,7 +230,15 @@
                     
                     // Update profile grid with user videos
                     const profileGrid = document.getElementById('profileGrid');
+                    console.log('🎬 Profile grid element:', profileGrid);
+                    console.log('🎬 Profile grid parent:', profileGrid?.parentElement);
+                    console.log('🎬 Profile grid computed style:', window.getComputedStyle(profileGrid));
+                    
                     if (profileGrid && userVideos.length > 0) {
+                        // Clear any existing content first
+                        profileGrid.innerHTML = '';
+                        profileGrid.style.cssText = 'display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 1px !important;';
+                        
                         profileGrid.innerHTML = userVideos.map((video, index) => {
                             const videoId = video._id || video.id;
                             const videoUrl = video.videoUrl || video.url;
@@ -238,29 +246,20 @@
                             const viewCount = video.viewCount || video.views || 0;
                             
                             return `
-                            <div class="profile-video-item" onclick="playProfileVideo('${videoId}', '${videoUrl}')">
-                                <video 
-                                    class="profile-video-thumbnail"
-                                    src="${videoUrl}#t=0.1"
-                                    preload="metadata"
-                                    muted
-                                    playsinline
-                                    webkit-playsinline>
-                                </video>
-                                <div class="video-overlay">
-                                    <div class="video-stats">
-                                        <span class="stat-item">
-                                            <svg viewBox="0 0 24 24" fill="white">
-                                                <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.85-1.26l3.03-7.08c.09-.23.12-.47.12-.66v-2z"/>
-                                            </svg>
-                                            ${formatCount(likeCount)}
+                            <div class="profile-video-item" 
+                                 style="position: relative; width: 100%; height: 0; padding-bottom: 133.33%; background: #000; overflow: hidden;"
+                                 onclick="playProfileVideo('${videoId}', '${videoUrl}')">
+                                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #333; display: flex; align-items: center; justify-content: center;">
+                                    <span style="font-size: 40px; opacity: 0.5;">🎥</span>
+                                </div>
+                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 8px;">
+                                    <div style="display: flex; gap: 12px; align-items: center;">
+                                        <span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: white;">
+                                            ❤️ ${formatCount(likeCount)}
                                         </span>
                                         ${viewCount > 0 ? `
-                                        <span class="stat-item">
-                                            <svg viewBox="0 0 24 24" fill="white">
-                                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                                            </svg>
-                                            ${formatCount(viewCount)}
+                                        <span style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: white;">
+                                            👁️ ${formatCount(viewCount)}
                                         </span>
                                         ` : ''}
                                     </div>
