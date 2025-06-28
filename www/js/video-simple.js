@@ -126,6 +126,15 @@ async function shareVideo(videoId) {
     
     document.body.appendChild(modal);
     console.log('✅ TikTok-style share modal added to page');
+    
+    // Force to very front and show alert
+    modal.style.zIndex = '999999999';
+    document.body.style.position = 'relative';
+    modal.style.position = 'fixed';
+    
+    // Show alert to confirm it's working
+    alert('MODAL CREATED! You should see a RED background behind this alert. Click OK to continue.');
+    
     console.log('🔍 Modal element:', modal);
     console.log('🔍 Modal in DOM:', document.querySelector('.share-modal'));
     console.log('🔍 Modal styles:', modal.style.cssText);
