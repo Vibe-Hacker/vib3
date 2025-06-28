@@ -276,23 +276,47 @@
                         }).join('');
                         console.log('✅ Updated profile grid with', userVideos.length, 'video thumbnails');
                         
-                        // Prevent auto-play on profile videos
+                        // Generate thumbnails from video first frames
                         setTimeout(() => {
                             const profileVideos = profileGrid.querySelectorAll('video[data-profile-video="true"]');
-                            profileVideos.forEach(video => {
-                                video.pause();
-                                video.currentTime = 0.1;
-                                // Prevent any intersection observer from auto-playing these
-                                video.setAttribute('data-no-autoplay', 'true');
-                                video.addEventListener('play', function(e) {
-                                    if (this.getAttribute('data-no-autoplay') === 'true') {
-                                        e.preventDefault();
-                                        this.pause();
-                                        this.currentTime = 0.1;
+                            profileVideos.forEach((video, index) => {
+                                video.addEventListener('loadedmetadata', function() {
+                                    console.log(`🎬 Video ${index} metadata loaded, generating thumbnail`);
+                                    this.currentTime = 0.1;
+                                });
+                                
+                                video.addEventListener('seeked', function() {
+                                    console.log(`🖼️ Video ${index} seeked to 0.1s for thumbnail`);
+                                    // Pause immediately after seeking to prevent autoplay
+                                    this.pause();
+                                    
+                                    // Create canvas to capture frame as poster
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = this.videoWidth || 480;
+                                    canvas.height = this.videoHeight || 640;
+                                    const ctx = canvas.getContext('2d');
+                                    
+                                    try {
+                                        ctx.drawImage(this, 0, 0, canvas.width, canvas.height);
+                                        const posterUrl = canvas.toDataURL('image/jpeg', 0.8);
+                                        this.poster = posterUrl;
+                                        console.log(`✅ Generated poster for video ${index}`);
+                                    } catch (e) {
+                                        console.error(`❌ Failed to generate poster for video ${index}:`, e);
                                     }
                                 });
+                                
+                                video.addEventListener('play', function(e) {
+                                    // Prevent autoplay - keep as thumbnail only
+                                    e.preventDefault();
+                                    this.pause();
+                                    this.currentTime = 0.1;
+                                });
+                                
+                                // Force load metadata
+                                video.load();
                             });
-                            console.log('🔒 Disabled autoplay for', profileVideos.length, 'profile videos');
+                            console.log('🖼️ Started thumbnail generation for', profileVideos.length, 'profile videos');
                         }, 100);
                         
                     } else if (profileGrid) {
