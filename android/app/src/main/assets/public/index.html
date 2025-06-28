@@ -2743,12 +2743,12 @@
                 console.log('🔍 Token available:', !!token);
                 console.log('🔍 Current user:', currentUser?.username || 'No user');
                 
-                // Try multiple API endpoints to find videos
+                // Try multiple API endpoints to find videos - prioritize working endpoints
                 const endpoints = [
+                    `/api/videos`,           // Main videos endpoint (confirmed working)
+                    `/api/videos/all`,       // All videos
                     `/api/videos/${currentFeed}`,
                     `/api/videos/feed/${currentFeed}`,
-                    `/api/videos/all`,
-                    `/api/videos`,
                     `/api/feed/${currentFeed}`
                 ];
                 
