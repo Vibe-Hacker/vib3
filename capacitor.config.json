@@ -1,5 +1,11 @@
 {
   "appId": "com.yourname.vib3",
   "appName": "VIBE",
-  "webDir": "app"
+  "webDir": "app",
+  "server": {
+    "cleartext": true
+  },
+  "android": {
+    "webContentsDebuggingEnabled": true
+  }
 }

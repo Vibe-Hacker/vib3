@@ -318,16 +318,18 @@ async function createVideoCard(videoData, feedType) {
     const loading = card.querySelector('.video-loading');
     
     video.addEventListener('loadstart', () => {
-        loading.style.display = 'block';
+        if (loading) loading.style.display = 'block';
     });
     
     video.addEventListener('canplay', () => {
-        loading.style.display = 'none';
+        if (loading) loading.style.display = 'none';
     });
     
     video.addEventListener('error', () => {
-        loading.style.display = 'none';
-        loading.textContent = 'Video unavailable';
+        if (loading) {
+            loading.style.display = 'none';
+            loading.textContent = 'Video unavailable';
+        }
     });
     
     return card;

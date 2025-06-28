@@ -3,9 +3,8 @@
 
 // API base URL configuration
 if (typeof API_BASE_URL === 'undefined') {
-    window.API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? '' 
-        : 'https://vib3-production.up.railway.app';
+    // For mobile app, always use production server
+    window.API_BASE_URL = 'https://vib3-production.up.railway.app';
 }
 
 // Production-ready token management - no localStorage
@@ -18,51 +17,24 @@ const auth = {
     _callbacks: [],
     onAuthStateChanged: function(callback) {
         this._callbacks.push(callback);
-        // Check if user is logged in using session-based auth (production-ready)
-        fetch(`${window.API_BASE_URL}/api/auth/me`, {
-            method: 'GET',
-            credentials: 'include', // Include HTTP-only cookies
-            headers: { 
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (response.status === 401 || response.status === 403) {
-                // Not authenticated
-                window.authToken = null;
-                window.currentUser = null;
-                callback(null);
-                return null;
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data && data.user) {
-                this.currentUser = data.user;
-                window.currentUser = data.user;
-                // Set auth token for API calls (but don't store in localStorage)
-                window.authToken = data.token || 'session-based';
-                callback(data.user);
-            } else {
-                callback(null);
-            }
-        })
-        .catch(() => {
-            window.authToken = null;
-            window.currentUser = null;
-            callback(null);
-        });
+        
+        // FORCE LOGIN - no auto-authentication on mobile
+        console.log('🔒 FORCING LOGIN SCREEN - no bypass allowed');
+        localStorage.removeItem('token');
+        window.authToken = null;
+        window.currentUser = null;
+        this.currentUser = null;
+        callback(null);
     },
     _triggerCallbacks: function(user) {
         this._callbacks.forEach(callback => callback(user));
     }
 };
 
-// Replace Firebase functions - Production secure authentication
+// Replace Firebase functions - Mobile token-based authentication
 async function signInWithEmailAndPassword(authObj, email, password) {
     const response = await fetch(`${window.API_BASE_URL}/api/auth/login`, {
         method: 'POST',
-        credentials: 'include', // Enable cookies for session management
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
     });
@@ -70,8 +42,9 @@ async function signInWithEmailAndPassword(authObj, email, password) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
     
-    // Set token for API calls (server will manage secure storage via HTTP-only cookies)
-    window.authToken = data.token || 'session-based';
+    // Store token in localStorage for mobile app
+    localStorage.setItem('token', data.token);
+    window.authToken = data.token;
     auth.currentUser = data.user;
     window.currentUser = data.user;
     
@@ -85,7 +58,6 @@ async function createUserWithEmailAndPassword(authObj, email, password) {
     const username = email.split('@')[0]; // Default username from email
     const response = await fetch(`${window.API_BASE_URL}/api/auth/register`, {
         method: 'POST',
-        credentials: 'include', // Enable cookies for session management
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, username })
     });
@@ -93,8 +65,9 @@ async function createUserWithEmailAndPassword(authObj, email, password) {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
     
-    // Set token for API calls (server will manage secure storage via HTTP-only cookies)
-    window.authToken = data.token || 'session-based';
+    // Store token in localStorage for mobile app
+    localStorage.setItem('token', data.token);
+    window.authToken = data.token;
     auth.currentUser = data.user;
     window.currentUser = data.user;
     
@@ -105,14 +78,17 @@ async function createUserWithEmailAndPassword(authObj, email, password) {
 }
 
 async function signOut(authObj) {
-    // Production logout - clear server-side session
+    // Mobile logout - clear local token
     await fetch(`${window.API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
-        credentials: 'include', // Include cookies for proper logout
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        }
     });
     
-    // Clear client-side auth state
+    // Clear client-side auth state and localStorage
+    localStorage.removeItem('token');
     window.authToken = null;
     auth.currentUser = null;
     window.currentUser = null;
