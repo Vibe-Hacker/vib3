@@ -211,9 +211,9 @@ function shareToTikTok(videoId) {
     // TikTok doesn't have a direct share URL, so copy link and show instructions
     const url = `${window.location.origin}/?video=${videoId}`;
     navigator.clipboard.writeText(url).then(() => {
-        alert('Link copied to clipboard! Open TikTok app and paste in your post or story.');
-    }).catch(() => {
-        alert('TikTok sharing: Please copy this link manually: ' + url);
+        if (window.showNotification) {
+            window.showNotification('Link copied! Open TikTok and paste in your post.', 'success');
+        }
     });
 }
 
@@ -221,9 +221,9 @@ function shareToInstagram(videoId) {
     // Instagram doesn't support direct URL sharing, so copy link
     const url = `${window.location.origin}/?video=${videoId}`;
     navigator.clipboard.writeText(url).then(() => {
-        alert('Link copied to clipboard! Open Instagram app and paste in your story or post.');
-    }).catch(() => {
-        alert('Instagram sharing: Please copy this link manually: ' + url);
+        if (window.showNotification) {
+            window.showNotification('Link copied! Open Instagram and paste in your story/post.', 'success');
+        }
     });
 }
 
@@ -238,9 +238,9 @@ function shareToDiscord(videoId) {
     const url = `${window.location.origin}/?video=${videoId}`;
     const message = `Check out this amazing video on VIB3! ${url}`;
     navigator.clipboard.writeText(message).then(() => {
-        alert('Message copied to clipboard! Paste it in any Discord channel.');
-    }).catch(() => {
-        alert('Discord sharing: Please copy this message manually: ' + message);
+        if (window.showNotification) {
+            window.showNotification('Message copied! Paste in Discord channel.', 'success');
+        }
     });
 }
 
