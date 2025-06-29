@@ -2705,7 +2705,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/style-error-fix.js?v=20250628-1"></script>
     <script src="js/mongodb-adapter.js?v=20250628-1"></script>
     <script>
         // IMMEDIATELY define all functions as the very first thing
@@ -2790,6 +2789,41 @@
             const shareSheet = document.getElementById('shareSheet');
             if (shareSheet) {
                 shareSheet.style.display = 'block';
+            }
+        };
+        
+        window.saveProfile = function() {
+            const newUsername = document.getElementById('editUsername').value;
+            const newBio = document.getElementById('editBio').value;
+            
+            console.log('💾 Saving profile:', { username: newUsername, bio: newBio });
+            
+            // Update current user
+            if (window.currentUser) {
+                window.currentUser.username = newUsername;
+                window.currentUser.bio = newBio;
+                localStorage.setItem('currentUser', JSON.stringify(window.currentUser));
+            }
+            
+            // Update profile display
+            const profileUsername = document.getElementById('profileUsername');
+            if (profileUsername) profileUsername.textContent = '@' + newUsername;
+            
+            // Go back to profile view
+            if (window.currentUser && (window.currentUser.id || window.currentUser._id)) {
+                if (window.loadUserVideos) {
+                    window.loadUserVideos(window.currentUser.id || window.currentUser._id);
+                }
+            }
+        };
+        
+        window.cancelEdit = function() {
+            console.log('❌ Cancel edit profile');
+            // Go back to profile view
+            if (window.currentUser && (window.currentUser.id || window.currentUser._id)) {
+                if (window.loadUserVideos) {
+                    window.loadUserVideos(window.currentUser.id || window.currentUser._id);
+                }
             }
         };
         
