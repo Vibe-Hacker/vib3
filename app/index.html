@@ -2800,10 +2800,30 @@
             console.log('- localStorage currentUser:', localStorage.getItem('currentUser'));
             console.log('- token:', localStorage.getItem('token'));
             
+            // Force set currentUser from localStorage if not available
+            if (!window.currentUser) {
+                try {
+                    const storedUser = localStorage.getItem('currentUser');
+                    if (storedUser) {
+                        window.currentUser = JSON.parse(storedUser);
+                        console.log('🔍 Set currentUser from localStorage:', window.currentUser);
+                    }
+                } catch (e) {
+                    console.error('❌ Error parsing stored user:', e);
+                }
+            }
+            
             // Try to load profile data manually
             if (window.loadProfileData) {
                 console.log('🔍 Calling loadProfileData manually...');
                 window.loadProfileData();
+            }
+            
+            // Also try direct API calls
+            if (window.currentUser?.id) {
+                console.log('🔍 Making direct API calls for user:', window.currentUser.id);
+                if (window.loadUserStats) window.loadUserStats(window.currentUser.id);
+                if (window.loadUserVideos) window.loadUserVideos(window.currentUser.id);
             }
         };
         
