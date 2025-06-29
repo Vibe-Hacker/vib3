@@ -1040,6 +1040,17 @@ for (const p of possiblePaths) {
 }
 
 if (staticPath) {
+    // IMPORTANT: Only serve static files for non-API routes
+    app.use((req, res, next) => {
+        // Skip static serving for API routes - they should hit our endpoints
+        if (req.path.startsWith('/api/') || req.path.startsWith('/videos-') || req.path.startsWith('/health')) {
+            console.log(`🚫 Skipping static for API route: ${req.path}`);
+            return next('route'); // Skip this middleware, continue to next route
+        }
+        console.log(`📁 Serving static for: ${req.path}`);
+        next();
+    });
+    
     app.use(express.static(staticPath));
 } else {
     console.error('ERROR: Could not find web directory in any of:', possiblePaths);
