@@ -86,9 +86,9 @@ function shareToTikTok(videoId) {
     // TikTok doesn't have a direct share URL, so copy link and show instructions
     const url = `${window.location.origin}/?video=${videoId}`;
     navigator.clipboard.writeText(url).then(() => {
-        if (window.showNotification) {
-            window.showNotification('Link copied! Open TikTok and paste in your post.', 'success');
-        }
+        alert('✅ Link copied to clipboard!\n\n📱 To share on TikTok:\n1. Open TikTok app\n2. Create a new post\n3. Paste the link in your caption or bio');
+    }).catch(() => {
+        alert('TikTok sharing: Please copy this link manually:\n' + url);
     });
 }
 
@@ -96,9 +96,9 @@ function shareToInstagram(videoId) {
     // Instagram doesn't support direct URL sharing, so copy link
     const url = `${window.location.origin}/?video=${videoId}`;
     navigator.clipboard.writeText(url).then(() => {
-        if (window.showNotification) {
-            window.showNotification('Link copied! Open Instagram and paste in your story/post.', 'success');
-        }
+        alert('✅ Link copied to clipboard!\n\n📸 To share on Instagram:\n1. Open Instagram app\n2. Create a post or story\n3. Paste the link in your caption or bio');
+    }).catch(() => {
+        alert('Instagram sharing: Please copy this link manually:\n' + url);
     });
 }
 
