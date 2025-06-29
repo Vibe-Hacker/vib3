@@ -30,6 +30,19 @@ const auth = {
             return;
         }
         
+        // Check if user recently logged out - if so, don't auto-login
+        const logoutTimestamp = sessionStorage.getItem('logout_timestamp');
+        if (logoutTimestamp) {
+            const timeSinceLogout = Date.now() - parseInt(logoutTimestamp);
+            if (timeSinceLogout < 60000) { // 1 minute
+                console.log('🚪 Recent logout detected - skipping auto-login');
+                callback(null);
+                return;
+            } else {
+                sessionStorage.removeItem('logout_timestamp');
+            }
+        }
+        
         // Check if user is logged in using session-based auth (production-ready)
         fetch(`${window.API_BASE_URL}/api/auth/me`, {
             method: 'GET',
@@ -119,13 +132,15 @@ async function createUserWithEmailAndPassword(authObj, email, password) {
 
 async function signOut(authObj) {
     try {
-        // Production logout - clear server-side session
+        // Production logout - clear server-side session with stronger cache control
         const response = await fetch(`${window.API_BASE_URL}/api/auth/logout`, {
             method: 'POST',
             credentials: 'include', // Include cookies for proper logout
             headers: { 
                 'Content-Type': 'application/json',
-                'Cache-Control': 'no-cache'
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
             }
         });
         
@@ -141,23 +156,34 @@ async function signOut(authObj) {
     auth.currentUser = null;
     window.currentUser = null;
     
-    // Clear any stored credentials
+    // Clear any stored credentials from all possible storage locations
     if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('currentUser');
+        localStorage.clear(); // Clear everything to be sure
     }
     
     if (typeof sessionStorage !== 'undefined') {
         sessionStorage.clear();
     }
     
+    // Clear ALL possible cookies with different paths and domains
+    const cookieNames = ['session', 'auth', 'connect.sid', 'token', 'authToken', 'user'];
+    const domains = [window.location.hostname, '.railway.app', '.up.railway.app'];
+    const paths = ['/', '/api', '/auth'];
+    
+    cookieNames.forEach(name => {
+        paths.forEach(path => {
+            domains.forEach(domain => {
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=${domain};`;
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path};`;
+            });
+        });
+    });
+    
     // Trigger auth state change
     auth._triggerCallbacks(null);
     
-    // Force clear auth cookies on client side
-    document.cookie = 'session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    document.cookie = 'auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    document.cookie = 'connect.sid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    // Add a flag to prevent auto re-login on refresh
+    sessionStorage.setItem('logout_timestamp', Date.now().toString());
 }
 
 async function updateProfile(user, updates) {

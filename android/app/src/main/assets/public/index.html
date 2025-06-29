@@ -257,7 +257,6 @@
                                     class="profile-video-thumb"
                                     src="${videoUrl}"
                                     muted
-                                    autoplay
                                     controls="false"
                                     preload="metadata"
                                     playsinline
@@ -3250,7 +3249,7 @@
                            ondblclick="likeVideo('${videoId}', event)"
                            onloadstart="console.log('🎥 Video loading started for:', '${videoSrc}')"
                            onloadeddata="console.log('🎥 Video data loaded for:', '${videoSrc}')"
-                           oncanplay="this.play(); this.setAttribute('data-ready', 'true'); console.log('🎥 Video can play:', '${videoSrc}')"
+                           oncanplay="this.setAttribute('data-ready', 'true'); console.log('🎥 Video can play:', '${videoSrc}')"
                            style="background: #000 !important;"
                     </video>
                     
@@ -3298,10 +3297,18 @@
                 </div>`;
             }).join('');
             
-            // Auto-play first video
+            // Auto-play only the first video
             if (videos.length > 0) {
-                const firstVideo = feed.querySelector('.video-player');
-                if (firstVideo) firstVideo.play();
+                setTimeout(() => {
+                    const firstVideo = feed.querySelector('.video-player');
+                    if (firstVideo) {
+                        // Pause all other videos first
+                        const allVideos = feed.querySelectorAll('.video-player');
+                        allVideos.forEach(v => v.pause());
+                        // Play only the first one
+                        firstVideo.play();
+                    }
+                }, 100);
             }
             
             setupVideoObserver();
