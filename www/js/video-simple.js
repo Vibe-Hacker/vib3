@@ -61,6 +61,11 @@ function shareVideo(videoId) {
                 <h3 style="color: white; margin: 0 0 20px 0; font-size: 18px;">Share Video</h3>
                 
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px;">
+                    <button onclick="window.open('https://www.tiktok.com/upload', '_blank')" 
+                        style="padding: 10px; background: linear-gradient(45deg, #ff0050, #000000); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        🎵<br>TikTok
+                    </button>
+                    
                     <button onclick="window.open('https://www.instagram.com/', '_blank')" 
                         style="padding: 10px; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         📷<br>Instagram
