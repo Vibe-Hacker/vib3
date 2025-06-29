@@ -914,11 +914,14 @@
             position: absolute;
             bottom: 80px;
             right: 16px;
-            display: flex;
+            display: flex !important;
             flex-direction: column;
             align-items: center;
             gap: 20px;
-            z-index: 10;
+            z-index: 100;
+            background: rgba(255, 0, 0, 0.3); /* Debug red background */
+            padding: 10px;
+            border: 2px solid yellow; /* Debug border */
         }
 
         .action-item {
@@ -932,12 +935,14 @@
         .action-icon {
             width: 40px;
             height: 40px;
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.8) !important;
             border-radius: 50%;
             transition: all 0.2s;
+            font-size: 20px;
+            border: 2px solid #000; /* Debug border */
         }
 
         .action-icon.liked {
@@ -2256,6 +2261,14 @@
         <!-- Video Feed -->
         <div class="video-feed" id="videoFeed" onscroll="handleFeedScroll()" style="background: #000;">
             <!-- Videos will be dynamically inserted here -->
+            
+            <!-- Test action buttons - should always be visible -->
+            <div style="position: fixed; top: 100px; right: 20px; z-index: 9999; background: red; padding: 20px; border: 3px solid yellow;">
+                <div style="color: white; font-size: 16px; margin-bottom: 10px;">TEST BUTTONS</div>
+                <div onclick="alert('Like clicked!')" style="width: 50px; height: 50px; background: white; border: 2px solid black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 10px; cursor: pointer;">❤️</div>
+                <div onclick="alert('Comment clicked!')" style="width: 50px; height: 50px; background: white; border: 2px solid black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 10px; cursor: pointer;">💬</div>
+                <div onclick="alert('Share clicked!')" style="width: 50px; height: 50px; background: white; border: 2px solid black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;">↗️</div>
+            </div>
         </div>
         
 
@@ -2392,6 +2405,7 @@
             <div class="profile-actions">
                 <button class="profile-btn primary" onclick="editProfile()">Edit profile</button>
                 <button class="profile-btn" onclick="shareProfile()">Share profile</button>
+                <button class="profile-btn" onclick="debugProfile()" style="background: #333;">Debug</button>
             </div>
         </div>
         
@@ -2704,7 +2718,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/style-error-fix.js?v=20250628-1"></script>
     <script src="js/mongodb-adapter.js?v=20250628-1"></script>
     <script>
         // IMMEDIATELY define all functions as the very first thing
@@ -2789,6 +2802,101 @@
             const shareSheet = document.getElementById('shareSheet');
             if (shareSheet) {
                 shareSheet.style.display = 'block';
+            }
+        };
+        
+        window.saveProfile = function() {
+            const newUsername = document.getElementById('editUsername').value;
+            const newBio = document.getElementById('editBio').value;
+            
+            console.log('💾 Saving profile:', { username: newUsername, bio: newBio });
+            
+            // Update current user
+            if (window.currentUser) {
+                window.currentUser.username = newUsername;
+                window.currentUser.bio = newBio;
+                localStorage.setItem('currentUser', JSON.stringify(window.currentUser));
+            }
+            
+            // Update profile display
+            const profileUsername = document.getElementById('profileUsername');
+            if (profileUsername) profileUsername.textContent = '@' + newUsername;
+            
+            // Go back to profile view
+            if (window.currentUser && (window.currentUser.id || window.currentUser._id)) {
+                if (window.loadUserVideos) {
+                    window.loadUserVideos(window.currentUser.id || window.currentUser._id);
+                }
+            }
+        };
+        
+        window.cancelEdit = function() {
+            console.log('❌ Cancel edit profile');
+            // Go back to profile view
+            if (window.currentUser && (window.currentUser.id || window.currentUser._id)) {
+                if (window.loadUserVideos) {
+                    window.loadUserVideos(window.currentUser.id || window.currentUser._id);
+                }
+            }
+        };
+        
+        window.shareVideo = function(videoId) {
+            console.log('📤 Share video:', videoId);
+            const shareSheet = document.getElementById('shareSheet');
+            if (shareSheet) {
+                shareSheet.style.display = 'block';
+            }
+        };
+        
+        window.viewProfile = function(userId) {
+            console.log('👤 View profile:', userId);
+            // Navigate to user profile
+            if (window.showProfile) {
+                window.showProfile();
+            }
+        };
+        
+        window.followUser = function(userId) {
+            console.log('➕ Follow user:', userId);
+            // TODO: Implement follow functionality
+            const followBtn = event.target;
+            if (followBtn) {
+                followBtn.textContent = 'Following';
+                followBtn.style.background = '#333';
+            }
+        };
+        
+        // Debug function to check profile loading
+        window.debugProfile = function() {
+            console.log('🔍 DEBUG Profile state:');
+            console.log('- window.currentUser:', window.currentUser);
+            console.log('- localStorage currentUser:', localStorage.getItem('currentUser'));
+            console.log('- token:', localStorage.getItem('token'));
+            
+            // Force set currentUser from localStorage if not available
+            if (!window.currentUser) {
+                try {
+                    const storedUser = localStorage.getItem('currentUser');
+                    if (storedUser) {
+                        window.currentUser = JSON.parse(storedUser);
+                        console.log('🔍 Set currentUser from localStorage:', window.currentUser);
+                    }
+                } catch (e) {
+                    console.error('❌ Error parsing stored user:', e);
+                }
+            }
+            
+            // Try to load profile data manually
+            if (window.loadProfileData) {
+                console.log('🔍 Calling loadProfileData manually...');
+                window.loadProfileData();
+            }
+            
+            // Also try direct API calls
+            if (window.currentUser?.id) {
+                console.log('🔍 Making direct API calls for user:', window.currentUser.id);
+                if (window.loadUserStats) window.loadUserStats(window.currentUser.id);
+                if (window.loadUserVideos) window.loadUserVideos(window.currentUser.id);
             }
         };
         
@@ -3368,6 +3476,34 @@
                         // Play only the first one
                         firstVideo.play();
                     }
+                    
+                    // Debug: Force add action buttons to first video
+                    const firstVideoItem = feed.querySelector('.video-item');
+                    if (firstVideoItem) {
+                        const existingActions = firstVideoItem.querySelector('.video-actions');
+                        if (!existingActions) {
+                            console.log('🔧 No action buttons found, adding manually...');
+                            const actionsHTML = `
+                            <div class="video-actions" style="position: absolute; bottom: 80px; right: 16px; display: flex; flex-direction: column; gap: 20px; z-index: 100; background: rgba(255, 0, 0, 0.5); padding: 10px; border: 2px solid yellow;">
+                                <div class="action-item" onclick="likeVideo('test')">
+                                    <div class="action-icon" style="width: 40px; height: 40px; background: white; border: 2px solid black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">❤️</div>
+                                    <div class="action-count">123</div>
+                                </div>
+                                <div class="action-item" onclick="openComments('test')">
+                                    <div class="action-icon" style="width: 40px; height: 40px; background: white; border: 2px solid black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">💬</div>
+                                    <div class="action-count">45</div>
+                                </div>
+                                <div class="action-item" onclick="shareVideo('test')">
+                                    <div class="action-icon" style="width: 40px; height: 40px; background: white; border: 2px solid black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">↗️</div>
+                                    <div class="action-count">67</div>
+                                </div>
+                            </div>`;
+                            firstVideoItem.insertAdjacentHTML('beforeend', actionsHTML);
+                            console.log('✅ Action buttons added manually');
+                        } else {
+                            console.log('✅ Action buttons already exist');
+                        }
+                    }
                 }, 100);
             }
             
@@ -3540,10 +3676,14 @@
                     const video = entry.target.querySelector('.video-player');
                     if (video) {
                         if (entry.isIntersecting) {
+                            // Restart video from beginning when it comes into view
+                            video.currentTime = 0;
                             video.play();
                             currentVideoIndex = parseInt(entry.target.dataset.index) || 0;
+                            console.log('▶️ Video restarted:', currentVideoIndex);
                         } else {
                             video.pause();
+                            console.log('⏸️ Video paused:', entry.target.dataset.index);
                         }
                     }
                 });
