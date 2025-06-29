@@ -86,7 +86,7 @@
 /* Large Mobile (600px - 767px) */
 @media (min-width: 600px) and (max-width: 767px) {
     .sidebar {
-        display: none;
+        display: none !important;
     }
     
     .video-header {
@@ -96,10 +96,10 @@
     }
     
     .video-feed {
-        margin-left: 0;
-        margin-top: 60px;
-        width: 100vw;
-        height: calc(100vh - 60px - 80px);
+        margin-left: 0 !important;
+        margin-top: 60px !important;
+        width: 100vw !important;
+        height: calc(100vh - 60px - 80px) !important;
     }
     
     .header-search {
@@ -107,29 +107,58 @@
     }
     
     .bottom-nav {
-        display: flex;
+        display: flex !important;
+    }
+    
+    /* Make videos mobile-friendly */
+    .video-item {
+        width: 100vw !important;
+        height: calc(100vh - 140px) !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
     }
 }
 
 /* Small Mobile (up to 599px) */
 @media (max-width: 599px) {
     .sidebar {
-        display: none;
+        display: none !important;
     }
     
     .video-header {
-        display: none;
+        display: none !important;
     }
     
     .video-feed {
-        margin-left: 0;
-        margin-top: 0;
-        width: 100vw;
-        height: calc(100vh - 80px);
+        margin-left: 0 !important;
+        margin-top: 0 !important;
+        width: 100vw !important;
+        height: calc(100vh - 80px) !important;
+        padding: 0 !important;
     }
     
     .bottom-nav {
-        display: flex;
+        display: flex !important;
+    }
+    
+    /* Make videos full screen on mobile */
+    .video-item {
+        width: 100vw !important;
+        height: calc(100vh - 80px) !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+    }
+    
+    .video-container {
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 0 !important;
+    }
+    
+    .video-actions {
+        position: absolute !important;
+        right: 15px !important;
+        bottom: 100px !important;
     }
 }
 

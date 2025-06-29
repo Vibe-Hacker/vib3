@@ -1109,6 +1109,25 @@
         <div class="toast" id="toast"></div>
     </div>
 
+    <!-- Mobile Bottom Navigation -->
+    <div class="bottom-nav" id="bottomNav">
+        <button class="nav-item" onclick="showPage('feed')" data-page="feed">
+            <span class="nav-icon">🏠</span>
+        </button>
+        <button class="nav-item" onclick="showPage('discover')" data-page="discover">
+            <span class="nav-icon">🔍</span>
+        </button>
+        <button class="nav-item record-btn" onclick="showCreateVideoModal()">
+            <span class="nav-icon">+</span>
+        </button>
+        <button class="nav-item" onclick="showPage('messages')" data-page="messages">
+            <span class="nav-icon">💬</span>
+        </button>
+        <button class="nav-item" onclick="showPage('profile')" data-page="profile">
+            <span class="nav-icon">👤</span>
+        </button>
+    </div>
+
     <!-- Load MongoDB adapter and auth-simple, then complete VIB3 app -->
     <script src="js/mongodb-adapter.js"></script>
     <script src="js/auth-simple.js"></script>
