@@ -51,6 +51,63 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// RANDOMIZED VIDEO ENDPOINT - unique path to avoid all caching
+app.get('/api/random-videos-v2', async (req, res) => {
+    console.log('🎲 RANDOMIZED VIDEOS ENDPOINT hit!');
+    
+    if (!db) {
+        return res.json({ videos: [], error: 'Database not connected' });
+    }
+    
+    try {
+        const { limit = 10 } = req.query;
+        
+        // Get all videos
+        const videos = await db.collection('videos')
+            .find({ status: { $ne: 'deleted' } })
+            .sort({ createdAt: -1 })
+            .toArray();
+            
+        console.log(`🎬 Found ${videos.length} total videos`);
+        
+        // GUARANTEED RANDOMIZATION 
+        const shuffled = [...videos].sort(() => Math.random() - 0.5);
+        const finalVideos = shuffled.slice(0, parseInt(limit));
+        
+        console.log(`🎲 BEFORE: ${videos.slice(0,3).map(v => v._id.toString().slice(-4)).join(',')}`);
+        console.log(`🎲 AFTER:  ${finalVideos.slice(0,3).map(v => v._id.toString().slice(-4)).join(',')}`);
+        
+        // Add required fields
+        for (const video of finalVideos) {
+            try {
+                const user = await db.collection('users').findOne(
+                    { _id: new ObjectId(video.userId) },
+                    { projection: { password: 0 } }
+                );
+                video.user = user || { username: 'Unknown', displayName: 'Unknown' };
+                video.likeCount = video.likes?.length || 0;
+                video.commentCount = 0;
+                video.shareCount = 0;
+                video.feedType = 'foryou';
+                video.thumbnailUrl = video.videoUrl + '#t=1';
+            } catch (e) {
+                console.log('User lookup error:', e);
+            }
+        }
+        
+        res.json({ 
+            videos: finalVideos,
+            totalFound: videos.length,
+            randomized: true,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('Random videos error:', error);
+        res.json({ videos: [], error: error.message });
+    }
+});
+
 // Simple API test endpoint (before static files) - NOW SERVES VIDEOS TOO
 app.get('/api/test', async (req, res) => {
     console.log('🧪 Test endpoint hit with query:', req.query);

@@ -691,8 +691,8 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
             
             // Add cache busting to prevent stale data
             const timestamp = Date.now();
-            // WORKING FIX: Use the /api/test endpoint which bypasses static server
-            const response = await fetch(`${window.API_BASE_URL}/api/test?feed=${feedType}&limit=10&_t=${timestamp}`, {
+            // FINAL FIX: Use completely new randomized endpoint
+            const response = await fetch(`${window.API_BASE_URL}/api/random-videos-v2?limit=10&_t=${timestamp}`, {
                 headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
             });
             
