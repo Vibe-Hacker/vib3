@@ -83,23 +83,65 @@ function shareToPinterest(videoId) {
 }
 
 function shareToTikTok(videoId) {
-    // TikTok doesn't have a direct share URL, so copy link and show instructions
     const url = `${window.location.origin}/?video=${videoId}`;
-    navigator.clipboard.writeText(url).then(() => {
-        alert('✅ Link copied to clipboard!\n\n📱 To share on TikTok:\n1. Open TikTok app\n2. Create a new post\n3. Paste the link in your caption or bio');
-    }).catch(() => {
-        alert('TikTok sharing: Please copy this link manually:\n' + url);
-    });
+    const message = `Check out this amazing video on VIB3! ${url}`;
+    
+    // Try mobile deep link first (for mobile devices)
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobile = /iphone|ipad|ipod|android/.test(userAgent);
+    
+    if (isMobile) {
+        // Try TikTok deep link (may or may not work depending on device)
+        const tiktokUrl = `tiktok://share?text=${encodeURIComponent(message)}`;
+        
+        // Attempt to open TikTok app
+        window.location.href = tiktokUrl;
+        
+        // Fallback after 1 second if app didn't open
+        setTimeout(() => {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✅ Link copied to clipboard!\n\nIf TikTok didn\'t open:\n1. Open TikTok app manually\n2. Create a new post\n3. Paste the link in your caption');
+            });
+        }, 1000);
+    } else {
+        // Desktop - just copy link with instructions
+        navigator.clipboard.writeText(url).then(() => {
+            alert('✅ Link copied to clipboard!\n\n📱 To share on TikTok:\n1. Open TikTok app on your phone\n2. Create a new post\n3. Paste the link in your caption or bio');
+        }).catch(() => {
+            alert('TikTok sharing: Please copy this link manually:\n' + url);
+        });
+    }
 }
 
 function shareToInstagram(videoId) {
-    // Instagram doesn't support direct URL sharing, so copy link
     const url = `${window.location.origin}/?video=${videoId}`;
-    navigator.clipboard.writeText(url).then(() => {
-        alert('✅ Link copied to clipboard!\n\n📸 To share on Instagram:\n1. Open Instagram app\n2. Create a post or story\n3. Paste the link in your caption or bio');
-    }).catch(() => {
-        alert('Instagram sharing: Please copy this link manually:\n' + url);
-    });
+    const message = `Check out this amazing video on VIB3! ${url}`;
+    
+    // Try mobile deep link first (for mobile devices)
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobile = /iphone|ipad|ipod|android/.test(userAgent);
+    
+    if (isMobile) {
+        // Try Instagram deep link
+        const instagramUrl = `instagram://share?text=${encodeURIComponent(message)}`;
+        
+        // Attempt to open Instagram app
+        window.location.href = instagramUrl;
+        
+        // Fallback after 1 second if app didn't open
+        setTimeout(() => {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✅ Link copied to clipboard!\n\nIf Instagram didn\'t open:\n1. Open Instagram app manually\n2. Create a post or story\n3. Paste the link in your caption');
+            });
+        }, 1000);
+    } else {
+        // Desktop - just copy link with instructions
+        navigator.clipboard.writeText(url).then(() => {
+            alert('✅ Link copied to clipboard!\n\n📸 To share on Instagram:\n1. Open Instagram app on your phone\n2. Create a post or story\n3. Paste the link in your caption or bio');
+        }).catch(() => {
+            alert('Instagram sharing: Please copy this link manually:\n' + url);
+        });
+    }
 }
 
 function shareToSnapchat(videoId) {
