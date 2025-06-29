@@ -6,7 +6,7 @@
   "author": "Tavis Chaney",
   "main": "server.js",
   "scripts": {
-    "start": "node server-full.js",
+    "start": "node server.js",
     "start:mongodb": "node server-mongodb.js",
     "start:profile": "node server-profile.js",
     "start:optimized": "node --max-old-space-size=384 --gc-interval=100 server-optimized.js",
