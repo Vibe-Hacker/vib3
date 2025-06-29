@@ -9,24 +9,25 @@
 <body>
     <div class="auth-container" id="authContainer">
         <div class="auth-form">
-            <h2>Welcome to VIB3</h2>
+            <div class="vib3-logo-wrapper">
+                <h2 class="vib3-logo">VIB3</h2>
+            </div>
             <div class="auth-error" id="authError"></div>
-            <div class="auth-loading" id="authLoading">Loading...</div>
             <div id="loginForm">
-                <input type="email" class="auth-input" id="loginEmail" placeholder="Email" required aria-label="Email">
-                <input type="password" class="auth-input" id="loginPassword" placeholder="Password" required aria-label="Password">
-                <button class="auth-btn" onclick="handleLogin()" aria-label="Sign In">Sign In</button>
+                <input type="email" class="auth-input" id="loginEmail" placeholder="Email" autocomplete="email">
+                <input type="password" class="auth-input" id="loginPassword" placeholder="Password" autocomplete="current-password">
+                <button class="auth-btn" onclick="handleLogin()">Log in</button>
                 <div class="auth-switch">
                     Don't have an account? <a onclick="showSignup()">Sign up</a>
                 </div>
             </div>
             <div id="signupForm" style="display: none;">
-                <input type="text" class="auth-input" id="signupName" placeholder="Display Name" required aria-label="Display Name">
-                <input type="email" class="auth-input" id="signupEmail" placeholder="Email" required aria-label="Email">
-                <input type="password" class="auth-input" id="signupPassword" placeholder="Password (min 6 chars)" required aria-label="Password">
-                <button class="auth-btn" onclick="handleSignup()" aria-label="Create Account">Create Account</button>
+                <input type="text" class="auth-input" id="signupName" placeholder="Username" autocomplete="username">
+                <input type="email" class="auth-input" id="signupEmail" placeholder="Email" autocomplete="email">
+                <input type="password" class="auth-input" id="signupPassword" placeholder="Password" autocomplete="new-password">
+                <button class="auth-btn" onclick="handleSignup()">Sign up</button>
                 <div class="auth-switch">
-                    Already have an account? <a onclick="showLogin()">Sign in</a>
+                    Already have an account? <a onclick="showLogin()">Log in</a>
                 </div>
             </div>
         </div>

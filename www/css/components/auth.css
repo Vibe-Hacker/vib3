@@ -3,78 +3,104 @@
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, #ff006e, #8338ec, #3a86ff);
+    width: 100%;
+    height: 100%;
+    background: #000;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 9999;
 }
 
 .auth-form {
-    background: rgba(0,0,0,0.9);
-    padding: 40px;
-    border-radius: 20px;
     width: 90%;
     max-width: 400px;
-    text-align: center;
-    backdrop-filter: blur(10px);
+    padding: 40px 20px;
 }
 
-.auth-form h2 {
-    color: #ff006e;
-    margin-bottom: 30px;
-    font-size: 28px;
+.vib3-logo-wrapper {
+    animation: pulse 2s ease-in-out infinite;
+    display: inline-block;
+    width: 100%;
+}
+
+.vib3-logo {
+    font-size: 72px;
+    font-weight: 900;
+    text-align: center;
+    margin: 0 0 40px 0;
+    background: linear-gradient(135deg, #00CED1 0%, #FF1493 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: #FF1493;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .auth-input {
     width: 100%;
-    padding: 15px;
-    margin-bottom: 15px;
-    border: none;
-    border-radius: 25px;
-    background: #333;
-    color: white;
+    padding: 16px;
+    margin-bottom: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: #fff;
     font-size: 16px;
+    outline: none;
 }
 
 .auth-input::placeholder {
-    color: #888;
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .auth-btn {
     width: 100%;
-    padding: 15px;
-    margin-bottom: 10px;
+    padding: 16px;
+    background: linear-gradient(135deg, #00CED1 0%, #FF1493 100%);
+    color: #fff;
     border: none;
-    border-radius: 25px;
-    background: linear-gradient(45deg, #ff006e, #8338ec);
-    color: white;
+    border-radius: 4px;
     font-size: 16px;
-    font-weight: bold;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 .auth-btn:hover {
-    transform: scale(1.05);
+    background: linear-gradient(135deg, #00BFFF 0%, #FF69B4 100%);
+    transform: scale(1.02);
 }
 
 .auth-switch {
-    color: #888;
+    text-align: center;
     margin-top: 20px;
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .auth-switch a {
-    color: #ff006e;
+    color: #FF0050;
     text-decoration: none;
     cursor: pointer;
 }
 
 .auth-error {
-    color: #ff4444;
-    margin-bottom: 15px;
+    color: #FF0050;
+    text-align: center;
+    margin-bottom: 16px;
     font-size: 14px;
 }
 
