@@ -745,6 +745,14 @@
         .video-player::-webkit-media-controls-start-playback-button {
             display: none !important;
         }
+        
+        .video-player::-webkit-media-controls-overlay-play-button {
+            display: none !important;
+        }
+        
+        .video-player::before {
+            display: none !important;
+        }
 
         /* Top Header */
         .feed-header {
@@ -3178,7 +3186,6 @@
                 <div class="video-item" data-index="${index}">
                     <video class="video-player" 
                            src="${videoSrc}" 
-                           ${video.thumbnail ? `poster="${video.thumbnail}"` : ''}
                            loop 
                            playsinline 
                            webkit-playsinline
