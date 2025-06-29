@@ -2075,7 +2075,15 @@ app.get('/api/videos', async (req, res) => {
         }
         
         console.log(`📤 Sending ${videos.length} videos for page ${page}`);
-        res.json({ videos });
+        res.json({ 
+            videos,
+            debug: {
+                timestamp: new Date().toISOString(),
+                feedType: feed,
+                algorithmsApplied: ['engagement-ranking', 'shuffle'],
+                firstThreeIds: videos.slice(0,3).map(v => v._id)
+            }
+        });
         
     } catch (error) {
         console.error('Get videos error:', error);
