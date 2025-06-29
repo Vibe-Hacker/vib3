@@ -31,12 +31,13 @@ async function toggleLike(videoId) {
     }
 }
 
-// Share video with TikTok-style modal - IMPROVED VERSION
+// Share video with TikTok-style modal - FIXED VERSION
 function shareVideo(videoId) {
     console.log('🔗 Creating share modal for video:', videoId);
     
-    // Create modal using the working approach but with better styling
+    // Create modal with proper class name for removal
     const modal = document.createElement('div');
+    modal.className = 'share-modal';
     modal.innerHTML = `
         <div style="
             position: fixed;
@@ -61,72 +62,72 @@ function shareVideo(videoId) {
                 <h3 style="color: white; margin: 0 0 20px 0; font-size: 18px;">Share Video</h3>
                 
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px;">
-                    <button onclick="shareToTikTok('${videoId}'); this.closest('.share-modal').remove();" 
+                    <button onclick="shareToTikTok('${videoId}'); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: linear-gradient(45deg, #ff0050, #000000); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         🎵<br>TikTok
                     </button>
                     
-                    <button onclick="shareToInstagram('${videoId}'); this.closest('.share-modal').remove();" 
+                    <button onclick="shareToInstagram('${videoId}'); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         📷<br>Instagram
                     </button>
                     
-                    <button onclick="shareToTwitter('${videoId}'); this.closest('.share-modal').remove();" 
+                    <button onclick="shareToTwitter('${videoId}'); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: #1da1f2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         🐦<br>Twitter
                     </button>
                     
-                    <button onclick="shareToFacebook('${videoId}'); this.closest('.share-modal').remove();" 
+                    <button onclick="shareToFacebook('${videoId}'); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: #4267b2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         📘<br>Facebook
                     </button>
                     
-                    <button onclick="shareToWhatsApp('${videoId}'); this.closest('.share-modal').remove();" 
+                    <button onclick="shareToWhatsApp('${videoId}'); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: #25d366; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         📱<br>WhatsApp
                     </button>
                     
-                    <button onclick="shareToTelegram('${videoId}'); this.closest('.share-modal').remove();" 
+                    <button onclick="shareToTelegram('${videoId}'); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: #0088cc; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         ✈️<br>Telegram
                     </button>
                     
-                    <button onclick="shareToSnapchat('${videoId}'); this.closest('.share-modal').remove();" 
+                    <button onclick="shareToSnapchat('${videoId}'); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: #fffc00; color: black; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         👻<br>Snapchat
                     </button>
                     
-                    <button onclick="shareToReddit('${videoId}'); this.closest('.share-modal').remove();" 
+                    <button onclick="shareToReddit('${videoId}'); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: #ff4500; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         🤖<br>Reddit
                     </button>
                     
-                    <button onclick="shareToLinkedIn('${videoId}'); this.closest('.share-modal').remove();" 
+                    <button onclick="shareToLinkedIn('${videoId}'); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: #0077b5; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         💼<br>LinkedIn
                     </button>
                     
-                    <button onclick="shareToPinterest('${videoId}'); this.closest('.share-modal').remove();" 
+                    <button onclick="shareToPinterest('${videoId}'); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: #bd081c; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         📌<br>Pinterest
                     </button>
                     
-                    <button onclick="shareToDiscord('${videoId}'); this.closest('.share-modal').remove();" 
+                    <button onclick="shareToDiscord('${videoId}'); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: #7289da; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         🎮<br>Discord
                     </button>
                     
-                    <button onclick="shareViaSMS('${videoId}')" 
+                    <button onclick="shareViaSMS('${videoId}'); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: #00d4aa; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         💬<br>SMS
                     </button>
                     
-                    <button onclick="window.location.href='mailto:?subject=Check out this VIB3 video!&body=I found this amazing video: ${window.location.origin}/?video=${videoId}'" 
+                    <button onclick="window.location.href='mailto:?subject=Check out this VIB3 video!&body=I found this amazing video: ${window.location.origin}/?video=${videoId}'; document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: #ea4335; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         📧<br>Email
                     </button>
                     
-                    <button onclick="navigator.clipboard.writeText('${window.location.origin}/?video=${videoId}').then(() => alert('Link copied to clipboard!'))" 
+                    <button onclick="navigator.clipboard.writeText('${window.location.origin}/?video=${videoId}').then(() => alert('Link copied to clipboard!')); document.querySelector('.share-modal').remove();" 
                         style="padding: 10px; background: #666; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         🔗<br>Copy Link
                     </button>
@@ -134,19 +135,19 @@ function shareVideo(videoId) {
                 
                 <div style="border-top: 1px solid #333; padding-top: 15px; margin-top: 5px;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                        <button onclick="alert('Video download feature coming soon!')" 
+                        <button onclick="alert('Video download feature coming soon!'); document.querySelector('.share-modal').remove();" 
                             style="padding: 12px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px;">
                             ⬇️ Save Video
                         </button>
                         
-                        <button onclick="alert('Report feature coming soon!')" 
+                        <button onclick="alert('Report feature coming soon!'); document.querySelector('.share-modal').remove();" 
                             style="padding: 12px; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px;">
                             🚩 Report
                         </button>
                     </div>
                 </div>
                 
-                <button onclick="this.closest('div').parentElement.remove()" 
+                <button onclick="document.querySelector('.share-modal').remove();" 
                     style="width: 100%; padding: 12px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer;">
                     Cancel
                 </button>
@@ -155,7 +156,7 @@ function shareVideo(videoId) {
     `;
     
     document.body.appendChild(modal);
-    console.log('✅ TikTok-style modal created');
+    console.log('✅ TikTok-style modal created with proper removal');
 }
 
 // Share helper functions with proper pre-filled content
