@@ -2254,10 +2254,13 @@
     <!-- Main App Container -->
     <div class="app-container main-app" id="mainApp">
         <!-- Video Feed -->
-        <div class="video-feed" id="videoFeed" onscroll="handleFeedScroll()">
-            <div class="loading-placeholder" style="display: flex; align-items: center; justify-content: center; height: 100vh; color: #666; background: #000;">
-                Loading feed...
-            </div>
+        <div class="video-feed" id="videoFeed" onscroll="handleFeedScroll()" style="background: #000;">
+            <!-- Videos will be dynamically inserted here -->
+        </div>
+        
+        <!-- Feed Loading Overlay -->
+        <div id="feedLoading" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 9999; color: white;">
+            <div>Loading videos...</div>
         </div>
 
         <!-- Top Header -->
@@ -3207,6 +3210,10 @@
             console.log('🎨 First video URL:', videos[0]?.url || videos[0]?.videoUrl || 'No URL');
             console.log('🎨 First video object:', videos[0]);
             
+            // Hide loading overlay
+            const feedLoading = document.getElementById('feedLoading');
+            if (feedLoading) feedLoading.style.display = 'none';
+            
             feed.innerHTML = videos.map((video, index) => {
                 // Map video fields - handle both old and new field names
                 const videoSrc = video.url || video.videoUrl || video.fileUrl || '';
@@ -3225,8 +3232,6 @@
                     <video class="video-player" 
                            src="${videoSrc}" 
                            loop 
-                           muted
-                           autoplay
                            playsinline 
                            webkit-playsinline
                            x5-playsinline
@@ -3239,7 +3244,7 @@
                            onloadstart="console.log('🎥 Video loading started for:', '${videoSrc}')"
                            onloadeddata="console.log('🎥 Video data loaded for:', '${videoSrc}')"
                            oncanplay="this.play(); this.setAttribute('data-ready', 'true'); console.log('🎥 Video can play:', '${videoSrc}')"
-                           onloadeddata="this.setAttribute('data-ready', 'true')"
+                           style="background: #000 !important;"
                     </video>
                     
                     <div class="video-progress">
