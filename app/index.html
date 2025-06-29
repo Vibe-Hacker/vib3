@@ -600,6 +600,12 @@
             padding: 40px 20px;
         }
 
+        .vib3-logo-wrapper {
+            animation: pulse 2s ease-in-out infinite;
+            display: inline-block;
+            width: 100%;
+        }
+
         .vib3-logo {
             font-size: 72px;
             font-weight: 900;
@@ -610,22 +616,20 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             color: #FF1493; /* Fallback for older browsers */
-            display: inline-block;
-            animation: pulse 2s ease-in-out infinite;
         }
 
         @keyframes pulse {
             0% {
                 transform: scale(1);
-                filter: brightness(1);
+                opacity: 1;
             }
             50% {
-                transform: scale(1.05);
-                filter: brightness(1.2);
+                transform: scale(1.1);
+                opacity: 0.8;
             }
             100% {
                 transform: scale(1);
-                filter: brightness(1);
+                opacity: 1;
             }
         }
 
@@ -2181,7 +2185,9 @@
     <!-- Auth Container -->
     <div class="auth-container" id="authContainer">
         <div class="auth-form">
-            <h2 class="vib3-logo">VIB3</h2>
+            <div class="vib3-logo-wrapper">
+                <h2 class="vib3-logo">VIB3</h2>
+            </div>
             <div class="auth-error" id="authError"></div>
             <div id="loginForm">
                 <input type="email" class="auth-input" id="loginEmail" placeholder="Email" autocomplete="email">
