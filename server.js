@@ -1855,6 +1855,13 @@ app.get('/api/videos', async (req, res) => {
                 console.log(`🎲 Before shuffle: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
                 videos = await applyEngagementRanking(videos, db);
                 console.log(`📊 After engagement ranking: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
+                
+                // Force randomization - simple reverse every other call
+                if (Math.random() > 0.5) {
+                    videos.reverse();
+                    console.log(`🔄 Reversed array: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
+                }
+                
                 videos = shuffleArray(videos); // Randomize order
                 console.log(`🎲 After shuffle: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
                 videos = videos.slice(actualSkip, actualSkip + parseInt(limit)); // Apply pagination after shuffle
@@ -4757,11 +4764,13 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
 
 // Helper Functions
 function shuffleArray(array) {
+    console.log(`🔄 Shuffling array of ${array.length} items`);
     const newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
     }
+    console.log(`✅ Shuffle complete - first 3 IDs: ${newArray.slice(0,3).map(v => v._id).join(', ')}`);
     return newArray;
 }
 
