@@ -61,57 +61,57 @@ function shareVideo(videoId) {
                 <h3 style="color: white; margin: 0 0 20px 0; font-size: 18px;">Share Video</h3>
                 
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px;">
-                    <button onclick="window.open('https://www.tiktok.com/upload', '_blank')" 
+                    <button onclick="shareToTikTok('${videoId}'); this.closest('.share-modal').remove();" 
                         style="padding: 10px; background: linear-gradient(45deg, #ff0050, #000000); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         🎵<br>TikTok
                     </button>
                     
-                    <button onclick="window.open('https://www.instagram.com/', '_blank')" 
+                    <button onclick="shareToInstagram('${videoId}'); this.closest('.share-modal').remove();" 
                         style="padding: 10px; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         📷<br>Instagram
                     </button>
                     
-                    <button onclick="window.open('https://twitter.com/intent/tweet?text=Check out this amazing video on VIB3!&url=${window.location.origin}/?video=${videoId}', '_blank')" 
+                    <button onclick="shareToTwitter('${videoId}'); this.closest('.share-modal').remove();" 
                         style="padding: 10px; background: #1da1f2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         🐦<br>Twitter
                     </button>
                     
-                    <button onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=${window.location.origin}/?video=${videoId}', '_blank')" 
+                    <button onclick="shareToFacebook('${videoId}'); this.closest('.share-modal').remove();" 
                         style="padding: 10px; background: #4267b2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         📘<br>Facebook
                     </button>
                     
-                    <button onclick="window.open('https://wa.me/?text=Check out this amazing video on VIB3! ${window.location.origin}/?video=${videoId}', '_blank')" 
+                    <button onclick="shareToWhatsApp('${videoId}'); this.closest('.share-modal').remove();" 
                         style="padding: 10px; background: #25d366; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         📱<br>WhatsApp
                     </button>
                     
-                    <button onclick="window.open('https://t.me/share/url?url=${window.location.origin}/?video=${videoId}&text=Check out this video!', '_blank')" 
+                    <button onclick="shareToTelegram('${videoId}'); this.closest('.share-modal').remove();" 
                         style="padding: 10px; background: #0088cc; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         ✈️<br>Telegram
                     </button>
                     
-                    <button onclick="window.open('https://www.snapchat.com/', '_blank')" 
+                    <button onclick="shareToSnapchat('${videoId}'); this.closest('.share-modal').remove();" 
                         style="padding: 10px; background: #fffc00; color: black; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         👻<br>Snapchat
                     </button>
                     
-                    <button onclick="window.open('https://www.reddit.com/submit?url=${window.location.origin}/?video=${videoId}&title=Check out this video!', '_blank')" 
+                    <button onclick="shareToReddit('${videoId}'); this.closest('.share-modal').remove();" 
                         style="padding: 10px; background: #ff4500; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         🤖<br>Reddit
                     </button>
                     
-                    <button onclick="window.open('https://www.linkedin.com/sharing/share-offsite/?url=${window.location.origin}/?video=${videoId}', '_blank')" 
+                    <button onclick="shareToLinkedIn('${videoId}'); this.closest('.share-modal').remove();" 
                         style="padding: 10px; background: #0077b5; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         💼<br>LinkedIn
                     </button>
                     
-                    <button onclick="window.open('https://pinterest.com/pin/create/button/?url=${window.location.origin}/?video=${videoId}&description=Check out this video!', '_blank')" 
+                    <button onclick="shareToPinterest('${videoId}'); this.closest('.share-modal').remove();" 
                         style="padding: 10px; background: #bd081c; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         📌<br>Pinterest
                     </button>
                     
-                    <button onclick="window.open('https://discord.com/', '_blank')" 
+                    <button onclick="shareToDiscord('${videoId}'); this.closest('.share-modal').remove();" 
                         style="padding: 10px; background: #7289da; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         🎮<br>Discord
                     </button>
@@ -158,22 +158,89 @@ function shareVideo(videoId) {
     console.log('✅ TikTok-style modal created');
 }
 
-// Share helper functions
+// Share helper functions with proper pre-filled content
 function shareToTwitter(videoId) {
     const url = `${window.location.origin}/?video=${videoId}`;
     const text = 'Check out this amazing video on VIB3!';
+    // Twitter Intent API properly formats the tweet
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
 }
 
 function shareToFacebook(videoId) {
     const url = `${window.location.origin}/?video=${videoId}`;
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+    // Facebook sharer with proper parameters
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent('Check out this amazing video on VIB3!')}`, '_blank');
 }
 
 function shareToWhatsApp(videoId) {
     const url = `${window.location.origin}/?video=${videoId}`;
     const text = 'Check out this amazing video on VIB3!';
+    // WhatsApp with pre-filled message
     window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+}
+
+function shareToTelegram(videoId) {
+    const url = `${window.location.origin}/?video=${videoId}`;
+    const text = 'Check out this amazing video on VIB3!';
+    // Telegram share URL
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function shareToReddit(videoId) {
+    const url = `${window.location.origin}/?video=${videoId}`;
+    const title = 'Check out this amazing VIB3 video!';
+    // Reddit submit URL
+    window.open(`https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`, '_blank');
+}
+
+function shareToLinkedIn(videoId) {
+    const url = `${window.location.origin}/?video=${videoId}`;
+    // LinkedIn sharing URL
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+}
+
+function shareToPinterest(videoId) {
+    const url = `${window.location.origin}/?video=${videoId}`;
+    const description = 'Check out this amazing video on VIB3!';
+    // Pinterest create pin URL
+    window.open(`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(url)}&description=${encodeURIComponent(description)}`, '_blank');
+}
+
+function shareToTikTok(videoId) {
+    // TikTok doesn't have a direct share URL, so copy link and show instructions
+    const url = `${window.location.origin}/?video=${videoId}`;
+    navigator.clipboard.writeText(url).then(() => {
+        if (window.showNotification) {
+            window.showNotification('Link copied! Open TikTok and paste in your post.', 'success');
+        }
+    });
+}
+
+function shareToInstagram(videoId) {
+    // Instagram doesn't support direct URL sharing, so copy link
+    const url = `${window.location.origin}/?video=${videoId}`;
+    navigator.clipboard.writeText(url).then(() => {
+        if (window.showNotification) {
+            window.showNotification('Link copied! Open Instagram and paste in your story/post.', 'success');
+        }
+    });
+}
+
+function shareToSnapchat(videoId) {
+    const url = `${window.location.origin}/?video=${videoId}`;
+    // Snapchat Creative Kit URL (web share)
+    window.open(`https://www.snapchat.com/scan?attachmentUrl=${encodeURIComponent(url)}`, '_blank');
+}
+
+function shareToDiscord(videoId) {
+    // Discord doesn't have a direct share URL, so copy link
+    const url = `${window.location.origin}/?video=${videoId}`;
+    const message = `Check out this amazing video on VIB3! ${url}`;
+    navigator.clipboard.writeText(message).then(() => {
+        if (window.showNotification) {
+            window.showNotification('Message copied! Paste in Discord channel.', 'success');
+        }
+    });
 }
 
 function copyVideoLink(videoId) {
@@ -256,6 +323,14 @@ function shareViaSMS(videoId) {
 window.shareToTwitter = shareToTwitter;
 window.shareToFacebook = shareToFacebook;
 window.shareToWhatsApp = shareToWhatsApp;
+window.shareToTelegram = shareToTelegram;
+window.shareToReddit = shareToReddit;
+window.shareToLinkedIn = shareToLinkedIn;
+window.shareToPinterest = shareToPinterest;
+window.shareToTikTok = shareToTikTok;
+window.shareToInstagram = shareToInstagram;
+window.shareToSnapchat = shareToSnapchat;
+window.shareToDiscord = shareToDiscord;
 window.copyVideoLink = copyVideoLink;
 window.shareViaEmail = shareViaEmail;
 window.downloadVideo = downloadVideo;
