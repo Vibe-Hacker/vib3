@@ -116,7 +116,7 @@ function shareVideo(videoId) {
                         🎮<br>Discord
                     </button>
                     
-                    <button onclick="window.location.href='sms:?body=Check out this amazing video on VIB3! ${window.location.origin}/?video=${videoId}'" 
+                    <button onclick="shareViaSMS('${videoId}')" 
                         style="padding: 10px; background: #00d4aa; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         💬<br>SMS
                     </button>
@@ -209,6 +209,49 @@ function downloadVideo(videoId) {
     }
 }
 
+function shareViaSMS(videoId) {
+    const url = `${window.location.origin}/?video=${videoId}`;
+    const message = `Check out this amazing video on VIB3! ${url}`;
+    
+    // Detect platform and use appropriate SMS format
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+    const isMac = /macintosh|mac os x/.test(userAgent);
+    const isWindows = /windows/.test(userAgent);
+    
+    let smsUrl;
+    
+    if (isIOS || isMac) {
+        // iOS and macOS use & for body parameter
+        smsUrl = `sms:&body=${encodeURIComponent(message)}`;
+    } else if (isAndroid) {
+        // Android uses ? for body parameter
+        smsUrl = `sms:?body=${encodeURIComponent(message)}`;
+    } else if (isWindows) {
+        // Windows - try Microsoft messaging protocol
+        // First attempt with proper encoding
+        smsUrl = `sms:?body=${encodeURIComponent(message)}`;
+        
+        // If SMS doesn't work on Windows, offer to copy the message instead
+        setTimeout(() => {
+            if (confirm('If SMS didn\'t open, would you like to copy the message to clipboard instead?')) {
+                navigator.clipboard.writeText(message).then(() => {
+                    if (window.showNotification) {
+                        window.showNotification('Message copied! Paste it in your messaging app.', 'success');
+                    }
+                });
+            }
+        }, 1000);
+    } else {
+        // Default format for other platforms
+        smsUrl = `sms:?body=${encodeURIComponent(message)}`;
+    }
+    
+    console.log('📱 Opening SMS with URL:', smsUrl);
+    window.location.href = smsUrl;
+}
+
 // Make share functions globally available
 window.shareToTwitter = shareToTwitter;
 window.shareToFacebook = shareToFacebook;
@@ -216,6 +259,7 @@ window.shareToWhatsApp = shareToWhatsApp;
 window.copyVideoLink = copyVideoLink;
 window.shareViaEmail = shareViaEmail;
 window.downloadVideo = downloadVideo;
+window.shareViaSMS = shareViaSMS;
 
 // Upload video (placeholder)
 async function uploadVideo(file, description, tags) {
