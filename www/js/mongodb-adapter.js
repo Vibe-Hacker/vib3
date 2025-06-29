@@ -18,12 +18,25 @@ const auth = {
     _callbacks: [],
     onAuthStateChanged: function(callback) {
         this._callbacks.push(callback);
+        
+        // Check if this is a shared video link - if so, don't auto-login
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedVideoId = urlParams.get('video');
+        const isSharedLink = sharedVideoId && !window.location.pathname.includes('/app');
+        
+        if (isSharedLink) {
+            console.log('🔗 Shared video link detected - skipping auto-login');
+            callback(null);
+            return;
+        }
+        
         // Check if user is logged in using session-based auth (production-ready)
         fetch(`${window.API_BASE_URL}/api/auth/me`, {
             method: 'GET',
             credentials: 'include', // Include HTTP-only cookies
             headers: { 
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
             }
         })
         .then(response => {
@@ -105,20 +118,46 @@ async function createUserWithEmailAndPassword(authObj, email, password) {
 }
 
 async function signOut(authObj) {
-    // Production logout - clear server-side session
-    await fetch(`${window.API_BASE_URL}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include', // Include cookies for proper logout
-        headers: { 'Content-Type': 'application/json' }
-    });
+    try {
+        // Production logout - clear server-side session
+        const response = await fetch(`${window.API_BASE_URL}/api/auth/logout`, {
+            method: 'POST',
+            credentials: 'include', // Include cookies for proper logout
+            headers: { 
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        });
+        
+        if (!response.ok) {
+            console.error('Logout failed on server:', response.status);
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
     
-    // Clear client-side auth state
+    // Clear ALL client-side auth state
     window.authToken = null;
     auth.currentUser = null;
     window.currentUser = null;
     
+    // Clear any stored credentials
+    if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('currentUser');
+    }
+    
+    if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.clear();
+    }
+    
     // Trigger auth state change
     auth._triggerCallbacks(null);
+    
+    // Force clear auth cookies on client side
+    document.cookie = 'session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'connect.sid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 }
 
 async function updateProfile(user, updates) {

@@ -605,44 +605,13 @@
             font-weight: 900;
             text-align: center;
             margin: 0 0 40px 0;
-            background: linear-gradient(135deg, #00BFFF 0%, #FF1493 100%);
+            background: linear-gradient(135deg, #00CED1 0%, #FF1493 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            display: block;
-            -webkit-animation: vibeAnimation 2s linear infinite;
-            animation: vibeAnimation 2s linear infinite;
+            color: #FF1493; /* Fallback for older browsers */
         }
 
-        @-webkit-keyframes vibeAnimation {
-            0% {
-                -webkit-transform: scale(1);
-                opacity: 1;
-            }
-            50% {
-                -webkit-transform: scale(1.2);
-                opacity: 0.5;
-            }
-            100% {
-                -webkit-transform: scale(1);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes vibeAnimation {
-            0% {
-                transform: scale(1);
-                opacity: 1;
-            }
-            50% {
-                transform: scale(1.2);
-                opacity: 0.5;
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
 
         .auth-input {
             width: 100%;
@@ -659,13 +628,19 @@
         .auth-btn {
             width: 100%;
             padding: 16px;
-            background: #FF0050;
+            background: linear-gradient(135deg, #00CED1 0%, #FF1493 100%);
             color: #fff;
             border: none;
             border-radius: 4px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .auth-btn:hover {
+            background: linear-gradient(135deg, #00BFFF 0%, #FF69B4 100%);
+            transform: scale(1.02);
         }
 
         .auth-switch {

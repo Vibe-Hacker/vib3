@@ -77,9 +77,24 @@ document.addEventListener('visibilitychange', function() {
 
 // ================ AUTHENTICATION ================
 function initializeAuth() {
+    // Check if this is a shared video link
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedVideoId = urlParams.get('video');
+    
     if (window.auth && window.auth.onAuthStateChanged) {
         window.auth.onAuthStateChanged((user) => {
             currentUser = user;
+            
+            // Handle shared video viewing without login
+            if (!user && sharedVideoId) {
+                console.log('🔗 Viewing shared video without login:', sharedVideoId);
+                hideAuthContainer();
+                showMainApp();
+                // Show the shared video in a limited view
+                showSharedVideoView(sharedVideoId);
+                return;
+            }
+            
             if (user) {
                 hideAuthContainer();
                 showMainApp();
@@ -91,6 +106,28 @@ function initializeAuth() {
             }
         });
     }
+}
+
+// Show shared video in limited view (no user features)
+function showSharedVideoView(videoId) {
+    console.log('📺 Showing shared video view for:', videoId);
+    
+    // Hide user-specific elements
+    document.querySelectorAll('.sidebar-item.signout-btn, #sidebarProfile').forEach(el => {
+        if (el) el.style.display = 'none';
+    });
+    
+    // Show login prompt in sidebar
+    const loginSection = document.querySelector('.sidebar-login-section');
+    if (loginSection) {
+        loginSection.style.display = 'block';
+    }
+    
+    // Load just the shared video
+    loadSpecificVideo(videoId);
+    
+    // Show a banner prompting to sign up
+    showNotification('Sign up to like, comment, and share videos!', 'info');
 }
 
 function hideAuthContainer() {
