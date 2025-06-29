@@ -2074,13 +2074,20 @@ app.get('/api/videos', async (req, res) => {
             }
         }
         
+        // FINAL SHUFFLE: Ensure randomization regardless of algorithm path
+        if (feed === 'foryou' || !feed) {
+            console.log(`🎲 FINAL SHUFFLE: Before: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
+            videos = videos.sort(() => Math.random() - 0.5);
+            console.log(`🎲 FINAL SHUFFLE: After: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
+        }
+        
         console.log(`📤 Sending ${videos.length} videos for page ${page}`);
         res.json({ 
             videos,
             debug: {
                 timestamp: new Date().toISOString(),
                 feedType: feed,
-                algorithmsApplied: ['engagement-ranking', 'shuffle'],
+                algorithmsApplied: ['final-shuffle'],
                 firstThreeIds: videos.slice(0,3).map(v => v._id)
             }
         });
