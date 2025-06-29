@@ -61,6 +61,24 @@ app.get('/api/test', (req, res) => {
     });
 });
 
+// DEBUG: New test endpoint to verify our code is running
+app.get('/api/debug-shuffle', (req, res) => {
+    console.log('🚨 DEBUG SHUFFLE endpoint hit');
+    const testVideos = [
+        { _id: 'video1', title: 'First' },
+        { _id: 'video2', title: 'Second' },
+        { _id: 'video3', title: 'Third' }
+    ];
+    const shuffled = testVideos.sort(() => Math.random() - 0.5);
+    res.json({ 
+        message: 'Debug shuffle test',
+        original: ['video1', 'video2', 'video3'],
+        shuffled: shuffled.map(v => v._id),
+        timestamp: new Date().toISOString(),
+        codeVersion: 'LATEST-2025-06-29-FIX'
+    });
+});
+
 // Algorithm analytics endpoint (before static files)
 app.get('/api/analytics/algorithm', async (req, res) => {
     console.log('📊 Analytics endpoint hit');
