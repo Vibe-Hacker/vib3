@@ -31,87 +31,48 @@ async function toggleLike(videoId) {
     }
 }
 
-// Share video with TikTok-style modal - WORKING VERSION
+// Share video with TikTok-style modal - SIMPLE TEST
 function shareVideo(videoId) {
-    alert('VIDEO-SIMPLE.JS SHARE FUNCTION CALLED FOR VIDEO: ' + videoId);
     console.log('🔗 Creating share modal for video:', videoId);
-    console.log('📍 shareVideo function called from video-simple.js');
     
-    try {
-    
-    // Remove any existing modals
-    document.querySelectorAll('.share-modal').forEach(m => m.remove());
-    
-    // Create modal overlay
+    // Create the simplest possible modal
     const modal = document.createElement('div');
-    modal.className = 'share-modal';
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.8);
-        z-index: 999999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    `;
-    
-    // Create modal content
-    const content = document.createElement('div');
-    content.style.cssText = `
-        background: #161823;
-        border-radius: 20px;
-        padding: 30px;
-        max-width: 400px;
-        width: 90%;
-        text-align: center;
-    `;
-    
-    content.innerHTML = `
-        <h3 style="color: white; margin: 0 0 20px 0; font-size: 20px;">Share Video</h3>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
-            <button onclick="shareToTwitter('${videoId}'); document.querySelector('.share-modal').remove();" style="
-                padding: 15px; background: #1da1f2; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px;">
-                🐦 Twitter
-            </button>
-            <button onclick="shareToFacebook('${videoId}'); document.querySelector('.share-modal').remove();" style="
-                padding: 15px; background: #4267b2; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px;">
-                📘 Facebook
-            </button>
-            <button onclick="shareToWhatsApp('${videoId}'); document.querySelector('.share-modal').remove();" style="
-                padding: 15px; background: #25d366; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px;">
-                💬 WhatsApp
-            </button>
-            <button onclick="copyVideoLink('${videoId}'); document.querySelector('.share-modal').remove();" style="
-                padding: 15px; background: #666; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px;">
-                🔗 Copy Link
-            </button>
+    modal.innerHTML = `
+        <div style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: red;
+            z-index: 99999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        ">
+            <div style="
+                background: white;
+                padding: 50px;
+                border-radius: 10px;
+                text-align: center;
+            ">
+                <h2>Share Video</h2>
+                <p>Video ID: ${videoId}</p>
+                <button onclick="window.open('https://twitter.com/intent/tweet?text=Check out this video!&url=${window.location.origin}/?video=${videoId}', '_blank')" 
+                    style="padding: 10px 20px; margin: 5px; background: #1da1f2; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Share on Twitter
+                </button>
+                <br><br>
+                <button onclick="this.closest('div').parentElement.remove()" 
+                    style="padding: 10px 20px; background: #ff4444; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Close
+                </button>
+            </div>
         </div>
-        <button onclick="document.querySelector('.share-modal').remove();" style="
-            width: 100%; padding: 15px; background: #333; color: white; border: none; border-radius: 10px; cursor: pointer;">
-            Cancel
-        </button>
     `;
-    
-    modal.appendChild(content);
-    
-    // Close when clicking outside
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.remove();
-        }
-    });
     
     document.body.appendChild(modal);
-    console.log('✅ Share modal created and displayed');
-    
-    } catch (error) {
-        console.error('❌ Error creating share modal:', error);
-        // Fallback to simple alert
-        alert('Share Video: ' + videoId);
-    }
+    console.log('✅ Simple modal added to body');
 }
 
 // Share helper functions
