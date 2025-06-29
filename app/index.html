@@ -16,6 +16,117 @@
         window.API_BASE_URL = 'https://vib3-production.up.railway.app';
         console.log('🟢 Loading navigation functions in HEAD...');
         
+        // Global variables
+        let currentUser = null;
+        let isAudioEnabled = true;
+        
+        // Auth Functions
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showError('Please enter both email and password');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${window.API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    currentUser = data.user;
+                    window.currentUser = data.user;
+                    showApp();
+                } else {
+                    showError(data.message || 'Login failed');
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+            }
+        }
+
+        async function handleSignup() {
+            const username = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            
+            if (!username || !email || !password) {
+                showError('Please fill in all fields');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${window.API_BASE_URL}/api/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    currentUser = data.user;
+                    window.currentUser = data.user;
+                    showApp();
+                } else {
+                    showError(data.message || 'Signup failed');
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('currentUser');
+            currentUser = null;
+            window.currentUser = null;
+            showAuth();
+        }
+
+        function showLogin() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('signupForm').style.display = 'none';
+            clearError();
+        }
+
+        function showSignup() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+            clearError();
+        }
+
+        function showError(message) {
+            document.getElementById('authError').textContent = message;
+        }
+
+        function clearError() {
+            document.getElementById('authError').textContent = '';
+        }
+        
+        function showAuth() {
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('profilePage').style.display = 'none';
+        }
+
+        function showApp() {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            document.getElementById('profilePage').style.display = 'none';
+            loadFeed();
+        }
+        
         // Define navigation functions BEFORE HTML is parsed
         window.showProfile = function() {
             console.log('👤 showProfile called from HEAD');
