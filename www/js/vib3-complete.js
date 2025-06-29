@@ -4650,6 +4650,19 @@ function loadMusicTracks(category) {
 
 // ================ LIVE STREAMING ================
 function showPage(page) {
+    // Mobile-specific page handling
+    if (window.innerWidth <= 767) {
+        // Hide video feed on mobile when showing other pages
+        const videoFeed = document.querySelector('.video-feed');
+        const mainApp = document.getElementById('mainApp');
+        
+        if (page !== 'feed' && page !== 'foryou' && page !== 'following') {
+            if (videoFeed) videoFeed.style.display = 'none';
+        } else {
+            if (videoFeed) videoFeed.style.display = 'block';
+        }
+    }
+    
     // CRITICAL FIX: Remove profile page if it exists when navigating to any other page
     const profilePage = document.getElementById('profilePage');
     if (profilePage && page !== 'profile') {
