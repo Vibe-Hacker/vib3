@@ -7489,11 +7489,10 @@ function openShareModal(videoId) {
     console.log('📱 Creating TikTok-style share modal for video:', videoId);
     
     // Remove any existing modals first
-    document.querySelectorAll('[id^="test-share-modal"]').forEach(m => m.remove());
+    document.querySelectorAll('[id^="vib3-share-modal"]').forEach(m => m.remove());
     
     const modal = document.createElement('div');
-    // Don't use any existing CSS classes that might be styled
-    modal.id = 'test-share-modal-' + Date.now();
+    modal.id = 'vib3-share-modal-' + Date.now();
     
     // Apply styles directly to avoid CSS conflicts
     modal.style.position = 'fixed';
@@ -7501,52 +7500,150 @@ function openShareModal(videoId) {
     modal.style.left = '0';
     modal.style.width = '100vw';
     modal.style.height = '100vh';
-    modal.style.backgroundColor = 'red';
-    modal.style.zIndex = '2147483647'; // Maximum z-index
+    modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    modal.style.zIndex = '2147483647';
     modal.style.display = 'flex';
-    modal.style.alignItems = 'center';
+    modal.style.alignItems = 'flex-end';
     modal.style.justifyContent = 'center';
     modal.style.pointerEvents = 'all';
     
     const innerDiv = document.createElement('div');
-    innerDiv.style.backgroundColor = 'white';
+    innerDiv.style.backgroundColor = '#161823';
+    innerDiv.style.width = '100%';
+    innerDiv.style.maxWidth = '500px';
+    innerDiv.style.borderRadius = '20px 20px 0 0';
     innerDiv.style.padding = '30px';
-    innerDiv.style.borderRadius = '15px';
     innerDiv.style.textAlign = 'center';
-    innerDiv.style.color = 'black';
-    innerDiv.style.fontSize = '16px';
+    innerDiv.style.color = 'white';
+    innerDiv.style.fontFamily = 'Arial, sans-serif';
     
     innerDiv.innerHTML = `
-        <h2 style="color: black; margin: 0 0 15px 0;">TEST MODAL WORKING!</h2>
-        <p style="color: black; margin: 0 0 15px 0;">Video ID: ${videoId}</p>
-        <button onclick="document.getElementById('${modal.id}').remove();" style="padding: 15px 30px; font-size: 16px; background: blue; color: white; border: none; border-radius: 5px; cursor: pointer;">Close Test Modal</button>
+        <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 0 auto 20px;"></div>
+        <h3 style="margin: 0 0 25px 0; color: white; font-size: 20px; font-weight: 600;">Share to</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
+            <button onclick="shareToTikTok('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: linear-gradient(45deg, #ff0050, #000000); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">🎵</div>
+                <span style="color: white; font-size: 11px; display: block;">TikTok</span>
+            </button>
+            
+            <button onclick="shareToInstagram('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">📷</div>
+                <span style="color: white; font-size: 11px; display: block;">Instagram</span>
+            </button>
+            
+            <button onclick="shareToTwitter('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #1da1f2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">🐦</div>
+                <span style="color: white; font-size: 11px; display: block;">Twitter</span>
+            </button>
+            
+            <button onclick="shareToFacebook('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #4267b2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">📘</div>
+                <span style="color: white; font-size: 11px; display: block;">Facebook</span>
+            </button>
+            
+            <button onclick="shareToWhatsApp('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #25d366; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">📱</div>
+                <span style="color: white; font-size: 11px; display: block;">WhatsApp</span>
+            </button>
+            
+            <button onclick="shareToTelegram('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #0088cc; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">✈️</div>
+                <span style="color: white; font-size: 11px; display: block;">Telegram</span>
+            </button>
+            
+            <button onclick="shareToSnapchat('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #fffc00; color: black; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">👻</div>
+                <span style="color: white; font-size: 11px; display: block;">Snapchat</span>
+            </button>
+            
+            <button onclick="shareToReddit('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #ff4500; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">🤖</div>
+                <span style="color: white; font-size: 11px; display: block;">Reddit</span>
+            </button>
+            
+            <button onclick="shareToLinkedIn('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #0077b5; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">💼</div>
+                <span style="color: white; font-size: 11px; display: block;">LinkedIn</span>
+            </button>
+            
+            <button onclick="shareToPinterest('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #bd081c; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">📌</div>
+                <span style="color: white; font-size: 11px; display: block;">Pinterest</span>
+            </button>
+            
+            <button onclick="shareToDiscord('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #7289da; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">🎮</div>
+                <span style="color: white; font-size: 11px; display: block;">Discord</span>
+            </button>
+            
+            <button onclick="shareViaSMS('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #00d4aa; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">💬</div>
+                <span style="color: white; font-size: 11px; display: block;">SMS</span>
+            </button>
+            
+            <button onclick="copyVideoLink('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #666; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">🔗</div>
+                <span style="color: white; font-size: 11px; display: block;">Copy Link</span>
+            </button>
+            
+            <button onclick="shareViaEmail('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #ea4335; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">📧</div>
+                <span style="color: white; font-size: 11px; display: block;">Email</span>
+            </button>
+            
+            <button onclick="downloadVideo('${videoId}'); document.getElementById('${modal.id}').remove();" style="
+                text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px; transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='none'">
+                <div style="width: 45px; height: 45px; background: #4caf50; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">⬇️</div>
+                <span style="color: white; font-size: 11px; display: block;">Save</span>
+            </button>
+        </div>
+        
+        <button onclick="document.getElementById('${modal.id}').remove();" style="
+            width: 100%; padding: 16px; background: rgba(255,255,255,0.1); border: none; border-radius: 12px;
+            color: white; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 12px;
+        ">Cancel</button>
     `;
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
     
     modal.appendChild(innerDiv);
     document.body.appendChild(modal);
-    console.log('✅ Standalone test modal created with ID:', modal.id);
-    
-    // Force a repaint
-    modal.offsetHeight;
-    
-    // Check if modal is visible
-    setTimeout(() => {
-        const stillExists = document.getElementById(modal.id);
-        const computedStyle = stillExists ? window.getComputedStyle(stillExists) : null;
-        
-        if (stillExists && computedStyle) {
-            console.log('Modal styles:', {
-                display: computedStyle.display,
-                visibility: computedStyle.visibility,
-                opacity: computedStyle.opacity,
-                zIndex: computedStyle.zIndex,
-                position: computedStyle.position
-            });
-            alert('Modal exists! Check console for style info. Do you see a red background?');
-        } else {
-            alert('❌ Modal was deleted!');
-        }
-    }, 500);
+    console.log('✅ TikTok-style share modal created');
 }
 
 function viewProfile(username) {
