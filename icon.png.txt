@@ -1,0 +1,27 @@
+To create the new VIB3 icon:
+
+1. Open the create-icons.html file in your browser:
+   file:///mnt/c/Users/VIBE/Desktop/VIB3/create-icons.html
+
+2. Click "Generate New VIB3 Icons" to see the preview
+
+3. Click "Download All Sizes" to get all the PNG files
+
+4. Replace the Android icon files:
+   - Copy vib3-icon-512x512.png as the main icon.png in the project root
+   - Use Capacitor CLI to generate all sizes: npx capacitor-assets generate
+
+Alternative manual replacement:
+- mipmap-mdpi/ic_launcher.png (48x48)
+- mipmap-hdpi/ic_launcher.png (72x72) 
+- mipmap-xhdpi/ic_launcher.png (96x96)
+- mipmap-xxhdpi/ic_launcher.png (144x144)
+- mipmap-xxxhdpi/ic_launcher.png (192x192)
+
+The new icon features:
+- Modern gradient (VIB3 pink to purple)
+- Clean "V" symbol representing VIB3
+- Three dots representing the "3"
+- Rounded square design (modern app icon standard)
+- High contrast white symbols on gradient background
+- Scalable design that looks good at all sizes

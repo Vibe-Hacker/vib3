@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Update VIB3 Icon Color</title>
+</head>
+<body>
+    <canvas id="canvas" width="512" height="512" style="border: 1px solid #ccc;"></canvas>
+    <br><br>
+    <button onclick="generateIcon()">Generate Red VIB3 Icon</button>
+    <button onclick="downloadIcon()">Download Icon</button>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function generateIcon() {
+            // Clear canvas
+            ctx.clearRect(0, 0, 512, 512);
+            
+            // Set background to match app theme
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, 512, 512);
+            
+            // Create gradient for VIB3 text (red theme)
+            const gradient = ctx.createLinearGradient(0, 0, 512, 512);
+            gradient.addColorStop(0, '#FF3333'); // Bright red
+            gradient.addColorStop(0.5, '#FF0000'); // Pure red  
+            gradient.addColorStop(1, '#CC0000'); // Dark red
+            
+            // Draw VIB3 text
+            ctx.fillStyle = gradient;
+            ctx.font = 'bold 140px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Add text shadow effect
+            ctx.shadowColor = 'rgba(255, 0, 0, 0.5)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            // Draw main text
+            ctx.fillText('VIB3', 256, 256);
+            
+            // Add subtle glow effect
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = 'rgba(255, 51, 51, 0.3)';
+            ctx.fillText('VIB3', 256, 256);
+            
+            // Reset shadow
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+            
+            // Add small accent dot
+            ctx.beginPath();
+            ctx.arc(420, 150, 25, 0, 2 * Math.PI);
+            ctx.fillStyle = '#FF3333';
+            ctx.fill();
+        }
+        
+        function downloadIcon() {
+            const link = document.createElement('a');
+            link.download = 'icon.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Generate icon on load
+        generateIcon();
+    </script>
+</body>
+</html>

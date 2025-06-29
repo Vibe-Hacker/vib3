@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VIB3 Icon Generator</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #000; 
+            color: #fff; 
+            text-align: center;
+        }
+        .icon-container { 
+            display: inline-block; 
+            margin: 20px; 
+            padding: 20px;
+            background: #111;
+            border-radius: 10px;
+        }
+        canvas { 
+            border: 2px solid #333; 
+            margin: 10px; 
+            display: block;
+        }
+        button { 
+            padding: 15px 30px; 
+            margin: 10px; 
+            background: linear-gradient(45deg, #FF0050, #8338EC); 
+            color: white; 
+            border: none; 
+            border-radius: 25px; 
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        button:hover { 
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255,0,80,0.3);
+        }
+        h1 { color: #FF0050; }
+        .size-label { margin-top: 10px; font-size: 12px; color: #888; }
+    </style>
+</head>
+<body>
+    <h1>🚀 VIB3 Icon Generator</h1>
+    <p>Generate professional icons for your VIB3 app</p>
+    
+    <button onclick="generateAllIcons()" style="font-size: 18px; padding: 20px 40px;">
+        ✨ Generate VIB3 Icons
+    </button>
+    
+    <div id="iconContainer"></div>
+    
+    <div id="downloadSection" style="display: none; margin-top: 30px;">
+        <h3>📱 Right-click any icon below and "Save Image As" to download:</h3>
+        <p style="color: #888;">Recommended: Use the 512x512 version as your main app icon</p>
+    </div>
+    
+    <script>
+        function createVIB3Icon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#FF0050');
+            gradient.addColorStop(1, '#8338EC');
+            
+            // Draw rounded rectangle background
+            const radius = size * 0.22;
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            
+            // Create rounded rectangle path
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw main "V" symbol
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = size * 0.08;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            ctx.beginPath();
+            ctx.moveTo(size * 0.27, size * 0.31);
+            ctx.lineTo(size * 0.5, size * 0.74);
+            ctx.lineTo(size * 0.73, size * 0.31);
+            ctx.stroke();
+            
+            // Draw three dots for "3"
+            ctx.fillStyle = '#FFFFFF';
+            const dotRadius = size * 0.025;
+            const dotX = size * 0.78;
+            
+            // Top dot
+            ctx.beginPath();
+            ctx.arc(dotX, size * 0.35, dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Middle dot
+            ctx.beginPath();
+            ctx.arc(dotX, size * 0.43, dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Bottom dot
+            ctx.beginPath();
+            ctx.arc(dotX, size * 0.51, dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            return canvas;
+        }
+        
+        function generateAllIcons() {
+            const container = document.getElementById('iconContainer');
+            container.innerHTML = '';
+            
+            const sizes = [
+                { size: 512, label: '512x512 (Main Icon)' },
+                { size: 192, label: '192x192 (xxxhdpi)' },
+                { size: 144, label: '144x144 (xxhdpi)' },
+                { size: 96, label: '96x96 (xhdpi)' },
+                { size: 72, label: '72x72 (hdpi)' },
+                { size: 48, label: '48x48 (mdpi)' }
+            ];
+            
+            sizes.forEach(item => {
+                const iconDiv = document.createElement('div');
+                iconDiv.className = 'icon-container';
+                
+                const canvas = createVIB3Icon(item.size);
+                
+                const label = document.createElement('div');
+                label.className = 'size-label';
+                label.textContent = item.label;
+                
+                iconDiv.appendChild(canvas);
+                iconDiv.appendChild(label);
+                container.appendChild(iconDiv);
+            });
+            
+            document.getElementById('downloadSection').style.display = 'block';
+        }
+        
+        // Auto-generate on page load
+        window.onload = function() {
+            setTimeout(generateAllIcons, 500);
+        };
+    </script>
+</body>
+</html>

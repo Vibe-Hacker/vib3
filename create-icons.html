@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VIB3 Icon Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #000; color: #fff; }
+        .icon-preview { margin: 20px 0; }
+        canvas { border: 2px solid #333; margin: 10px; }
+        button { padding: 10px 20px; margin: 10px; background: #FF0050; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #8338EC; }
+    </style>
+</head>
+<body>
+    <h1>VIB3 Modern Icon Generator</h1>
+    
+    <div class="icon-preview">
+        <h3>Current Icons:</h3>
+        <canvas id="icon512" width="512" height="512"></canvas>
+        <canvas id="icon192" width="192" height="192"></canvas>
+        <canvas id="icon144" width="144" height="144"></canvas>
+        <canvas id="icon96" width="96" height="96"></canvas>
+        <canvas id="icon72" width="72" height="72"></canvas>
+        <canvas id="icon48" width="48" height="48"></canvas>
+    </div>
+    
+    <button onclick="generateIcons()">Generate New VIB3 Icons</button>
+    <button onclick="downloadAll()">Download All Sizes</button>
+    
+    <script>
+        function drawVIB3Icon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const scale = size / 512;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#FF0050');
+            gradient.addColorStop(1, '#8338EC');
+            
+            // Draw rounded rectangle background
+            const radius = size * 0.22; // 22% radius for modern look
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, radius);
+            ctx.fill();
+            
+            // Draw main "V" symbol
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = size * 0.078; // Scales with size
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            ctx.beginPath();
+            ctx.moveTo(size * 0.27, size * 0.31); // Left point
+            ctx.lineTo(size * 0.5, size * 0.74);  // Bottom point
+            ctx.lineTo(size * 0.73, size * 0.31); // Right point
+            ctx.stroke();
+            
+            // Draw three dots for "3"
+            ctx.fillStyle = '#FFFFFF';
+            const dotRadius = size * 0.024;
+            const dotX = size * 0.78;
+            
+            ctx.beginPath();
+            ctx.arc(dotX, size * 0.35, dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(dotX, size * 0.43, dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(dotX, size * 0.51, dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function generateIcons() {
+            const sizes = [512, 192, 144, 96, 72, 48];
+            sizes.forEach(size => {
+                const canvas = document.getElementById(`icon${size}`) || 
+                              document.querySelector(`canvas[width="${size}"]`);
+                if (canvas) {
+                    drawVIB3Icon(canvas, size);
+                }
+            });
+        }
+        
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        function downloadAll() {
+            const sizes = [512, 192, 144, 96, 72, 48];
+            sizes.forEach(size => {
+                const canvas = document.getElementById(`icon${size}`) || 
+                              document.querySelector(`canvas[width="${size}"]`);
+                if (canvas) {
+                    downloadCanvas(canvas, `vib3-icon-${size}x${size}.png`);
+                }
+            });
+        }
+        
+        // Auto-generate on load
+        generateIcons();
+    </script>
+</body>
+</html>
