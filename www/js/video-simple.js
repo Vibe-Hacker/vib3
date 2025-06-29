@@ -31,11 +31,11 @@ async function toggleLike(videoId) {
     }
 }
 
-// Share video with TikTok-style modal - SIMPLE TEST
+// Share video with TikTok-style modal - IMPROVED VERSION
 function shareVideo(videoId) {
     console.log('🔗 Creating share modal for video:', videoId);
     
-    // Create the simplest possible modal
+    // Create modal using the working approach but with better styling
     const modal = document.createElement('div');
     modal.innerHTML = `
         <div style="
@@ -44,35 +44,54 @@ function shareVideo(videoId) {
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: red;
+            background: rgba(0,0,0,0.8);
             z-index: 99999999;
             display: flex;
             align-items: center;
             justify-content: center;
         ">
             <div style="
-                background: white;
-                padding: 50px;
-                border-radius: 10px;
+                background: #161823;
+                padding: 30px;
+                border-radius: 15px;
                 text-align: center;
+                max-width: 400px;
+                width: 90%;
             ">
-                <h2>Share Video</h2>
-                <p>Video ID: ${videoId}</p>
-                <button onclick="window.open('https://twitter.com/intent/tweet?text=Check out this video!&url=${window.location.origin}/?video=${videoId}', '_blank')" 
-                    style="padding: 10px 20px; margin: 5px; background: #1da1f2; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                    Share on Twitter
-                </button>
-                <br><br>
+                <h3 style="color: white; margin: 0 0 20px 0; font-size: 18px;">Share Video</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                    <button onclick="window.open('https://twitter.com/intent/tweet?text=Check out this video!&url=${window.location.origin}/?video=${videoId}', '_blank')" 
+                        style="padding: 12px; background: #1da1f2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                        🐦 Twitter
+                    </button>
+                    
+                    <button onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=${window.location.origin}/?video=${videoId}', '_blank')" 
+                        style="padding: 12px; background: #4267b2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                        📘 Facebook
+                    </button>
+                    
+                    <button onclick="window.open('https://wa.me/?text=Check out this video! ${window.location.origin}/?video=${videoId}', '_blank')" 
+                        style="padding: 12px; background: #25d366; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                        💬 WhatsApp
+                    </button>
+                    
+                    <button onclick="navigator.clipboard.writeText('${window.location.origin}/?video=${videoId}').then(() => alert('Link copied!'))" 
+                        style="padding: 12px; background: #666; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                        🔗 Copy Link
+                    </button>
+                </div>
+                
                 <button onclick="this.closest('div').parentElement.remove()" 
-                    style="padding: 10px 20px; background: #ff4444; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                    Close
+                    style="width: 100%; padding: 12px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    Cancel
                 </button>
             </div>
         </div>
     `;
     
     document.body.appendChild(modal);
-    console.log('✅ Simple modal added to body');
+    console.log('✅ TikTok-style modal created');
 }
 
 // Share helper functions
