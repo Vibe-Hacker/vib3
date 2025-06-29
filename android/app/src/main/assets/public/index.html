@@ -253,6 +253,8 @@
                                     class="profile-video-thumb"
                                     src="${videoUrl}"
                                     muted
+                                    autoplay
+                                    controls="false"
                                     preload="metadata"
                                     playsinline
                                     webkit-playsinline
@@ -260,7 +262,7 @@
                                     disablepictureinpicture
                                     controlslist="nodownload nofullscreen noremoteplayback"
                                     style="width: 100%; height: 100%; object-fit: cover; background: #000; -webkit-appearance: none;"
-                                    onloadedmetadata="this.currentTime = 1;">
+                                    onloadedmetadata="this.currentTime = 1; this.pause();">
                                 </video>
                                 ${viewCount > 0 ? `
                                 <div class="profile-thumbnail-overlay">
@@ -738,25 +740,30 @@
             display: none !important;
         }
         
-        /* Hide controls on profile thumbnails */
-        .profile-video-thumb::-webkit-media-controls {
+        /* Aggressive hide for ALL video controls and play buttons */
+        video::-webkit-media-controls,
+        video::-webkit-media-controls-enclosure,
+        video::-webkit-media-controls-panel,
+        video::-webkit-media-controls-play-button,
+        video::-webkit-media-controls-start-playback-button,
+        video::-webkit-media-controls-overlay-play-button,
+        video::-webkit-media-controls-fullscreen-button,
+        video::-webkit-media-controls-timeline,
+        video::-webkit-media-controls-current-time-display,
+        video::-webkit-media-controls-time-remaining-display,
+        video::-webkit-media-controls-mute-button,
+        video::-webkit-media-controls-volume-slider {
             display: none !important;
+            -webkit-appearance: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
         }
         
-        .profile-video-thumb::-webkit-media-controls-panel {
-            display: none !important;
-        }
-        
-        .profile-video-thumb::-webkit-media-controls-play-button {
-            display: none !important;
-        }
-        
-        .profile-video-thumb::-webkit-media-controls-start-playback-button {
-            display: none !important;
-        }
-        
-        .profile-video-thumb::-webkit-media-controls-overlay-play-button {
-            display: none !important;
+        /* Force videos to show no controls */
+        video {
+            -webkit-appearance: none !important;
+            background: #000 !important;
         }
 
         /* Top Header */
@@ -3192,14 +3199,20 @@
                     <video class="video-player" 
                            src="${videoSrc}" 
                            loop 
+                           muted
+                           autoplay
                            playsinline 
                            webkit-playsinline
+                           x5-playsinline
                            preload="auto"
+                           controls="false"
+                           controlslist="nodownload nofullscreen noremoteplayback"
+                           disablepictureinpicture
                            onclick="togglePlayPause(this)"
                            ondblclick="likeVideo('${videoId}', event)"
                            onloadstart="console.log('🎥 Video loading started for:', '${videoSrc}')"
                            onloadeddata="console.log('🎥 Video data loaded for:', '${videoSrc}')"
-                           oncanplay="console.log('🎥 Video can play:', '${videoSrc}')">
+                           oncanplay="this.play(); console.log('🎥 Video can play:', '${videoSrc}')">
                     </video>
                     
                     <div class="video-progress">
