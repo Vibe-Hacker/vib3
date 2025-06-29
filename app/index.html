@@ -249,21 +249,12 @@
                             <div class="profile-video-item" 
                                  data-video-id="${videoId}"
                                  onclick="openVideoFullscreen('${videoId}', '${videoUrl}')">
-                                ${thumbnailUrl ? `
-                                <img 
-                                    class="profile-video-thumbnail"
-                                    src="${thumbnailUrl}"
-                                    alt="Video thumbnail"
-                                    loading="lazy"
-                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <div class="thumbnail-fallback" style="display: none; width: 100%; height: 100%; background: #333; align-items: center; justify-content: center; font-size: 24px; opacity: 0.5;">
-                                    📹
-                                </div>
-                                ` : `
                                 <video 
                                     class="profile-video-thumb"
                                     src="${videoUrl}"
                                     muted
+                                    autoplay
+                                    controls="false"
                                     preload="metadata"
                                     playsinline
                                     webkit-playsinline
@@ -271,13 +262,8 @@
                                     disablepictureinpicture
                                     controlslist="nodownload nofullscreen noremoteplayback"
                                     style="width: 100%; height: 100%; object-fit: cover; background: #000; -webkit-appearance: none;"
-                                    onloadedmetadata="this.currentTime = 1;"
-                                    poster="">
+                                    onloadedmetadata="this.currentTime = 1; this.pause();">
                                 </video>
-                                <div class="thumbnail-fallback" style="display: none; width: 100%; height: 100%; background: #333; align-items: center; justify-content: center; font-size: 24px; opacity: 0.5;">
-                                    📹
-                                </div>
-                                `}
                                 ${viewCount > 0 ? `
                                 <div class="profile-thumbnail-overlay">
                                     <div class="profile-view-count">
@@ -752,6 +738,32 @@
         
         .video-player::before {
             display: none !important;
+        }
+        
+        /* Aggressive hide for ALL video controls and play buttons */
+        video::-webkit-media-controls,
+        video::-webkit-media-controls-enclosure,
+        video::-webkit-media-controls-panel,
+        video::-webkit-media-controls-play-button,
+        video::-webkit-media-controls-start-playback-button,
+        video::-webkit-media-controls-overlay-play-button,
+        video::-webkit-media-controls-fullscreen-button,
+        video::-webkit-media-controls-timeline,
+        video::-webkit-media-controls-current-time-display,
+        video::-webkit-media-controls-time-remaining-display,
+        video::-webkit-media-controls-mute-button,
+        video::-webkit-media-controls-volume-slider {
+            display: none !important;
+            -webkit-appearance: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+        
+        /* Force videos to show no controls */
+        video {
+            -webkit-appearance: none !important;
+            background: #000 !important;
         }
 
         /* Top Header */
@@ -3187,14 +3199,20 @@
                     <video class="video-player" 
                            src="${videoSrc}" 
                            loop 
+                           muted
+                           autoplay
                            playsinline 
                            webkit-playsinline
+                           x5-playsinline
                            preload="auto"
+                           controls="false"
+                           controlslist="nodownload nofullscreen noremoteplayback"
+                           disablepictureinpicture
                            onclick="togglePlayPause(this)"
                            ondblclick="likeVideo('${videoId}', event)"
                            onloadstart="console.log('🎥 Video loading started for:', '${videoSrc}')"
                            onloadeddata="console.log('🎥 Video data loaded for:', '${videoSrc}')"
-                           oncanplay="console.log('🎥 Video can play:', '${videoSrc}')">
+                           oncanplay="this.play(); console.log('🎥 Video can play:', '${videoSrc}')">
                     </video>
                     
                     <div class="video-progress">
