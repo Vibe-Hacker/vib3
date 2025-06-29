@@ -914,11 +914,14 @@
             position: absolute;
             bottom: 80px;
             right: 16px;
-            display: flex;
+            display: flex !important;
             flex-direction: column;
             align-items: center;
             gap: 20px;
-            z-index: 10;
+            z-index: 100;
+            background: rgba(255, 0, 0, 0.3); /* Debug red background */
+            padding: 10px;
+            border: 2px solid yellow; /* Debug border */
         }
 
         .action-item {
@@ -932,12 +935,14 @@
         .action-icon {
             width: 40px;
             height: 40px;
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.8) !important;
             border-radius: 50%;
             transition: all 0.2s;
+            font-size: 20px;
+            border: 2px solid #000; /* Debug border */
         }
 
         .action-icon.liked {
