@@ -2827,6 +2827,32 @@
             }
         };
         
+        window.shareVideo = function(videoId) {
+            console.log('📤 Share video:', videoId);
+            const shareSheet = document.getElementById('shareSheet');
+            if (shareSheet) {
+                shareSheet.style.display = 'block';
+            }
+        };
+        
+        window.viewProfile = function(userId) {
+            console.log('👤 View profile:', userId);
+            // Navigate to user profile
+            if (window.showProfile) {
+                window.showProfile();
+            }
+        };
+        
+        window.followUser = function(userId) {
+            console.log('➕ Follow user:', userId);
+            // TODO: Implement follow functionality
+            const followBtn = event.target;
+            if (followBtn) {
+                followBtn.textContent = 'Following';
+                followBtn.style.background = '#333';
+            }
+        };
+        
         // Debug function to check profile loading
         window.debugProfile = function() {
             console.log('🔍 DEBUG Profile state:');
