@@ -57,7 +57,9 @@ app.get('/api/test', async (req, res) => {
     
     // If this is a video feed request, handle it here  
     console.log('🔍 Query params check:', req.query);
-    if (req.query.feed || req.query.limit) {
+    const hasQueryParams = Object.keys(req.query).length > 0;
+    console.log('🔍 Has query params:', hasQueryParams);
+    if (hasQueryParams && (req.query.feed || req.query.limit || req.query._t)) {
         console.log('🎬 VIDEO FEED REQUEST via /api/test!');
         
         if (!db) {
