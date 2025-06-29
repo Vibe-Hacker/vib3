@@ -8,6 +8,8 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <!-- Force cache refresh -->
+    <meta name="cache-version" content="v20250629-001">
     <title>VIB3</title>
     
     <!-- Load navigation functions in HEAD before HTML is parsed -->
@@ -3422,6 +3424,7 @@
                     <video class="video-player" 
                            src="${videoSrc}" 
                            autoplay
+                           muted
                            loop 
                            playsinline 
                            webkit-playsinline
@@ -3432,7 +3435,8 @@
                            disablepictureinpicture
                            onclick="togglePlayPause(this)"
                            ondblclick="likeVideo('${videoId}', event)"
-                           style="background: #000 !important; -webkit-appearance: none;"
+                           style="background: #000 !important;"
+                           onplay="this.muted = false;"
                     </video>
                     
                     <div class="video-progress">
