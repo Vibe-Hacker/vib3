@@ -52,8 +52,67 @@ app.get('/health', (req, res) => {
 });
 
 // Simple API test endpoint (before static files)
-app.get('/api/test', (req, res) => {
-    console.log('🧪 Test endpoint hit');
+app.get('/api/test', async (req, res) => {
+    console.log('🧪 Test endpoint hit with query:', req.query);
+    
+    // If this is a video feed request, handle it here
+    if (req.query.feed) {
+        console.log('🎬 VIDEO FEED REQUEST via /api/test!');
+        
+        if (!db) {
+            return res.json({ videos: [] });
+        }
+        
+        try {
+            const { limit = 10, feed = 'foryou' } = req.query;
+            
+            // Get videos from database
+            const videos = await db.collection('videos')
+                .find({ status: { $ne: 'deleted' } })
+                .sort({ createdAt: -1 })
+                .limit(parseInt(limit) * 2)
+                .toArray();
+                
+            console.log(`📹 Found ${videos.length} videos in database`);
+                
+            // FORCE RANDOMIZATION - this will work!
+            const shuffled = videos.sort(() => Math.random() - 0.5).slice(0, parseInt(limit));
+            console.log(`🎲 Shuffled! Original first 3: [${videos.slice(0,3).map(v => v._id)}]`);
+            console.log(`🎲 Shuffled! New first 3: [${shuffled.slice(0,3).map(v => v._id)}]`);
+            
+            // Add user data
+            for (const video of shuffled) {
+                try {
+                    const user = await db.collection('users').findOne(
+                        { _id: new ObjectId(video.userId) },
+                        { projection: { password: 0 } }
+                    );
+                    video.user = user || { username: 'Unknown User', displayName: 'Unknown' };
+                    video.likeCount = video.likes?.length || 0;
+                    video.commentCount = 0;
+                    video.shareCount = 0;
+                    video.feedType = feed;
+                    video.thumbnailUrl = video.videoUrl + '#t=1';
+                } catch (e) {
+                    console.log('User lookup error:', e);
+                }
+            }
+            
+            return res.json({ 
+                videos: shuffled,
+                success: true,
+                randomized: true,
+                timestamp: new Date().toISOString(),
+                message: 'Videos loaded with randomization!'
+            });
+            
+        } catch (error) {
+            console.error('Video feed error:', error);
+            return res.json({ videos: [], error: error.message });
+        }
+    }
+    
+    // Normal test response
     res.json({ 
         message: 'API is working', 
         timestamp: new Date().toISOString(),
