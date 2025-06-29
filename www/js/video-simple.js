@@ -78,7 +78,7 @@ function shareVideo(videoId) {
                     
                     <button onclick="window.open('https://wa.me/?text=Check out this amazing video on VIB3! ${window.location.origin}/?video=${videoId}', '_blank')" 
                         style="padding: 10px; background: #25d366; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
-                        💬<br>WhatsApp
+                        📱<br>WhatsApp
                     </button>
                     
                     <button onclick="window.open('https://t.me/share/url?url=${window.location.origin}/?video=${videoId}&text=Check out this video!', '_blank')" 
@@ -109,6 +109,11 @@ function shareVideo(videoId) {
                     <button onclick="window.open('https://discord.com/', '_blank')" 
                         style="padding: 10px; background: #7289da; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
                         🎮<br>Discord
+                    </button>
+                    
+                    <button onclick="window.location.href='sms:?body=Check out this amazing video on VIB3! ${window.location.origin}/?video=${videoId}'" 
+                        style="padding: 10px; background: #00d4aa; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        💬<br>SMS
                     </button>
                     
                     <button onclick="window.location.href='mailto:?subject=Check out this VIB3 video!&body=I found this amazing video: ${window.location.origin}/?video=${videoId}'" 
