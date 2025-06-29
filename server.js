@@ -18,6 +18,7 @@ try {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+console.log('🚀 VIB3 Server starting...');
 
 // Middleware
 app.use(express.json({ limit: '100mb' }));
