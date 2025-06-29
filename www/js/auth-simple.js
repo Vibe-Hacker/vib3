@@ -178,6 +178,221 @@ async function handleLogout() {
     }
 }
 
+// Password reset function
+async function sendPasswordResetEmail(email) {
+    try {
+        const response = await fetch(`${window.API_BASE_URL}/api/auth/forgot-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            if (window.showNotification) {
+                window.showNotification('Password reset email sent! Check your inbox.', 'success');
+            }
+            return { success: true };
+        } else {
+            throw new Error(data.error || 'Failed to send reset email');
+        }
+    } catch (error) {
+        console.error('Password reset email error:', error);
+        if (window.showNotification) {
+            window.showNotification(error.message || 'Error sending reset email', 'error');
+        }
+        return { success: false, error: error.message };
+    }
+}
+
+// Reset password with token
+async function resetPasswordWithToken(token, newPassword) {
+    try {
+        const response = await fetch(`${window.API_BASE_URL}/api/auth/reset-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token, newPassword })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            if (window.showNotification) {
+                window.showNotification('Password reset successful! You can now log in.', 'success');
+            }
+            return { success: true };
+        } else {
+            throw new Error(data.error || 'Failed to reset password');
+        }
+    } catch (error) {
+        console.error('Password reset error:', error);
+        if (window.showNotification) {
+            window.showNotification(error.message || 'Error resetting password', 'error');
+        }
+        return { success: false, error: error.message };
+    }
+}
+
+// UI handler for forgot password
+async function handleForgotPassword() {
+    const email = document.getElementById('resetEmail').value.trim();
+    
+    if (!email) {
+        if (window.showNotification) {
+            window.showNotification('Please enter your email address', 'error');
+        }
+        return;
+    }
+    
+    if (!email.includes('@')) {
+        if (window.showNotification) {
+            window.showNotification('Please enter a valid email address', 'error');
+        }
+        return;
+    }
+    
+    // Show loading state
+    const button = document.querySelector('#forgotPasswordForm .auth-btn');
+    const originalText = button.textContent;
+    button.textContent = 'Sending...';
+    button.disabled = true;
+    
+    const result = await sendPasswordResetEmail(email);
+    
+    // Reset button state
+    button.textContent = originalText;
+    button.disabled = false;
+    
+    if (result.success) {
+        // Show success message and go back to login
+        setTimeout(() => {
+            showLogin();
+        }, 2000);
+    }
+}
+
+// UI handler for resetting password
+async function handleResetPassword() {
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (!newPassword || !confirmPassword) {
+        if (window.showNotification) {
+            window.showNotification('Please fill in both password fields', 'error');
+        }
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        if (window.showNotification) {
+            window.showNotification('Password must be at least 6 characters', 'error');
+        }
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        if (window.showNotification) {
+            window.showNotification('Passwords do not match', 'error');
+        }
+        return;
+    }
+    
+    // Get token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('reset_token');
+    
+    if (!token) {
+        if (window.showNotification) {
+            window.showNotification('Invalid or expired reset link', 'error');
+        }
+        return;
+    }
+    
+    // Show loading state
+    const button = document.querySelector('#resetPasswordForm .auth-btn');
+    const originalText = button.textContent;
+    button.textContent = 'Resetting...';
+    button.disabled = true;
+    
+    const result = await resetPasswordWithToken(token, newPassword);
+    
+    // Reset button state
+    button.textContent = originalText;
+    button.disabled = false;
+    
+    if (result.success) {
+        // Clear URL parameters and show login form
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setTimeout(() => {
+            showLogin();
+        }, 2000);
+    }
+}
+
+// Show forgot password form
+function showForgotPassword() {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('signupForm').style.display = 'none';
+    document.getElementById('forgotPasswordForm').style.display = 'block';
+    document.getElementById('resetPasswordForm').style.display = 'none';
+    
+    // Update title
+    document.querySelector('.auth-form h2').textContent = 'Reset Password';
+    
+    // Clear form
+    document.getElementById('resetEmail').value = '';
+}
+
+// Show login form
+function showLogin() {
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('signupForm').style.display = 'none';
+    document.getElementById('forgotPasswordForm').style.display = 'none';
+    document.getElementById('resetPasswordForm').style.display = 'none';
+    
+    // Update title
+    document.querySelector('.auth-form h2').textContent = 'Welcome to VIB3';
+    
+    // Clear error messages
+    const errorDiv = document.getElementById('authError');
+    if (errorDiv) {
+        errorDiv.textContent = '';
+    }
+}
+
+// Show signup form
+function showSignup() {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('signupForm').style.display = 'block';
+    document.getElementById('forgotPasswordForm').style.display = 'none';
+    document.getElementById('resetPasswordForm').style.display = 'none';
+    
+    // Update title
+    document.querySelector('.auth-form h2').textContent = 'Join VIB3';
+}
+
+// Check for reset token on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const resetToken = urlParams.get('reset_token');
+    
+    if (resetToken) {
+        // Show reset password form
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('signupForm').style.display = 'none';
+        document.getElementById('forgotPasswordForm').style.display = 'none';
+        document.getElementById('resetPasswordForm').style.display = 'block';
+        
+        // Update title
+        document.querySelector('.auth-form h2').textContent = 'Set New Password';
+    }
+});
+
 // Make functions globally available
 window.initAuth = initAuth;
 window.getCurrentUser = getCurrentUser;
@@ -187,3 +402,10 @@ window.logout = logout;
 window.handleLogin = handleLogin;
 window.handleSignup = handleSignup;
 window.handleLogout = handleLogout;
+window.sendPasswordResetEmail = sendPasswordResetEmail;
+window.resetPasswordWithToken = resetPasswordWithToken;
+window.handleForgotPassword = handleForgotPassword;
+window.handleResetPassword = handleResetPassword;
+window.showForgotPassword = showForgotPassword;
+window.showLogin = showLogin;
+window.showSignup = showSignup;

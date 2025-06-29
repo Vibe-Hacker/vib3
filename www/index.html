@@ -17,6 +17,9 @@
                 <input type="password" class="auth-input" id="loginPassword" placeholder="Password" required aria-label="Password">
                 <button class="auth-btn" onclick="handleLogin()" aria-label="Sign In">Sign In</button>
                 <div class="auth-switch">
+                    <a onclick="showForgotPassword()" style="color: #ff006e; text-decoration: none; cursor: pointer; font-size: 14px;">Forgot Password?</a>
+                </div>
+                <div class="auth-switch">
                     Don't have an account? <a onclick="showSignup()">Sign up</a>
                 </div>
             </div>
@@ -27,6 +30,21 @@
                 <button class="auth-btn" onclick="handleSignup()" aria-label="Create Account">Create Account</button>
                 <div class="auth-switch">
                     Already have an account? <a onclick="showLogin()">Sign in</a>
+                </div>
+            </div>
+            <div id="forgotPasswordForm" style="display: none;">
+                <input type="email" class="auth-input" id="resetEmail" placeholder="Enter your email address" required aria-label="Email">
+                <button class="auth-btn" onclick="handleForgotPassword()" aria-label="Send Reset Link">Send Reset Link</button>
+                <div class="auth-switch">
+                    Remember your password? <a onclick="showLogin()">Sign in</a>
+                </div>
+            </div>
+            <div id="resetPasswordForm" style="display: none;">
+                <input type="password" class="auth-input" id="newPassword" placeholder="New Password (min 6 chars)" required aria-label="New Password">
+                <input type="password" class="auth-input" id="confirmPassword" placeholder="Confirm New Password" required aria-label="Confirm Password">
+                <button class="auth-btn" onclick="handleResetPassword()" aria-label="Reset Password">Reset Password</button>
+                <div class="auth-switch">
+                    <a onclick="showLogin()">Back to Sign in</a>
                 </div>
             </div>
         </div>
