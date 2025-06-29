@@ -60,26 +60,80 @@ function shareVideo(videoId) {
             ">
                 <h3 style="color: white; margin: 0 0 20px 0; font-size: 18px;">Share Video</h3>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-                    <button onclick="window.open('https://twitter.com/intent/tweet?text=Check out this video!&url=${window.location.origin}/?video=${videoId}', '_blank')" 
-                        style="padding: 12px; background: #1da1f2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
-                        🐦 Twitter
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px;">
+                    <button onclick="window.open('https://www.instagram.com/', '_blank')" 
+                        style="padding: 10px; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        📷<br>Instagram
+                    </button>
+                    
+                    <button onclick="window.open('https://twitter.com/intent/tweet?text=Check out this amazing video on VIB3!&url=${window.location.origin}/?video=${videoId}', '_blank')" 
+                        style="padding: 10px; background: #1da1f2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        🐦<br>Twitter
                     </button>
                     
                     <button onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=${window.location.origin}/?video=${videoId}', '_blank')" 
-                        style="padding: 12px; background: #4267b2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
-                        📘 Facebook
+                        style="padding: 10px; background: #4267b2; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        📘<br>Facebook
                     </button>
                     
-                    <button onclick="window.open('https://wa.me/?text=Check out this video! ${window.location.origin}/?video=${videoId}', '_blank')" 
-                        style="padding: 12px; background: #25d366; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
-                        💬 WhatsApp
+                    <button onclick="window.open('https://wa.me/?text=Check out this amazing video on VIB3! ${window.location.origin}/?video=${videoId}', '_blank')" 
+                        style="padding: 10px; background: #25d366; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        💬<br>WhatsApp
                     </button>
                     
-                    <button onclick="navigator.clipboard.writeText('${window.location.origin}/?video=${videoId}').then(() => alert('Link copied!'))" 
-                        style="padding: 12px; background: #666; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
-                        🔗 Copy Link
+                    <button onclick="window.open('https://t.me/share/url?url=${window.location.origin}/?video=${videoId}&text=Check out this video!', '_blank')" 
+                        style="padding: 10px; background: #0088cc; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        ✈️<br>Telegram
                     </button>
+                    
+                    <button onclick="window.open('https://www.snapchat.com/', '_blank')" 
+                        style="padding: 10px; background: #fffc00; color: black; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        👻<br>Snapchat
+                    </button>
+                    
+                    <button onclick="window.open('https://www.reddit.com/submit?url=${window.location.origin}/?video=${videoId}&title=Check out this video!', '_blank')" 
+                        style="padding: 10px; background: #ff4500; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        🤖<br>Reddit
+                    </button>
+                    
+                    <button onclick="window.open('https://www.linkedin.com/sharing/share-offsite/?url=${window.location.origin}/?video=${videoId}', '_blank')" 
+                        style="padding: 10px; background: #0077b5; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        💼<br>LinkedIn
+                    </button>
+                    
+                    <button onclick="window.open('https://pinterest.com/pin/create/button/?url=${window.location.origin}/?video=${videoId}&description=Check out this video!', '_blank')" 
+                        style="padding: 10px; background: #bd081c; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        📌<br>Pinterest
+                    </button>
+                    
+                    <button onclick="window.open('https://discord.com/', '_blank')" 
+                        style="padding: 10px; background: #7289da; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        🎮<br>Discord
+                    </button>
+                    
+                    <button onclick="window.location.href='mailto:?subject=Check out this VIB3 video!&body=I found this amazing video: ${window.location.origin}/?video=${videoId}'" 
+                        style="padding: 10px; background: #ea4335; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        📧<br>Email
+                    </button>
+                    
+                    <button onclick="navigator.clipboard.writeText('${window.location.origin}/?video=${videoId}').then(() => alert('Link copied to clipboard!'))" 
+                        style="padding: 10px; background: #666; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 11px;">
+                        🔗<br>Copy Link
+                    </button>
+                </div>
+                
+                <div style="border-top: 1px solid #333; padding-top: 15px; margin-top: 5px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <button onclick="alert('Video download feature coming soon!')" 
+                            style="padding: 12px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px;">
+                            ⬇️ Save Video
+                        </button>
+                        
+                        <button onclick="alert('Report feature coming soon!')" 
+                            style="padding: 12px; background: #f44336; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px;">
+                            🚩 Report
+                        </button>
+                    </div>
                 </div>
                 
                 <button onclick="this.closest('div').parentElement.remove()" 
