@@ -235,9 +235,6 @@
                     console.log('🎬 Profile grid computed style:', window.getComputedStyle(profileGrid));
                     
                     if (profileGrid && userVideos.length > 0) {
-                        // Hide loading overlay
-                        const profileLoading = document.getElementById('profileLoading');
-                        if (profileLoading) profileLoading.style.display = 'none';
                         
                         // Clear any existing content first
                         profileGrid.innerHTML = '';
@@ -2261,10 +2258,6 @@
             <!-- Videos will be dynamically inserted here -->
         </div>
         
-        <!-- Feed Loading Overlay -->
-        <div id="feedLoading" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 9999; color: white;">
-            <div>Loading videos...</div>
-        </div>
 
         <!-- Top Header -->
         <div class="feed-header">
@@ -2412,10 +2405,6 @@
             <!-- Profile videos will be loaded here -->
         </div>
         
-        <!-- Profile Loading Overlay -->
-        <div id="profileLoading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 10; color: white;">
-            <div>Loading profile...</div>
-        </div>
     </div>
 
     <!-- Upload Modal -->
@@ -3216,9 +3205,6 @@
             console.log('🎨 First video URL:', videos[0]?.url || videos[0]?.videoUrl || 'No URL');
             console.log('🎨 First video object:', videos[0]);
             
-            // Hide loading overlay
-            const feedLoading = document.getElementById('feedLoading');
-            if (feedLoading) feedLoading.style.display = 'none';
             
             feed.innerHTML = videos.map((video, index) => {
                 // Map video fields - handle both old and new field names

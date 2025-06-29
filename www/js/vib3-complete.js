@@ -7488,14 +7488,12 @@ function openCommentsModal(videoId) {
 function openShareModal(videoId) {
     console.log('📱 Creating TikTok-style share modal for video:', videoId);
     
-    // Show alert to confirm function is called
-    alert('📱 openShareModal called! Creating modal...');
-    
     // Remove any existing share modals first
     document.querySelectorAll('.share-modal').forEach(m => m.remove());
     
     const modal = document.createElement('div');
     modal.className = 'modal share-modal';
+    modal.id = 'test-share-modal-' + Date.now();
     modal.style.cssText = `
         position: fixed !important;
         top: 0 !important;
@@ -7519,12 +7517,24 @@ function openShareModal(videoId) {
         ">
             <h2>TEST MODAL WORKING!</h2>
             <p>Video ID: ${videoId}</p>
-            <button onclick="this.closest('.share-modal').remove();" style="padding: 15px 30px; font-size: 16px;">Close Test Modal</button>
+            <button onclick="document.getElementById('${modal.id}').remove();" style="padding: 15px 30px; font-size: 16px;">Close Test Modal</button>
         </div>
     `;
     
     document.body.appendChild(modal);
-    console.log('✅ Test modal created and added to body');
+    console.log('✅ Test modal created and added to body with ID:', modal.id);
+    
+    // Check if modal still exists after 1 second
+    setTimeout(() => {
+        const stillExists = document.getElementById(modal.id);
+        if (stillExists) {
+            console.log('✅ Modal still exists after 1 second');
+            alert('Modal should be visible now! Red background with white box.');
+        } else {
+            console.log('❌ Modal was removed! Something deleted it.');
+            alert('❌ Modal was deleted by something else!');
+        }
+    }, 1000);
 }
 
 function viewProfile(username) {
