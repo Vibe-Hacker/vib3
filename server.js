@@ -1838,6 +1838,7 @@ app.get('/api/videos', async (req, res) => {
         
         console.log(`Processing ${feed} feed for user: ${currentUserId || 'anonymous'}`);
         
+        console.log(`🔍 Feed parameter received: "${feed}" (type: ${typeof feed})`);
         switch(feed) {
             case 'foryou':
                 // For You: Personalized algorithm based on interests and trends
