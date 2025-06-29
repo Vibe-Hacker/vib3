@@ -51,76 +51,71 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Simple API test endpoint (before static files)
+// Simple API test endpoint (before static files) - NOW SERVES VIDEOS TOO
 app.get('/api/test', async (req, res) => {
     console.log('🧪 Test endpoint hit with query:', req.query);
     
-    // If this is a video feed request, handle it here  
-    console.log('🔍 Query params check:', req.query);
-    const hasQueryParams = Object.keys(req.query).length > 0;
-    console.log('🔍 Has query params:', hasQueryParams);
-    if (hasQueryParams && (req.query.feed || req.query.limit || req.query._t)) {
-        console.log('🎬 VIDEO FEED REQUEST via /api/test!');
-        
-        if (!db) {
-            return res.json({ videos: [] });
-        }
-        
-        try {
-            const { limit = 10, feed = 'foryou' } = req.query;
-            
-            // Get videos from database
-            const videos = await db.collection('videos')
-                .find({ status: { $ne: 'deleted' } })
-                .sort({ createdAt: -1 })
-                .limit(parseInt(limit) * 2)
-                .toArray();
-                
-            console.log(`📹 Found ${videos.length} videos in database`);
-                
-            // FORCE RANDOMIZATION - this will work!
-            const shuffled = videos.sort(() => Math.random() - 0.5).slice(0, parseInt(limit));
-            console.log(`🎲 Shuffled! Original first 3: [${videos.slice(0,3).map(v => v._id)}]`);
-            console.log(`🎲 Shuffled! New first 3: [${shuffled.slice(0,3).map(v => v._id)}]`);
-            
-            // Add user data
-            for (const video of shuffled) {
-                try {
-                    const user = await db.collection('users').findOne(
-                        { _id: new ObjectId(video.userId) },
-                        { projection: { password: 0 } }
-                    );
-                    video.user = user || { username: 'Unknown User', displayName: 'Unknown' };
-                    video.likeCount = video.likes?.length || 0;
-                    video.commentCount = 0;
-                    video.shareCount = 0;
-                    video.feedType = feed;
-                    video.thumbnailUrl = video.videoUrl + '#t=1';
-                } catch (e) {
-                    console.log('User lookup error:', e);
-                }
-            }
-            
-            return res.json({ 
-                videos: shuffled,
-                success: true,
-                randomized: true,
-                timestamp: new Date().toISOString(),
-                message: 'Videos loaded with randomization!'
-            });
-            
-        } catch (error) {
-            console.error('Video feed error:', error);
-            return res.json({ videos: [], error: error.message });
-        }
+    if (!db) {
+        return res.json({ 
+            message: 'API is working', 
+            timestamp: new Date().toISOString(),
+            database: 'not connected'
+        });
     }
     
-    // Normal test response
-    res.json({ 
-        message: 'API is working', 
-        timestamp: new Date().toISOString(),
-        database: !!db ? 'connected' : 'not connected'
-    });
+    try {
+        const { limit = 10, feed = 'foryou' } = req.query;
+        
+        // Get videos from database
+        const videos = await db.collection('videos')
+            .find({ status: { $ne: 'deleted' } })
+            .sort({ createdAt: -1 })
+            .limit(parseInt(limit) * 2)
+            .toArray();
+            
+        console.log(`📹 Found ${videos.length} videos in database`);
+            
+        // FORCE RANDOMIZATION
+        const shuffled = videos.sort(() => Math.random() - 0.5).slice(0, parseInt(limit));
+        console.log(`🎲 Original order: [${videos.slice(0,3).map(v => v._id)}]`);
+        console.log(`🎲 Shuffled order: [${shuffled.slice(0,3).map(v => v._id)}]`);
+        
+        // Add user data
+        for (const video of shuffled) {
+            try {
+                const user = await db.collection('users').findOne(
+                    { _id: new ObjectId(video.userId) },
+                    { projection: { password: 0 } }
+                );
+                video.user = user || { username: 'Unknown User', displayName: 'Unknown' };
+                video.likeCount = video.likes?.length || 0;
+                video.commentCount = 0;
+                video.shareCount = 0;
+                video.feedType = feed;
+                video.thumbnailUrl = video.videoUrl + '#t=1';
+            } catch (e) {
+                console.log('User lookup error:', e);
+            }
+        }
+        
+        res.json({ 
+            videos: shuffled,
+            message: 'Videos with randomization',
+            randomized: true,
+            timestamp: new Date().toISOString(),
+            database: 'connected'
+        });
+        
+    } catch (error) {
+        console.error('Video feed error:', error);
+        res.json({ 
+            videos: [], 
+            error: error.message,
+            message: 'API is working', 
+            timestamp: new Date().toISOString(),
+            database: 'connected but error'
+        });
+    }
 });
 
 // WORKING VIDEO FEED - using test pattern that works
