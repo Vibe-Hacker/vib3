@@ -3575,10 +3575,14 @@
                     const video = entry.target.querySelector('.video-player');
                     if (video) {
                         if (entry.isIntersecting) {
+                            // Restart video from beginning when it comes into view
+                            video.currentTime = 0;
                             video.play();
                             currentVideoIndex = parseInt(entry.target.dataset.index) || 0;
+                            console.log('▶️ Video restarted:', currentVideoIndex);
                         } else {
                             video.pause();
+                            console.log('⏸️ Video paused:', entry.target.dataset.index);
                         }
                     }
                 });
