@@ -194,22 +194,34 @@
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
-        z-index: 1000 !important;
+        z-index: 999999 !important;
         background: #000 !important;
         padding: 20px !important;
         padding-bottom: 100px !important;
         overflow-y: auto !important;
         margin: 0 !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
     
-    /* Hide video feed when on other pages */
-    .profile-page.active ~ .video-feed,
-    .messages-page.active ~ .video-feed,
-    #profilePage ~ .video-feed,
-    #messagesPage ~ .video-feed {
+    /* Force hide all other content when profile is shown */
+    body.profile-active .video-feed,
+    body.profile-active .sidebar,
+    body.profile-active .video-header,
+    body.profile-active #mainApp {
         display: none !important;
+        visibility: hidden !important;
+        z-index: -1 !important;
+    }
+    
+    /* Ensure profile page container styles */
+    #profilePage * {
+        max-width: 100% !important;
     }
 }
 

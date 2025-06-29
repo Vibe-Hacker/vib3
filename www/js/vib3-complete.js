@@ -4652,14 +4652,29 @@ function loadMusicTracks(category) {
 function showPage(page) {
     // Mobile-specific page handling
     if (window.innerWidth <= 767) {
-        // Hide video feed on mobile when showing other pages
+        // Remove all body classes first
+        document.body.classList.remove('profile-active', 'messages-active', 'activity-active');
+        
+        // Hide all content and show specific page
         const videoFeed = document.querySelector('.video-feed');
         const mainApp = document.getElementById('mainApp');
+        const sidebar = document.querySelector('.sidebar');
+        const videoHeader = document.querySelector('.video-header');
         
-        if (page !== 'feed' && page !== 'foryou' && page !== 'following') {
+        if (page === 'profile') {
+            // Add body class for profile
+            document.body.classList.add('profile-active');
+            // Force hide other content
+            if (videoFeed) videoFeed.style.display = 'none';
+            if (sidebar) sidebar.style.display = 'none';
+            if (videoHeader) videoHeader.style.display = 'none';
+            if (mainApp) mainApp.style.display = 'none';
+        } else if (page !== 'feed' && page !== 'foryou' && page !== 'following') {
             if (videoFeed) videoFeed.style.display = 'none';
         } else {
+            // Show video feed for home pages
             if (videoFeed) videoFeed.style.display = 'block';
+            if (mainApp) mainApp.style.display = 'block';
         }
     }
     
