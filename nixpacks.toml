@@ -2,4 +2,4 @@
 cmds = ["npm install"]
 
 [start]
-cmd = "node server-fresh.js"
+cmd = "node server.js"
