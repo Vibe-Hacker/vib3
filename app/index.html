@@ -235,9 +235,13 @@
                     console.log('🎬 Profile grid computed style:', window.getComputedStyle(profileGrid));
                     
                     if (profileGrid && userVideos.length > 0) {
+                        // Hide loading overlay
+                        const profileLoading = document.getElementById('profileLoading');
+                        if (profileLoading) profileLoading.style.display = 'none';
+                        
                         // Clear any existing content first
                         profileGrid.innerHTML = '';
-                        profileGrid.style.cssText = 'display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 1px !important;';
+                        profileGrid.style.cssText = 'display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 1px !important; background: #000 !important;';
                         
                         profileGrid.innerHTML = userVideos.map((video, index) => {
                             const videoId = video._id || video.id;
@@ -2405,10 +2409,13 @@
             <div class="profile-tab" onclick="switchProfileTab('private')">Private</div>
         </div>
         
-        <div class="profile-grid" id="profileGrid">
-            <div class="loading-placeholder" style="grid-column: 1/-1; text-align: center; padding: 50px; color: #666;">
-                Loading videos...
-            </div>
+        <div class="profile-grid" id="profileGrid" style="background: #000;">
+            <!-- Profile videos will be loaded here -->
+        </div>
+        
+        <!-- Profile Loading Overlay -->
+        <div id="profileLoading" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 10; color: white;">
+            <div>Loading profile...</div>
         </div>
     </div>
 
