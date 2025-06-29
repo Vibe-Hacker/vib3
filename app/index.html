@@ -709,32 +709,7 @@
             background: #000;
         }
         
-        /* Video loading state */
-        .video-item::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 40px;
-            height: 40px;
-            margin: -20px 0 0 -20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            z-index: 2;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .video-item.loading::before {
-            opacity: 1;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        /* Remove loading spinner */
 
         .video-player {
             width: 100%;
@@ -812,22 +787,10 @@
             display: none !important;
         }
         
-        /* Hide ALL possible video control elements */
+        /* Simple video control hiding */
         video::-webkit-media-controls-start-playback-button,
-        video::-webkit-media-controls-overlay-play-button,
-        video::-webkit-media-controls-overlay-enclosure,
-        video::-webkit-media-controls-enclosure,
-        video::-webkit-media-controls-panel {
+        video::-webkit-media-controls-overlay-play-button {
             display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            -webkit-appearance: none !important;
-            pointer-events: none !important;
-        }
-        
-        /* Force videos to appear immediately when ready */
-        .video-player[data-ready] {
-            opacity: 1 !important;
         }
         
         .profile-video-thumb:not([data-ready]) {
@@ -3455,24 +3418,20 @@
                 console.log(`🎬 Video ${index}: src=${videoSrc}, id=${videoId}, user=${username}`);
                 
                 return `
-                <div class="video-item loading" data-index="${index}">
+                <div class="video-item" data-index="${index}">
                     <video class="video-player" 
                            src="${videoSrc}" 
-                           ${index === 0 ? 'autoplay' : ''}
+                           autoplay
                            loop 
-                           muted
                            playsinline 
                            webkit-playsinline
                            x5-playsinline
-                           preload="metadata"
+                           preload="auto"
                            controls="false"
                            controlslist="nodownload nofullscreen noremoteplayback"
                            disablepictureinpicture
                            onclick="togglePlayPause(this)"
                            ondblclick="likeVideo('${videoId}', event)"
-                           onloadstart="console.log('🎥 Video loading started for:', '${videoSrc}')"
-                           onloadeddata="console.log('🎥 Video data loaded for:', '${videoSrc}')"
-                           oncanplay="this.setAttribute('data-ready', 'true'); console.log('🎥 Video can play:', '${videoSrc}')"
                            style="background: #000 !important; -webkit-appearance: none;"
                     </video>
                     
@@ -3520,8 +3479,19 @@
                 </div>`;
             }).join('');
             
-            // Autoplay is now handled in HTML - only first video has autoplay attribute
-            console.log('✅ Videos rendered with first video autoplay enabled');
+            // Auto-play only the first video
+            if (videos.length > 0) {
+                setTimeout(() => {
+                    const firstVideo = feed.querySelector('.video-player');
+                    if (firstVideo) {
+                        // Pause all other videos first
+                        const allVideos = feed.querySelectorAll('.video-player');
+                        allVideos.forEach((v, i) => {
+                            if (i > 0) v.pause(); // Only pause videos after the first
+                        });
+                    }
+                }, 100);
+            }
             
             setupVideoObserver();
         }
