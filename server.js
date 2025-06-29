@@ -1852,7 +1852,7 @@ app.get('/api/videos', async (req, res) => {
                     .toArray();
                 
                 // Apply engagement-based algorithm and randomization
-                videos = await applyEngagementRanking(videos, currentUserId);
+                videos = await applyEngagementRanking(videos, db);
                 videos = shuffleArray(videos); // Randomize order
                 videos = videos.slice(actualSkip, actualSkip + parseInt(limit)); // Apply pagination after shuffle
                 break;
