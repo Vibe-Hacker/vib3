@@ -61,6 +61,61 @@ app.get('/api/test', (req, res) => {
     });
 });
 
+// WORKING VIDEO FEED - using test pattern that works
+app.get('/api/test-videos', async (req, res) => {
+    console.log('🎬 WORKING VIDEO ENDPOINT hit with query:', req.query);
+    
+    if (!db) {
+        return res.json({ videos: [] });
+    }
+    
+    try {
+        const { limit = 10, feed = 'foryou' } = req.query;
+        
+        // Get videos from database
+        const videos = await db.collection('videos')
+            .find({ status: { $ne: 'deleted' } })
+            .sort({ createdAt: -1 })
+            .limit(parseInt(limit) * 2)
+            .toArray();
+            
+        console.log(`📹 Found ${videos.length} videos in database`);
+            
+        // FORCE RANDOMIZATION - this will work!
+        const shuffled = videos.sort(() => Math.random() - 0.5).slice(0, parseInt(limit));
+        console.log(`🎲 Shuffled from [${videos.slice(0,3).map(v => v._id)}] to [${shuffled.slice(0,3).map(v => v._id)}]`);
+        
+        // Add user data
+        for (const video of shuffled) {
+            try {
+                const user = await db.collection('users').findOne(
+                    { _id: new ObjectId(video.userId) },
+                    { projection: { password: 0 } }
+                );
+                video.user = user || { username: 'Unknown User', displayName: 'Unknown' };
+                video.likeCount = video.likes?.length || 0;
+                video.commentCount = 0;
+                video.shareCount = 0;
+                video.feedType = feed;
+                video.thumbnailUrl = video.videoUrl + '#t=1';
+            } catch (e) {
+                console.log('User lookup error:', e);
+            }
+        }
+        
+        res.json({ 
+            videos: shuffled,
+            success: true,
+            randomized: true,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('Test videos endpoint error:', error);
+        res.json({ videos: [], error: error.message });
+    }
+});
+
 // BYPASS: Alternative video feed endpoint to avoid routing conflicts
 app.get('/api/feed-bypass', async (req, res) => {
     console.log('🚀 BYPASS endpoint hit - this should work!');

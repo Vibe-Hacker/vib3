@@ -691,7 +691,8 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
             
             // Add cache busting to prevent stale data
             const timestamp = Date.now();
-            const response = await fetch(`${window.API_BASE_URL}/api/videos?feed=${feedType}&page=${page}&limit=10&_t=${timestamp}`, {
+            // BYPASS: Use working endpoint to fix randomization
+            const response = await fetch(`${window.API_BASE_URL}/api/test-videos?feed=${feedType}&limit=10&_t=${timestamp}`, {
                 headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
             });
             
