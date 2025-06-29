@@ -2718,6 +2718,18 @@
         let isLoading = false;
         let currentVideoIndex = 0;
         
+        // Define critical functions immediately
+        window.togglePlayPause = function(video) {
+            console.log('🎬 Toggle play/pause called, video paused:', video.paused);
+            if (video.paused) {
+                video.play();
+                console.log('▶️ Playing video');
+            } else {
+                video.pause();
+                console.log('⏸️ Pausing video');
+            }
+        };
+        
         // Core navigation functions - defined IMMEDIATELY
         function hideAllPages() {
             const mainApp = document.getElementById('mainApp');
@@ -3301,19 +3313,6 @@
         }
 
         // Video control functions
-        function togglePlayPause(video) {
-            console.log('🎬 Toggle play/pause called, video paused:', video.paused);
-            if (video.paused) {
-                video.play();
-                console.log('▶️ Playing video');
-            } else {
-                video.pause();
-                console.log('⏸️ Pausing video');
-            }
-        }
-        
-        // Make sure it's globally accessible
-        window.togglePlayPause = togglePlayPause;
 
         function likeVideo(videoId, event) {
             const likeIcon = document.getElementById(`like-${videoId}`);
