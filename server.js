@@ -1809,8 +1809,9 @@ app.post('/api/auth/logout', requireAuth, (req, res) => {
 
 // Get all videos (feed)
 app.get('/api/videos', async (req, res) => {
-    console.log('API /videos called with query:', req.query);
-    console.log('Database connected:', !!db);
+    console.log('🚨 URGENT DEBUG: /api/videos endpoint hit at', new Date().toISOString());
+    console.log('🚨 Query params:', req.query);
+    console.log('🚨 Database connected:', !!db);
     
     if (!db) {
         console.log('No database connection, returning empty');
@@ -2088,7 +2089,8 @@ app.get('/api/videos', async (req, res) => {
                 timestamp: new Date().toISOString(),
                 feedType: feed,
                 algorithmsApplied: ['final-shuffle'],
-                firstThreeIds: videos.slice(0,3).map(v => v._id)
+                firstThreeIds: videos.slice(0,3).map(v => v._id),
+                serverVersion: 'DEBUG-VERSION-2025-06-29'
             }
         });
         
