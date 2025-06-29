@@ -1989,7 +1989,12 @@ app.get('/api/videos', async (req, res) => {
                     videos = await applyMLRecommendations(videos, req.user, db);
                 }
                 
-                // Apply pagination after ranking
+                // Shuffle for randomization (TikTok-style)
+                console.log(`🎲 DEFAULT: Before shuffle: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
+                videos = shuffleArray(videos);
+                console.log(`🎲 DEFAULT: After shuffle: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
+                
+                // Apply pagination after ranking and shuffle
                 const startIndex = actualSkip;
                 const endIndex = startIndex + parseInt(limit);
                 videos = videos.slice(startIndex, endIndex);
