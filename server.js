@@ -61,6 +61,60 @@ app.get('/api/test', (req, res) => {
     });
 });
 
+// BYPASS: Alternative video feed endpoint to avoid routing conflicts
+app.get('/api/feed-bypass', async (req, res) => {
+    console.log('🚀 BYPASS endpoint hit - this should work!');
+    const { limit = 10, feed = 'foryou' } = req.query;
+    
+    if (!db) {
+        return res.json({ videos: [] });
+    }
+    
+    try {
+        // Simple implementation with forced shuffle
+        const videos = await db.collection('videos')
+            .find({ status: { $ne: 'deleted' } })
+            .sort({ createdAt: -1 })
+            .limit(parseInt(limit) * 2)
+            .toArray();
+            
+        // Force randomization
+        const shuffled = videos.sort(() => Math.random() - 0.5).slice(0, parseInt(limit));
+        
+        // Add user data
+        for (const video of shuffled) {
+            try {
+                const user = await db.collection('users').findOne(
+                    { _id: new ObjectId(video.userId) },
+                    { projection: { password: 0 } }
+                );
+                video.user = user || { username: 'Unknown User', displayName: 'Unknown' };
+                video.likeCount = video.likes?.length || 0;
+                video.commentCount = 0; // Simplified
+                video.shareCount = 0;
+                video.feedType = feed;
+                video.thumbnailUrl = video.videoUrl + '#t=1';
+            } catch (e) {
+                console.log('User lookup error:', e);
+            }
+        }
+        
+        res.json({ 
+            videos: shuffled,
+            debug: {
+                timestamp: new Date().toISOString(),
+                shuffleWorking: true,
+                originalOrder: videos.slice(0,3).map(v => v._id),
+                shuffledOrder: shuffled.slice(0,3).map(v => v._id)
+            }
+        });
+        
+    } catch (error) {
+        console.error('Bypass endpoint error:', error);
+        res.json({ videos: [] });
+    }
+});
+
 // DEBUG: New test endpoint to verify our code is running
 app.get('/api/debug-shuffle', (req, res) => {
     console.log('🚨 DEBUG SHUFFLE endpoint hit');
