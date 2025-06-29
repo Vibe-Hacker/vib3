@@ -691,8 +691,8 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
             
             // Add cache busting to prevent stale data
             const timestamp = Date.now();
-            // GUARANTEED WORKING: Use same pattern as /health endpoint
-            const response = await fetch(`${window.API_BASE_URL}/videos-random?limit=10&_t=${timestamp}`, {
+            // ROOT LEVEL ENDPOINT: Use /feed like /health
+            const response = await fetch(`${window.API_BASE_URL}/feed?limit=10&_t=${timestamp}`, {
                 headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
             });
             
