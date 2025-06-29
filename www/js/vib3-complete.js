@@ -7488,53 +7488,65 @@ function openCommentsModal(videoId) {
 function openShareModal(videoId) {
     console.log('📱 Creating TikTok-style share modal for video:', videoId);
     
-    // Remove any existing share modals first
-    document.querySelectorAll('.share-modal').forEach(m => m.remove());
+    // Remove any existing modals first
+    document.querySelectorAll('[id^="test-share-modal"]').forEach(m => m.remove());
     
     const modal = document.createElement('div');
-    modal.className = 'modal share-modal';
+    // Don't use any existing CSS classes that might be styled
     modal.id = 'test-share-modal-' + Date.now();
-    modal.style.cssText = `
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        background: red !important;
-        z-index: 999999999 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        pointer-events: all !important;
+    
+    // Apply styles directly to avoid CSS conflicts
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.backgroundColor = 'red';
+    modal.style.zIndex = '2147483647'; // Maximum z-index
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.pointerEvents = 'all';
+    
+    const innerDiv = document.createElement('div');
+    innerDiv.style.backgroundColor = 'white';
+    innerDiv.style.padding = '30px';
+    innerDiv.style.borderRadius = '15px';
+    innerDiv.style.textAlign = 'center';
+    innerDiv.style.color = 'black';
+    innerDiv.style.fontSize = '16px';
+    
+    innerDiv.innerHTML = `
+        <h2 style="color: black; margin: 0 0 15px 0;">TEST MODAL WORKING!</h2>
+        <p style="color: black; margin: 0 0 15px 0;">Video ID: ${videoId}</p>
+        <button onclick="document.getElementById('${modal.id}').remove();" style="padding: 15px 30px; font-size: 16px; background: blue; color: white; border: none; border-radius: 5px; cursor: pointer;">Close Test Modal</button>
     `;
     
-    modal.innerHTML = `
-        <div style="
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-        ">
-            <h2>TEST MODAL WORKING!</h2>
-            <p>Video ID: ${videoId}</p>
-            <button onclick="document.getElementById('${modal.id}').remove();" style="padding: 15px 30px; font-size: 16px;">Close Test Modal</button>
-        </div>
-    `;
-    
+    modal.appendChild(innerDiv);
     document.body.appendChild(modal);
-    console.log('✅ Test modal created and added to body with ID:', modal.id);
+    console.log('✅ Standalone test modal created with ID:', modal.id);
     
-    // Check if modal still exists after 1 second
+    // Force a repaint
+    modal.offsetHeight;
+    
+    // Check if modal is visible
     setTimeout(() => {
         const stillExists = document.getElementById(modal.id);
-        if (stillExists) {
-            console.log('✅ Modal still exists after 1 second');
-            alert('Modal should be visible now! Red background with white box.');
+        const computedStyle = stillExists ? window.getComputedStyle(stillExists) : null;
+        
+        if (stillExists && computedStyle) {
+            console.log('Modal styles:', {
+                display: computedStyle.display,
+                visibility: computedStyle.visibility,
+                opacity: computedStyle.opacity,
+                zIndex: computedStyle.zIndex,
+                position: computedStyle.position
+            });
+            alert('Modal exists! Check console for style info. Do you see a red background?');
         } else {
-            console.log('❌ Modal was removed! Something deleted it.');
-            alert('❌ Modal was deleted by something else!');
+            alert('❌ Modal was deleted!');
         }
-    }, 1000);
+    }, 500);
 }
 
 function viewProfile(username) {
