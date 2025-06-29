@@ -55,8 +55,9 @@ app.get('/health', (req, res) => {
 app.get('/api/test', async (req, res) => {
     console.log('🧪 Test endpoint hit with query:', req.query);
     
-    // If this is a video feed request, handle it here
-    if (req.query.feed) {
+    // If this is a video feed request, handle it here  
+    console.log('🔍 Query params check:', req.query);
+    if (req.query.feed || req.query.limit) {
         console.log('🎬 VIDEO FEED REQUEST via /api/test!');
         
         if (!db) {
