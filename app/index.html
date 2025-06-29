@@ -2392,6 +2392,7 @@
             <div class="profile-actions">
                 <button class="profile-btn primary" onclick="editProfile()">Edit profile</button>
                 <button class="profile-btn" onclick="shareProfile()">Share profile</button>
+                <button class="profile-btn" onclick="debugProfile()" style="background: #333;">Debug</button>
             </div>
         </div>
         
@@ -2789,6 +2790,20 @@
             const shareSheet = document.getElementById('shareSheet');
             if (shareSheet) {
                 shareSheet.style.display = 'block';
+            }
+        };
+        
+        // Debug function to check profile loading
+        window.debugProfile = function() {
+            console.log('🔍 DEBUG Profile state:');
+            console.log('- window.currentUser:', window.currentUser);
+            console.log('- localStorage currentUser:', localStorage.getItem('currentUser'));
+            console.log('- token:', localStorage.getItem('token'));
+            
+            // Try to load profile data manually
+            if (window.loadProfileData) {
+                console.log('🔍 Calling loadProfileData manually...');
+                window.loadProfileData();
             }
         };
         
