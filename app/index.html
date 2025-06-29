@@ -17,9 +17,6 @@
                 <input type="password" class="auth-input" id="loginPassword" placeholder="Password" required aria-label="Password">
                 <button class="auth-btn" onclick="handleLogin()" aria-label="Sign In">Sign In</button>
                 <div class="auth-switch">
-                    <a onclick="showForgotPassword()" style="color: #ff006e; text-decoration: none; cursor: pointer; font-size: 14px;">Forgot Password?</a>
-                </div>
-                <div class="auth-switch">
                     Don't have an account? <a onclick="showSignup()">Sign up</a>
                 </div>
             </div>
@@ -30,21 +27,6 @@
                 <button class="auth-btn" onclick="handleSignup()" aria-label="Create Account">Create Account</button>
                 <div class="auth-switch">
                     Already have an account? <a onclick="showLogin()">Sign in</a>
-                </div>
-            </div>
-            <div id="forgotPasswordForm" style="display: none;">
-                <input type="email" class="auth-input" id="resetEmail" placeholder="Enter your email address" required aria-label="Email">
-                <button class="auth-btn" onclick="handleForgotPassword()" aria-label="Send Reset Link">Send Reset Link</button>
-                <div class="auth-switch">
-                    Remember your password? <a onclick="showLogin()">Sign in</a>
-                </div>
-            </div>
-            <div id="resetPasswordForm" style="display: none;">
-                <input type="password" class="auth-input" id="newPassword" placeholder="New Password (min 6 chars)" required aria-label="New Password">
-                <input type="password" class="auth-input" id="confirmPassword" placeholder="Confirm New Password" required aria-label="Confirm Password">
-                <button class="auth-btn" onclick="handleResetPassword()" aria-label="Reset Password">Reset Password</button>
-                <div class="auth-switch">
-                    <a onclick="showLogin()">Back to Sign in</a>
                 </div>
             </div>
         </div>
@@ -1109,25 +1091,6 @@
         <div class="toast" id="toast"></div>
     </div>
 
-    <!-- Mobile Bottom Navigation -->
-    <div class="bottom-nav" id="bottomNav">
-        <button class="nav-item" onclick="showPage('feed')" data-page="feed">
-            <span class="nav-icon">🏠</span>
-        </button>
-        <button class="nav-item" onclick="showPage('discover')" data-page="discover">
-            <span class="nav-icon">🔍</span>
-        </button>
-        <button class="nav-item record-btn" onclick="showCreateVideoModal()">
-            <span class="nav-icon">+</span>
-        </button>
-        <button class="nav-item" onclick="showPage('messages')" data-page="messages">
-            <span class="nav-icon">💬</span>
-        </button>
-        <button class="nav-item" onclick="showPage('profile')" data-page="profile">
-            <span class="nav-icon">👤</span>
-        </button>
-    </div>
-
     <!-- Load MongoDB adapter and auth-simple, then complete VIB3 app -->
     <script src="js/mongodb-adapter.js"></script>
     <script src="js/auth-simple.js"></script>
@@ -1137,7 +1100,6 @@
     <script src="js/comments-simple.js"></script>
     <script src="js/search-simple.js"></script>
     <script src="js/vib3-complete.js"></script>
-    <script src="js/video-simple.js"></script>
     
     <!-- Auto-testing and fixing scripts for development -->
     <script>
