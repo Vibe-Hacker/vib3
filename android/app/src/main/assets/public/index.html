@@ -3122,11 +3122,11 @@
                 
                 // Try multiple API endpoints to find videos - prioritize working endpoints
                 const endpoints = [
-                    `/api/videos`,           // Main videos endpoint (confirmed working)
-                    `/api/videos/all`,       // All videos
-                    `/api/videos/${currentFeed}`,
-                    `/api/videos/feed/${currentFeed}`,
-                    `/api/feed/${currentFeed}`
+                    `${window.API_BASE_URL}/api/videos`,           // Main videos endpoint (confirmed working)
+                    `${window.API_BASE_URL}/api/videos/all`,       // All videos
+                    `${window.API_BASE_URL}/api/videos/${currentFeed}`,
+                    `${window.API_BASE_URL}/api/videos/feed/${currentFeed}`,
+                    `${window.API_BASE_URL}/api/feed/${currentFeed}`
                 ];
                 
                 let videos = [];
@@ -3333,7 +3333,7 @@
             }
             
             // Send like to server
-            fetch(`/api/videos/${videoId}/like`, {
+            fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
@@ -3548,7 +3548,7 @@
             const token = localStorage.getItem('token');
             if (token) {
                 // Check if token is valid
-                fetch('/api/auth/me', {
+                fetch('https://vib3-production.up.railway.app/api/auth/me', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 })
                 .then(response => response.json())
