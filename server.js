@@ -1844,13 +1844,17 @@ app.get('/api/videos', async (req, res) => {
                 console.log('🎯 For You Algorithm: Personalized content');
                 // For You feed should show ALL users' videos, not filtered by userId
                 query = { status: { $ne: 'deleted' } };
-                // Mix of popular and recent content with engagement weighting
+                // Get larger pool for randomization and apply algorithm
                 videos = await db.collection('videos')
                     .find(query)
-                    .sort({ createdAt: -1 }) // Start with recent, we'll shuffle for algorithm effect
-                    .skip(actualSkip)
-                    .limit(parseInt(limit))
+                    .sort({ createdAt: -1 })
+                    .limit(Math.max(50, parseInt(limit) * 3)) // Get larger pool
                     .toArray();
+                
+                // Apply engagement-based algorithm and randomization
+                videos = await applyEngagementRanking(videos, currentUserId);
+                videos = shuffleArray(videos); // Randomize order
+                videos = videos.slice(actualSkip, actualSkip + parseInt(limit)); // Apply pagination after shuffle
                 break;
                 
             case 'following':
@@ -4747,6 +4751,16 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
     console.log('🧪 Test endpoint available at: /api/test');
     console.log('========================================');
 });
+
+// Helper Functions
+function shuffleArray(array) {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
