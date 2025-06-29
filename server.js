@@ -1852,8 +1852,11 @@ app.get('/api/videos', async (req, res) => {
                     .toArray();
                 
                 // Apply engagement-based algorithm and randomization
+                console.log(`🎲 Before shuffle: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
                 videos = await applyEngagementRanking(videos, db);
+                console.log(`📊 After engagement ranking: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
                 videos = shuffleArray(videos); // Randomize order
+                console.log(`🎲 After shuffle: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
                 videos = videos.slice(actualSkip, actualSkip + parseInt(limit)); // Apply pagination after shuffle
                 break;
                 
