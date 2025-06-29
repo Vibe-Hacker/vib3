@@ -1,42 +1,120 @@
-/* Comprehensive Responsive Design */
+/* Comprehensive Responsive Design - Mobile First */
 
-/* Large Desktop (1200px+) */
+/* Default Mobile Styles (apply to all screen sizes first) */
+.sidebar {
+    display: none !important;
+}
+
+.video-header {
+    display: none !important;
+}
+
+.video-feed {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    width: 100vw !important;
+    height: calc(100vh - 80px) !important;
+    padding: 0 !important;
+}
+
+.bottom-nav {
+    display: flex !important;
+}
+
+.video-item {
+    width: 100vw !important;
+    height: calc(100vh - 80px) !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+
+.video-container {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+}
+
+.video-actions {
+    position: absolute !important;
+    right: 15px !important;
+    bottom: 100px !important;
+}
+
+/* Large Desktop (1200px+) - Override mobile styles */
 @media (min-width: 1200px) {
     .sidebar {
-        display: flex;
-        width: 260px;
+        display: flex !important;
+        width: 260px !important;
     }
     
     .video-header {
-        left: 260px;
-        width: calc(100vw - 260px);
+        display: block !important;
+        left: 260px !important;
+        width: calc(100vw - 260px) !important;
     }
     
     .video-feed {
-        margin-left: 260px;
-        width: calc(100vw - 260px);
+        margin-left: 260px !important;
+        margin-top: 60px !important;
+        width: calc(100vw - 260px) !important;
+        height: calc(100vh - 60px) !important;
+        padding: 20px !important;
+    }
+    
+    .video-item {
+        width: auto !important;
+        height: auto !important;
+        margin: 0 0 20px 0 !important;
+        border-radius: 15px !important;
+    }
+    
+    .video-container {
+        border-radius: 15px !important;
+    }
+    
+    .video-actions {
+        position: relative !important;
+        right: auto !important;
+        bottom: auto !important;
     }
     
     .bottom-nav {
-        display: none;
+        display: none !important;
     }
 }
 
 /* Medium Desktop (992px - 1199px) */
 @media (min-width: 992px) and (max-width: 1199px) {
     .sidebar {
-        display: flex;
-        width: 220px;
+        display: flex !important;
+        width: 220px !important;
     }
     
     .video-header {
-        left: 220px;
-        width: calc(100vw - 220px);
+        display: block !important;
+        left: 220px !important;
+        width: calc(100vw - 220px) !important;
     }
     
     .video-feed {
-        margin-left: 220px;
-        width: calc(100vw - 220px);
+        margin-left: 220px !important;
+        margin-top: 60px !important;
+        width: calc(100vw - 220px) !important;
+        height: calc(100vh - 60px) !important;
+        padding: 20px !important;
+    }
+    
+    .video-item {
+        width: auto !important;
+        height: auto !important;
+        margin: 0 0 20px 0 !important;
+        border-radius: 15px !important;
+    }
+    
+    .video-actions {
+        position: relative !important;
+        right: auto !important;
+        bottom: auto !important;
     }
     
     .sidebar-text {
@@ -44,15 +122,42 @@
     }
     
     .bottom-nav {
-        display: none;
+        display: none !important;
     }
 }
 
 /* Small Desktop/Tablet (768px - 991px) */
 @media (min-width: 768px) and (max-width: 991px) {
     .sidebar {
-        display: flex;
-        width: 180px;
+        display: flex !important;
+        width: 180px !important;
+    }
+    
+    .video-header {
+        display: block !important;
+        left: 180px !important;
+        width: calc(100vw - 180px) !important;
+    }
+    
+    .video-feed {
+        margin-left: 180px !important;
+        margin-top: 60px !important;
+        width: calc(100vw - 180px) !important;
+        height: calc(100vh - 60px) !important;
+        padding: 20px !important;
+    }
+    
+    .video-item {
+        width: auto !important;
+        height: auto !important;
+        margin: 0 0 20px 0 !important;
+        border-radius: 15px !important;
+    }
+    
+    .video-actions {
+        position: relative !important;
+        right: auto !important;
+        bottom: auto !important;
     }
     
     .sidebar-text {
@@ -64,103 +169,16 @@
         justify-content: center;
     }
     
-    .video-header {
-        left: 180px;
-        width: calc(100vw - 180px);
-    }
-    
-    .video-feed {
-        margin-left: 180px;
-        width: calc(100vw - 180px);
-    }
-    
     .header-search {
         max-width: 300px;
     }
     
     .bottom-nav {
-        display: none;
+        display: none !important;
     }
 }
 
-/* Large Mobile (600px - 767px) */
-@media (min-width: 600px) and (max-width: 767px) {
-    .sidebar {
-        display: none !important;
-    }
-    
-    .video-header {
-        left: 0;
-        width: 100vw;
-        padding: 0 15px;
-    }
-    
-    .video-feed {
-        margin-left: 0 !important;
-        margin-top: 60px !important;
-        width: 100vw !important;
-        height: calc(100vh - 60px - 80px) !important;
-    }
-    
-    .header-search {
-        max-width: 250px;
-    }
-    
-    .bottom-nav {
-        display: flex !important;
-    }
-    
-    /* Make videos mobile-friendly */
-    .video-item {
-        width: 100vw !important;
-        height: calc(100vh - 140px) !important;
-        margin: 0 !important;
-        border-radius: 0 !important;
-    }
-}
-
-/* Small Mobile (up to 599px) */
-@media (max-width: 599px) {
-    .sidebar {
-        display: none !important;
-    }
-    
-    .video-header {
-        display: none !important;
-    }
-    
-    .video-feed {
-        margin-left: 0 !important;
-        margin-top: 0 !important;
-        width: 100vw !important;
-        height: calc(100vh - 80px) !important;
-        padding: 0 !important;
-    }
-    
-    .bottom-nav {
-        display: flex !important;
-    }
-    
-    /* Make videos full screen on mobile */
-    .video-item {
-        width: 100vw !important;
-        height: calc(100vh - 80px) !important;
-        margin: 0 !important;
-        border-radius: 0 !important;
-    }
-    
-    .video-container {
-        width: 100% !important;
-        height: 100% !important;
-        border-radius: 0 !important;
-    }
-    
-    .video-actions {
-        position: absolute !important;
-        right: 15px !important;
-        bottom: 100px !important;
-    }
-}
+/* Mobile devices below 768px will use the default mobile styles defined above */
 
 /* Viewport height adjustments for console/dev tools */
 @media (max-height: 600px) {
