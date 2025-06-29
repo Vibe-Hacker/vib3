@@ -245,10 +245,10 @@ async function loadUserVideos() {
         console.log('🎬 Loading user videos:', { baseURL, hasAuthToken: !!window.authToken });
         
         const response = await fetch(`${baseURL}/api/user/videos`, {
-            credentials: 'include', // Use session-based auth
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
-                ...(window.authToken && window.authToken !== 'session-based' ? 
+                ...(window.authToken ? 
                     { 'Authorization': `Bearer ${window.authToken}` } : {})
             }
         });
@@ -274,10 +274,10 @@ async function loadUserStats() {
         console.log('📊 Loading user stats:', { baseURL, hasAuthToken: !!window.authToken });
         
         const response = await fetch(`${baseURL}/api/user/stats`, {
-            credentials: 'include', // Use session-based auth
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
-                ...(window.authToken && window.authToken !== 'session-based' ? 
+                ...(window.authToken ? 
                     { 'Authorization': `Bearer ${window.authToken}` } : {})
             }
         });
