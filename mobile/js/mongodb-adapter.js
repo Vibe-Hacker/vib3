@@ -104,6 +104,10 @@ async function signInWithEmailAndPassword(authObj, email, password) {
     // Trigger auth state change
     auth._triggerCallbacks(data.user);
     
+    // Dispatch login event for mobile UI
+    console.log('🚀 Dispatching userLoggedIn event with user:', data.user);
+    window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: data.user }));
+    
     return { user: data.user };
 }
 
@@ -126,6 +130,10 @@ async function createUserWithEmailAndPassword(authObj, email, password) {
     
     // Trigger auth state change
     auth._triggerCallbacks(data.user);
+    
+    // Dispatch login event for mobile UI
+    console.log('🚀 Dispatching userLoggedIn event with user:', data.user);
+    window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: data.user }));
     
     return { user: data.user };
 }

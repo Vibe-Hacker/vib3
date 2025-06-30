@@ -81,6 +81,8 @@ async function logout() {
 // Mobile UI Handler functions (called from HTML)
 async function handleLogin() {
     console.log('📱 Mobile handleLogin called');
+    console.log('📱 window.auth available:', !!window.auth);
+    console.log('📱 window.signInWithEmailAndPassword available:', !!window.signInWithEmailAndPassword);
     
     const emailInput = document.getElementById('loginEmail');
     const passwordInput = document.getElementById('loginPassword');

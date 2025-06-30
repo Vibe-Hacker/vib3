@@ -60,6 +60,14 @@ function initMobileApp() {
         }
     });
     
+    // Listen for login events from MongoDB adapter
+    window.addEventListener('userLoggedIn', (event) => {
+        console.log('📱 Mobile received userLoggedIn event:', event.detail);
+        currentUser = event.detail;
+        showMainApp();
+        loadMobileFeed();
+    });
+    
     console.log('✅ Mobile app initialized');
 }
 
