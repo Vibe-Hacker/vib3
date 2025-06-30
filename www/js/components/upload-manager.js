@@ -1478,6 +1478,10 @@ class UploadManager {
                 
                 <!-- Action Buttons -->
                 <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                    <button id="cancelRecordingBtn" 
+                            style="padding: 12px 24px; background: #333; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 600;">
+                        ✕ Cancel
+                    </button>
                     <button id="retakeVideoBtn" 
                             style="padding: 12px 24px; background: #666; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 600;">
                         🔄 Retake
@@ -1497,6 +1501,15 @@ class UploadManager {
         reviewVideo.src = URL.createObjectURL(videoBlob);
 
         // Set up button event listeners
+        document.getElementById('cancelRecordingBtn').addEventListener('click', () => {
+            console.log('Cancel recording clicked');
+            reviewModal.remove();
+            // Clean up the blob URL
+            URL.revokeObjectURL(reviewVideo.src);
+            // Return to main upload options
+            this.createFullscreenUploadPage();
+        });
+
         document.getElementById('retakeVideoBtn').addEventListener('click', () => {
             console.log('Retake video clicked');
             reviewModal.remove();
