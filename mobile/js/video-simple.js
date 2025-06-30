@@ -255,39 +255,174 @@ window.downloadVideo = downloadVideo;
 window.shareViaSMS = shareViaSMS;
 window.copyToClipboardFallback = copyToClipboardFallback;
 
-// Robust clipboard copy function with multiple fallbacks
+// Robust clipboard copy function with immediate visible fallback
 function copyToClipboardFallback(text, successMessage = 'Copied to clipboard!') {
     console.log('📋 Attempting to copy to clipboard:', text);
     
-    // Ensure document has focus before attempting clipboard operations
-    if (document.hasFocus && !document.hasFocus()) {
-        console.log('📋 Document not focused, focusing first');
-        window.focus();
-        document.body.focus();
-    }
+    // Skip trying problematic APIs and go straight to reliable visible method
+    // This ensures consistent UX regardless of browser/focus state
+    showMobileCopyInterface(text, successMessage);
+}
+
+// Mobile-optimized copy interface
+function showMobileCopyInterface(text, successMessage) {
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+    `;
     
-    // Method 1: Modern Clipboard API (requires HTTPS and user interaction)
-    if (navigator.clipboard && window.isSecureContext) {
-        // Try direct clipboard API
-        navigator.clipboard.writeText(text).then(() => {
-            console.log('✅ Clipboard API success');
-            if (window.showNotification) {
-                window.showNotification(successMessage, 'success');
+    // Create copy container - mobile optimized
+    const container = document.createElement('div');
+    container.style.cssText = `
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        width: 100%;
+        max-width: 350px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        text-align: center;
+    `;
+    
+    // Add title
+    const title = document.createElement('h3');
+    title.textContent = 'Copy Video Link';
+    title.style.cssText = `
+        margin: 0 0 20px 0;
+        color: #333;
+        font-size: 20px;
+    `;
+    
+    // Add textarea with the link - mobile friendly
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.cssText = `
+        width: 100%;
+        height: 100px;
+        border: 2px solid #FF0050;
+        border-radius: 12px;
+        padding: 16px;
+        font-size: 16px;
+        font-family: monospace;
+        resize: none;
+        margin-bottom: 20px;
+        box-sizing: border-box;
+        line-height: 1.4;
+    `;
+    
+    // Add mobile-specific instruction
+    const instruction = document.createElement('p');
+    instruction.textContent = 'Tap and hold the text above, then select "Copy"';
+    instruction.style.cssText = `
+        margin: 0 0 20px 0;
+        color: #666;
+        font-size: 16px;
+        line-height: 1.4;
+    `;
+    
+    // Add buttons container
+    const buttons = document.createElement('div');
+    buttons.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    `;
+    
+    // Try auto-copy button
+    const autoCopyBtn = document.createElement('button');
+    autoCopyBtn.textContent = 'Try Auto Copy';
+    autoCopyBtn.style.cssText = `
+        background: #FF0050;
+        color: white;
+        border: none;
+        padding: 16px 24px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        width: 100%;
+    `;
+    
+    // Close button
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'Close';
+    closeBtn.style.cssText = `
+        background: #666;
+        color: white;
+        border: none;
+        padding: 16px 24px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 16px;
+        width: 100%;
+    `;
+    
+    // Auto-copy functionality
+    autoCopyBtn.onclick = () => {
+        textarea.focus();
+        textarea.select();
+        textarea.setSelectionRange(0, text.length);
+        
+        // Small delay for mobile
+        setTimeout(() => {
+            try {
+                const success = document.execCommand('copy');
+                if (success) {
+                    if (window.showNotification) {
+                        window.showNotification(successMessage, 'success');
+                    }
+                    document.body.removeChild(overlay);
+                } else {
+                    autoCopyBtn.textContent = 'Auto Copy Failed - Use Manual Method Above';
+                    autoCopyBtn.style.background = '#ff6b6b';
+                    autoCopyBtn.style.fontSize = '14px';
+                }
+            } catch (err) {
+                autoCopyBtn.textContent = 'Auto Copy Failed - Use Manual Method Above';
+                autoCopyBtn.style.background = '#ff6b6b';
+                autoCopyBtn.style.fontSize = '14px';
             }
-        }).catch((err) => {
-            console.log('❌ Clipboard API failed:', err.name, err.message);
-            // If it's a focus/permission issue, try with user interaction
-            if (err.name === 'NotAllowedError' || err.message.includes('focused')) {
-                console.log('📋 Retrying clipboard with user interaction simulation');
-                retryClipboardWithFocus(text, successMessage);
-            } else {
-                fallbackCopyMethod(text, successMessage);
-            }
-        });
-    } else {
-        console.log('📋 Clipboard API not available, using fallback');
-        fallbackCopyMethod(text, successMessage);
-    }
+        }, 100);
+    };
+    
+    // Close functionality
+    closeBtn.onclick = () => {
+        document.body.removeChild(overlay);
+    };
+    
+    // Touch outside to close
+    overlay.onclick = (e) => {
+        if (e.target === overlay) {
+            document.body.removeChild(overlay);
+        }
+    };
+    
+    // Assemble and show
+    buttons.appendChild(autoCopyBtn);
+    buttons.appendChild(closeBtn);
+    container.appendChild(title);
+    container.appendChild(textarea);
+    container.appendChild(instruction);
+    container.appendChild(buttons);
+    overlay.appendChild(container);
+    document.body.appendChild(overlay);
+    
+    // Auto-select text after a moment
+    setTimeout(() => {
+        textarea.focus();
+        textarea.select();
+    }, 200);
 }
 
 // Retry clipboard with better focus handling
