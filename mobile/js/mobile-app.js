@@ -54,7 +54,17 @@ function initMobileApp() {
         if (user) {
             currentUser = user;
             showMainApp();
-            loadMobileFeed();
+            
+            // Check if this is a shared video link
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedVideoId = urlParams.get('video');
+            
+            if (sharedVideoId) {
+                console.log('📱 Loading shared video on auth state change:', sharedVideoId);
+                loadSharedVideo(sharedVideoId);
+            } else {
+                loadMobileFeed();
+            }
         } else {
             showAuth();
         }
@@ -65,7 +75,17 @@ function initMobileApp() {
         console.log('📱 Mobile received userLoggedIn event:', event.detail);
         currentUser = event.detail;
         showMainApp();
-        loadMobileFeed();
+        
+        // Check if this is a shared video link
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedVideoId = urlParams.get('video');
+        
+        if (sharedVideoId) {
+            console.log('📱 Loading shared video:', sharedVideoId);
+            loadSharedVideo(sharedVideoId);
+        } else {
+            loadMobileFeed();
+        }
     });
     
     console.log('✅ Mobile app initialized');
@@ -127,6 +147,41 @@ function showMobileProfile() {
         item.classList.remove('active');
     });
     document.querySelector('.nav-item:last-child').classList.add('active');
+}
+
+// Load shared video for mobile
+async function loadSharedVideo(videoId) {
+    const feed = document.getElementById('videoFeed');
+    
+    // Show loading state
+    feed.innerHTML = `
+        <div class="loading-message">
+            <div class="loading-spinner"></div>
+            <div>Loading shared video...</div>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.video) {
+            console.log('📱 Loaded shared video:', data.video);
+            videos = [data.video]; // Single video array
+            renderMobileVideos();
+        } else {
+            console.error('❌ Failed to load shared video:', data);
+            showNoVideos();
+        }
+    } catch (error) {
+        console.error('❌ Error loading shared video:', error);
+        showNoVideos();
+    }
 }
 
 // Mobile video feed
@@ -295,6 +350,7 @@ function toggleVideoAudio(index) {
 window.showNotification = showNotification;
 window.showMobilePage = showMobilePage;
 window.loadMobileFeed = loadMobileFeed;
+window.loadSharedVideo = loadSharedVideo;
 window.toggleMobileVideoPlayback = toggleMobileVideoPlayback;
 window.likeVideo = likeVideo;
 window.showComments = showComments;

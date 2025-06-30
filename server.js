@@ -1096,8 +1096,11 @@ app.get('/', (req, res, next) => {
     console.log(`📱 Device detection: ${isMobile ? 'MOBILE' : 'DESKTOP'} - User-Agent: ${userAgent}`);
     
     if (isMobile) {
-        console.log('📱 Redirecting mobile device to /mobile');
-        return res.redirect('/mobile');
+        // Preserve query parameters when redirecting to mobile
+        const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+        const redirectUrl = `/mobile${queryString}`;
+        console.log(`📱 Redirecting mobile device to ${redirectUrl}`);
+        return res.redirect(redirectUrl);
     } else {
         console.log('🖥️ Serving desktop version');
         // Continue to static file serving for www
