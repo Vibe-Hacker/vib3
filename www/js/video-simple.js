@@ -257,56 +257,96 @@ function copyToClipboardFallback(text, successMessage = 'Copied to clipboard!') 
     }
 }
 
-// Fallback method using execCommand
+// Fallback method using execCommand with enhanced compatibility
 function fallbackCopyMethod(text, successMessage) {
     try {
-        // Create a temporary textarea element
+        // Check if execCommand is supported
+        if (!document.queryCommandSupported || !document.queryCommandSupported('copy')) {
+            console.log('📋 execCommand copy not supported, showing manual prompt');
+            manualCopyPrompt(text);
+            return;
+        }
+        
+        // Create a temporary textarea element with better styling
         const textArea = document.createElement('textarea');
         textArea.value = text;
+        textArea.readOnly = true;
         
-        // Style it to be invisible
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        textArea.style.opacity = '0';
-        textArea.style.zIndex = '-1';
+        // Better invisible styling
+        textArea.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            border: none;
+            outline: none;
+            boxShadow: none;
+            background: transparent;
+            fontSize: 16px;
+            zIndex: -1000;
+        `;
         
         document.body.appendChild(textArea);
         
-        // Focus and select the text
+        // Enhanced selection for better compatibility
         textArea.focus();
         textArea.select();
-        textArea.setSelectionRange(0, 99999); // For mobile devices
         
-        // Try to copy
-        const successful = document.execCommand('copy');
-        document.body.removeChild(textArea);
-        
-        if (successful) {
-            console.log('✅ Fallback copy successful');
-            if (window.showNotification) {
-                window.showNotification(successMessage, 'success');
-            }
-        } else {
-            console.log('❌ Fallback copy failed');
-            manualCopyPrompt(text);
+        // For mobile devices
+        if (textArea.setSelectionRange) {
+            textArea.setSelectionRange(0, text.length);
         }
+        
+        // Small delay to ensure focus
+        setTimeout(() => {
+            try {
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (successful) {
+                    console.log('✅ Fallback copy successful');
+                    if (window.showNotification) {
+                        window.showNotification(successMessage, 'success');
+                    }
+                } else {
+                    console.log('❌ execCommand returned false');
+                    manualCopyPrompt(text);
+                }
+            } catch (execErr) {
+                console.log('❌ execCommand exception:', execErr);
+                document.body.removeChild(textArea);
+                manualCopyPrompt(text);
+            }
+        }, 10);
+        
     } catch (err) {
-        console.log('❌ Fallback copy error:', err);
+        console.log('❌ Fallback copy setup error:', err);
         manualCopyPrompt(text);
     }
 }
 
-// Final fallback - show text for manual copying
+// Final fallback - show text for manual copying with better UX
 function manualCopyPrompt(text) {
     console.log('📋 Showing manual copy prompt');
     
-    // Try to prompt user to copy manually
-    if (window.prompt) {
-        window.prompt('Copy this text manually (Ctrl+C / Cmd+C):', text);
+    // Create a modal-like prompt for better UX
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (window.showNotification) {
+        window.showNotification('Auto-copy failed. Please copy the link manually.', 'info');
+    }
+    
+    // For mobile, use alert since prompt is better
+    if (isMobile) {
+        alert(`Copy this link:\n\n${text}\n\nTap and hold to select all, then copy.`);
     } else {
-        // Last resort - show in alert
-        alert('Please copy this manually: ' + text);
+        // For desktop, use prompt which allows easy selection
+        const copied = window.prompt('Auto-copy failed. Please copy this link manually (Ctrl+C):', text);
+        if (copied !== null) {
+            console.log('📋 User manually copied:', copied);
+        }
     }
 }
 
