@@ -1599,8 +1599,11 @@ class UploadManager {
         const titleElement = document.getElementById('videoTitle');
         const descriptionElement = document.getElementById('videoDescription');
         
-        const title = titleElement ? titleElement.value.trim() : '';
+        let title = titleElement ? titleElement.value.trim() : '';
         const description = descriptionElement ? descriptionElement.value.trim() : '';
+        
+        // Title is now optional since server validation was removed
+        console.log('🎬 Video title (optional):', title || 'No title provided');
 
         // CRITICAL: Stop ALL videos BEFORE proceeding with upload UI
         console.log('Stopping all videos before upload...');
