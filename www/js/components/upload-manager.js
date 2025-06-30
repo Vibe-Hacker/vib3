@@ -1698,6 +1698,13 @@ class UploadManager {
             }
             
             console.log('🚀 Uploading to MongoDB API:', `${window.API_BASE_URL}/api/upload/video`);
+            console.log('🔍 Upload request debug:', {
+                apiBaseUrl: window.API_BASE_URL,
+                authToken: window.authToken ? `${window.authToken.substring(0, 8)}...` : 'none',
+                hasCurrentUser: !!window.currentUser,
+                fileSize: this.selectedVideoFile.size,
+                fileName: this.selectedVideoFile.name
+            });
             
             // Simulate progress updates during upload since fetch doesn't provide native progress
             const progressInterval = setInterval(() => {
@@ -1726,7 +1733,12 @@ class UploadManager {
             if (!response.ok) {
                 // Handle upload error
                 const errorText = await response.text();
-                console.error('Upload failed:', errorText);
+                console.error('❌ Upload failed:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url,
+                    errorText: errorText
+                });
                 
                 let userMessage = 'Upload failed. Please try again.';
                 try {
