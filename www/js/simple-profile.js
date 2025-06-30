@@ -242,9 +242,23 @@ async function loadUserProfileData() {
 async function loadUserVideos() {
     try {
         const baseURL = getAPIBaseURL();
-        console.log('🎬 Loading user videos:', { baseURL, hasAuthToken: !!window.authToken });
+        console.log('🎬 Loading user videos:', { 
+            baseURL, 
+            hasAuthToken: !!window.authToken,
+            currentUser: window.currentUser ? {
+                uid: window.currentUser.uid,
+                _id: window.currentUser._id,
+                username: window.currentUser.username
+            } : null
+        });
         
-        const response = await fetch(`${baseURL}/api/user/videos`, {
+        // Add userId parameter to ensure we get the right user's videos
+        const userId = window.currentUser?._id || window.currentUser?.uid;
+        const url = userId ? `${baseURL}/api/user/videos?userId=${userId}` : `${baseURL}/api/user/videos`;
+        
+        console.log('🔍 Fetching user videos from:', url);
+        
+        const response = await fetch(url, {
             credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
@@ -257,11 +271,25 @@ async function loadUserVideos() {
         
         if (response.ok) {
             const data = await response.json();
-            console.log('✅ User videos loaded:', data);
+            console.log('✅ User videos loaded:', {
+                count: data.videos?.length || 0,
+                videos: data.videos?.map(v => ({
+                    id: v._id,
+                    title: v.title,
+                    userId: v.userId,
+                    username: v.username,
+                    createdAt: v.createdAt
+                })) || []
+            });
             displayUserVideos(data.videos || []);
         } else {
             const text = await response.text();
-            console.error('❌ Videos API failed:', { status: response.status, text: text.substring(0, 200) });
+            console.error('❌ Videos API failed:', { 
+                status: response.status, 
+                text: text.substring(0, 200),
+                url: url,
+                currentUser: window.currentUser
+            });
         }
     } catch (error) {
         console.error('Error loading user videos:', error);

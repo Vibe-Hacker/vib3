@@ -1,0 +1,19 @@
+tree f080e0f2b61ce4ac8773d6a0d7062c9b85e4c21b
+parent 571785eb66370fe564b4c81e350d3ed1fd44d4dc
+author VIBE <vibe@vib3app.com> 1750537186 -0500
+committer VIBE <vibe@vib3app.com> 1750537186 -0500
+
+Fix video recording functionality and modal flickering
+
+- Added toggleRecording() function for main record button
+- Fixed video element ID references (editorPreview vs videoEditorPreview)
+- Added recording timer with proper start/stop functionality
+- Fixed modal flickering by proper modal state management
+- Hide upload modal during recording to prevent interference
+- Store camera stream globally for reliable access
+- Improved error handling and camera selection flow
+- Added visual feedback for recording state (button changes, timer color)
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>

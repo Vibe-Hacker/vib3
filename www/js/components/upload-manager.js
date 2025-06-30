@@ -1673,9 +1673,17 @@ class UploadManager {
             
             // Add user information for proper association
             if (window.currentUser) {
-                formData.append('userId', window.currentUser.uid);
+                // Use _id for MongoDB consistency, fallback to uid for Firebase compatibility
+                const userId = window.currentUser._id || window.currentUser.uid;
+                formData.append('userId', userId);
                 formData.append('username', window.currentUser.username || window.currentUser.email);
-                formData.append('userAvatar', window.currentUser.avatar || '👤');
+                formData.append('userAvatar', window.currentUser.avatar || window.currentUser.profilePicture || '👤');
+                
+                console.log('🔑 Upload user info:', {
+                    userId: userId,
+                    username: window.currentUser.username || window.currentUser.email,
+                    hasCurrentUser: !!window.currentUser
+                });
             }
             
             console.log('🚀 Uploading to MongoDB API:', `${window.API_BASE_URL}/api/upload/video`);
@@ -1755,9 +1763,26 @@ class UploadManager {
                 // Close upload modal and restore content
                 this.closeUploadModal();
                 
-                // Refresh feeds after successful upload
+                // Refresh feeds and profile after successful upload
                 if (window.loadAllVideosForFeed) {
+                    console.log('🔄 Refreshing main video feed...');
                     window.loadAllVideosForFeed();
+                }
+                
+                // Also refresh user videos if on profile page
+                if (window.loadUserVideos && typeof window.loadUserVideos === 'function') {
+                    console.log('🔄 Refreshing user profile videos...');
+                    setTimeout(() => {
+                        window.loadUserVideos();
+                    }, 1000);
+                }
+                
+                // Update user stats to reflect new video count
+                if (window.loadUserStats && typeof window.loadUserStats === 'function') {
+                    console.log('📊 Refreshing user stats...');
+                    setTimeout(() => {
+                        window.loadUserStats();
+                    }, 1500);
                 }
             }, 2000);
             

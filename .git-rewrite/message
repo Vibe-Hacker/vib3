@@ -1,0 +1,14 @@
+Fix video recording functionality and modal flickering
+
+- Added toggleRecording() function for main record button
+- Fixed video element ID references (editorPreview vs videoEditorPreview)
+- Added recording timer with proper start/stop functionality
+- Fixed modal flickering by proper modal state management
+- Hide upload modal during recording to prevent interference
+- Store camera stream globally for reliable access
+- Improved error handling and camera selection flow
+- Added visual feedback for recording state (button changes, timer color)
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
