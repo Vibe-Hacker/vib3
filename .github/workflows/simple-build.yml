@@ -1,0 +1,40 @@
+name: Simple APK Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+        
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.9'
+        
+    - name: Flutter Doctor
+      run: flutter doctor -v
+        
+    - name: Get Dependencies
+      working-directory: vib3_flutter
+      run: flutter pub get
+        
+    - name: Build APK
+      working-directory: vib3_flutter
+      run: flutter build apk --debug --no-shrink
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: vib3-app
+        path: vib3_flutter/build/app/outputs/flutter-apk/app-debug.apk
