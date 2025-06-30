@@ -19,13 +19,13 @@ const auth = {
     onAuthStateChanged: function(callback) {
         this._callbacks.push(callback);
         
-        // Check if this is a shared video link - if so, don't auto-login
+        // Check if this is a shared video link - if so, don't auto-login (but allow manual login)
         const urlParams = new URLSearchParams(window.location.search);
         const sharedVideoId = urlParams.get('video');
-        const isSharedLink = sharedVideoId && !window.location.pathname.includes('/app');
+        const isSharedLink = sharedVideoId && window.location.pathname.includes('/mobile');
         
         if (isSharedLink) {
-            console.log('🔗 Shared video link detected - skipping auto-login');
+            console.log('🔗 Mobile shared video link detected - skipping auto-login but allowing manual login');
             callback(null);
             return;
         }
