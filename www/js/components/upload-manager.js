@@ -1248,23 +1248,40 @@ class UploadManager {
                 console.log('Hid fullscreen upload page');
             }
 
+            // Check available cameras first
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoInputs = devices.filter(device => device.kind === 'videoinput');
+            
+            console.log('📷 Available cameras:', videoInputs.length);
+            videoInputs.forEach((device, index) => {
+                console.log(`   Camera ${index + 1}: ${device.label || 'Unknown Camera'} (ID: ${device.deviceId})`);
+            });
+
+            // Use specific device ID if available, fallback to facingMode
+            let videoConstraints = { 
+                width: { ideal: 3840, max: 3840 },
+                height: { ideal: 2160, max: 2160 },
+                frameRate: { ideal: 60, max: 60 }
+            };
+
+            if (videoInputs.length > 1) {
+                // Multiple cameras available - use facingMode
+                videoConstraints.facingMode = this.currentFacingMode;
+                console.log('🎯 Using facingMode:', this.currentFacingMode);
+            } else if (videoInputs.length === 1) {
+                // Only one camera - use its device ID
+                videoConstraints.deviceId = videoInputs[0].deviceId;
+                console.log('📷 Single camera detected, using device ID');
+            }
+
             console.log('Attempting to get user media with constraints:', {
-                video: { 
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
-                    facingMode: this.currentFacingMode
-                },
+                video: videoConstraints,
                 audio: true
             });
 
             // Get camera stream
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { 
-                    width: { ideal: 3840, max: 3840 },
-                    height: { ideal: 2160, max: 2160 },
-                    frameRate: { ideal: 60, max: 60 },
-                    facingMode: this.currentFacingMode
-                },
+                video: videoConstraints,
                 audio: true
             });
 
@@ -1529,15 +1546,93 @@ class UploadManager {
         });
     }
 
-    switchCamera() {
-        // Toggle between front and back camera
-        this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
+    async switchCamera() {
+        console.log('🔄 Switching camera from', this.currentFacingMode);
         
-        // Restart camera with new facing mode
-        this.closeCameraModal();
-        setTimeout(() => {
-            this.recordVideo();
-        }, 100);
+        try {
+            // Check available cameras first
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoInputs = devices.filter(device => device.kind === 'videoinput');
+            
+            console.log('📷 Available cameras:', videoInputs.length);
+            videoInputs.forEach((device, index) => {
+                console.log(`   Camera ${index + 1}: ${device.label || 'Unknown Camera'}`);
+            });
+            
+            if (videoInputs.length < 2) {
+                if (window.showToast) {
+                    window.showToast('Only one camera available on this device');
+                }
+                return;
+            }
+            
+            // Toggle between front and back camera
+            this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
+            console.log('🔄 Switching to:', this.currentFacingMode);
+            
+            // Stop current stream
+            if (this.currentCameraStream) {
+                this.currentCameraStream.getTracks().forEach(track => track.stop());
+                this.currentCameraStream = null;
+            }
+            
+            // Get new stream with updated facing mode
+            const newStream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    width: { ideal: 3840, max: 3840 },
+                    height: { ideal: 2160, max: 2160 },
+                    frameRate: { ideal: 60, max: 60 },
+                    facingMode: this.currentFacingMode
+                },
+                audio: true
+            });
+            
+            // Update video preview
+            const video = document.getElementById('cameraPreview');
+            if (video) {
+                video.srcObject = newStream;
+                this.currentCameraStream = newStream;
+                console.log('📷 Camera switched successfully');
+                
+                if (window.showToast) {
+                    const cameraType = this.currentFacingMode === 'user' ? 'Front' : 'Back';
+                    window.showToast(`Switched to ${cameraType} camera 📷`);
+                }
+            }
+            
+        } catch (error) {
+            console.error('❌ Camera switch error:', error);
+            
+            if (error.name === 'OverconstrainedError') {
+                console.log('Requested camera not available, falling back to default');
+                // Try with any available camera
+                try {
+                    const fallbackStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: true
+                    });
+                    
+                    const video = document.getElementById('cameraPreview');
+                    if (video) {
+                        video.srcObject = fallbackStream;
+                        this.currentCameraStream = fallbackStream;
+                    }
+                    
+                    if (window.showToast) {
+                        window.showToast('Using available camera');
+                    }
+                } catch (fallbackError) {
+                    console.error('❌ Fallback camera error:', fallbackError);
+                    if (window.showToast) {
+                        window.showToast('Failed to switch camera');
+                    }
+                }
+            } else {
+                if (window.showToast) {
+                    window.showToast('Camera switch failed - ' + error.message);
+                }
+            }
+        }
     }
 
     closeCameraModal() {
