@@ -2524,6 +2524,12 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
         }
 
         console.log(`🎬 Processing video upload: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB)`);
+        console.log('🔍 Upload user association debug:', {
+            sessionUserId: req.user?.userId,
+            bodyUserId: userId,
+            bodyUsername: username,
+            willUse: req.user.userId || userId
+        });
 
         // Check for bypass flag for development/testing
         const bypassProcessing = req.body.bypassProcessing === 'true' || process.env.BYPASS_VIDEO_PROCESSING === 'true';
@@ -2848,7 +2854,11 @@ app.get('/api/user/videos', async (req, res) => {
             return res.status(400).json({ error: 'User ID required' });
         }
         
-        console.log(`Getting videos for user: ${targetUserId}`);
+        console.log('🔍 User videos query debug:', {
+            targetUserId: targetUserId,
+            targetUserIdType: typeof targetUserId,
+            query: { userId: targetUserId, status: { $ne: 'deleted' } }
+        });
         
         const videos = await db.collection('videos')
             .find({ userId: targetUserId, status: { $ne: 'deleted' } })
@@ -2857,7 +2867,25 @@ app.get('/api/user/videos', async (req, res) => {
             .limit(parseInt(limit))
             .toArray();
         
-        console.log(`Found ${videos.length} videos for user ${targetUserId}`);
+        console.log(`📊 Found ${videos.length} videos for user ${targetUserId}`);
+        
+        // Debug: Show some sample video userIds for comparison
+        if (videos.length > 0) {
+            console.log('🔍 Sample video userIds:', videos.slice(0, 3).map(v => ({
+                videoId: v._id.toString(),
+                userId: v.userId,
+                userIdType: typeof v.userId
+            })));
+        } else {
+            // Let's see what userIds exist in the videos collection
+            const sampleVideos = await db.collection('videos').find({}).limit(5).toArray();
+            console.log('🔍 Sample videos in DB:', sampleVideos.map(v => ({
+                videoId: v._id.toString(),
+                userId: v.userId,
+                userIdType: typeof v.userId,
+                title: v.title
+            })));
+        }
         
         // Get user info and engagement counts for each video
         for (const video of videos) {
