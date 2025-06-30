@@ -1,0 +1,20 @@
+# Build outputs
+build/
+.dart_tool/
+
+# IDE
+.idea/
+*.iml
+
+# Android
+android/.gradle/
+android/build/
+android/local.properties
+
+# Large files
+*.zip
+*.tar.gz
+
+# Generated files
+.flutter-plugins-dependencies
+.packages
