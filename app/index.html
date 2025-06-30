@@ -131,6 +131,375 @@
             loadFeed();
         }
         
+        // Define loadFeed function early so showApp can call it
+        let isLoading = false;
+        let currentFeed = 'foryou';
+        
+        window.loadFeed = async function loadFeed() {
+            if (isLoading) return;
+            isLoading = true;
+            
+            try {
+                const token = localStorage.getItem('token');
+                console.log('🎬 Loading video feed...');
+                console.log('🔍 Current feed:', currentFeed);
+                console.log('🔍 API Base URL:', window.API_BASE_URL);
+                console.log('🔍 Token available:', !!token);
+                console.log('🔍 Current user:', currentUser?.username || 'No user');
+                
+                // Try multiple API endpoints to find videos - prioritize working endpoints  
+                const endpoints = [
+                    `${window.API_BASE_URL}/feed`,                 // Root feed endpoint (CONFIRMED WORKING) - Load all available videos
+                    `${window.API_BASE_URL}/api/videos`,           // Main videos endpoint
+                    `${window.API_BASE_URL}/api/videos/all`,       // All videos
+                    `${window.API_BASE_URL}/api/videos/${currentFeed}`,
+                    `${window.API_BASE_URL}/api/videos/feed/${currentFeed}`,
+                    `${window.API_BASE_URL}/api/feed/${currentFeed}`
+                ];
+                
+                console.log('🎯 Trying endpoints:', endpoints);
+                
+                let videos = [];
+                let success = false;
+                
+                // Try each endpoint until one works
+                for (const endpoint of endpoints) {
+                    try {
+                        console.log(`🔍 Trying endpoint: ${endpoint}`);
+                        const response = await fetch(endpoint, {
+                            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log(`✅ Success from ${endpoint}:`, data);
+                            
+                            // Handle different response formats
+                            if (data.videos) {
+                                videos = data.videos;
+                            } else if (Array.isArray(data)) {
+                                videos = data;
+                            } else {
+                                console.log('⚠️ Unexpected response format:', data);
+                                continue;
+                            }
+                            
+                            if (videos && videos.length > 0) {
+                                console.log(`🎬 Found ${videos.length} videos from ${endpoint}`);
+                                success = true;
+                                break;
+                            }
+                        } else {
+                            console.log(`❌ Failed ${endpoint}: ${response.status}`);
+                        }
+                    } catch (endpointError) {
+                        console.log(`❌ Error with ${endpoint}:`, endpointError);
+                    }
+                }
+                
+                if (success && videos.length > 0) {
+                    console.log('🎬 Loading videos into feed:', videos.length);
+                    renderVideos(videos);
+                } else {
+                    console.log('⚠️ No videos found from any endpoint');
+                    showNoVideosMessage();
+                }
+                
+            } catch (error) {
+                console.error('🔴 Failed to load feed:', error);
+                showNoVideosMessage();
+            } finally {
+                isLoading = false;
+            }
+        }
+        
+        function showNoVideosMessage() {
+            const feed = document.getElementById('videoFeed');
+            if (feed) {
+                feed.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: white; text-align: center;">
+                        <h2>No videos available</h2>
+                        <p>Please check your connection or try again later.</p>
+                        <button onclick="loadFeed()" style="margin-top: 20px; padding: 10px 20px; background: #FF0050; color: white; border: none; border-radius: 4px;">Retry</button>
+                    </div>
+                `;
+            }
+        }
+        
+        function renderVideos(videosArray) {
+            // Use passed videos or fall back to global
+            const allVideos = videosArray || window.videos || [];
+            console.log('🎨 Starting renderVideos with:', allVideos.length, 'videos');
+            const feed = document.getElementById('videoFeed');
+            
+            if (!feed) {
+                console.error('🔴 videoFeed element not found!');
+                return;
+            }
+            
+            if (!allVideos || allVideos.length === 0) {
+                console.log('⚠️ No videos to render');
+                showNoVideosMessage();
+                return;
+            }
+            
+            // Store all videos globally for infinite scroll
+            window.allVideos = allVideos;
+            window.currentVideoIndex = 0;
+            
+            // Render only 3 videos to prevent decoder overload - TikTok style  
+            const initialVideos = allVideos.slice(0, 3);
+            console.log('🎨 Rendering initial 3 videos of', allVideos.length, 'total');
+            console.log('🎨 First video URL:', initialVideos[0]?.url || initialVideos[0]?.videoUrl || 'No URL');
+            console.log('🎨 First video object:', initialVideos[0]);
+            
+            
+            feed.innerHTML = initialVideos.map((video, index) => {
+                // Map video fields - handle both old and new field names
+                const videoSrc = video.url || video.videoUrl || video.fileUrl || '';
+                const videoId = video.id || video._id || index;
+                const username = video.username || video.user?.username || 'unknown';
+                const userId = video.userId || video.user?.id || video.user?._id || '';
+                const description = video.description || video.caption || '';
+                const likes = video.likes || video.likeCount || 0;
+                const comments = video.comments || video.commentCount || 0;
+                
+                console.log(`🎥 Video ${index}: ${videoSrc}`);
+                
+                return `
+                    <div class="video-item" data-index="${index}" data-video-id="${videoId}">
+                        <video class="video-player" 
+                               src="${videoSrc}"
+                               loop
+                               muted="${!isAudioEnabled}"
+                               preload="${index === 0 ? 'auto' : 'none'}"
+                               playsinline
+                               webkit-playsinline
+                               onclick="toggleVideoPlayback(this)">
+                        </video>
+                        
+                        <div class="video-info">
+                            <div class="video-username">@${username}</div>
+                            <div class="video-description">${description}</div>
+                        </div>
+                        
+                        <div class="video-actions">
+                            <div class="action-item" onclick="likeVideo(${index})">
+                                <div class="action-icon">❤️</div>
+                                <div class="action-count">${likes}</div>
+                            </div>
+                            <div class="action-item" onclick="showComments(${index})">
+                                <div class="action-icon">💬</div>
+                                <div class="action-count">${comments}</div>
+                            </div>
+                            <div class="action-item" onclick="shareVideo(${index})">
+                                <div class="action-icon">📤</div>
+                            </div>
+                            <div class="action-item" onclick="toggleVideoAudio(${index})">
+                                <div class="action-icon" id="audioIcon${index}">🔊</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Setup video observer for autoplay
+            setupVideoObserver();
+            
+            // Enable audio by default for mobile
+            setTimeout(enableAudioByDefault, 500);
+        }
+        
+        function setupVideoObserver() {
+            const feed = document.getElementById('videoFeed');
+            const videos = document.querySelectorAll('.video-player');
+            
+            if (!feed || videos.length === 0) return;
+            
+            // Auto-play first video when loaded
+            if (videos.length > 0) {
+                const firstVideo = videos[0];
+                firstVideo.addEventListener('loadeddata', () => {
+                    setTimeout(() => {
+                        firstVideo.play().catch(e => console.log('Autoplay prevented:', e));
+                    }, 200);
+                });
+            }
+            
+            // Add scroll listener for TikTok-style infinite scroll
+            let lastScrollTime = 0;
+            feed.addEventListener('scroll', () => {
+                const now = Date.now();
+                if (now - lastScrollTime < 100) return; // Throttle scroll events
+                lastScrollTime = now;
+                
+                const scrollTop = feed.scrollTop;
+                const containerHeight = feed.clientHeight;
+                const videos = document.querySelectorAll('.video-player');
+                
+                videos.forEach((video, index) => {
+                    const videoItem = video.closest('.video-item');
+                    const videoTop = videoItem.offsetTop;
+                    const videoHeight = videoItem.offsetHeight;
+                    
+                    // Check if video is in center of viewport
+                    const videoCenterY = videoTop + (videoHeight / 2);
+                    const viewportCenterY = scrollTop + (containerHeight / 2);
+                    const distanceFromCenter = Math.abs(videoCenterY - viewportCenterY);
+                    
+                    // If video center is within viewport center area, play it
+                    if (distanceFromCenter < containerHeight / 3) {
+                        // Load video if not preloaded
+                        if (video.preload === 'none') {
+                            console.log('🎬 Loading video on demand:', index);
+                            video.preload = 'auto';
+                        }
+                        
+                        if (video.paused) {
+                            // Pause all other videos first
+                            videos.forEach(v => v.pause());
+                            video.play().catch(e => console.log('Auto-play prevented:', e));
+                        }
+                        
+                        // Update current video index for infinite scroll
+                        const currentGlobalIndex = window.currentVideoIndex + index;
+                        
+                        // If we're at the last video, load next batch
+                        if (index === 2 && currentGlobalIndex + 1 < window.allVideos.length) {
+                            console.log('🔄 Loading next batch at index:', currentGlobalIndex);
+                            loadNextVideoBatch();
+                        }
+                    } else {
+                        // Pause videos that are not in view
+                        video.pause();
+                    }
+                });
+            });
+        }
+        
+        function loadNextVideoBatch() {
+            const feed = document.getElementById('videoFeed');
+            if (!feed || !window.allVideos) return;
+            
+            // Move to next batch of 3 videos
+            window.currentVideoIndex += 3;
+            const nextVideos = window.allVideos.slice(window.currentVideoIndex, window.currentVideoIndex + 3);
+            
+            if (nextVideos.length === 0) return; // No more videos
+            
+            console.log('🎬 Loading videos', window.currentVideoIndex, 'to', window.currentVideoIndex + nextVideos.length - 1);
+            
+            // Replace current videos with next batch
+            feed.innerHTML = nextVideos.map((video, index) => {
+                const videoSrc = video.url || video.videoUrl || video.fileUrl || '';
+                const videoId = video.id || video._id || index;
+                const username = video.username || video.user?.username || 'unknown';
+                const userId = video.userId || video.user?.id || video.user?._id || '';
+                const description = video.description || video.caption || '';
+                const likes = video.likes || video.likeCount || 0;
+                const comments = video.comments || video.commentCount || 0;
+                
+                return `
+                    <div class="video-item" data-index="${index}" data-video-id="${videoId}">
+                        <video class="video-player" 
+                               src="${videoSrc}"
+                               loop
+                               muted="${!isAudioEnabled}"
+                               preload="${index === 0 ? 'auto' : 'none'}"
+                               playsinline
+                               webkit-playsinline
+                               onclick="toggleVideoPlayback(this)">
+                        </video>
+                        
+                        <div class="video-info">
+                            <div class="video-username">@${username}</div>
+                            <div class="video-description">${description}</div>
+                        </div>
+                        
+                        <div class="video-actions">
+                            <div class="action-item" onclick="likeVideo(${index})">
+                                <div class="action-icon">❤️</div>
+                                <div class="action-count">${likes}</div>
+                            </div>
+                            <div class="action-item" onclick="showComments(${index})">
+                                <div class="action-icon">💬</div>
+                                <div class="action-count">${comments}</div>
+                            </div>
+                            <div class="action-item" onclick="shareVideo(${index})">
+                                <div class="action-icon">📤</div>
+                            </div>
+                            <div class="action-item" onclick="toggleVideoAudio(${index})">
+                                <div class="action-icon" id="audioIcon${index}">🔊</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Auto-play first video of new batch
+            const firstVideo = feed.querySelector('.video-player');
+            if (firstVideo) {
+                setTimeout(() => {
+                    firstVideo.play().catch(e => console.log('Auto-play prevented:', e));
+                }, 200);
+            }
+            
+            // Reset scroll to top
+            feed.scrollTop = 0;
+        }
+
+        function toggleVideoPlayback(video) {
+            // Pause all other videos
+            document.querySelectorAll('.video-player').forEach(v => {
+                if (v !== video) v.pause();
+            });
+            
+            // Toggle this video
+            if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        }
+        
+        function enableAudioByDefault() {
+            if (isAudioEnabled) {
+                const videos = document.querySelectorAll('.video-player');
+                videos.forEach(video => {
+                    video.muted = false;
+                    video.volume = 0.8;
+                });
+            }
+        }
+        
+        function likeVideo(index) {
+            console.log('Like video:', index);
+        }
+        
+        function showComments(index) {
+            console.log('Show comments for video:', index);
+        }
+        
+        function shareVideo(index) {
+            console.log('Share video:', index);
+        }
+        
+        function toggleVideoAudio(index) {
+            const video = document.querySelector(`[data-index="${index}"] .video-player`);
+            const audioIcon = document.getElementById(`audioIcon${index}`);
+            
+            if (video && audioIcon) {
+                if (video.muted) {
+                    video.muted = false;
+                    video.volume = 0.8;
+                    audioIcon.textContent = '🔊';
+                } else {
+                    video.muted = true;
+                    audioIcon.textContent = '🔇';
+                }
+            }
+        }
+        
         // Define navigation functions BEFORE HTML is parsed
         window.showProfile = function() {
             console.log('👤 showProfile called from HEAD');
@@ -3277,10 +3646,11 @@
             
             // Store all videos globally for infinite scroll
             window.allVideos = allVideos;
+            window.currentVideoIndex = 0;
             
-            // Render only first 5 videos initially to prevent decoder overload
-            const initialVideos = allVideos.slice(0, 5);
-            console.log('🎨 Rendering initial 5 videos of', allVideos.length, 'total');
+            // Render only 3 videos to prevent decoder overload - TikTok style  
+            const initialVideos = allVideos.slice(0, 3);
+            console.log('🎨 Rendering initial 3 videos of', allVideos.length, 'total');
             console.log('🎨 First video URL:', initialVideos[0]?.url || initialVideos[0]?.videoUrl || 'No URL');
             console.log('🎨 First video object:', initialVideos[0]);
             
