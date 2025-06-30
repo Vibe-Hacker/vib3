@@ -1,0 +1,55 @@
+/* Video Feed Critical Fixes */
+
+/* Prevent videos from disappearing */
+.video-element {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Fix video container positioning */
+.video-container {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    width: 100% !important;
+    height: 100vh !important;
+}
+
+/* Ensure video items stay visible */
+.video-item {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: 100vh !important;
+    position: relative !important;
+    background: #000 !important;
+}
+
+/* Force feed content to stay visible */
+.feed-content.active {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+}
+
+/* Prevent intersection observer from hiding videos */
+.video-element[data-observed="true"] {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Fix video feed container */
+.video-feed {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: #000 !important;
+}

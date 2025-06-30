@@ -1,0 +1,105 @@
+/* Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    z-index: 20;
+    backdrop-filter: blur(10px);
+    padding: 0 10px;
+}
+
+.floating-nav-btn {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    background: #003399;
+    border: 2px solid white;
+    color: white;
+    cursor: move;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+}
+
+.floating-nav-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+.floating-nav-btn.dragging {
+    transform: scale(1.2);
+    opacity: 0.8;
+    z-index: 1000;
+}
+
+.floating-mode .bottom-nav {
+    display: none;
+}
+
+.nav-item {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    background: #003399;
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.nav-item:hover {
+    transform: scale(1.05);
+    background: #002266;
+}
+
+.nav-item.active {
+    background: #004499;
+    box-shadow: 0 0 10px rgba(0, 51, 153, 0.5);
+}
+
+.nav-item.dragging {
+    opacity: 0.5;
+    transform: scale(1.1);
+    z-index: 1000;
+}
+
+.nav-item.drag-over {
+    background: #0066cc;
+    transform: scale(1.05);
+}
+
+.nav-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.record-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    background: #003399;
+    border: none;
+    color: white;
+    font-size: 30px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.record-btn:hover {
+    transform: scale(1.1);
+}

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>VIB3 - Mobile</title>
+    <link rel="stylesheet" href="css/mobile.css">
+</head>
+<body>
+    <!-- Auth Container with Cool Animations -->
+    <div class="auth-container" id="authContainer">
+        <div class="auth-form">
+            <div class="vib3-logo-wrapper">
+                <h2 class="vib3-logo">VIB3</h2>
+            </div>
+            <div class="auth-error" id="authError"></div>
+            <div id="loginForm">
+                <input type="email" class="auth-input" id="loginEmail" placeholder="Email" autocomplete="email">
+                <input type="password" class="auth-input" id="loginPassword" placeholder="Password" autocomplete="current-password">
+                <button class="auth-btn" onclick="handleLogin()">Log in</button>
+                <div class="auth-switch">
+                    Don't have an account? <a onclick="showSignup()">Sign up</a>
+                </div>
+            </div>
+            <div id="signupForm" style="display: none;">
+                <input type="text" class="auth-input" id="signupName" placeholder="Username" autocomplete="username">
+                <input type="email" class="auth-input" id="signupEmail" placeholder="Email" autocomplete="email">
+                <input type="password" class="auth-input" id="signupPassword" placeholder="Password" autocomplete="new-password">
+                <button class="auth-btn" onclick="handleSignup()">Sign up</button>
+                <div class="auth-switch">
+                    Already have an account? <a onclick="showLogin()">Log in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mobile Main Content -->
+    <div class="main-content" id="mainContent" style="display: none;">
+        <!-- Mobile Video Feed -->
+        <div class="mobile-video-feed" id="videoFeed">
+            <!-- Videos will be loaded here -->
+        </div>
+        
+        <!-- Mobile Bottom Navigation -->
+        <div class="bottom-nav" id="bottomNav">
+            <div class="nav-item active" onclick="showMobilePage('home')">
+                <div class="nav-icon">🏠</div>
+                <div class="nav-label">Home</div>
+            </div>
+            <div class="nav-item" onclick="showMobilePage('discover')">
+                <div class="nav-icon">🔍</div>
+                <div class="nav-label">Discover</div>
+            </div>
+            <div class="nav-item" onclick="showMobilePage('upload')">
+                <div class="nav-icon">➕</div>
+                <div class="nav-label">Upload</div>
+            </div>
+            <div class="nav-item" onclick="showMobilePage('inbox')">
+                <div class="nav-icon">💬</div>
+                <div class="nav-label">Inbox</div>
+            </div>
+            <div class="nav-item" onclick="showMobilePage('profile')">
+                <div class="nav-icon">👤</div>
+                <div class="nav-label">Profile</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Profile Page -->
+    <div class="mobile-profile-page" id="profilePage" style="display: none;">
+        <div class="profile-header">
+            <button class="profile-back-btn" onclick="showMobilePage('home')">←</button>
+            <h3>Profile</h3>
+            <button class="profile-settings-btn" onclick="handleLogout()">⚙️</button>
+        </div>
+        <div class="profile-content">
+            <div class="profile-avatar"></div>
+            <div class="profile-username" id="profileUsername">@username</div>
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <div class="stat-count">0</div>
+                    <div class="stat-label">Following</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-count">0</div>
+                    <div class="stat-label">Followers</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-count">0</div>
+                    <div class="stat-label">Likes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load JavaScript -->
+    <script src="js/mongodb-adapter.js"></script>
+    <script src="js/mobile-auth.js"></script>
+    <script src="js/video-simple.js"></script>
+    <script src="js/mobile-app.js"></script>
+</body>
+</html>

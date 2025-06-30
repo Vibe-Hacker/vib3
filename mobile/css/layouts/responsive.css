@@ -1,0 +1,274 @@
+/* Comprehensive Responsive Design - Mobile First */
+
+/* Default Mobile Styles (apply to all screen sizes first) */
+.sidebar {
+    display: none !important;
+}
+
+.video-header {
+    display: none !important;
+}
+
+.video-feed {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    padding: 0 !important;
+}
+
+.bottom-nav {
+    display: flex !important;
+}
+
+.video-item {
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+
+.video-container {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+}
+
+.video-actions {
+    position: absolute !important;
+    right: 15px !important;
+    bottom: 100px !important;
+}
+
+/* Large Desktop (1200px+) - Override mobile styles */
+@media (min-width: 1200px) {
+    .sidebar {
+        display: flex !important;
+        width: 260px !important;
+    }
+    
+    .video-header {
+        display: block !important;
+        left: 260px !important;
+        width: calc(100vw - 260px) !important;
+    }
+    
+    .video-feed {
+        margin-left: 260px !important;
+        margin-top: 0 !important;
+        width: calc(100vw - 260px) !important;
+        height: 100vh !important;
+        padding: 0 !important;
+    }
+    
+    .video-item {
+        width: auto !important;
+        height: auto !important;
+        margin: 0 0 20px 0 !important;
+        border-radius: 15px !important;
+    }
+    
+    .video-container {
+        border-radius: 15px !important;
+    }
+    
+    .video-actions {
+        position: relative !important;
+        right: auto !important;
+        bottom: auto !important;
+    }
+    
+    .bottom-nav {
+        display: none !important;
+    }
+}
+
+/* Medium Desktop (992px - 1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+    .sidebar {
+        display: flex !important;
+        width: 220px !important;
+    }
+    
+    .video-header {
+        display: block !important;
+        left: 220px !important;
+        width: calc(100vw - 220px) !important;
+    }
+    
+    .video-feed {
+        margin-left: 220px !important;
+        margin-top: 0 !important;
+        width: calc(100vw - 220px) !important;
+        height: 100vh !important;
+        padding: 0 !important;
+    }
+    
+    .video-item {
+        width: auto !important;
+        height: auto !important;
+        margin: 0 0 20px 0 !important;
+        border-radius: 15px !important;
+    }
+    
+    .video-actions {
+        position: relative !important;
+        right: auto !important;
+        bottom: auto !important;
+    }
+    
+    .sidebar-text {
+        font-size: 16px;
+    }
+    
+    .bottom-nav {
+        display: none !important;
+    }
+}
+
+/* Small Desktop/Tablet (768px - 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+    .sidebar {
+        display: flex !important;
+        width: 180px !important;
+    }
+    
+    .video-header {
+        display: block !important;
+        left: 180px !important;
+        width: calc(100vw - 180px) !important;
+    }
+    
+    .video-feed {
+        margin-left: 180px !important;
+        margin-top: 0 !important;
+        width: calc(100vw - 180px) !important;
+        height: 100vh !important;
+        padding: 0 !important;
+    }
+    
+    .video-item {
+        width: auto !important;
+        height: auto !important;
+        margin: 0 0 20px 0 !important;
+        border-radius: 15px !important;
+    }
+    
+    .video-actions {
+        position: relative !important;
+        right: auto !important;
+        bottom: auto !important;
+    }
+    
+    .sidebar-text {
+        display: none; /* Hide text, show only icons */
+    }
+    
+    .sidebar-item {
+        padding: 8px 15px;
+        justify-content: center;
+    }
+    
+    .header-search {
+        max-width: 300px;
+    }
+    
+    .bottom-nav {
+        display: none !important;
+    }
+}
+
+/* Mobile devices below 768px will use the default mobile styles defined above */
+
+/* Mobile-specific page layouts (below 768px) */
+@media (max-width: 767px) {
+    /* Fix profile page and other pages on mobile */
+    .profile-page,
+    .messages-page,
+    .activity-page,
+    .settings-page,
+    #profilePage,
+    #messagesPage,
+    #activityPage,
+    #settingsPage {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 999999 !important;
+        background: #000 !important;
+        padding: 20px !important;
+        padding-bottom: 100px !important;
+        overflow-y: auto !important;
+        margin: 0 !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* Force hide all other content when profile is shown */
+    body.profile-active .video-feed,
+    body.profile-active .sidebar,
+    body.profile-active .video-header,
+    body.profile-active #mainApp {
+        display: none !important;
+        visibility: hidden !important;
+        z-index: -1 !important;
+    }
+    
+    /* Ensure profile page container styles */
+    #profilePage * {
+        max-width: 100% !important;
+    }
+}
+
+/* Viewport height adjustments for console/dev tools */
+@media (max-height: 600px) {
+    .sidebar {
+        font-size: 14px;
+    }
+    
+    .sidebar-item {
+        height: 40px;
+        padding: 6px 20px;
+    }
+    
+    .video-header {
+        height: 50px;
+    }
+    
+    .video-feed {
+        margin-top: 50px;
+        height: calc(100vh - 50px);
+    }
+}
+
+/* Very short viewport (dev tools taking most of screen) */
+@media (max-height: 400px) {
+    .sidebar {
+        padding: 10px 0 0 0;
+    }
+    
+    .sidebar-item {
+        height: 35px;
+        padding: 4px 15px;
+        font-size: 14px;
+    }
+    
+    .video-header {
+        height: 40px;
+        padding: 0 15px;
+    }
+    
+    .video-feed {
+        margin-top: 40px;
+        height: calc(100vh - 40px);
+    }
+    
+    .theme-options {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

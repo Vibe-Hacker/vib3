@@ -1,0 +1,174 @@
+/* Sidebar Navigation */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 240px;
+    height: 100vh;
+    background: var(--bg-secondary);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    border-right: 1px solid var(--border-primary);
+    overflow-y: auto;
+    transition: all 0.3s ease;
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 25px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.3s ease;
+    border: none;
+    background: none;
+    font-size: 18px;
+    font-weight: 600;
+    gap: 12px;
+    height: 48px;
+    margin: 4px 0;
+    width: 100%;
+    text-align: left;
+}
+
+.sidebar-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.sidebar-item.active {
+    background: none !important;
+    color: var(--accent-primary) !important;
+}
+
+/* Ensure active state works for all child elements */
+.sidebar-item.active .sidebar-icon,
+.sidebar-item.active .sidebar-text {
+    color: var(--accent-primary) !important;
+}
+
+/* Sign Out Button Styling */
+.sidebar-item.signout-btn {
+    color: var(--text-danger);
+}
+
+.sidebar-item.signout-btn:hover {
+    background: rgba(255, 107, 107, 0.1);
+    color: var(--text-danger);
+}
+
+/* Ultra-specific override for active buttons */
+.sidebar .sidebar-item.active,
+button.sidebar-item.active,
+#sidebarHome.active,
+#sidebarExplore.active, 
+#sidebarFollowing.active,
+#sidebarFriends.active,
+#sidebarProfile.active {
+    color: #fe2c55 !important;
+}
+
+/* Force child elements to inherit active color */
+.sidebar .sidebar-item.active *,
+button.sidebar-item.active *,
+#sidebarHome.active *,
+#sidebarExplore.active *,
+#sidebarFollowing.active *,
+#sidebarFriends.active *,
+#sidebarProfile.active * {
+    color: #fe2c55 !important;
+}
+
+.sidebar-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sidebar-text {
+    font-weight: 600;
+}
+
+.sidebar-logo {
+    padding: 0 25px 20px 25px;
+}
+
+.sidebar-logo h1 {
+    color: #ff006e;
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: rgba(22, 24, 35, 0.12);
+    margin: 16px 25px;
+}
+
+.sidebar-login-section {
+    padding: 20px 25px;
+}
+
+.sidebar-login-btn {
+    width: 100%;
+    padding: 14px 0;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.sidebar-login-btn:hover {
+    background: var(--accent-secondary);
+}
+
+/* Hide login section when authenticated */
+.authenticated .sidebar-login-section {
+    display: none !important;
+}
+
+/* Show additional options when authenticated */
+.authenticated #sidebarProfile {
+    display: flex;
+}
+
+/* Hide profile when not authenticated */
+#sidebarProfile {
+    display: none;
+}
+
+/* Menu button */
+.menu-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.menu-button:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+}

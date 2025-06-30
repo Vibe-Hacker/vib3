@@ -1,0 +1,25 @@
+/* App Container Layout */
+.app-container {
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+    max-width: 100%;
+}
+
+@media (min-width: 768px) {
+    .app-container {
+        max-width: 100%;
+        margin: 0;
+        border: none;
+        border-radius: 0;
+        overflow: hidden;
+    }
+}
+
+.main-app {
+    display: none;
+}
+
+.main-app.authenticated {
+    display: block;
+}

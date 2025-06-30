@@ -3178,9 +3178,10 @@
                 console.log('🔍 Token available:', !!token);
                 console.log('🔍 Current user:', currentUser?.username || 'No user');
                 
-                // Try multiple API endpoints to find videos - prioritize working endpoints
+                // Try multiple API endpoints to find videos - prioritize working endpoints  
                 const endpoints = [
-                    `${window.API_BASE_URL}/api/videos`,           // Main videos endpoint (confirmed working)
+                    `${window.API_BASE_URL}/feed`,                 // Root feed endpoint (CONFIRMED WORKING) - Load all available videos
+                    `${window.API_BASE_URL}/api/videos`,           // Main videos endpoint
                     `${window.API_BASE_URL}/api/videos/all`,       // All videos
                     `${window.API_BASE_URL}/api/videos/${currentFeed}`,
                     `${window.API_BASE_URL}/api/videos/feed/${currentFeed}`,

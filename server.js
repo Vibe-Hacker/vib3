@@ -69,7 +69,7 @@ app.get('/feed', async (req, res) => {
     }
     
     try {
-        const { limit = 10 } = req.query;
+        const { limit = 50 } = req.query;
         
         const videos = await db.collection('videos')
             .find({ status: { $ne: 'deleted' } })
@@ -124,7 +124,7 @@ app.get('/videos-random', async (req, res) => {
     }
     
     try {
-        const { limit = 10 } = req.query;
+        const { limit = 50 } = req.query;
         
         const videos = await db.collection('videos')
             .find({ status: { $ne: 'deleted' } })
@@ -179,7 +179,7 @@ app.get('/api/random-videos-v2', async (req, res) => {
     }
     
     try {
-        const { limit = 10 } = req.query;
+        const { limit = 50 } = req.query;
         
         // Get all videos
         const videos = await db.collection('videos')
