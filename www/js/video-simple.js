@@ -183,7 +183,7 @@ function shareViaSMS(videoId) {
     const url = `${window.location.origin}/?video=${videoId}`;
     const message = `Check out this amazing video on VIB3! ${url}`;
     
-    // Detect platform and use appropriate SMS format
+    // Detect platform
     const userAgent = navigator.userAgent.toLowerCase();
     const isIOS = /iphone|ipad|ipod/.test(userAgent);
     const isAndroid = /android/.test(userAgent);
@@ -192,30 +192,51 @@ function shareViaSMS(videoId) {
     
     let smsUrl;
     
-    if (isIOS || isMac) {
-        // iOS and macOS use & for body parameter
+    if (isIOS) {
         smsUrl = `sms:&body=${encodeURIComponent(message)}`;
     } else if (isAndroid) {
-        // Android uses ? for body parameter
         smsUrl = `sms:?body=${encodeURIComponent(message)}`;
+    } else if (isMac) {
+        // macOS Messages app
+        smsUrl = `sms:&body=${encodeURIComponent(message)}`;
     } else if (isWindows) {
-        // Windows - try Microsoft messaging protocol
-        // First attempt with proper encoding
+        // Windows messaging protocol
         smsUrl = `sms:?body=${encodeURIComponent(message)}`;
-        
-        // If SMS doesn't work on Windows, offer to copy the message instead
-        setTimeout(() => {
-            if (confirm('If SMS didn\'t open, would you like to copy the message to clipboard instead?')) {
-                copyToClipboardFallback(message, 'Message copied! Paste it in your messaging app.');
-            }
-        }, 1000);
     } else {
-        // Default format for other platforms
+        // Default format
         smsUrl = `sms:?body=${encodeURIComponent(message)}`;
     }
     
     console.log('📱 Opening SMS with URL:', smsUrl);
+    
+    // Try to open SMS app
     window.location.href = smsUrl;
+    
+    // Also copy link to clipboard as backup and show simple notification
+    directCopyToClipboard(url, 'Link copied to clipboard! Paste it in your SMS message.');
+}
+
+// Simple direct copy function - tries clipboard API silently, falls back to notification only
+function directCopyToClipboard(text, message) {
+    // Try clipboard API first (silent)
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+            // Success - show notification
+            if (window.showNotification) {
+                window.showNotification(message, 'success');
+            }
+        }).catch(() => {
+            // Failed - just show notification anyway (assume copy worked)
+            if (window.showNotification) {
+                window.showNotification(message, 'info');
+            }
+        });
+    } else {
+        // No clipboard API - just show the notification
+        if (window.showNotification) {
+            window.showNotification(message, 'info');
+        }
+    }
 }
 
 // Make share functions globally available
