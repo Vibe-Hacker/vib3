@@ -4645,9 +4645,23 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'www', 'index.html'));
 });
 
-// Serve original app on /app route
+// Serve original app on /app route with mobile detection
 app.get('/app', (req, res) => {
-    res.sendFile(path.join(__dirname, 'www', 'index-heavy.html'));
+    const userAgent = req.get('User-Agent') || '';
+    const isMobile = isMobileDevice(userAgent);
+    
+    console.log(`📱 /app route - Device detection: ${isMobile ? 'MOBILE' : 'DESKTOP'} - User-Agent: ${userAgent}`);
+    
+    if (isMobile) {
+        // Preserve query parameters when redirecting to mobile
+        const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+        const redirectUrl = `/mobile${queryString}`;
+        console.log(`📱 Redirecting mobile device from /app to ${redirectUrl}`);
+        return res.redirect(redirectUrl);
+    } else {
+        console.log('🖥️ Serving desktop /app version');
+        res.sendFile(path.join(__dirname, 'www', 'index-heavy.html'));
+    }
 });
 
 // Catch all route

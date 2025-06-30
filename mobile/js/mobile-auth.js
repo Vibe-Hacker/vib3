@@ -21,6 +21,8 @@ function getCurrentUser() {
 // Simple login function for mobile using MongoDB
 async function login(email, password) {
     console.log('📱 Mobile login called with MongoDB');
+    console.log('📱 Login URL:', `${window.API_BASE_URL}/api/auth/login`);
+    
     try {
         const response = await fetch(`${window.API_BASE_URL}/api/auth/login`, {
             method: 'POST',
@@ -29,7 +31,10 @@ async function login(email, password) {
             body: JSON.stringify({ email, password })
         });
         
+        console.log('📱 Login response status:', response.status);
         const data = await response.json();
+        console.log('📱 Login response data:', data);
+        
         if (!response.ok) throw new Error(data.error);
         
         // Set auth state
@@ -133,25 +138,31 @@ async function logout() {
 // Mobile UI Handler functions (called from HTML)
 async function handleLogin() {
     console.log('📱 Mobile handleLogin called with MongoDB auth');
+    console.log('📱 API_BASE_URL:', window.API_BASE_URL);
+    console.log('📱 Current URL:', window.location.href);
     
     const emailInput = document.getElementById('loginEmail');
     const passwordInput = document.getElementById('loginPassword');
     
     if (!emailInput || !passwordInput) {
-        console.error('Mobile login form elements not found');
+        console.error('❌ Mobile login form elements not found');
         return;
     }
     
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
     
+    console.log('📱 Login attempt with email:', email);
+    
     if (!email || !password) {
+        console.error('❌ Missing email or password');
         if (window.showNotification) {
             window.showNotification('Please enter email and password', 'error');
         }
         return;
     }
     
+    console.log('📱 Calling login function...');
     const result = await login(email, password);
     console.log('📱 Mobile login result:', result);
     
@@ -160,7 +171,7 @@ async function handleLogin() {
         emailInput.value = '';
         passwordInput.value = '';
         
-        console.log('📱 Mobile login successful, events dispatched');
+        console.log('✅ Mobile login successful, events dispatched');
     } else {
         console.error('❌ Mobile login failed:', result);
     }
