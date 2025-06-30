@@ -163,22 +163,7 @@ function shareToDiscord(videoId) {
 
 function copyVideoLink(videoId) {
     const url = `${window.location.origin}/?video=${videoId}`;
-    navigator.clipboard.writeText(url).then(() => {
-        if (window.showNotification) {
-            window.showNotification('Link copied to clipboard!', 'success');
-        }
-    }).catch(() => {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = url;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        if (window.showNotification) {
-            window.showNotification('Link copied to clipboard!', 'success');
-        }
-    });
+    copyToClipboardFallback(url, 'Link copied to clipboard!');
 }
 
 function shareViaEmail(videoId) {
@@ -221,11 +206,7 @@ function shareViaSMS(videoId) {
         // If SMS doesn't work on Windows, offer to copy the message instead
         setTimeout(() => {
             if (confirm('If SMS didn\'t open, would you like to copy the message to clipboard instead?')) {
-                navigator.clipboard.writeText(message).then(() => {
-                    if (window.showNotification) {
-                        window.showNotification('Message copied! Paste it in your messaging app.', 'success');
-                    }
-                });
+                copyToClipboardFallback(message, 'Message copied! Paste it in your messaging app.');
             }
         }, 1000);
     } else {
@@ -253,6 +234,81 @@ window.copyVideoLink = copyVideoLink;
 window.shareViaEmail = shareViaEmail;
 window.downloadVideo = downloadVideo;
 window.shareViaSMS = shareViaSMS;
+window.copyToClipboardFallback = copyToClipboardFallback;
+
+// Robust clipboard copy function with multiple fallbacks
+function copyToClipboardFallback(text, successMessage = 'Copied to clipboard!') {
+    console.log('📋 Attempting to copy to clipboard:', text);
+    
+    // Method 1: Modern Clipboard API (requires HTTPS)
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+            console.log('✅ Clipboard API success');
+            if (window.showNotification) {
+                window.showNotification(successMessage, 'success');
+            }
+        }).catch((err) => {
+            console.log('❌ Clipboard API failed:', err);
+            fallbackCopyMethod(text, successMessage);
+        });
+    } else {
+        console.log('📋 Clipboard API not available, using fallback');
+        fallbackCopyMethod(text, successMessage);
+    }
+}
+
+// Fallback method using execCommand
+function fallbackCopyMethod(text, successMessage) {
+    try {
+        // Create a temporary textarea element
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        
+        // Style it to be invisible
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        textArea.style.opacity = '0';
+        textArea.style.zIndex = '-1';
+        
+        document.body.appendChild(textArea);
+        
+        // Focus and select the text
+        textArea.focus();
+        textArea.select();
+        textArea.setSelectionRange(0, 99999); // For mobile devices
+        
+        // Try to copy
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (successful) {
+            console.log('✅ Fallback copy successful');
+            if (window.showNotification) {
+                window.showNotification(successMessage, 'success');
+            }
+        } else {
+            console.log('❌ Fallback copy failed');
+            manualCopyPrompt(text);
+        }
+    } catch (err) {
+        console.log('❌ Fallback copy error:', err);
+        manualCopyPrompt(text);
+    }
+}
+
+// Final fallback - show text for manual copying
+function manualCopyPrompt(text) {
+    console.log('📋 Showing manual copy prompt');
+    
+    // Try to prompt user to copy manually
+    if (window.prompt) {
+        window.prompt('Copy this text manually (Ctrl+C / Cmd+C):', text);
+    } else {
+        // Last resort - show in alert
+        alert('Please copy this manually: ' + text);
+    }
+}
 
 // Upload video (placeholder)
 async function uploadVideo(file, description, tags) {
