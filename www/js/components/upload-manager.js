@@ -1196,11 +1196,11 @@ class UploadManager {
         input.onchange = async (e) => {
             const file = e.target.files[0];
             if (file) {
-                // Validate file size (50MB limit)
-                const maxSize = 50 * 1024 * 1024; // 50MB
+                // Validate file size (500MB limit for 4K videos)
+                const maxSize = 500 * 1024 * 1024; // 500MB for 4K
                 if (file.size > maxSize) {
                     if (window.showToast) {
-                        window.showToast('Video file too large. Please choose a video under 50MB.');
+                        window.showToast('Video file too large. Please choose a video under 500MB.');
                     }
                     return;
                 }
@@ -1549,9 +1549,12 @@ class UploadManager {
             cameraModal.remove();
         }
         
-        // Close the entire upload flow instead of going back to upload options
-        console.log('Camera modal cancelled - closing entire upload flow');
-        this.closeUploadModal();
+        // Restore the fullscreen upload page
+        const fullscreenUploadPage = document.getElementById('fullscreenUploadPage');
+        if (fullscreenUploadPage) {
+            fullscreenUploadPage.style.display = 'flex';
+            console.log('Restored fullscreen upload page');
+        }
     }
 
     cleanupCameraStream() {
