@@ -18,17 +18,38 @@ function getCurrentUser() {
     return currentUser;
 }
 
-// Simple login function for mobile
+// Simple login function for mobile using MongoDB
 async function login(email, password) {
-    console.log('📱 Mobile login called');
+    console.log('📱 Mobile login called with MongoDB');
     try {
-        const result = await window.signInWithEmailAndPassword(window.auth, email, password);
-        console.log('✅ Mobile login successful:', result);
+        const response = await fetch(`${window.API_BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        
+        // Set auth state
+        window.authToken = data.token || 'session-based';
+        window.auth.currentUser = data.user;
+        window.currentUser = data.user;
+        
+        // Trigger auth state change
+        window.auth._triggerCallbacks(data.user);
+        
+        // Dispatch login event for mobile UI
+        console.log('🚀 Mobile dispatching userLoggedIn event with user:', data.user);
+        window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: data.user }));
+        
+        console.log('✅ Mobile login successful:', data);
         
         if (window.showNotification) {
             window.showNotification('Login successful!', 'success');
         }
-        return { success: true, user: result.user };
+        return { success: true, user: data.user };
     } catch (error) {
         console.error('❌ Mobile login error:', error);
         if (window.showNotification) {
@@ -38,19 +59,36 @@ async function login(email, password) {
     }
 }
 
-// Simple signup function for mobile
+// Simple signup function for mobile using MongoDB
 async function signup(username, email, password) {
-    console.log('📱 Mobile signup called');
+    console.log('📱 Mobile signup called with MongoDB');
     try {
-        const result = await window.createUserWithEmailAndPassword(window.auth, email, password);
-        if (result.user && username) {
-            await window.updateProfile(result.user, { displayName: username });
-        }
+        const response = await fetch(`${window.API_BASE_URL}/api/auth/register`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, username })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        
+        // Set auth state
+        window.authToken = data.token || 'session-based';
+        window.auth.currentUser = data.user;
+        window.currentUser = data.user;
+        
+        // Trigger auth state change
+        window.auth._triggerCallbacks(data.user);
+        
+        // Dispatch login event for mobile UI
+        console.log('🚀 Mobile dispatching userLoggedIn event with user:', data.user);
+        window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: data.user }));
         
         if (window.showNotification) {
             window.showNotification('Account created successfully!', 'success');
         }
-        return { success: true, user: result.user };
+        return { success: true, user: data.user };
     } catch (error) {
         console.error('❌ Mobile signup error:', error);
         if (window.showNotification) {
@@ -60,11 +98,25 @@ async function signup(username, email, password) {
     }
 }
 
-// Simple logout function for mobile
+// Simple logout function for mobile using MongoDB
 async function logout() {
-    console.log('📱 Mobile logout called');
+    console.log('📱 Mobile logout called with MongoDB');
     try {
-        await window.signOut(window.auth);
+        // Call server logout
+        await fetch(`${window.API_BASE_URL}/api/auth/logout`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        // Clear client state
+        window.authToken = null;
+        window.auth.currentUser = null;
+        window.currentUser = null;
+        
+        // Trigger auth state change
+        window.auth._triggerCallbacks(null);
+        
         if (window.showNotification) {
             window.showNotification('Logged out successfully', 'info');
         }
@@ -80,9 +132,7 @@ async function logout() {
 
 // Mobile UI Handler functions (called from HTML)
 async function handleLogin() {
-    console.log('📱 Mobile handleLogin called');
-    console.log('📱 window.auth available:', !!window.auth);
-    console.log('📱 window.signInWithEmailAndPassword available:', !!window.signInWithEmailAndPassword);
+    console.log('📱 Mobile handleLogin called with MongoDB auth');
     
     const emailInput = document.getElementById('loginEmail');
     const passwordInput = document.getElementById('loginPassword');
@@ -110,8 +160,7 @@ async function handleLogin() {
         emailInput.value = '';
         passwordInput.value = '';
         
-        // NO navigation logic here - let mobile-app.js handle it via auth state change
-        console.log('📱 Mobile login successful, waiting for auth state change...');
+        console.log('📱 Mobile login successful, events dispatched');
     } else {
         console.error('❌ Mobile login failed:', result);
     }
