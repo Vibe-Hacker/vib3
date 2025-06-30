@@ -26,12 +26,12 @@ const functionStubs = {
         }
     },
     
-    recordVideo: () => {
-        console.log('recordVideo called');
-        if (window.showToast) {
-            window.showToast('Camera recording coming soon! 📹');
-        }
-    },
+    // recordVideo: () => {
+        // console.log('recordVideo called');
+        // if (window.showToast) {
+        //     window.showToast('Camera recording coming soon! 📹');
+        // }
+    // },
     
     selectVideo: () => {
         console.log('selectVideo called');

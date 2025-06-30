@@ -2888,21 +2888,27 @@ function selectVideo() {
 // Removed closeVideoSourceModal and selectVideoFile functions since selectVideo now goes directly to file upload
 
 function recordNewVideo() {
-    console.log('🎬 User chose to record new video');
+    console.log('🎬 User chose to record new video - delegating to upload manager');
     
-    // Immediately hide ALL modals to prevent flicker
-    const uploadModal = document.getElementById('uploadModal');
-    if (uploadModal) {
-        uploadModal.style.display = 'none';
+    // Use the upload manager's recording functionality
+    if (window.uploadManager && window.uploadManager.recordVideo) {
+        // First show the upload modal with recording option
+        if (window.uploadManager.showUploadModal) {
+            window.uploadManager.showUploadModal();
+        }
+        // Then automatically trigger recording
+        setTimeout(() => {
+            window.uploadManager.recordVideo();
+        }, 100);
+    } else if (window.recordVideo) {
+        // Fallback to global recordVideo function
+        window.recordVideo();
+    } else {
+        console.error('No record video functionality available');
+        if (window.showToast) {
+            window.showToast('Camera recording not available');
+        }
     }
-    
-    const videoSourceModal = document.querySelector('.video-source-modal');
-    if (videoSourceModal) {
-        videoSourceModal.remove();
-    }
-    
-    // Start simplified recording directly
-    startSimpleVideoRecording();
 }
 
 async function startSimpleVideoRecording() {
@@ -3845,36 +3851,37 @@ function updatePublishProgress(status, percentage) {
     document.getElementById('progressFill').style.width = `${percentage}%`;
 }
 
-async function recordVideo() {
-    console.log('🎬 Record Video button clicked - starting debug');
-    
-    // Add detailed debugging
-    console.log('📱 Current document.body children:', document.body.children.length);
-    console.log('📱 Existing modals:', document.querySelectorAll('.modal').length);
-    
-    try {
-        // Request camera permission first to enumerate devices
-        console.log('📱 Requesting camera permissions...');
-        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        console.log('✅ Camera permissions granted, tracks:', tempStream.getTracks().length);
-        
-        // Stop the temp stream immediately
-        tempStream.getTracks().forEach(track => {
-            console.log(`🛑 Stopping track: ${track.kind} - ${track.label}`);
-            track.stop();
-        });
-        
-        // Add a small delay to ensure permission state is updated
-        setTimeout(() => {
-            console.log('📱 Now showing camera selection modal...');
-            showCameraSelectionModal('video');
-        }, 500);
-        
-    } catch (error) {
-        console.error('❌ Camera permission denied:', error);
-        showNotification('Camera access is required to record videos. Please allow camera access and try again.', 'error');
-    }
-}
+// async function recordVideo() {
+//     console.log('🎬 Record Video button clicked - starting debug');
+//     
+//     // Add detailed debugging
+//     console.log('📱 Current document.body children:', document.body.children.length);
+//     console.log('📱 Existing modals:', document.querySelectorAll('.modal').length);
+//     
+//     try {
+//         // Request camera permission first to enumerate devices
+//         console.log('📱 Requesting camera permissions...');
+//         const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+//         console.log('✅ Camera permissions granted, tracks:', tempStream.getTracks().length);
+//         
+//         // Stop the temp stream immediately
+//         tempStream.getTracks().forEach(track => {
+//             console.log(`🛑 Stopping track: ${track.kind} - ${track.label}`);
+//             track.stop();
+//         });
+//         
+//         // Add a small delay to ensure permission state is updated
+//         setTimeout(() => {
+//             console.log('📱 Now showing camera selection modal...');
+//             showCameraSelectionModal('video');
+//         }, 500);
+//         
+//     } catch (error) {
+//         console.error('❌ Camera permission denied:', error);
+//         showNotification('Camera access is required to record videos. Please allow camera access and try again.', 'error');
+//     }
+// }
+// COMMENTED OUT: This function was conflicting with upload-manager.js recordVideo implementation
 
 async function showCameraSelectionModal(mode) {
     console.log(`📹 Showing camera selection for mode: ${mode}`);
@@ -9132,7 +9139,7 @@ window.performSearch = performSearch;
 window.showPage = showPage;
 window.showUploadModal = showUploadModal;
 window.closeUploadModal = closeUploadModal;
-window.recordVideo = recordVideo;
+// window.recordVideo = recordVideo; // COMMENTED OUT: Using upload-manager.js implementation instead
 window.selectVideo = selectVideo;
 window.selectPhotos = selectPhotos;
 window.triggerFileSelect = triggerFileSelect;
