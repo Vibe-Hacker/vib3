@@ -240,21 +240,81 @@ window.copyToClipboardFallback = copyToClipboardFallback;
 function copyToClipboardFallback(text, successMessage = 'Copied to clipboard!') {
     console.log('📋 Attempting to copy to clipboard:', text);
     
-    // Method 1: Modern Clipboard API (requires HTTPS)
+    // Ensure document has focus before attempting clipboard operations
+    if (document.hasFocus && !document.hasFocus()) {
+        console.log('📋 Document not focused, focusing first');
+        window.focus();
+        document.body.focus();
+    }
+    
+    // Method 1: Modern Clipboard API (requires HTTPS and user interaction)
     if (navigator.clipboard && window.isSecureContext) {
+        // Try direct clipboard API
         navigator.clipboard.writeText(text).then(() => {
             console.log('✅ Clipboard API success');
             if (window.showNotification) {
                 window.showNotification(successMessage, 'success');
             }
         }).catch((err) => {
-            console.log('❌ Clipboard API failed:', err);
-            fallbackCopyMethod(text, successMessage);
+            console.log('❌ Clipboard API failed:', err.name, err.message);
+            // If it's a focus/permission issue, try with user interaction
+            if (err.name === 'NotAllowedError' || err.message.includes('focused')) {
+                console.log('📋 Retrying clipboard with user interaction simulation');
+                retryClipboardWithFocus(text, successMessage);
+            } else {
+                fallbackCopyMethod(text, successMessage);
+            }
         });
     } else {
         console.log('📋 Clipboard API not available, using fallback');
         fallbackCopyMethod(text, successMessage);
     }
+}
+
+// Retry clipboard with better focus handling
+function retryClipboardWithFocus(text, successMessage) {
+    // Create a temporary button to ensure user interaction
+    const button = document.createElement('button');
+    button.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10000;
+        padding: 12px 24px;
+        background: #FF0050;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    button.textContent = 'Click to Copy Link';
+    
+    document.body.appendChild(button);
+    
+    button.onclick = () => {
+        navigator.clipboard.writeText(text).then(() => {
+            console.log('✅ Clipboard API success on retry');
+            document.body.removeChild(button);
+            if (window.showNotification) {
+                window.showNotification(successMessage, 'success');
+            }
+        }).catch((err) => {
+            console.log('❌ Clipboard API still failed:', err);
+            document.body.removeChild(button);
+            fallbackCopyMethod(text, successMessage);
+        });
+    };
+    
+    // Auto-remove button after 5 seconds if not clicked
+    setTimeout(() => {
+        if (button.parentNode) {
+            document.body.removeChild(button);
+            fallbackCopyMethod(text, successMessage);
+        }
+    }, 5000);
 }
 
 // Fallback method using execCommand with enhanced compatibility
@@ -267,59 +327,110 @@ function fallbackCopyMethod(text, successMessage) {
             return;
         }
         
+        // Ensure window and document focus
+        window.focus();
+        if (document.body) {
+            document.body.focus();
+        }
+        
         // Create a temporary textarea element with better styling
         const textArea = document.createElement('textarea');
         textArea.value = text;
-        textArea.readOnly = true;
+        textArea.readOnly = false; // Allow editing for better compatibility
         
-        // Better invisible styling
+        // Make it visible but small for better focus handling
         textArea.style.cssText = `
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 1px;
-            height: 1px;
-            opacity: 0;
-            border: none;
-            outline: none;
-            boxShadow: none;
-            background: transparent;
-            fontSize: 16px;
-            zIndex: -1000;
+            top: 50%;
+            left: 50%;
+            width: 300px;
+            height: 50px;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 2px solid #FF0050;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 14px;
+            z-index: 9999;
+            opacity: 0.9;
         `;
         
         document.body.appendChild(textArea);
         
-        // Enhanced selection for better compatibility
-        textArea.focus();
-        textArea.select();
-        
-        // For mobile devices
-        if (textArea.setSelectionRange) {
-            textArea.setSelectionRange(0, text.length);
-        }
-        
-        // Small delay to ensure focus
+        // Enhanced focus and selection
         setTimeout(() => {
             try {
-                const successful = document.execCommand('copy');
-                document.body.removeChild(textArea);
+                textArea.focus();
+                textArea.select();
+                textArea.setSelectionRange(0, text.length);
                 
-                if (successful) {
-                    console.log('✅ Fallback copy successful');
-                    if (window.showNotification) {
-                        window.showNotification(successMessage, 'success');
+                // Try to copy after ensuring selection
+                setTimeout(() => {
+                    try {
+                        const successful = document.execCommand('copy');
+                        
+                        if (successful) {
+                            console.log('✅ Fallback copy successful');
+                            if (window.showNotification) {
+                                window.showNotification(successMessage, 'success');
+                            }
+                            // Remove textarea after short delay to show success
+                            setTimeout(() => {
+                                if (textArea.parentNode) {
+                                    document.body.removeChild(textArea);
+                                }
+                            }, 500);
+                        } else {
+                            console.log('❌ execCommand returned false');
+                            // Keep textarea visible for manual copy
+                            textArea.style.opacity = '1';
+                            textArea.placeholder = 'Copy this text manually (Ctrl+C)';
+                            
+                            // Add close button
+                            const closeBtn = document.createElement('button');
+                            closeBtn.textContent = 'Close';
+                            closeBtn.style.cssText = `
+                                position: fixed;
+                                top: calc(50% + 40px);
+                                left: 50%;
+                                transform: translateX(-50%);
+                                background: #FF0050;
+                                color: white;
+                                border: none;
+                                padding: 8px 16px;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                z-index: 10000;
+                            `;
+                            closeBtn.onclick = () => {
+                                if (textArea.parentNode) document.body.removeChild(textArea);
+                                if (closeBtn.parentNode) document.body.removeChild(closeBtn);
+                            };
+                            document.body.appendChild(closeBtn);
+                            
+                            // Auto-close after 10 seconds
+                            setTimeout(() => {
+                                if (textArea.parentNode) document.body.removeChild(textArea);
+                                if (closeBtn.parentNode) document.body.removeChild(closeBtn);
+                            }, 10000);
+                        }
+                    } catch (execErr) {
+                        console.log('❌ execCommand exception:', execErr);
+                        if (textArea.parentNode) {
+                            document.body.removeChild(textArea);
+                        }
+                        manualCopyPrompt(text);
                     }
-                } else {
-                    console.log('❌ execCommand returned false');
-                    manualCopyPrompt(text);
+                }, 50);
+                
+            } catch (selectionErr) {
+                console.log('❌ Selection error:', selectionErr);
+                if (textArea.parentNode) {
+                    document.body.removeChild(textArea);
                 }
-            } catch (execErr) {
-                console.log('❌ execCommand exception:', execErr);
-                document.body.removeChild(textArea);
                 manualCopyPrompt(text);
             }
-        }, 10);
+        }, 50);
         
     } catch (err) {
         console.log('❌ Fallback copy setup error:', err);
