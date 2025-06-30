@@ -38,11 +38,20 @@ app.use((req, res, next) => {
 // Session management (simple in-memory for now)
 const sessions = new Map();
 
-// CORS
+// CORS - Enhanced for mobile app
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        console.log('📋 Handling CORS preflight for:', req.url);
+        res.status(200).end();
+        return;
+    }
+    
     next();
 });
 
@@ -1069,6 +1078,32 @@ function calculateQuartileRetention(views, quartile) {
 // Serve static files (AFTER API routes)
 // Route mobile app requests to app directory
 app.use('/app', express.static(path.join(__dirname, 'app')));
+
+// Mobile device detection middleware
+function isMobileDevice(userAgent) {
+    const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+    return mobileRegex.test(userAgent);
+}
+
+// Route mobile devices to mobile directory, others to www directory
+app.use('/mobile', express.static(path.join(__dirname, 'mobile')));
+
+// Auto-redirect based on device type (before static serving)
+app.get('/', (req, res, next) => {
+    const userAgent = req.get('User-Agent') || '';
+    const isMobile = isMobileDevice(userAgent);
+    
+    console.log(`📱 Device detection: ${isMobile ? 'MOBILE' : 'DESKTOP'} - User-Agent: ${userAgent}`);
+    
+    if (isMobile) {
+        console.log('📱 Redirecting mobile device to /mobile');
+        return res.redirect('/mobile');
+    } else {
+        console.log('🖥️ Serving desktop version');
+        // Continue to static file serving for www
+        next();
+    }
+});
 
 // Route web requests to www directory (default)
 const webDir = path.join(__dirname, 'www');
