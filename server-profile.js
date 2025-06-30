@@ -601,9 +601,6 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
         }
 
         const { title, description } = req.body;
-        if (!title) {
-            return res.status(400).json({ error: 'Video title is required' });
-        }
 
         // Generate unique filename
         const fileExtension = path.extname(req.file.originalname);

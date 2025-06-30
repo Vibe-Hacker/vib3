@@ -2516,12 +2516,6 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
         }
 
         const { title, description, username, userId } = req.body;
-        if (!title) {
-            return res.status(400).json({ 
-                error: 'Video title is required',
-                code: 'NO_TITLE'
-            });
-        }
 
         console.log(`🎬 Processing video upload: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB)`);
         console.log('🔍 Upload user association debug:', {
