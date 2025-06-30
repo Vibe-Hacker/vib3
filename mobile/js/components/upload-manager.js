@@ -1549,12 +1549,9 @@ class UploadManager {
             cameraModal.remove();
         }
         
-        // Restore the fullscreen upload page
-        const fullscreenUploadPage = document.getElementById('fullscreenUploadPage');
-        if (fullscreenUploadPage) {
-            fullscreenUploadPage.style.display = 'flex';
-            console.log('Restored fullscreen upload page');
-        }
+        // Close the entire upload flow instead of going back to upload options
+        console.log('Camera modal cancelled - closing entire upload flow');
+        this.closeUploadModal();
     }
 
     cleanupCameraStream() {
