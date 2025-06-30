@@ -1,20 +1,16 @@
-# Build outputs
-build/
-.dart_tool/
+# Build outputs (keep for faster builds)
+# build/
 
 # IDE
 .idea/
 *.iml
 
-# Android
-android/.gradle/
+# Android (keep gradle cache for faster builds)
+# android/.gradle/
 android/build/
-android/local.properties
 
-# Large files
-*.zip
-*.tar.gz
+# Only exclude specific large files that aren't needed
+# Keep commandlinetools zip as it's needed for Android SDK
 
-# Generated files
+# Generated files that change frequently
 .flutter-plugins-dependencies
-.packages
