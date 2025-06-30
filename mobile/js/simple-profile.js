@@ -242,9 +242,31 @@ async function loadUserProfileData() {
 async function loadUserVideos() {
     try {
         const baseURL = getAPIBaseURL();
-        console.log('🎬 Loading user videos:', { baseURL, hasAuthToken: !!window.authToken });
+        console.log('🎬 Loading user videos:', { 
+            baseURL, 
+            hasAuthToken: !!window.authToken,
+            currentUser: window.currentUser ? {
+                uid: window.currentUser.uid,
+                _id: window.currentUser._id,
+                username: window.currentUser.username
+            } : null
+        });
         
-        const response = await fetch(`${baseURL}/api/user/videos`, {
+        // Add userId parameter to ensure we get the right user's videos
+        const userId = window.currentUser?._id || window.currentUser?.uid;
+        const url = userId ? `${baseURL}/api/user/videos?userId=${userId}` : `${baseURL}/api/user/videos`;
+        
+        console.log('🔍 Profile loading debug info:', {
+            userId: userId,
+            _id: window.currentUser?._id,
+            uid: window.currentUser?.uid,
+            fullUser: window.currentUser,
+            finalUrl: url
+        });
+        
+        console.log('🔍 Fetching user videos from:', url);
+        
+        const response = await fetch(url, {
             credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',

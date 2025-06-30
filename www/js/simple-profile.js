@@ -256,6 +256,14 @@ async function loadUserVideos() {
         const userId = window.currentUser?._id || window.currentUser?.uid;
         const url = userId ? `${baseURL}/api/user/videos?userId=${userId}` : `${baseURL}/api/user/videos`;
         
+        console.log('🔍 Profile loading debug info:', {
+            userId: userId,
+            _id: window.currentUser?._id,
+            uid: window.currentUser?.uid,
+            fullUser: window.currentUser,
+            finalUrl: url
+        });
+        
         console.log('🔍 Fetching user videos from:', url);
         
         const response = await fetch(url, {

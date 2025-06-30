@@ -1682,8 +1682,19 @@ class UploadManager {
                 console.log('🔑 Upload user info:', {
                     userId: userId,
                     username: window.currentUser.username || window.currentUser.email,
-                    hasCurrentUser: !!window.currentUser
+                    hasCurrentUser: !!window.currentUser,
+                    fullCurrentUser: window.currentUser
                 });
+                
+                // Log complete FormData contents for debugging
+                console.log('🔍 COMPLETE FORMDATA CONTENTS:');
+                for (let [key, value] of formData.entries()) {
+                    if (value instanceof File) {
+                        console.log(`   ${key}: [File] ${value.name} (${value.size} bytes, ${value.type})`);
+                    } else {
+                        console.log(`   ${key}: ${value}`);
+                    }
+                }
             }
             
             console.log('🚀 Uploading to MongoDB API:', `${window.API_BASE_URL}/api/upload/video`);
@@ -1775,6 +1786,16 @@ class UploadManager {
                     setTimeout(() => {
                         window.loadUserVideos();
                     }, 1000);
+                }
+                
+                // Additionally, if we're on the profile page, force refresh
+                if (window.location.hash === '#profile' || window.currentPage === 'profile') {
+                    console.log('🔄 On profile page - forcing profile refresh...');
+                    setTimeout(() => {
+                        if (window.showPage && typeof window.showPage === 'function') {
+                            window.showPage('profile');
+                        }
+                    }, 1500);
                 }
                 
                 // Update user stats to reflect new video count
