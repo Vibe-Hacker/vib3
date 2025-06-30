@@ -21,7 +21,7 @@
         let isAudioEnabled = true;
         
         // Auth Functions
-        async function handleLogin() {
+        window.handleLogin = async function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
@@ -53,7 +53,7 @@
             }
         }
 
-        async function handleSignup() {
+        window.handleSignup = async function handleSignup() {
             const username = document.getElementById('signupName').value;
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
@@ -465,61 +465,6 @@
             window.showHome();
         };
         
-        // Authentication functions
-        window.handleLogin = async function() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            if (!email || !password) {
-                const errorEl = document.getElementById('authError');
-                if (errorEl) errorEl.textContent = 'Please enter both email and password';
-                return;
-            }
-            
-            try {
-                console.log('🔐 Attempting login...');
-                const result = await signInWithEmailAndPassword(auth, email, password);
-                console.log('✅ Login successful:', result);
-                
-                // signInWithEmailAndPassword sets window.currentUser and auth.currentUser
-                showApp();
-                
-            } catch (error) {
-                console.error('🔴 Login failed:', error);
-                const errorEl = document.getElementById('authError');
-                if (errorEl) errorEl.textContent = error.message;
-            }
-        };
-        
-        window.handleSignup = async function() {
-            const username = document.getElementById('signupName').value;
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-            
-            if (!username || !email || !password) {
-                const errorEl = document.getElementById('authError');
-                if (errorEl) errorEl.textContent = 'Please fill in all fields';
-                return;
-            }
-            
-            try {
-                console.log('📝 Attempting signup...');
-                const result = await createUserWithEmailAndPassword(auth, email, password);
-                console.log('✅ Signup successful:', result);
-                
-                // Update user profile with username
-                if (result.user) {
-                    await updateProfile(result.user, { displayName: username });
-                }
-                
-                showApp();
-                
-            } catch (error) {
-                console.error('🔴 Signup failed:', error);
-                const errorEl = document.getElementById('authError');
-                if (errorEl) errorEl.textContent = error.message;
-            }
-        };
         
         // Form switching functions
         window.showLogin = function() {
@@ -3071,7 +3016,6 @@
                     console.log('✅ Session restored for user:', data.user?.username || data.user?.email);
                     currentUser = data.user;
                     window.currentUser = data.user;
-                    auth.currentUser = data.user;
                     
                     // Load user profile data
                     await loadUserProfile();
@@ -3092,7 +3036,6 @@
             localStorage.removeItem('token');
             window.authToken = null;
             window.currentUser = null;
-            auth.currentUser = null;
         }
         
         // Make functions globally available
