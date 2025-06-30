@@ -122,25 +122,18 @@ function shareToInstagram(videoId) {
     const isMobile = /iphone|ipad|ipod|android/.test(userAgent);
     
     if (isMobile) {
-        // Try Instagram deep link
-        const instagramUrl = `instagram://share?text=${encodeURIComponent(message)}`;
+        // Try Instagram deep link - open camera/story creation
+        const instagramUrl = `instagram://camera`;
         
         // Attempt to open Instagram app
         window.location.href = instagramUrl;
         
-        // Fallback after 1 second if app didn't open
-        setTimeout(() => {
-            navigator.clipboard.writeText(url).then(() => {
-                alert('✅ Link copied to clipboard!\n\nIf Instagram didn\'t open:\n1. Open Instagram app manually\n2. Create a post or story\n3. Paste the link in your caption');
-            });
-        }, 1000);
+        // Also copy link immediately as backup
+        directCopyToClipboard(url, 'Opening Instagram... Link copied to paste in your story!');
     } else {
-        // Desktop - just copy link with instructions
-        navigator.clipboard.writeText(url).then(() => {
-            alert('✅ Link copied to clipboard!\n\n📸 To share on Instagram:\n1. Open Instagram app on your phone\n2. Create a post or story\n3. Paste the link in your caption or bio');
-        }).catch(() => {
-            alert('Instagram sharing: Please copy this link manually:\n' + url);
-        });
+        // Desktop - try to open Instagram web, then copy
+        window.open('https://www.instagram.com/', '_blank');
+        directCopyToClipboard(url, 'Opening Instagram... Link copied to paste in your post!');
     }
 }
 
