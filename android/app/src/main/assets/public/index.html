@@ -272,7 +272,7 @@
                                src="${videoSrc}"
                                loop
                                muted="${!isAudioEnabled}"
-                               preload="${index === 0 ? 'auto' : 'none'}"
+                               preload="metadata"
                                playsinline
                                webkit-playsinline
                                onclick="toggleVideoPlayback(this)">
@@ -405,7 +405,7 @@
                                src="${videoSrc}"
                                loop
                                muted="${!isAudioEnabled}"
-                               preload="${index === 0 ? 'auto' : 'none'}"
+                               preload="metadata"
                                playsinline
                                webkit-playsinline
                                onclick="toggleVideoPlayback(this)">
