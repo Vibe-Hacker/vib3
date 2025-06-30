@@ -69,6 +69,8 @@ class UploadManager {
         window.uploadVideo = () => this.uploadVideo();
         window.toggleRecording = () => this.toggleRecording();
         window.switchCamera = () => this.switchCamera();
+        window.showCameraSelector = () => this.showCameraSelector();
+        window.selectSpecificCamera = (deviceId) => this.selectSpecificCamera(deviceId);
         window.closeCameraModal = () => this.closeCameraModal();
         window.showTrendingSounds = () => this.showTrendingSounds();
         
@@ -1296,6 +1298,7 @@ class UploadManager {
                         <video id="cameraPreview" autoplay playsinline muted style="flex: 1; width: 100%; object-fit: cover; border-radius: 10px;"></video>
                         
                         <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px;">
+                            <button onclick="showCameraSelector()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">📷</button>
                             <button onclick="switchCamera()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">🔄</button>
                             <button onclick="closeCameraModal()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">✕</button>
                         </div>
@@ -1630,6 +1633,148 @@ class UploadManager {
             } else {
                 if (window.showToast) {
                     window.showToast('Camera switch failed - ' + error.message);
+                }
+            }
+        }
+    }
+
+    async showCameraSelector() {
+        console.log('📷 Showing camera selector...');
+        
+        try {
+            // Get available cameras
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoInputs = devices.filter(device => device.kind === 'videoinput');
+            
+            if (videoInputs.length <= 1) {
+                if (window.showToast) {
+                    window.showToast('Only one camera available');
+                }
+                return;
+            }
+            
+            // Create camera selection modal
+            const selectorModal = document.createElement('div');
+            selectorModal.className = 'modal active camera-selector-modal';
+            selectorModal.style.zIndex = '10001'; // Higher than camera modal
+            
+            let cameraOptions = '';
+            videoInputs.forEach((device, index) => {
+                const isBuiltIn = device.label.toLowerCase().includes('built-in') || 
+                                 device.label.toLowerCase().includes('integrated') ||
+                                 device.label.toLowerCase().includes('facetime') ||
+                                 device.label.toLowerCase().includes('front') ||
+                                 device.label.toLowerCase().includes('back');
+                                 
+                const isExternal = !isBuiltIn && device.label !== '';
+                const deviceType = isExternal ? '🔌 External' : '📱 Built-in';
+                const deviceName = device.label || `Camera ${index + 1}`;
+                
+                cameraOptions += `
+                    <div onclick="selectSpecificCamera('${device.deviceId}')" 
+                         style="padding: 15px 20px; margin: 10px 0; background: rgba(255,255,255,0.1); 
+                                border-radius: 10px; cursor: pointer; transition: all 0.3s;
+                                border: 2px solid transparent; display: flex; align-items: center; gap: 15px;"
+                         onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='#fe2c55';"
+                         onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='transparent';">
+                        <div style="font-size: 24px;">${deviceType}</div>
+                        <div>
+                            <div style="font-weight: bold; font-size: 16px; color: white;">${deviceName}</div>
+                            <div style="font-size: 12px; color: rgba(255,255,255,0.7);">
+                                ${isExternal ? 'External camera device' : 'Built-in device camera'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            selectorModal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px; background: #161823; border-radius: 15px; padding: 0;">
+                    <div style="padding: 25px 25px 0 25px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2 style="color: white; margin: 0; font-size: 20px;">Select Camera</h2>
+                            <button onclick="this.closest('.modal').remove()" 
+                                    style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+                        </div>
+                        <div style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">
+                            Choose which camera to use for recording
+                        </div>
+                    </div>
+                    <div style="padding: 0 25px 25px 25px; max-height: 400px; overflow-y: auto;">
+                        ${cameraOptions}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(selectorModal);
+            
+        } catch (error) {
+            console.error('❌ Camera selector error:', error);
+            if (window.showToast) {
+                window.showToast('Failed to load camera options');
+            }
+        }
+    }
+
+    async selectSpecificCamera(deviceId) {
+        console.log('📷 Selecting specific camera:', deviceId);
+        
+        try {
+            // Close camera selector modal
+            const selectorModal = document.querySelector('.camera-selector-modal');
+            if (selectorModal) {
+                selectorModal.remove();
+            }
+            
+            // Stop current stream
+            if (this.currentCameraStream) {
+                this.currentCameraStream.getTracks().forEach(track => track.stop());
+                this.currentCameraStream = null;
+            }
+            
+            // Get stream from specific camera
+            const newStream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    deviceId: { exact: deviceId },
+                    width: { ideal: 3840, max: 3840 },
+                    height: { ideal: 2160, max: 2160 },
+                    frameRate: { ideal: 60, max: 60 }
+                },
+                audio: true
+            });
+            
+            // Update video preview
+            const video = document.getElementById('cameraPreview');
+            if (video) {
+                video.srcObject = newStream;
+                this.currentCameraStream = newStream;
+                
+                // Get camera info for confirmation
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const selectedDevice = devices.find(device => device.deviceId === deviceId);
+                const cameraName = selectedDevice ? selectedDevice.label : 'Selected Camera';
+                
+                console.log('📷 Camera switched to:', cameraName);
+                
+                if (window.showToast) {
+                    window.showToast(`Using: ${cameraName} 📷`);
+                }
+            }
+            
+        } catch (error) {
+            console.error('❌ Specific camera selection error:', error);
+            
+            if (error.name === 'NotReadableError') {
+                if (window.showToast) {
+                    window.showToast('Camera is being used by another application');
+                }
+            } else if (error.name === 'OverconstrainedError') {
+                if (window.showToast) {
+                    window.showToast('Selected camera is not available');
+                }
+            } else {
+                if (window.showToast) {
+                    window.showToast('Failed to access selected camera');
                 }
             }
         }
