@@ -2572,6 +2572,9 @@ let uploadType = null; // 'video' or 'photos'
 let selectedFiles = [];
 let currentEditingFile = null;
 
+// OLD showUploadModal function - now handled by upload-manager.js
+// This function is deprecated and replaced by UploadManager class
+/*
 function showUploadModal() {
     console.log('🎬 Opening upload modal...');
     
@@ -2660,6 +2663,7 @@ function showUploadModal() {
     
     goToStep(1);
 }
+*/
 
 // Open upload modal from profile page
 function openUploadFromProfile() {
