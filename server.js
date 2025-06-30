@@ -95,7 +95,10 @@ app.get('/feed', async (req, res) => {
                 video.user = user || { username: 'Unknown', displayName: 'Unknown' };
                 video.likeCount = video.likes?.length || 0;
                 video.commentCount = 0;
-                video.shareCount = 0;
+                
+                // Get actual share count from database
+                video.shareCount = await db.collection('shares').countDocuments({ videoId: video._id.toString() });
+                
                 video.feedType = 'foryou';
                 video.thumbnailUrl = video.videoUrl + '#t=1';
             } catch (e) {
