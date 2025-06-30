@@ -31,13 +31,16 @@
             }
             
             try {
+                console.log('🔐 Attempting login to:', `${window.API_BASE_URL}/api/auth/login`);
                 const response = await fetch(`${window.API_BASE_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
                 
+                console.log('📡 Response status:', response.status);
                 const data = await response.json();
+                console.log('📦 Response data:', data);
                 
                 if (response.ok) {
                     localStorage.setItem('token', data.token);
@@ -49,7 +52,8 @@
                     showError(data.message || 'Login failed');
                 }
             } catch (error) {
-                showError('Network error. Please try again.');
+                console.error('❌ Network error:', error);
+                showError('Network error: ' + error.message);
             }
         }
 
