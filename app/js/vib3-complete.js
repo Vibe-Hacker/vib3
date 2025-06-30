@@ -647,7 +647,7 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
             
             // Add cache busting to prevent stale data
             const timestamp = Date.now();
-            const response = await fetch(`${window.API_BASE_URL}/api/videos?feed=${feedType}&page=${page}&limit=50&_t=${timestamp}`, {
+            const response = await fetch(`${window.API_BASE_URL}/api/videos?feed=${feedType}&page=${page}&limit=6&_t=${timestamp}`, {
                 headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
             });
             
@@ -1052,7 +1052,7 @@ function createAdvancedVideoCard(video) {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        background: #000 !important;
         z-index: 1 !important;
     `;
     
