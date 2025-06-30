@@ -3188,6 +3188,8 @@
                     `${window.API_BASE_URL}/api/feed/${currentFeed}`
                 ];
                 
+                console.log('🎯 Trying endpoints:', endpoints);
+                
                 let videos = [];
                 let success = false;
                 
@@ -3259,8 +3261,8 @@
 
         function renderVideos(videosArray) {
             // Use passed videos or fall back to global
-            const videos = videosArray || window.videos || [];
-            console.log('🎨 Starting renderVideos with:', videos.length, 'videos');
+            const allVideos = videosArray || window.videos || [];
+            console.log('🎨 Starting renderVideos with:', allVideos.length, 'videos');
             const feed = document.getElementById('videoFeed');
             
             if (!feed) {
@@ -3268,18 +3270,23 @@
                 return;
             }
             
-            if (!videos || videos.length === 0) {
+            if (!allVideos || allVideos.length === 0) {
                 console.log('⚠️ No videos to render');
                 showNoVideosMessage();
                 return;
             }
             
-            console.log('🎨 Rendering to element:', feed);
-            console.log('🎨 First video URL:', videos[0]?.url || videos[0]?.videoUrl || 'No URL');
-            console.log('🎨 First video object:', videos[0]);
+            // Store all videos globally for infinite scroll
+            window.allVideos = allVideos;
+            
+            // Render only first 5 videos initially to prevent decoder overload
+            const initialVideos = allVideos.slice(0, 5);
+            console.log('🎨 Rendering initial 5 videos of', allVideos.length, 'total');
+            console.log('🎨 First video URL:', initialVideos[0]?.url || initialVideos[0]?.videoUrl || 'No URL');
+            console.log('🎨 First video object:', initialVideos[0]);
             
             
-            feed.innerHTML = videos.map((video, index) => {
+            feed.innerHTML = initialVideos.map((video, index) => {
                 // Map video fields - handle both old and new field names
                 const videoSrc = video.url || video.videoUrl || video.fileUrl || '';
                 const videoId = video.id || video._id || index;
