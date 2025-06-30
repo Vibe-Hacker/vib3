@@ -1,5 +1,5 @@
-// Upload manager module
-import { db, storage } from '../firebase-init.js';
+// Upload manager module - converted to global script
+// No ES6 imports - using global variables
 
 class UploadManager {
     constructor() {
@@ -1665,115 +1665,111 @@ class UploadManager {
             // Update status
             this.updateUploadProgress(0, 'Starting upload...');
             
-            // Create storage reference
-            const storageRef = window.ref(storage, `videos/${window.currentUser.uid}_${Date.now()}.mp4`);
-            const uploadTask = window.uploadBytesResumable(storageRef, this.selectedVideoFile);
-
-            uploadTask.on('state_changed',
-                (snapshot) => {
-                    // Upload progress
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    
-                    // Determine status message based on progress
-                    let status = 'Uploading video...';
-                    if (progress < 10) {
-                        status = 'Starting upload...';
-                    } else if (progress < 50) {
-                        status = 'Uploading video...';
-                    } else if (progress < 90) {
-                        status = 'Almost done...';
-                    } else if (progress < 100) {
-                        status = 'Finalizing upload...';
-                    }
-                    
-                    // Update the progress UI
-                    this.updateUploadProgress(progress, status);
-                },
-                (error) => {
-                    // Upload error - use centralized error handling
-                    if (window.errorHandler) {
-                        window.errorHandler.reportError('upload', error, {
-                            operation: 'uploadVideo',
-                            userId: window.currentUser?.uid,
-                            fileSize: this.selectedVideoFile?.size,
-                            retryWithSmallerChunks: () => {
-                                // Implement retry with smaller chunks if needed
-                                console.log('Retrying upload with smaller chunks');
-                                this.uploadVideo();
-                            }
-                        });
-                    } else {
-                        console.error('Upload error:', error);
-                        if (window.showToast) {
-                            window.showToast('Failed to upload video');
-                        }
-                    }
-                    this.closeUploadModal();
-                },
-                async () => {
-                    // Upload success
-                    try {
-                        this.updateUploadProgress(100, 'Processing video...');
-                        
-                        const videoUrl = await window.getDownloadURL(uploadTask.snapshot.ref);
-                        
-                        this.updateUploadProgress(100, 'Saving video details...');
-                        
-                        // Create video document in Firestore
-                        await window.addDoc(window.collection(db, 'videos'), {
-                            userId: window.currentUser.uid,
-                            title: title,
-                            description: description,
-                            videoUrl,
-                            likes: [],
-                            comments: [],
-                            shares: 0,
-                            views: 0,
-                            createdAt: new Date()
-                        });
-                        
-                        this.updateUploadProgress(100, 'Upload complete! 🎉');
-                        
-                        // Show success for a moment before closing
-                        setTimeout(() => {
-                            console.log('Upload complete - closing upload modal');
-                            
-                            if (window.showToast) {
-                                window.showToast('Video uploaded successfully! 🎉');
-                            }
-                            
-                            // Close upload modal and restore content
-                            this.closeUploadModal();
-                            
-                            // Refresh feeds after successful upload
-                            if (window.loadAllVideosForFeed) {
-                                window.loadAllVideosForFeed();
-                            }
-                        }, 2000);
-                        
-                    } catch (firestoreError) {
-                        console.error('Firestore error:', firestoreError);
-                        if (window.showToast) {
-                            window.showToast('Video uploaded but failed to save details');
-                        }
-                        this.closeUploadModal();
-                    }
+            // Create FormData for MongoDB upload
+            const formData = new FormData();
+            formData.append('video', this.selectedVideoFile);
+            formData.append('title', title);
+            formData.append('description', description);
+            
+            // Add user information for proper association
+            if (window.currentUser) {
+                formData.append('userId', window.currentUser.uid);
+                formData.append('username', window.currentUser.username || window.currentUser.email);
+                formData.append('userAvatar', window.currentUser.avatar || '👤');
+            }
+            
+            console.log('🚀 Uploading to MongoDB API:', `${window.API_BASE_URL}/api/upload/video`);
+            
+            // Simulate progress updates during upload since fetch doesn't provide native progress
+            const progressInterval = setInterval(() => {
+                // Simulate gradual progress increase
+                const currentProgress = parseInt(document.getElementById('uploadProgressText')?.textContent || '0');
+                if (currentProgress < 85) {
+                    const newProgress = Math.min(85, currentProgress + Math.random() * 15);
+                    this.updateUploadProgress(newProgress, 'Uploading video...');
                 }
-            );
+            }, 500);
+            
+            const response = await fetch(`${window.API_BASE_URL}/api/upload/video`, {
+                method: 'POST',
+                credentials: 'include', // Include HTTP-only cookies for production auth
+                headers: {
+                    // Only include Authorization header if we have a real token (not session-based)
+                    ...(window.authToken && window.authToken !== 'session-based' ? 
+                        { 'Authorization': `Bearer ${window.authToken}` } : {})
+                },
+                body: formData
+            });
+            
+            // Clear the progress simulation
+            clearInterval(progressInterval);
+            
+            if (!response.ok) {
+                // Handle upload error
+                const errorText = await response.text();
+                console.error('Upload failed:', errorText);
+                
+                let userMessage = 'Upload failed. Please try again.';
+                try {
+                    const errorData = JSON.parse(errorText);
+                    switch (errorData.code) {
+                        case 'FILE_TOO_LARGE':
+                            userMessage = 'Video file is too large (max 500MB for 4K videos). Please compress your video or choose a smaller file.';
+                            break;
+                        case 'INVALID_FORMAT':
+                            userMessage = 'Invalid video format. Please use MP4, MOV, or AVI format.';
+                            break;
+                        case 'VIDEO_TOO_LONG':
+                            userMessage = 'Video is too long (max 3 minutes). Please trim your video to under 3 minutes.';
+                            break;
+                        default:
+                            if (response.status === 401) {
+                                userMessage = 'Please log in to upload videos. Your session may have expired.';
+                            }
+                    }
+                    throw new Error(userMessage);
+                } catch (parseError) {
+                    if (response.status === 401) {
+                        throw new Error('Please log in to upload videos. Your session may have expired.');
+                    }
+                    throw new Error(errorText || 'Upload failed. Please try again.');
+                }
+            }
+            
+            // Upload success
+            this.updateUploadProgress(100, 'Processing video...');
+            
+            const result = await response.json();
+            console.log('✅ Upload successful:', result);
+            
+            this.updateUploadProgress(100, 'Upload complete! 🎉');
+            
+            // Show success for a moment before closing
+            setTimeout(() => {
+                console.log('Upload complete - closing upload modal');
+                
+                if (window.showToast) {
+                    window.showToast('Video uploaded successfully! 🎉');
+                }
+                
+                // Close upload modal and restore content
+                this.closeUploadModal();
+                
+                // Refresh feeds after successful upload
+                if (window.loadAllVideosForFeed) {
+                    window.loadAllVideosForFeed();
+                }
+            }, 2000);
             
         } catch (error) {
-            // Use centralized error handling
-            if (window.errorHandler) {
-                window.errorHandler.reportError('upload', error, {
-                    operation: 'uploadVideo',
-                    userId: window.currentUser?.uid,
-                    phase: 'initialization'
-                });
-            } else {
-                console.error('Upload error:', error);
-                if (window.showToast) {
-                    window.showToast('Failed to upload video');
-                }
+            // Clear progress simulation if it exists
+            if (typeof progressInterval !== 'undefined') {
+                clearInterval(progressInterval);
+            }
+            
+            console.error('Upload error:', error);
+            if (window.showToast) {
+                window.showToast('Failed to upload video: ' + error.message);
             }
             this.closeUploadModal();
         }
@@ -1805,5 +1801,3 @@ const uploadManager = new UploadManager();
 
 // Make upload manager globally available
 window.uploadManager = uploadManager;
-
-export default UploadManager;
