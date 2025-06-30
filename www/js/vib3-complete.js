@@ -10367,8 +10367,7 @@ function shareVideo(videoId, video) {
         });
     }
     
-    // Record the share on server and update count
-    recordVideoShare(videoId);
+    // Note: Share is recorded when user actually shares to a platform, not when modal opens
 }
 
 // Record video share on server and update UI

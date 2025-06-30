@@ -135,6 +135,9 @@ function shareToInstagram(videoId) {
         window.open('https://www.instagram.com/', '_blank');
         directCopyToClipboard(url, 'Opening Instagram... Link copied to paste in your post!');
     }
+    
+    // Record the share
+    recordVideoShare(videoId);
 }
 
 function shareToSnapchat(videoId) {
@@ -207,6 +210,39 @@ function shareViaSMS(videoId) {
     
     // Also copy link to clipboard as backup and show simple notification
     directCopyToClipboard(url, 'Link copied to clipboard! Paste it in your SMS message.');
+    
+    // Record the share
+    recordVideoShare(videoId);
+}
+
+// Record video share on server and update UI
+async function recordVideoShare(videoId) {
+    try {
+        const response = await fetch(`${window.API_BASE_URL || ''}/api/videos/${videoId}/share`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const newShareCount = data.shareCount;
+            
+            // Update share count in all instances of this video
+            document.querySelectorAll(`[data-video-id="${videoId}"] .share-count`).forEach(shareCountEl => {
+                if (shareCountEl) {
+                    shareCountEl.textContent = newShareCount;
+                }
+            });
+            
+            console.log(`✅ Share recorded for video ${videoId}, new count: ${newShareCount}`);
+        } else {
+            console.error('❌ Failed to record share:', response.status);
+        }
+    } catch (error) {
+        console.error('❌ Error recording share:', error);
+    }
 }
 
 // Simple direct copy function - tries clipboard API silently, falls back to notification only
