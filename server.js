@@ -69,7 +69,7 @@ app.get('/feed', async (req, res) => {
     }
     
     try {
-        const { limit = 50 } = req.query;
+        // No limit - return all videos like TikTok
         
         const videos = await db.collection('videos')
             .find({ status: { $ne: 'deleted' } })
@@ -80,7 +80,7 @@ app.get('/feed', async (req, res) => {
         
         // RANDOMIZE
         const shuffled = [...videos].sort(() => Math.random() - 0.5);
-        const finalVideos = shuffled.slice(0, parseInt(limit));
+        const finalVideos = shuffled; // Return ALL videos - no artificial limit
         
         console.log(`🎲 RANDOMIZED! Original: ${videos.slice(0,3).map(v => v._id.toString().slice(-4)).join(',')}`);
         console.log(`🎲 RANDOMIZED! Shuffled: ${finalVideos.slice(0,3).map(v => v._id.toString().slice(-4)).join(',')}`);
@@ -124,7 +124,7 @@ app.get('/videos-random', async (req, res) => {
     }
     
     try {
-        const { limit = 50 } = req.query;
+        // No limit - return all videos like TikTok
         
         const videos = await db.collection('videos')
             .find({ status: { $ne: 'deleted' } })
@@ -135,7 +135,7 @@ app.get('/videos-random', async (req, res) => {
         
         // RANDOMIZE
         const shuffled = [...videos].sort(() => Math.random() - 0.5);
-        const finalVideos = shuffled.slice(0, parseInt(limit));
+        const finalVideos = shuffled; // Return ALL videos - no artificial limit
         
         console.log(`🎲 RANDOMIZED! Original: ${videos.slice(0,3).map(v => v._id.toString().slice(-4)).join(',')}`);
         console.log(`🎲 RANDOMIZED! Shuffled: ${finalVideos.slice(0,3).map(v => v._id.toString().slice(-4)).join(',')}`);
@@ -179,7 +179,7 @@ app.get('/api/random-videos-v2', async (req, res) => {
     }
     
     try {
-        const { limit = 50 } = req.query;
+        // No limit - return all videos like TikTok
         
         // Get all videos
         const videos = await db.collection('videos')
@@ -191,7 +191,7 @@ app.get('/api/random-videos-v2', async (req, res) => {
         
         // GUARANTEED RANDOMIZATION 
         const shuffled = [...videos].sort(() => Math.random() - 0.5);
-        const finalVideos = shuffled.slice(0, parseInt(limit));
+        const finalVideos = shuffled; // Return ALL videos - no artificial limit
         
         console.log(`🎲 BEFORE: ${videos.slice(0,3).map(v => v._id.toString().slice(-4)).join(',')}`);
         console.log(`🎲 AFTER:  ${finalVideos.slice(0,3).map(v => v._id.toString().slice(-4)).join(',')}`);
@@ -246,7 +246,7 @@ app.get('/api/test', async (req, res) => {
         const videos = await db.collection('videos')
             .find({ status: { $ne: 'deleted' } })
             .sort({ createdAt: -1 })
-            .limit(parseInt(limit) * 2)
+            // No limit - return all videos
             .toArray();
             
         console.log(`📹 Found ${videos.length} videos in database`);
@@ -309,7 +309,7 @@ app.get('/api/test-videos', async (req, res) => {
         const videos = await db.collection('videos')
             .find({ status: { $ne: 'deleted' } })
             .sort({ createdAt: -1 })
-            .limit(parseInt(limit) * 2)
+            // No limit - return all videos
             .toArray();
             
         console.log(`📹 Found ${videos.length} videos in database`);
@@ -363,7 +363,7 @@ app.get('/api/feed-bypass', async (req, res) => {
         const videos = await db.collection('videos')
             .find({ status: { $ne: 'deleted' } })
             .sort({ createdAt: -1 })
-            .limit(parseInt(limit) * 2)
+            // No limit - return all videos
             .toArray();
             
         // Force randomization
@@ -2312,7 +2312,7 @@ app.get('/api/videos', async (req, res) => {
                         // We'll add engagement sorting in the processing below
                     })
                     .skip(actualSkip)
-                    .limit(parseInt(limit) * 2) // Get more to filter for trending
+                    // No limit - return all videos // Get more to filter for trending
                     .toArray();
                     
                 // Shuffle for diversity in explore feed

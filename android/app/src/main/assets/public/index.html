@@ -21,7 +21,7 @@
         let isAudioEnabled = true;
         
         // Auth Functions
-        async function handleLogin() {
+        window.handleLogin = async function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
@@ -31,13 +31,16 @@
             }
             
             try {
+                console.log('🔐 Attempting login to:', `${window.API_BASE_URL}/api/auth/login`);
                 const response = await fetch(`${window.API_BASE_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
                 
+                console.log('📡 Response status:', response.status);
                 const data = await response.json();
+                console.log('📦 Response data:', data);
                 
                 if (response.ok) {
                     localStorage.setItem('token', data.token);
@@ -49,11 +52,12 @@
                     showError(data.message || 'Login failed');
                 }
             } catch (error) {
-                showError('Network error. Please try again.');
+                console.error('❌ Network error:', error);
+                showError('Network error: ' + error.message);
             }
         }
 
-        async function handleSignup() {
+        window.handleSignup = async function handleSignup() {
             const username = document.getElementById('signupName').value;
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
@@ -465,61 +469,6 @@
             window.showHome();
         };
         
-        // Authentication functions
-        window.handleLogin = async function() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            if (!email || !password) {
-                const errorEl = document.getElementById('authError');
-                if (errorEl) errorEl.textContent = 'Please enter both email and password';
-                return;
-            }
-            
-            try {
-                console.log('🔐 Attempting login...');
-                const result = await signInWithEmailAndPassword(auth, email, password);
-                console.log('✅ Login successful:', result);
-                
-                // signInWithEmailAndPassword sets window.currentUser and auth.currentUser
-                showApp();
-                
-            } catch (error) {
-                console.error('🔴 Login failed:', error);
-                const errorEl = document.getElementById('authError');
-                if (errorEl) errorEl.textContent = error.message;
-            }
-        };
-        
-        window.handleSignup = async function() {
-            const username = document.getElementById('signupName').value;
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-            
-            if (!username || !email || !password) {
-                const errorEl = document.getElementById('authError');
-                if (errorEl) errorEl.textContent = 'Please fill in all fields';
-                return;
-            }
-            
-            try {
-                console.log('📝 Attempting signup...');
-                const result = await createUserWithEmailAndPassword(auth, email, password);
-                console.log('✅ Signup successful:', result);
-                
-                // Update user profile with username
-                if (result.user) {
-                    await updateProfile(result.user, { displayName: username });
-                }
-                
-                showApp();
-                
-            } catch (error) {
-                console.error('🔴 Signup failed:', error);
-                const errorEl = document.getElementById('authError');
-                if (errorEl) errorEl.textContent = error.message;
-            }
-        };
         
         // Form switching functions
         window.showLogin = function() {
@@ -3071,7 +3020,6 @@
                     console.log('✅ Session restored for user:', data.user?.username || data.user?.email);
                     currentUser = data.user;
                     window.currentUser = data.user;
-                    auth.currentUser = data.user;
                     
                     // Load user profile data
                     await loadUserProfile();
@@ -3092,7 +3040,6 @@
             localStorage.removeItem('token');
             window.authToken = null;
             window.currentUser = null;
-            auth.currentUser = null;
         }
         
         // Make functions globally available
@@ -3231,9 +3178,10 @@
                 console.log('🔍 Token available:', !!token);
                 console.log('🔍 Current user:', currentUser?.username || 'No user');
                 
-                // Try multiple API endpoints to find videos - prioritize working endpoints
+                // Try multiple API endpoints to find videos - prioritize working endpoints  
                 const endpoints = [
-                    `${window.API_BASE_URL}/api/videos`,           // Main videos endpoint (confirmed working)
+                    `${window.API_BASE_URL}/feed`,                 // Root feed endpoint (CONFIRMED WORKING) - Load all available videos
+                    `${window.API_BASE_URL}/api/videos`,           // Main videos endpoint
                     `${window.API_BASE_URL}/api/videos/all`,       // All videos
                     `${window.API_BASE_URL}/api/videos/${currentFeed}`,
                     `${window.API_BASE_URL}/api/videos/feed/${currentFeed}`,
