@@ -11,6 +11,19 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+    
+    - name: Debug - List repository structure
+      run: |
+        echo "Repository root:"
+        ls -la
+        echo ""
+        echo "Checking for vib3_flutter:"
+        if [ -d "vib3_flutter" ]; then
+          echo "vib3_flutter directory exists"
+          ls -la vib3_flutter/
+        else
+          echo "ERROR: vib3_flutter directory NOT FOUND"
+        fi
       
     - uses: actions/setup-java@v3
       with:
