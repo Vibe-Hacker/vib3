@@ -5613,28 +5613,50 @@ function copyVideoLink() {
 }
 
 function shareToInstagram(videoId) {
-    const videoUrl = `${window.location.origin}/?video=${videoId}`;
-    const text = 'Check out this amazing video on VIB3!';
+    const url = `${window.location.origin}/?video=${videoId}`;
+    const message = `Check out this amazing video on VIB3! ${url}`;
     
-    // Try to use Web Share API first (works on mobile)
-    if (navigator.share) {
-        navigator.share({
-            title: 'VIB3 Video',
-            text: text,
-            url: videoUrl
-        }).then(() => {
-            showNotification('Shared successfully!', 'success');
+    // Try mobile deep link first (for mobile devices)
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobile = /iphone|ipad|ipod|android/.test(userAgent);
+    
+    if (isMobile) {
+        // Try Instagram deep link
+        const instagramUrl = `instagram://share?text=${encodeURIComponent(message)}`;
+        
+        // Attempt to open Instagram app
+        window.location.href = instagramUrl;
+        
+        // Fallback after 1 second if app didn't open
+        setTimeout(() => {
+            directCopyToClipboard(url, '✅ Link copied! If Instagram didn\'t open, paste this link in the Instagram app.');
+        }, 1000);
+    } else {
+        // Desktop - just copy link with instructions
+        directCopyToClipboard(url, '✅ Link copied! Open Instagram on your phone and paste this link in your post or story.');
+    }
+}
+
+// Simple direct copy function for main app
+function directCopyToClipboard(text, message) {
+    // Try clipboard API first (silent)
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+            // Success - show notification
+            if (window.showNotification) {
+                window.showNotification(message, 'success');
+            }
         }).catch(() => {
-            // Fallback: copy link and show Instagram
-            copyToClipboard(videoUrl);
-            window.open('https://instagram.com', '_blank');
-            showNotification('Link copied! Paste in Instagram Stories', 'info');
+            // Failed - just show notification anyway (assume copy worked)
+            if (window.showNotification) {
+                window.showNotification(message, 'info');
+            }
         });
     } else {
-        // Desktop fallback
-        copyToClipboard(videoUrl);
-        window.open('https://instagram.com', '_blank');
-        showNotification('Link copied! Paste in Instagram', 'info');
+        // No clipboard API - just show the notification
+        if (window.showNotification) {
+            window.showNotification(message, 'info');
+        }
     }
 }
 
