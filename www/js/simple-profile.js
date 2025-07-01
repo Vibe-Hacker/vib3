@@ -75,8 +75,8 @@ function createSimpleProfilePage() {
             <!-- Profile Info -->
             <div style="display: flex; align-items: center; gap: 30px; max-width: 1000px; margin: 0 auto;">
                 <div style="position: relative;">
-                    <div id="profilePicture" style="width: 140px; height: 140px; background: linear-gradient(135deg, #333, #666); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; border: 4px solid rgba(255,255,255,0.2); cursor: pointer;" onclick="changeProfilePicture()">
-                        ${user.profilePicture || '👤'}
+                    <div id="profilePicture" style="width: 140px; height: 140px; background: linear-gradient(135deg, #333, #666); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; border: 4px solid rgba(255,255,255,0.2); cursor: pointer; ${user.profileImage ? `background-image: url(${user.profileImage}); background-size: cover; background-position: center;` : ''}" onclick="changeProfilePicture()">
+                        ${user.profileImage ? '' : (user.profilePicture || '👤')}
                     </div>
                     <button onclick="changeProfilePicture()" style="position: absolute; bottom: 0; right: 0; background: #fe2c55; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 16px; cursor: pointer;">
                         📷
@@ -1227,6 +1227,13 @@ async function changeProfilePicture() {
                     const data = await response.json();
                     // Update profile picture display
                     updateProfilePictureDisplay(data.profilePictureUrl, null);
+                    
+                    // Update current user data
+                    if (window.currentUser) {
+                        window.currentUser.profilePicture = data.profilePictureUrl;
+                        window.currentUser.profileImage = data.profilePictureUrl;
+                    }
+                    
                     showNotification('Profile picture updated!', 'success');
                     modal.remove();
                 } else {
@@ -1259,6 +1266,13 @@ async function changeProfilePicture() {
             
             if (response.ok) {
                 updateProfilePictureDisplay(null, emoji);
+                
+                // Update current user data
+                if (window.currentUser) {
+                    window.currentUser.profilePicture = emoji;
+                    window.currentUser.profileImage = null; // Clear image when using emoji
+                }
+                
                 showNotification('Profile picture updated!', 'success');
                 modal.remove();
             } else {
@@ -1378,11 +1392,12 @@ function openCameraForProfile() {
                         const result = await response.json();
                         
                         // Update UI with new image
-                        updateProfilePictureDisplay(result.imageUrl);
+                        updateProfilePictureDisplay(result.profilePictureUrl);
                         
                         // Update current user data
                         if (window.currentUser) {
-                            window.currentUser.profilePicture = result.imageUrl;
+                            window.currentUser.profilePicture = result.profilePictureUrl;
+                            window.currentUser.profileImage = result.profilePictureUrl;
                         }
                         
                         showNotification('Profile picture updated successfully!', 'success');
