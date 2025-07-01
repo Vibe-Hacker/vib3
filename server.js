@@ -3122,7 +3122,8 @@ app.get('/api/users/search', async (req, res) => {
                 _id: 1,
                 username: 1,
                 displayName: 1,
-                profilePicture: 1
+                profilePicture: 1,
+                profileImage: 1
             })
             .toArray();
         
@@ -3422,9 +3423,13 @@ app.post('/api/user/profile-image', requireAuth, profileImageUpload.single('prof
             return res.status(404).json({ error: 'User not found' });
         }
 
+        console.log('📸 Profile image updated successfully for user:', userId);
+        console.log('📸 New profile image URL:', profileImageUrl);
+        
         res.json({ 
             success: true,
             profilePictureUrl: profileImageUrl,
+            profileImageUrl: profileImageUrl,
             message: 'Profile image updated successfully'
         });
 

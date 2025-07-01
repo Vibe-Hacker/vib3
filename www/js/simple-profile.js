@@ -1228,12 +1228,15 @@ async function changeProfilePicture() {
                     console.log('📸 Profile image upload response:', data);
                     
                     // Update profile picture display
+                    console.log('📸 Calling updateProfilePictureDisplay with URL:', data.profilePictureUrl);
                     updateProfilePictureDisplay(data.profilePictureUrl, null);
                     
                     // Update current user data
                     if (window.currentUser) {
+                        console.log('📸 Updating currentUser with new profile picture');
                         window.currentUser.profilePicture = data.profilePictureUrl;
                         window.currentUser.profileImage = data.profilePictureUrl;
+                        console.log('📸 Updated currentUser:', window.currentUser);
                     }
                     
                     // Force reload profile data to get updated image
