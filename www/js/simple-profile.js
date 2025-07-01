@@ -281,15 +281,11 @@ async function loadUserVideos() {
             const data = await response.json();
             console.log('✅ User videos loaded:', {
                 count: data.videos?.length || 0,
-                videos: data.videos?.map(v => ({
-                    id: v._id,
-                    title: v.title,
-                    userId: v.userId,
-                    username: v.username,
-                    views: v.views,
-                    likeCount: v.likeCount,
-                    createdAt: v.createdAt
-                })) || []
+                sampleVideo: data.videos?.[0] ? {
+                    title: data.videos[0].title,
+                    views: data.videos[0].views,
+                    likes: data.videos[0].likeCount
+                } : null
             });
             displayUserVideos(data.videos || []);
         } else {
