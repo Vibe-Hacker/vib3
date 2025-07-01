@@ -77,7 +77,8 @@ function editProfile() {
 console.log('🔧 profile-functions.js loaded, setting up changeProfilePicture');
 
 async function changeProfilePicture() {
-    alert('📸 changeProfilePicture function was called!');
+    console.log('📸 IMMEDIATE CALL - changeProfilePicture function was called!');
+    alert('📸 IMMEDIATE ALERT - changeProfilePicture function was called!');
     console.log('📸 PROFILE-FUNCTIONS.JS changeProfilePicture called directly!');
     const emojis = ['👤', '😀', '😎', '🤩', '🥳', '🦄', '🌟', '💫', '🎵', '🎭', '🎨', '🏆'];
     const currentPicture = document.getElementById('profilePicture');
