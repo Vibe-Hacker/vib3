@@ -252,9 +252,9 @@ async function loadUserProfile() {
     profileElements.avatar.forEach(el => {
         if (el) {
             if (el.tagName === 'IMG') {
-                el.src = currentUser.photoURL || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Ccircle cx="50" cy="50" r="40" fill="%23ddd"/%3E%3Ctext x="50" y="55" text-anchor="middle" font-size="40" fill="%23666"%3E👤%3C/text%3E%3C/svg%3E';
+                el.src = currentUser.profileImage || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Ccircle cx="50" cy="50" r="40" fill="%23ddd"/%3E%3Ctext x="50" y="55" text-anchor="middle" font-size="40" fill="%23666"%3E👤%3C/text%3E%3C/svg%3E';
             } else {
-                el.textContent = currentUser.photoURL ? '' : '👤';
+                el.textContent = currentUser.profileImage ? '' : '👤';
             }
         }
     });
