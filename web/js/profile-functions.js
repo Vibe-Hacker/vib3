@@ -215,8 +215,8 @@ async function changeProfilePicture() {
                     // Update current user data
                     if (window.currentUser) {
                         console.log('📸 Updating currentUser with new profile picture');
-                        window.currentUser.profilePicture = imageUrl;
                         window.currentUser.profileImage = imageUrl;
+                        window.currentUser.profilePicture = null; // Clear emoji when using image
                         console.log('📸 Updated currentUser:', window.currentUser);
                     }
                     
@@ -246,13 +246,50 @@ async function changeProfilePicture() {
     
     window.selectProfilePicture = async (emoji) => {
         console.log('📸 Setting emoji profile picture:', emoji);
-        const profilePicEl = document.getElementById('profilePicture');
-        if (profilePicEl) {
-            profilePicEl.style.backgroundImage = '';
-            profilePicEl.textContent = emoji;
+        
+        try {
+            // Call server to update profile picture
+            const response = await fetch(`${window.API_BASE_URL}/api/user/profile-emoji`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(window.authToken && window.authToken !== 'session-based' ? 
+                        { 'Authorization': `Bearer ${window.authToken}` } : {})
+                },
+                body: JSON.stringify({ emoji })
+            });
+            
+            if (response.ok) {
+                // Update current user data
+                if (window.currentUser) {
+                    window.currentUser.profilePicture = emoji;
+                    window.currentUser.profileImage = null; // Clear image when using emoji
+                }
+                
+                // Update UI
+                const profilePicEl = document.getElementById('profilePicture');
+                if (profilePicEl) {
+                    profilePicEl.style.backgroundImage = '';
+                    profilePicEl.textContent = emoji;
+                }
+                
+                alert('Profile picture updated!');
+                modal.remove();
+                
+                // Refresh profile data
+                setTimeout(() => {
+                    if (window.loadUserProfileData && typeof window.loadUserProfileData === 'function') {
+                        window.loadUserProfileData();
+                    }
+                }, 500);
+            } else {
+                throw new Error('Failed to update profile picture');
+            }
+        } catch (error) {
+            console.error('❌ Error updating emoji profile picture:', error);
+            alert('Error updating profile picture');
         }
-        alert('Profile picture updated!');
-        modal.remove();
     };
 }
 
