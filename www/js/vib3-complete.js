@@ -1590,7 +1590,7 @@ function createExploreVideoCard(video) {
         font-size: 12px;
     `;
     
-    const viewCount = video.views || video.likeCount || Math.floor(Math.random() * 10000);
+    const viewCount = video.views || 0;
     const likeCount = video.likeCount || video.likes || 0;
     const commentCount = video.commentCount || video.comments || 0;
     

@@ -96,8 +96,9 @@ app.get('/feed', async (req, res) => {
                 video.likeCount = video.likes?.length || 0;
                 video.commentCount = 0;
                 
-                // Get actual share count from database
+                // Get actual engagement counts from database
                 video.shareCount = await db.collection('shares').countDocuments({ videoId: video._id.toString() });
+                video.views = await db.collection('views').countDocuments({ videoId: video._id.toString() });
                 
                 video.feedType = 'foryou';
                 video.thumbnailUrl = video.videoUrl + '#t=1';
@@ -153,7 +154,8 @@ app.get('/videos-random', async (req, res) => {
                 video.user = user || { username: 'Unknown', displayName: 'Unknown' };
                 video.likeCount = video.likes?.length || 0;
                 video.commentCount = 0;
-                video.shareCount = 0;
+                video.shareCount = await db.collection('shares').countDocuments({ videoId: video._id.toString() });
+                video.views = await db.collection('views').countDocuments({ videoId: video._id.toString() });
                 video.feedType = 'foryou';
                 video.thumbnailUrl = video.videoUrl + '#t=1';
             } catch (e) {
@@ -1416,7 +1418,7 @@ async function applyEngagementRanking(videos, db) {
             const likeCount = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
             const commentCount = await db.collection('comments').countDocuments({ videoId: video._id.toString() });
             const shareCount = await db.collection('shares').countDocuments({ videoId: video._id.toString() });
-            const views = video.views || 0;
+            const views = await db.collection('views').countDocuments({ videoId: video._id.toString() });
             
             // Time factors
             const now = new Date();
@@ -1461,6 +1463,7 @@ async function applyEngagementRanking(videos, db) {
             video.likeCount = likeCount;
             video.commentCount = commentCount;
             video.shareCount = shareCount;
+            video.views = views;
             video.likeRate = likeRate;
             video.commentRate = commentRate;
             video.viewVelocity = viewVelocity;
