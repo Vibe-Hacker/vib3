@@ -198,24 +198,38 @@ async function changeProfilePicture() {
                     
                     // Update profile picture display immediately
                     const profilePicEl = document.getElementById('profilePicture');
-                    if (profilePicEl && data.profilePictureUrl) {
-                        console.log('📸 Updating profile picture element immediately with:', data.profilePictureUrl);
-                        profilePicEl.style.backgroundImage = `url(${data.profilePictureUrl})`;
+                    const imageUrl = data.profilePictureUrl || data.profileImageUrl;
+                    if (profilePicEl && imageUrl) {
+                        console.log('📸 Updating profile picture element immediately with:', imageUrl);
+                        profilePicEl.style.backgroundImage = `url(${imageUrl})`;
                         profilePicEl.style.backgroundSize = 'cover';
                         profilePicEl.style.backgroundPosition = 'center';
                         profilePicEl.textContent = '';
+                    } else {
+                        console.error('❌ No profile picture element found or no image URL in response');
+                        console.log('📸 profilePicEl found:', !!profilePicEl);
+                        console.log('📸 imageUrl:', imageUrl);
+                        console.log('📸 Full response data:', data);
                     }
                     
                     // Update current user data
                     if (window.currentUser) {
                         console.log('📸 Updating currentUser with new profile picture');
-                        window.currentUser.profilePicture = data.profilePictureUrl;
-                        window.currentUser.profileImage = data.profilePictureUrl;
+                        window.currentUser.profilePicture = imageUrl;
+                        window.currentUser.profileImage = imageUrl;
                         console.log('📸 Updated currentUser:', window.currentUser);
                     }
                     
                     alert('Profile picture updated successfully!');
                     modal.remove();
+                    
+                    // Force reload of profile data to ensure it shows the new image
+                    setTimeout(() => {
+                        if (window.loadUserProfileData && typeof window.loadUserProfileData === 'function') {
+                            console.log('📸 Refreshing profile data after upload...');
+                            window.loadUserProfileData();
+                        }
+                    }, 500);
                 } else {
                     const errorText = await response.text();
                     console.error('❌ PROFILE PICTURE UPLOAD ERROR:', errorText);
