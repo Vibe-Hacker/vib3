@@ -2866,6 +2866,19 @@ app.get('/api/user/videos', async (req, res) => {
         
         console.log(`📊 Found ${videos.length} videos for user ${targetUserId}`);
         
+        // Debug: Check if views collection has any data at all
+        const totalViewsInDB = await db.collection('views').countDocuments();
+        console.log(`🔍 Total view records in database: ${totalViewsInDB}`);
+        
+        if (totalViewsInDB > 0) {
+            const sampleViews = await db.collection('views').find({}).limit(3).toArray();
+            console.log('🔍 Sample view records:', sampleViews.map(v => ({
+                videoId: v.videoId,
+                timestamp: v.timestamp,
+                watchTime: v.watchTime
+            })));
+        }
+        
         // Debug: Show some sample video userIds for comparison
         if (videos.length > 0) {
             console.log('🔍 Sample video userIds:', videos.slice(0, 3).map(v => ({
@@ -2910,6 +2923,13 @@ app.get('/api/user/videos', async (req, res) => {
                 video.likeCount = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
                 video.commentCount = await db.collection('comments').countDocuments({ videoId: video._id.toString() });
                 video.views = await db.collection('views').countDocuments({ videoId: video._id.toString() });
+                
+                console.log(`📊 Video ${video._id} engagement:`, {
+                    title: video.title,
+                    likes: video.likeCount,
+                    comments: video.commentCount,
+                    views: video.views
+                });
             } catch (userError) {
                 console.error('Error getting user info for video:', video._id, userError);
                 video.user = { 

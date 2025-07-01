@@ -286,6 +286,8 @@ async function loadUserVideos() {
                     title: v.title,
                     userId: v.userId,
                     username: v.username,
+                    views: v.views,
+                    likeCount: v.likeCount,
                     createdAt: v.createdAt
                 })) || []
             });
