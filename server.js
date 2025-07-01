@@ -2922,13 +2922,19 @@ app.get('/api/user/videos', async (req, res) => {
                 // Get engagement counts
                 video.likeCount = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
                 video.commentCount = await db.collection('comments').countDocuments({ videoId: video._id.toString() });
-                video.views = await db.collection('views').countDocuments({ videoId: video._id.toString() });
+                const viewsFromCollection = await db.collection('views').countDocuments({ videoId: video._id.toString() });
+                const originalViews = video.views || 0;
+                
+                // Use view collection count if available, otherwise fall back to video.views field
+                video.views = viewsFromCollection > 0 ? viewsFromCollection : originalViews;
                 
                 console.log(`📊 Video ${video._id} engagement:`, {
                     title: video.title,
                     likes: video.likeCount,
                     comments: video.commentCount,
-                    views: video.views
+                    views: video.views,
+                    viewsFromCollection: viewsFromCollection,
+                    originalViews: originalViews
                 });
             } catch (userError) {
                 console.error('Error getting user info for video:', video._id, userError);
