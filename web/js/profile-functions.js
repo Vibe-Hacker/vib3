@@ -74,6 +74,7 @@ function editProfile() {
 // saveProfile function is now handled by vib3-complete.js
 
 async function changeProfilePicture() {
+    alert('📸 changeProfilePicture function was called!');
     console.log('📸 PROFILE-FUNCTIONS.JS changeProfilePicture called directly!');
     const emojis = ['👤', '😀', '😎', '🤩', '🥳', '🦄', '🌟', '💫', '🎵', '🎭', '🎨', '🏆'];
     const currentPicture = document.getElementById('profilePicture');
