@@ -38,6 +38,31 @@ function createSimpleProfilePage() {
         }
     };
     
+    // Add click listeners after page creation
+    setTimeout(() => {
+        console.log('🔧 Adding profile picture click listeners...');
+        const profilePic = document.getElementById('profilePicture');
+        const cameraBtn = document.querySelector('button[onclick="changeProfilePicture()"]');
+        
+        console.log('🔧 Profile picture element:', !!profilePic);
+        console.log('🔧 Camera button element:', !!cameraBtn);
+        
+        if (profilePic) {
+            profilePic.addEventListener('click', () => {
+                alert('Profile picture clicked!');
+                changeProfilePicture();
+            });
+        }
+        
+        if (cameraBtn) {
+            cameraBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                alert('Camera button clicked!');
+                changeProfilePicture();
+            });
+        }
+    }, 100);
+    
     // Load user profile data
     if (window.authToken) {
         loadUserProfileData();
