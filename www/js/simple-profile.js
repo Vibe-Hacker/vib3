@@ -61,7 +61,7 @@ function createSimpleProfilePage() {
     
     profilePage.innerHTML = `
         <!-- Profile Header -->
-        <div style="background: linear-gradient(135deg, #fe2c55 0%, #ff006e 100%); padding: 40px 50px; position: relative;">
+        <div style="background: linear-gradient(135deg, #00CED1 0%, #FF1493 100%); padding: 40px 50px; position: relative;">
             <!-- Back Button -->
             <button onclick="goBackToFeed();" style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.5); color: white; border: none; padding: 12px; border-radius: 50%; cursor: pointer; font-size: 18px; width: 44px; height: 44px;">
                 ←
