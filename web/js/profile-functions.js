@@ -73,6 +73,9 @@ function editProfile() {
 
 // saveProfile function is now handled by vib3-complete.js
 
+// Make sure the function is globally available
+console.log('🔧 profile-functions.js loaded, setting up changeProfilePicture');
+
 async function changeProfilePicture() {
     alert('📸 changeProfilePicture function was called!');
     console.log('📸 PROFILE-FUNCTIONS.JS changeProfilePicture called directly!');
@@ -237,6 +240,10 @@ async function changeProfilePicture() {
         modal.remove();
     };
 }
+
+// Expose function globally
+window.changeProfilePicture = changeProfilePicture;
+console.log('✅ changeProfilePicture exposed to window:', typeof window.changeProfilePicture);
 
 function showProfileSettings() {
     if (window.openProfileSettings) {
