@@ -1503,11 +1503,29 @@ class UploadManager {
 
 
     toggleRecording() {
+        console.log('🎬 Toggle recording called, current state:', this.isRecording);
+        console.log('🎬 Camera stream available:', !!this.currentCameraStream);
+        
         const recordBtn = document.getElementById('recordBtn');
         const timer = document.getElementById('recordingTimer');
         const indicator = document.getElementById('recordingIndicator');
         
+        console.log('🎬 UI elements found:', {
+            recordBtn: !!recordBtn,
+            timer: !!timer,
+            indicator: !!indicator
+        });
+        
+        if (!this.currentCameraStream) {
+            console.error('❌ No camera stream available for recording');
+            if (window.showToast) {
+                window.showToast('Camera not ready. Please try again.');
+            }
+            return;
+        }
+        
         if (!this.isRecording) {
+            console.log('🔴 Starting recording...');
             // Start recording
             this.startRecording();
             if (recordBtn) {
@@ -1517,6 +1535,7 @@ class UploadManager {
             if (timer) timer.style.display = 'block';
             if (indicator) indicator.style.display = 'block';
         } else {
+            console.log('⏹️ Stopping recording...');
             // Stop recording
             this.stopRecording();
             if (recordBtn) {
@@ -1529,27 +1548,62 @@ class UploadManager {
     }
 
     startRecording() {
-        if (!this.currentCameraStream) return;
+        console.log('🎬 Start recording method called');
+        console.log('🎬 Camera stream check:', !!this.currentCameraStream);
+        
+        if (!this.currentCameraStream) {
+            console.error('❌ No camera stream in startRecording');
+            return;
+        }
         
         try {
+            console.log('🎬 Initializing MediaRecorder...');
             this.recordedChunks = [];
-            this.mediaRecorder = new MediaRecorder(this.currentCameraStream, {
-                mimeType: 'video/webm'
-            });
+            
+            // Try different mime types for better compatibility
+            let mimeType = 'video/webm';
+            if (!MediaRecorder.isTypeSupported('video/webm')) {
+                if (MediaRecorder.isTypeSupported('video/mp4')) {
+                    mimeType = 'video/mp4';
+                } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+                    mimeType = 'video/webm;codecs=vp8';
+                } else {
+                    mimeType = ''; // Let browser choose
+                }
+            }
+            
+            console.log('🎬 Using mime type:', mimeType);
+            
+            this.mediaRecorder = mimeType ? 
+                new MediaRecorder(this.currentCameraStream, { mimeType }) :
+                new MediaRecorder(this.currentCameraStream);
+            
+            console.log('🎬 MediaRecorder created successfully');
             
             this.mediaRecorder.ondataavailable = (event) => {
+                console.log('🎬 Data available, size:', event.data.size);
                 if (event.data.size > 0) {
                     this.recordedChunks.push(event.data);
                 }
             };
             
             this.mediaRecorder.onstop = () => {
+                console.log('🎬 Recording stopped, processing video...');
                 this.processRecordedVideo();
+            };
+            
+            this.mediaRecorder.onerror = (event) => {
+                console.error('❌ MediaRecorder error:', event.error);
+                if (window.showToast) {
+                    window.showToast('Recording error: ' + event.error.message);
+                }
             };
             
             this.mediaRecorder.start(1000); // Collect data every second
             this.isRecording = true;
             this.recordingStartTime = Date.now();
+            
+            console.log('🔴 Recording started successfully!');
             
             // Start timer
             this.recordingTimer = setInterval(() => {
