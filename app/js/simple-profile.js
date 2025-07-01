@@ -1299,6 +1299,8 @@ async function editUsername() {
 }
 
 async function changeProfilePicture() {
+    console.log('🔥 PROFILE PICTURE CLICKED - FUNCTION CALLED!');
+    alert('Profile picture clicked!');
     const emojis = ['👤', '😀', '😎', '🤩', '🥳', '🦄', '🌟', '💫', '🎵', '🎭', '🎨', '🏆'];
     const currentPicture = document.getElementById('profilePicture');
     const currentEmoji = currentPicture.textContent;
