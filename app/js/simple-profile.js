@@ -185,6 +185,44 @@ function createSimpleProfilePage() {
     document.body.appendChild(profilePage);
     
     console.log('✅ Comprehensive profile page created and shown');
+    
+    // Add click event listeners after profile page is created
+    setTimeout(() => {
+        console.log('🔧 Adding profile picture click handlers...');
+        const profilePic = document.getElementById('profilePicture');
+        const cameraBtn = profilePic?.parentElement?.querySelector('button');
+        
+        if (profilePic) {
+            console.log('✅ Found profile picture element, adding click handler');
+            profilePic.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔥 PROFILE PICTURE CLICKED VIA EVENT LISTENER!');
+                alert('Profile picture clicked via event listener!');
+                if (window.changeProfilePicture) {
+                    window.changeProfilePicture();
+                }
+            });
+        } else {
+            console.log('❌ Profile picture element not found');
+        }
+        
+        if (cameraBtn) {
+            console.log('✅ Found camera button, adding click handler');
+            cameraBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔥 CAMERA BUTTON CLICKED VIA EVENT LISTENER!');
+                alert('Camera button clicked via event listener!');
+                if (window.changeProfilePicture) {
+                    window.changeProfilePicture();
+                }
+            });
+        } else {
+            console.log('❌ Camera button not found');
+        }
+    }, 500);
+    
     return profilePage;
 }
 
