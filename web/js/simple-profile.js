@@ -1202,30 +1202,71 @@ async function changeProfilePicture() {
             }
             
             try {
+                console.log('📸 Starting profile picture upload...');
+                console.log('📸 File details:', { name: file.name, size: file.size, type: file.type });
+                
+                // Use EXACT same approach as video upload
                 const formData = new FormData();
                 formData.append('profileImage', file);
                 
-                const baseURL = getAPIBaseURL();
-                
+                // Add user information EXACTLY like video upload
+                const currentUser = window.currentUser;
+                if (currentUser) {
+                    const username = currentUser.username || 
+                                   currentUser.displayName || 
+                                   currentUser.name ||
+                                   currentUser.email?.split('@')[0] || 
+                                   'user';
+                    formData.append('username', username);
+                    formData.append('userId', currentUser.id || currentUser._id || currentUser.uid || '');
+                    
+                    console.log('📸 Adding user info to upload:');
+                    console.log('  - Username:', username);
+                    console.log('  - User ID:', currentUser.id || currentUser._id || currentUser.uid);
+                    
+                    // Log all FormData entries like video upload does
+                    console.log('🔍 COMPLETE FORMDATA CONTENTS:');
+                    for (let [key, value] of formData.entries()) {
+                        if (value instanceof File) {
+                            console.log(`  ${key}: [File] ${value.name} (${value.size} bytes, ${value.type})`);
+                        } else {
+                            console.log(`  ${key}: ${value}`);
+                        }
+                    }
+                } else {
+                    console.warn('⚠️ No currentUser found for upload');
+                }
                 
                 showNotification('Uploading profile picture...', 'info');
                 
-                const response = await fetch(`${baseURL}/api/user/profile-image`, {
+                // Use EXACT same API base URL and request format as video upload
+                const response = await fetch(`${window.API_BASE_URL}/api/user/profile-image`, {
                     method: 'POST',
-                    credentials: 'include',
-                    headers: { 
-                        ...(window.authToken && window.authToken !== 'session-based' ? { 'Authorization': `Bearer ${window.authToken}` } : {})
+                    credentials: 'include', // EXACT same as video upload
+                    headers: {
+                        // EXACT same header logic as video upload
+                        ...(window.authToken && window.authToken !== 'session-based' ? 
+                            { 'Authorization': `Bearer ${window.authToken}` } : {})
                     },
                     body: formData
                 });
                 
+                console.log('📡 RESPONSE STATUS:', response.status, response.statusText);
+                console.log('📡 RESPONSE HEADERS:', Object.fromEntries(response.headers.entries()));
+                
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('📸 Profile image upload response:', data);
+                    console.log('📸 Profile image upload SUCCESS response:', data);
                     
-                    // Update profile picture display
-                    console.log('📸 Calling updateProfilePictureDisplay with URL:', data.profilePictureUrl);
-                    updateProfilePictureDisplay(data.profilePictureUrl, null);
+                    // Update profile picture display immediately
+                    const profilePicEl = document.getElementById('profilePicture');
+                    if (profilePicEl && data.profilePictureUrl) {
+                        console.log('📸 Updating profile picture element immediately with:', data.profilePictureUrl);
+                        profilePicEl.style.backgroundImage = `url(${data.profilePictureUrl})`;
+                        profilePicEl.style.backgroundSize = 'cover';
+                        profilePicEl.style.backgroundPosition = 'center';
+                        profilePicEl.textContent = '';
+                    }
                     
                     // Update current user data
                     if (window.currentUser) {
@@ -1235,25 +1276,21 @@ async function changeProfilePicture() {
                         console.log('📸 Updated currentUser:', window.currentUser);
                     }
                     
-                    // Force reload profile data to get updated image
-                    console.log('📸 Reloading profile data to show new image');
-                    if (window.loadUserProfileData) {
-                        setTimeout(() => {
-                            console.log('📸 Calling loadUserProfileData...');
-                            window.loadUserProfileData();
-                        }, 500);
-                    } else {
-                        console.log('❌ loadUserProfileData function not found');
-                    }
-                    
-                    showNotification('Profile picture updated!', 'success');
+                    showNotification('Profile picture updated successfully!', 'success');
                     modal.remove();
                 } else {
-                    const errorData = await response.json();
-                    showNotification(errorData.error || 'Failed to upload profile picture', 'error');
+                    const errorText = await response.text();
+                    console.error('❌ PROFILE PICTURE UPLOAD ERROR:', errorText);
+                    
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        showNotification(errorData.error || 'Failed to upload profile picture', 'error');
+                    } catch {
+                        showNotification('Failed to upload profile picture', 'error');
+                    }
                 }
             } catch (error) {
-                console.error('Error uploading profile picture:', error);
+                console.error('❌ Profile picture upload exception:', error);
                 showNotification('Error uploading profile picture', 'error');
             }
         }
