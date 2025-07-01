@@ -4453,6 +4453,21 @@ app.get('/api/user/following', requireAuth, async (req, res) => {
             .project({ password: 0 })
             .toArray();
         
+        // Add real-time stats for each user
+        for (const user of users) {
+            const [followerCount, followingCount] = await Promise.all([
+                db.collection('follows').countDocuments({ followingId: user._id.toString() }),
+                db.collection('follows').countDocuments({ followerId: user._id.toString() })
+            ]);
+            
+            user.stats = {
+                followers: followerCount,
+                following: followingCount,
+                likes: user.stats?.likes || 0,
+                videos: user.stats?.videos || 0
+            };
+        }
+        
         res.json(users);
         
     } catch (error) {
@@ -4478,6 +4493,21 @@ app.get('/api/user/followers', requireAuth, async (req, res) => {
             .find({ _id: { $in: followerIds } })
             .project({ password: 0 })
             .toArray();
+        
+        // Add real-time stats for each user
+        for (const user of users) {
+            const [followerCount, followingCount] = await Promise.all([
+                db.collection('follows').countDocuments({ followingId: user._id.toString() }),
+                db.collection('follows').countDocuments({ followerId: user._id.toString() })
+            ]);
+            
+            user.stats = {
+                followers: followerCount,
+                following: followingCount,
+                likes: user.stats?.likes || 0,
+                videos: user.stats?.videos || 0
+            };
+        }
         
         res.json(users);
         
