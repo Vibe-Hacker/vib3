@@ -10127,8 +10127,156 @@ function showProfileSettings() {
     document.body.appendChild(modal);
 }
 
-function showFollowing() {
-    showNotification('Following list feature coming soon!', 'info');
+async function showFollowing() {
+    console.log('📋 Showing following list...');
+    
+    try {
+        // Get current user's following list
+        const response = await fetch(`${window.API_BASE_URL}/api/user/following`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch following list');
+        }
+        
+        const followingList = await response.json(); // Server returns users array directly
+        
+        console.log('📋 Following list:', followingList);
+        
+        // Create following modal
+        const modal = document.createElement('div');
+        modal.className = 'following-modal';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.8); z-index: 2000; display: flex; 
+            align-items: center; justify-content: center;
+        `;
+        
+        let followingHTML = '';
+        if (followingList.length === 0) {
+            followingHTML = `
+                <div style="text-align: center; padding: 40px; color: rgba(255,255,255,0.7);">
+                    <div style="font-size: 48px; margin-bottom: 20px;">👥</div>
+                    <h3 style="color: white; margin-bottom: 10px;">No Following Yet</h3>
+                    <p>Start following creators to see them here!</p>
+                </div>
+            `;
+        } else {
+            followingList.forEach(user => {
+                followingHTML += `
+                    <div onclick="viewUserProfile('${user._id || user.id}')" style="display: flex; align-items: center; gap: 15px; padding: 15px; border-radius: 10px; cursor: pointer; transition: all 0.3s;" 
+                         onmouseover="this.style.background='rgba(255,255,255,0.1)'" 
+                         onmouseout="this.style.background='transparent'">
+                        <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #fe2c55, #ff006e); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                            ${user.profilePicture || user.avatar || '👤'}
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="color: white; font-weight: bold; font-size: 16px;">
+                                ${user.displayName || user.username || 'Unknown User'}
+                            </div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 14px;">
+                                @${user.username || 'user'}
+                            </div>
+                            ${user.bio ? `<div style="color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 5px;">${user.bio.substring(0, 60)}${user.bio.length > 60 ? '...' : ''}</div>` : ''}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="text-align: center;">
+                                <div style="color: white; font-size: 14px; font-weight: bold;">${user.stats?.followers || 0}</div>
+                                <div style="color: rgba(255,255,255,0.5); font-size: 10px;">Followers</div>
+                            </div>
+                            <button onclick="event.stopPropagation(); unfollowUser('${user._id || user.id}')" 
+                                    style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 12px;">
+                                Following
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        modal.innerHTML = `
+            <div style="background: #161823; border-radius: 15px; max-width: 500px; width: 90%; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;">
+                <div style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="color: white; margin: 0; font-size: 20px;">Following (${followingList.length})</h2>
+                    <button onclick="closeFollowingModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+                </div>
+                <div style="flex: 1; overflow-y: auto; padding: 10px 20px 20px 20px;">
+                    ${followingHTML}
+                </div>
+            </div>
+        `;
+        
+        modal.onclick = (e) => {
+            if (e.target === modal) closeFollowingModal();
+        };
+        
+        document.body.appendChild(modal);
+        
+        // Global functions for modal
+        window.closeFollowingModal = () => {
+            modal.remove();
+        };
+        
+        window.viewUserProfile = (userId) => {
+            console.log('📋 Viewing user profile:', userId);
+            closeFollowingModal();
+            // Navigate to user profile - implement based on your routing
+            if (window.showUserProfile) {
+                window.showUserProfile(userId);
+            } else {
+                if (window.showToast) {
+                    window.showToast('User profile viewing coming soon!');
+                }
+            }
+        };
+        
+        window.unfollowUser = async (userId) => {
+            console.log('📋 Unfollowing user:', userId);
+            try {
+                const unfollowResponse = await fetch(`${window.API_BASE_URL}/api/user/unfollow`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(window.authToken && window.authToken !== 'session-based' ? 
+                            { 'Authorization': `Bearer ${window.authToken}` } : {})
+                    },
+                    body: JSON.stringify({ userId })
+                });
+                
+                if (unfollowResponse.ok) {
+                    if (window.showToast) {
+                        window.showToast('Unfollowed successfully');
+                    }
+                    closeFollowingModal();
+                    // Refresh the following list
+                    setTimeout(() => showFollowing(), 300);
+                } else {
+                    throw new Error('Failed to unfollow user');
+                }
+            } catch (error) {
+                console.error('❌ Unfollow error:', error);
+                if (window.showToast) {
+                    window.showToast('Failed to unfollow user');
+                }
+            }
+        };
+        
+    } catch (error) {
+        console.error('❌ Error loading following list:', error);
+        if (window.showToast) {
+            window.showToast('Failed to load following list');
+        } else {
+            showNotification('Failed to load following list. Please try again.', 'error');
+        }
+    }
 }
 
 function showFollowers() {
