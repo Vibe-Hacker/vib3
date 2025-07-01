@@ -1476,7 +1476,7 @@ class UploadManager {
                     </div>
                     
                     <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; align-items: center;">
-                        <button id="recordBtn" onclick="toggleRecording()" style="width: 70px; height: 70px; background: #ff006e; border: none; border-radius: 50%; color: white; font-size: 24px; cursor: pointer; transition: all 0.3s;">📹</button>
+                        <button id="recordBtn" style="width: 70px; height: 70px; background: #ff006e; border: none; border-radius: 50%; color: white; font-size: 24px; cursor: pointer; transition: all 0.3s;">📹</button>
                         <div id="recordingTimer" style="color: white; font-size: 18px; font-weight: bold; min-width: 60px; text-align: center; display: none;">00:00</div>
                     </div>
                     
@@ -1499,6 +1499,57 @@ class UploadManager {
         this.mediaRecorder = null;
         this.recordedChunks = [];
         this.recordingStartTime = null;
+        
+        // Set up record button with direct event listener as fallback
+        setTimeout(() => {
+            const recordBtn = document.getElementById('recordBtn');
+            if (recordBtn) {
+                console.log('🎬 Setting up direct event listener for record button');
+                
+                // Remove any existing onclick
+                recordBtn.removeAttribute('onclick');
+                
+                // Add multiple event listeners for better compatibility
+                recordBtn.addEventListener('click', (e) => {
+                    console.log('🎬 Record button clicked via event listener!');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.toggleRecording();
+                });
+                
+                recordBtn.addEventListener('touchstart', (e) => {
+                    console.log('🎬 Record button touched!');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.toggleRecording();
+                });
+                
+                // Test that the button is clickable
+                recordBtn.style.pointerEvents = 'auto';
+                recordBtn.style.cursor = 'pointer';
+                recordBtn.style.zIndex = '9999';
+                
+                // Add visual feedback on hover
+                recordBtn.addEventListener('mouseenter', () => {
+                    recordBtn.style.transform = 'scale(1.1)';
+                });
+                recordBtn.addEventListener('mouseleave', () => {
+                    recordBtn.style.transform = 'scale(1)';
+                });
+                
+                console.log('🎬 Record button setup complete');
+                
+                // Test button functionality
+                window.testRecordButton = () => {
+                    console.log('🎬 Test button function called');
+                    this.toggleRecording();
+                };
+                console.log('🎬 Added global test function: window.testRecordButton()');
+                
+            } else {
+                console.error('❌ Record button not found in DOM');
+            }
+        }, 100);
     }
 
 
