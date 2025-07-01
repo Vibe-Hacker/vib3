@@ -3455,10 +3455,9 @@ app.put('/api/user/profile', requireAuth, async (req, res) => {
 });
 
 // Get user stats (followers, following, likes)
-app.get('/api/user/stats', async (req, res) => {
+app.get('/api/user/stats', requireAuth, async (req, res) => {
     console.log('📊 User stats request:', {
-        hasAuth: !!req.headers.authorization,
-        userId: req.query.userId,
+        userId: req.query.userId || req.user.userId,
         dbConnected: !!db
     });
     
@@ -3473,23 +3472,9 @@ app.get('/api/user/stats', async (req, res) => {
     }
     
     try {
-        const { userId } = req.query;
-        
-        // Get current user from auth token if no userId provided
-        let targetUserId = userId;
-        if (!targetUserId && req.headers.authorization) {
-            const token = req.headers.authorization.replace('Bearer ', '');
-            const session = sessions.get(token);
-            if (session) {
-                targetUserId = session.userId;
-                console.log('📊 Using authenticated user ID:', targetUserId);
-            }
-        }
-        
-        if (!targetUserId) {
-            console.log('📊 No user ID found, returning error');
-            return res.status(400).json({ error: 'User ID required' });
-        }
+        // Use provided userId or authenticated user's ID
+        const targetUserId = req.query.userId || req.user.userId;
+        console.log('📊 Loading stats for user:', targetUserId);
         
         // Get stats from different collections
         const [followers, following, userVideos] = await Promise.all([
