@@ -4453,11 +4453,15 @@ app.get('/api/user/following', requireAuth, async (req, res) => {
             .project({ password: 0 })
             .toArray();
         
-        // Add real-time stats for each user
+        // Add real-time stats and follow status for each user
         for (const user of users) {
-            const [followerCount, followingCount] = await Promise.all([
+            const [followerCount, followingCount, isFollowing] = await Promise.all([
                 db.collection('follows').countDocuments({ followingId: user._id.toString() }),
-                db.collection('follows').countDocuments({ followerId: user._id.toString() })
+                db.collection('follows').countDocuments({ followerId: user._id.toString() }),
+                db.collection('follows').countDocuments({ 
+                    followerId: req.user.userId, 
+                    followingId: user._id.toString() 
+                })
             ]);
             
             user.stats = {
@@ -4466,6 +4470,8 @@ app.get('/api/user/following', requireAuth, async (req, res) => {
                 likes: user.stats?.likes || 0,
                 videos: user.stats?.videos || 0
             };
+            
+            user.isFollowing = isFollowing > 0;
         }
         
         res.json(users);
@@ -4494,11 +4500,15 @@ app.get('/api/user/followers', requireAuth, async (req, res) => {
             .project({ password: 0 })
             .toArray();
         
-        // Add real-time stats for each user
+        // Add real-time stats and follow status for each user  
         for (const user of users) {
-            const [followerCount, followingCount] = await Promise.all([
+            const [followerCount, followingCount, isFollowing] = await Promise.all([
                 db.collection('follows').countDocuments({ followingId: user._id.toString() }),
-                db.collection('follows').countDocuments({ followerId: user._id.toString() })
+                db.collection('follows').countDocuments({ followerId: user._id.toString() }),
+                db.collection('follows').countDocuments({ 
+                    followerId: req.user.userId, 
+                    followingId: user._id.toString() 
+                })
             ]);
             
             user.stats = {
@@ -4507,6 +4517,8 @@ app.get('/api/user/followers', requireAuth, async (req, res) => {
                 likes: user.stats?.likes || 0,
                 videos: user.stats?.videos || 0
             };
+            
+            user.isFollowing = isFollowing > 0;
         }
         
         res.json(users);

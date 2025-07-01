@@ -10240,15 +10240,14 @@ async function showFollowing() {
         window.unfollowUser = async (userId) => {
             console.log('📋 Unfollowing user:', userId);
             try {
-                const unfollowResponse = await fetch(`${window.API_BASE_URL}/api/user/unfollow`, {
+                const unfollowResponse = await fetch(`${window.API_BASE_URL}/api/users/${userId}/unfollow`, {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json',
                         ...(window.authToken && window.authToken !== 'session-based' ? 
                             { 'Authorization': `Bearer ${window.authToken}` } : {})
-                    },
-                    body: JSON.stringify({ userId })
+                    }
                 });
                 
                 if (unfollowResponse.ok) {
@@ -10259,12 +10258,13 @@ async function showFollowing() {
                     // Refresh the following list
                     setTimeout(() => showFollowing(), 300);
                 } else {
-                    throw new Error('Failed to unfollow user');
+                    const errorData = await unfollowResponse.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Failed to unfollow user');
                 }
             } catch (error) {
                 console.error('❌ Unfollow error:', error);
                 if (window.showToast) {
-                    window.showToast('Failed to unfollow user');
+                    window.showToast(error.message);
                 }
             }
         };
@@ -10343,10 +10343,16 @@ async function showFollowers() {
                                 <div style="color: white; font-size: 14px; font-weight: bold;">${user.stats?.followers || 0}</div>
                                 <div style="color: rgba(255,255,255,0.5); font-size: 10px;">Followers</div>
                             </div>
-                            <button onclick="event.stopPropagation(); toggleFollowUser('${user._id || user.id}')" 
-                                    style="background: #fe2c55; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 12px;">
-                                Follow Back
-                            </button>
+                            ${user.isFollowing ? 
+                                `<button onclick="event.stopPropagation(); toggleFollowUser('${user._id || user.id}', true)" 
+                                         style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 12px;">
+                                    Following
+                                </button>` :
+                                `<button onclick="event.stopPropagation(); toggleFollowUser('${user._id || user.id}', false)" 
+                                         style="background: #fe2c55; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 12px;">
+                                    Follow Back
+                                </button>`
+                            }
                         </div>
                     </div>
                 `;
@@ -10376,34 +10382,37 @@ async function showFollowers() {
             modal.remove();
         };
         
-        window.toggleFollowUser = async (userId) => {
-            console.log('📋 Following back user:', userId);
+        window.toggleFollowUser = async (userId, isCurrentlyFollowing) => {
+            console.log('📋 Toggling follow for user:', userId, 'Currently following:', isCurrentlyFollowing);
+            
             try {
-                const followResponse = await fetch(`${window.API_BASE_URL}/api/user/follow`, {
+                const endpoint = isCurrentlyFollowing ? 'unfollow' : 'follow';
+                const response = await fetch(`${window.API_BASE_URL}/api/users/${userId}/${endpoint}`, {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json',
                         ...(window.authToken && window.authToken !== 'session-based' ? 
                             { 'Authorization': `Bearer ${window.authToken}` } : {})
-                    },
-                    body: JSON.stringify({ userId })
+                    }
                 });
                 
-                if (followResponse.ok) {
+                if (response.ok) {
+                    const action = isCurrentlyFollowing ? 'Unfollowed' : 'Followed';
                     if (window.showToast) {
-                        window.showToast('Followed successfully');
+                        window.showToast(`${action} successfully`);
                     }
                     closeFollowersModal();
                     // Refresh the followers list
                     setTimeout(() => showFollowers(), 300);
                 } else {
-                    throw new Error('Failed to follow user');
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Failed to ${endpoint} user`);
                 }
             } catch (error) {
-                console.error('❌ Follow error:', error);
+                console.error('❌ Follow toggle error:', error);
                 if (window.showToast) {
-                    window.showToast('Failed to follow user');
+                    window.showToast(error.message);
                 }
             }
         };
