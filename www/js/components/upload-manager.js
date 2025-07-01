@@ -71,6 +71,7 @@ class UploadManager {
         window.switchCamera = () => this.switchCamera();
         window.showCameraSelector = () => this.showCameraSelector();
         window.selectSpecificCamera = (deviceId) => this.selectSpecificCamera(deviceId);
+        window.startRecordingWithCamera = (deviceId) => this.startRecordingWithCamera(deviceId);
         window.closeCameraModal = () => this.closeCameraModal();
         window.showTrendingSounds = () => this.showTrendingSounds();
         
@@ -1238,10 +1239,7 @@ class UploadManager {
                 return;
             }
 
-            console.log('MediaRecorder is supported, requesting camera access...');
-            if (window.showToast) {
-                window.showToast('Accessing camera... 📹');
-            }
+            console.log('MediaRecorder is supported, checking available cameras...');
 
             // Hide the fullscreen upload page while accessing camera
             const fullscreenUploadPage = document.getElementById('fullscreenUploadPage');
@@ -1250,7 +1248,7 @@ class UploadManager {
                 console.log('Hid fullscreen upload page');
             }
 
-            // Check available cameras first
+            // Check available cameras first and show selection if multiple
             const devices = await navigator.mediaDevices.enumerateDevices();
             const videoInputs = devices.filter(device => device.kind === 'videoinput');
             
@@ -1259,21 +1257,31 @@ class UploadManager {
                 console.log(`   Camera ${index + 1}: ${device.label || 'Unknown Camera'} (ID: ${device.deviceId})`);
             });
 
-            // Use specific device ID if available, fallback to facingMode
+            // If multiple cameras available, show selector first
+            if (videoInputs.length > 1) {
+                console.log('Multiple cameras detected, showing selector...');
+                this.showInitialCameraSelector(videoInputs);
+                return;
+            }
+
+            // Single camera - proceed directly
+            if (window.showToast) {
+                window.showToast('Accessing camera... 📹');
+            }
+
+            // Use single available camera
             let videoConstraints = { 
                 width: { ideal: 3840, max: 3840 },
                 height: { ideal: 2160, max: 2160 },
                 frameRate: { ideal: 60, max: 60 }
             };
 
-            if (videoInputs.length > 1) {
-                // Multiple cameras available - use facingMode
-                videoConstraints.facingMode = this.currentFacingMode;
-                console.log('🎯 Using facingMode:', this.currentFacingMode);
-            } else if (videoInputs.length === 1) {
-                // Only one camera - use its device ID
+            if (videoInputs.length === 1) {
                 videoConstraints.deviceId = videoInputs[0].deviceId;
                 console.log('📷 Single camera detected, using device ID');
+            } else {
+                videoConstraints.facingMode = this.currentFacingMode;
+                console.log('🎯 Using facingMode:', this.currentFacingMode);
             }
 
             console.log('Attempting to get user media with constraints:', {
@@ -1288,49 +1296,7 @@ class UploadManager {
             });
 
             console.log('Successfully got camera stream:', stream);
-
-            // Create camera interface
-            const cameraModal = document.createElement('div');
-            cameraModal.className = 'modal active camera-modal';
-            cameraModal.innerHTML = `
-                <div class="modal-content" style="max-width: 90%; height: 90%; background: #000;">
-                    <div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: column;">
-                        <video id="cameraPreview" autoplay playsinline muted style="flex: 1; width: 100%; object-fit: cover; border-radius: 10px;"></video>
-                        
-                        <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px;">
-                            <button onclick="showCameraSelector()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">📷</button>
-                            <button onclick="switchCamera()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">🔄</button>
-                            <button onclick="closeCameraModal()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">✕</button>
-                        </div>
-                        
-                        <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; align-items: center;">
-                            <button id="recordBtn" onclick="toggleRecording()" style="width: 70px; height: 70px; background: #ff006e; border: none; border-radius: 50%; color: white; font-size: 24px; cursor: pointer; transition: all 0.3s;">📹</button>
-                            <div id="recordingTimer" style="color: white; font-size: 18px; font-weight: bold; min-width: 60px; text-align: center; display: none;">00:00</div>
-                        </div>
-                        
-                        <div id="recordingIndicator" style="position: absolute; top: 20px; left: 20px; background: #ff4444; color: white; padding: 8px 15px; border-radius: 20px; font-weight: bold; display: none;">
-                            🔴 REC
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(cameraModal);
-            
-            // Set up camera preview
-            const video = document.getElementById('cameraPreview');
-            video.srcObject = stream;
-            
-            // Store stream for recording
-            this.currentCameraStream = stream;
-            this.isRecording = false;
-            this.mediaRecorder = null;
-            this.recordedChunks = [];
-            this.recordingStartTime = null;
-            
-            if (window.showToast) {
-                window.showToast('Camera ready! Tap record to start 🎬');
-            }
+            this.createCameraInterface(stream);
             
         } catch (error) {
             console.error('Camera access error:', error);
@@ -1350,6 +1316,31 @@ class UploadManager {
                 if (window.showToast) {
                     window.showToast('No camera found on this device.');
                 }
+            } else if (error.name === 'NotReadableError') {
+                if (window.showToast) {
+                    window.showToast('Camera is blocked by a privacy shutter or being used by another app. Please check your camera settings.');
+                }
+            } else if (error.name === 'OverconstrainedError') {
+                console.log('Camera constraints not supported, trying with basic settings...');
+                try {
+                    // Fallback to basic camera settings
+                    const fallbackStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: true
+                    });
+                    
+                    this.createCameraInterface(fallbackStream);
+                    
+                    if (window.showToast) {
+                        window.showToast('Camera ready with basic settings! 🎬');
+                    }
+                    
+                } catch (fallbackError) {
+                    console.error('Fallback camera error:', fallbackError);
+                    if (window.showToast) {
+                        window.showToast('Camera unavailable. Check privacy settings or try a different camera.');
+                    }
+                }
             } else {
                 if (window.showToast) {
                     window.showToast('Failed to access camera. Please try again.');
@@ -1357,6 +1348,159 @@ class UploadManager {
             }
         }
     }
+
+    async showInitialCameraSelector(videoInputs) {
+        console.log('📷 Showing initial camera selector...');
+        
+        // Create camera selection modal
+        const selectorModal = document.createElement('div');
+        selectorModal.className = 'modal active initial-camera-selector-modal';
+        selectorModal.style.zIndex = '10000';
+        
+        let cameraOptions = '';
+        videoInputs.forEach((device, index) => {
+            const isBuiltIn = device.label.toLowerCase().includes('built-in') || 
+                             device.label.toLowerCase().includes('integrated') ||
+                             device.label.toLowerCase().includes('facetime') ||
+                             device.label.toLowerCase().includes('front') ||
+                             device.label.toLowerCase().includes('back');
+                             
+            const isExternal = !isBuiltIn && device.label !== '';
+            const deviceType = isExternal ? '🔌 External' : '📱 Built-in';
+            const deviceName = device.label || `Camera ${index + 1}`;
+            
+            cameraOptions += `
+                <div onclick="startRecordingWithCamera('${device.deviceId}')" 
+                     style="padding: 15px 20px; margin: 10px 0; background: rgba(255,255,255,0.1); 
+                            border-radius: 10px; cursor: pointer; transition: all 0.3s;
+                            border: 2px solid transparent; display: flex; align-items: center; gap: 15px;"
+                     onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='#fe2c55';"
+                     onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='transparent';">
+                    <div style="font-size: 24px;">${deviceType}</div>
+                    <div>
+                        <div style="font-weight: bold; font-size: 16px; color: white;">${deviceName}</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.7);">
+                            ${isExternal ? 'External camera device' : 'Built-in device camera'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        selectorModal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px; background: #161823; border-radius: 15px; padding: 0;">
+                <div style="padding: 25px 25px 0 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="color: white; margin: 0; font-size: 20px;">Choose Camera for Recording</h2>
+                        <button onclick="this.closest('.modal').remove(); document.getElementById('fullscreenUploadPage').style.display='flex';" 
+                                style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+                    </div>
+                    <div style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">
+                        Select which camera to use for video recording
+                    </div>
+                </div>
+                <div style="padding: 0 25px 25px 25px; max-height: 400px; overflow-y: auto;">
+                    ${cameraOptions}
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(selectorModal);
+    }
+
+    async startRecordingWithCamera(deviceId) {
+        console.log('📷 Starting recording with camera:', deviceId);
+        
+        try {
+            // Close initial selector modal
+            const selectorModal = document.querySelector('.initial-camera-selector-modal');
+            if (selectorModal) {
+                selectorModal.remove();
+            }
+            
+            if (window.showToast) {
+                window.showToast('Starting camera... 📹');
+            }
+            
+            // Get stream from specific camera
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    deviceId: { exact: deviceId },
+                    width: { ideal: 3840, max: 3840 },
+                    height: { ideal: 2160, max: 2160 },
+                    frameRate: { ideal: 60, max: 60 }
+                },
+                audio: true
+            });
+            
+            this.createCameraInterface(stream);
+            
+            if (window.showToast) {
+                window.showToast('Camera ready! Tap record to start 🎬');
+            }
+            
+        } catch (error) {
+            console.error('❌ Camera start error:', error);
+            
+            // Restore upload page on error
+            const fullscreenUploadPage = document.getElementById('fullscreenUploadPage');
+            if (fullscreenUploadPage) {
+                fullscreenUploadPage.style.display = 'flex';
+            }
+            
+            if (error.name === 'NotReadableError') {
+                if (window.showToast) {
+                    window.showToast('Camera blocked by privacy shutter or in use by another app');
+                }
+            } else {
+                if (window.showToast) {
+                    window.showToast('Failed to start selected camera');
+                }
+            }
+        }
+    }
+
+    createCameraInterface(stream) {
+        // Create camera interface
+        const cameraModal = document.createElement('div');
+        cameraModal.className = 'modal active camera-modal';
+        cameraModal.innerHTML = `
+            <div class="modal-content" style="max-width: 90%; height: 90%; background: #000;">
+                <div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: column;">
+                    <video id="cameraPreview" autoplay playsinline muted style="flex: 1; width: 100%; object-fit: cover; border-radius: 10px;"></video>
+                    
+                    <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px;">
+                        <button onclick="showCameraSelector()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">📷</button>
+                        <button onclick="switchCamera()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">🔄</button>
+                        <button onclick="closeCameraModal()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">✕</button>
+                    </div>
+                    
+                    <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; align-items: center;">
+                        <button id="recordBtn" onclick="toggleRecording()" style="width: 70px; height: 70px; background: #ff006e; border: none; border-radius: 50%; color: white; font-size: 24px; cursor: pointer; transition: all 0.3s;">📹</button>
+                        <div id="recordingTimer" style="color: white; font-size: 18px; font-weight: bold; min-width: 60px; text-align: center; display: none;">00:00</div>
+                    </div>
+                    
+                    <div id="recordingIndicator" style="position: absolute; top: 20px; left: 20px; background: #ff4444; color: white; padding: 8px 15px; border-radius: 20px; font-weight: bold; display: none;">
+                        🔴 REC
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(cameraModal);
+        
+        // Set up camera preview
+        const video = document.getElementById('cameraPreview');
+        video.srcObject = stream;
+        
+        // Store stream for recording
+        this.currentCameraStream = stream;
+        this.isRecording = false;
+        this.mediaRecorder = null;
+        this.recordedChunks = [];
+        this.recordingStartTime = null;
+    }
+
 
     toggleRecording() {
         const recordBtn = document.getElementById('recordBtn');
@@ -1766,15 +1910,35 @@ class UploadManager {
             
             if (error.name === 'NotReadableError') {
                 if (window.showToast) {
-                    window.showToast('Camera is being used by another application');
+                    window.showToast('Camera is blocked by privacy shutter or being used by another app. Please check camera settings.');
                 }
             } else if (error.name === 'OverconstrainedError') {
-                if (window.showToast) {
-                    window.showToast('Selected camera is not available');
+                console.log('Selected camera constraints not supported, trying basic settings...');
+                try {
+                    // Try with basic constraints for this specific camera
+                    const basicStream = await navigator.mediaDevices.getUserMedia({
+                        video: { deviceId: { exact: deviceId } },
+                        audio: true
+                    });
+                    
+                    const video = document.getElementById('cameraPreview');
+                    if (video) {
+                        video.srcObject = basicStream;
+                        this.currentCameraStream = basicStream;
+                        
+                        if (window.showToast) {
+                            window.showToast('Camera activated with basic settings 📷');
+                        }
+                    }
+                } catch (basicError) {
+                    console.error('Basic camera settings failed:', basicError);
+                    if (window.showToast) {
+                        window.showToast('Selected camera is not available or blocked');
+                    }
                 }
             } else {
                 if (window.showToast) {
-                    window.showToast('Failed to access selected camera');
+                    window.showToast('Failed to access selected camera - ' + error.message);
                 }
             }
         }
