@@ -1225,6 +1225,8 @@ async function changeProfilePicture() {
                 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('📸 Profile image upload response:', data);
+                    
                     // Update profile picture display
                     updateProfilePictureDisplay(data.profilePictureUrl, null);
                     
@@ -1232,6 +1234,11 @@ async function changeProfilePicture() {
                     if (window.currentUser) {
                         window.currentUser.profilePicture = data.profilePictureUrl;
                         window.currentUser.profileImage = data.profilePictureUrl;
+                    }
+                    
+                    // Force reload profile data to get updated image
+                    if (window.loadUserProfileData) {
+                        setTimeout(() => window.loadUserProfileData(), 500);
                     }
                     
                     showNotification('Profile picture updated!', 'success');
@@ -1390,6 +1397,7 @@ function openCameraForProfile() {
                     
                     if (response.ok) {
                         const result = await response.json();
+                        console.log('📸 Camera profile image upload response:', result);
                         
                         // Update UI with new image
                         updateProfilePictureDisplay(result.profilePictureUrl);
@@ -1398,6 +1406,11 @@ function openCameraForProfile() {
                         if (window.currentUser) {
                             window.currentUser.profilePicture = result.profilePictureUrl;
                             window.currentUser.profileImage = result.profilePictureUrl;
+                        }
+                        
+                        // Force reload profile data to get updated image
+                        if (window.loadUserProfileData) {
+                            setTimeout(() => window.loadUserProfileData(), 500);
                         }
                         
                         showNotification('Profile picture updated successfully!', 'success');
@@ -1428,16 +1441,21 @@ function openCameraForProfile() {
 
 // Helper function to update profile picture display
 function updateProfilePictureDisplay(imageUrl, emoji) {
+    console.log('🖼️ Updating profile picture display:', { imageUrl, emoji });
     const profilePicture = document.getElementById('profilePicture');
+    console.log('🖼️ Profile picture element found:', !!profilePicture);
+    
     if (profilePicture) {
         if (imageUrl) {
             // Show uploaded image
+            console.log('🖼️ Setting background image:', imageUrl);
             profilePicture.style.backgroundImage = `url(${imageUrl})`;
             profilePicture.style.backgroundSize = 'cover';
             profilePicture.style.backgroundPosition = 'center';
             profilePicture.textContent = '';
         } else if (emoji) {
             // Show emoji
+            console.log('🖼️ Setting emoji:', emoji);
             profilePicture.style.backgroundImage = '';
             profilePicture.textContent = emoji;
         }
