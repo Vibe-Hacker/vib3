@@ -4461,6 +4461,32 @@ app.get('/api/user/following', requireAuth, async (req, res) => {
     }
 });
 
+// Get user followers
+app.get('/api/user/followers', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    try {
+        const follows = await db.collection('follows')
+            .find({ followingId: req.user.userId })
+            .toArray();
+        
+        // Get user details for each follower
+        const followerIds = follows.map(f => new ObjectId(f.followerId));
+        const users = await db.collection('users')
+            .find({ _id: { $in: followerIds } })
+            .project({ password: 0 })
+            .toArray();
+        
+        res.json(users);
+        
+    } catch (error) {
+        console.error('Get followers error:', error);
+        res.status(500).json({ error: 'Failed to get followers list' });
+    }
+});
+
 // Get user profile
 app.get('/api/users/:userId', async (req, res) => {
     if (!db) {
