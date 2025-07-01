@@ -1210,8 +1210,25 @@ async function changeProfilePicture() {
                 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('📸 Profile image upload response:', data);
+                    
                     // Update profile picture display
+                    console.log('📸 Calling updateProfilePictureDisplay with URL:', data.profilePictureUrl);
                     updateProfilePictureDisplay(data.profilePictureUrl, null);
+                    
+                    // Update current user data
+                    if (window.currentUser) {
+                        console.log('📸 Updating currentUser with new profile picture');
+                        window.currentUser.profilePicture = data.profilePictureUrl;
+                        window.currentUser.profileImage = data.profilePictureUrl;
+                        console.log('📸 Updated currentUser:', window.currentUser);
+                    }
+                    
+                    // Force reload profile data to get updated image
+                    if (window.loadUserProfileData) {
+                        setTimeout(() => window.loadUserProfileData(), 500);
+                    }
+                    
                     showNotification('Profile picture updated!', 'success');
                     modal.remove();
                 } else {
@@ -1403,6 +1420,29 @@ function showFollowModal(title, users) {
     window.closeModal = () => {
         modal.remove();
     };
+}
+
+// Helper function to update profile picture display
+function updateProfilePictureDisplay(imageUrl, emoji) {
+    console.log('🖼️ Updating profile picture display:', { imageUrl, emoji });
+    const profilePicture = document.getElementById('profilePicture');
+    console.log('🖼️ Profile picture element found:', !!profilePicture);
+    
+    if (profilePicture) {
+        if (imageUrl) {
+            // Show uploaded image
+            console.log('🖼️ Setting background image:', imageUrl);
+            profilePicture.style.backgroundImage = `url(${imageUrl})`;
+            profilePicture.style.backgroundSize = 'cover';
+            profilePicture.style.backgroundPosition = 'center';
+            profilePicture.textContent = '';
+        } else if (emoji) {
+            // Show emoji
+            console.log('🖼️ Setting emoji:', emoji);
+            profilePicture.style.backgroundImage = '';
+            profilePicture.textContent = emoji;
+        }
+    }
 }
 
 function toggleLikedPrivacy() {
