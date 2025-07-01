@@ -1163,7 +1163,10 @@ async function changeProfilePicture() {
             <div style="margin-bottom: 20px;">
                 <input type="file" id="profileImageUpload" accept="image/*" style="display: none;">
                 <button onclick="document.getElementById('profileImageUpload').click()" style="width: 100%; padding: 15px; background: #fe2c55; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 10px;">
-                    📷 Upload Photo
+                    📁 Upload from Device
+                </button>
+                <button onclick="openCameraForProfile()" style="width: 100%; padding: 15px; background: #ff006e; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 10px;">
+                    📷 Take Photo
                 </button>
                 <div style="color: #888; font-size: 12px; text-align: center;">JPG, PNG, GIF up to 5MB</div>
             </div>
@@ -1268,6 +1271,146 @@ async function changeProfilePicture() {
             showNotification('Error updating profile picture', 'error');
         }
     };
+}
+
+// Camera function for profile picture
+function openCameraForProfile() {
+    console.log('📷 Opening camera for profile picture...');
+    
+    const cameraModal = document.createElement('div');
+    cameraModal.id = 'profileCameraModal';
+    cameraModal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.95); z-index: 3000; display: flex; 
+        align-items: center; justify-content: center;
+    `;
+    
+    cameraModal.innerHTML = `
+        <div style="background: #222; padding: 20px; border-radius: 12px; max-width: 500px; width: 90%; text-align: center;">
+            <h3 style="color: white; margin-bottom: 20px;">Take Profile Photo</h3>
+            
+            <div style="position: relative; margin-bottom: 20px;">
+                <video id="profileCameraVideo" autoplay muted playsinline style="width: 100%; max-width: 400px; height: 300px; border-radius: 12px; background: #333; object-fit: cover;"></video>
+                <canvas id="profileCameraCanvas" style="display: none;"></canvas>
+            </div>
+            
+            <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 20px;">
+                <button id="switchProfileCamera" style="background: #444; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
+                    🔄 Switch Camera
+                </button>
+                <button id="captureProfilePhoto" style="background: #fe2c55; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    📸 Capture
+                </button>
+            </div>
+            
+            <button onclick="closeProfileCamera()" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                Cancel
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(cameraModal);
+    
+    let currentStream = null;
+    let currentFacingMode = 'user';
+    
+    // Start camera
+    async function startProfileCamera() {
+        try {
+            const constraints = {
+                video: {
+                    facingMode: currentFacingMode,
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            };
+            
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            const video = document.getElementById('profileCameraVideo');
+            if (video) {
+                video.srcObject = currentStream;
+            }
+        } catch (error) {
+            console.error('Camera access error:', error);
+            showNotification('Camera access denied or not available', 'error');
+        }
+    }
+    
+    // Switch camera
+    document.getElementById('switchProfileCamera').onclick = async () => {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+        currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+        await startProfileCamera();
+    };
+    
+    // Capture photo
+    document.getElementById('captureProfilePhoto').onclick = () => {
+        const video = document.getElementById('profileCameraVideo');
+        const canvas = document.getElementById('profileCameraCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Draw video frame to canvas
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert to blob and upload
+        canvas.toBlob(async (blob) => {
+            if (blob) {
+                const formData = new FormData();
+                formData.append('profileImage', blob, 'profile-photo.jpg');
+                
+                try {
+                    const baseURL = getAPIBaseURL();
+                    const response = await fetch(`${baseURL}/api/user/profile-image`, {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include',
+                        headers: {
+                            ...(window.authToken && window.authToken !== 'session-based' ? 
+                                { 'Authorization': `Bearer ${window.authToken}` } : {})
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        
+                        // Update UI with new image
+                        updateProfilePictureDisplay(result.imageUrl);
+                        
+                        // Update current user data
+                        if (window.currentUser) {
+                            window.currentUser.profilePicture = result.imageUrl;
+                        }
+                        
+                        showNotification('Profile picture updated successfully!', 'success');
+                        closeProfileCamera();
+                        closePictureModal();
+                    } else {
+                        throw new Error('Failed to upload image');
+                    }
+                } catch (error) {
+                    console.error('Error uploading profile picture:', error);
+                    showNotification('Error uploading profile picture', 'error');
+                }
+            }
+        }, 'image/jpeg', 0.8);
+    };
+    
+    // Close camera function
+    window.closeProfileCamera = () => {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+        cameraModal.remove();
+    };
+    
+    // Start camera when modal opens
+    startProfileCamera();
 }
 
 // Helper function to update profile picture display
