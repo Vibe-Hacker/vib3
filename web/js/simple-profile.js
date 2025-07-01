@@ -100,7 +100,7 @@ function createSimpleProfilePage() {
             <!-- Profile Info -->
             <div style="display: flex; align-items: center; gap: 30px; max-width: 1000px; margin: 0 auto;">
                 <div style="position: relative;">
-                    <div id="profilePicture" style="width: 140px; height: 140px; background: linear-gradient(135deg, #333, #666); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; border: 4px solid rgba(255,255,255,0.2); cursor: pointer;" onclick="alert('INLINE CLICK WORKS!'); changeProfilePicture();">
+                    <div id="profilePicture" style="width: 140px; height: 140px; background: linear-gradient(135deg, #333, #666); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; border: 4px solid rgba(255,255,255,0.2); cursor: pointer;" onclick="alert('INLINE CLICK WORKS!'); console.log('INLINE CLICK LOG!'); window.testProfilePictureClick(); changeProfilePicture();">
                         ${user.profilePicture || '👤'}
                     </div>
                     <button onclick="alert('CAMERA BUTTON CLICK WORKS!'); changeProfilePicture();" style="position: absolute; bottom: 0; right: 0; background: #fe2c55; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 16px; cursor: pointer;">

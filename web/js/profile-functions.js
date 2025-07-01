@@ -417,3 +417,25 @@ window.showFollowing = showFollowing;
 window.showFollowers = showFollowers;
 window.shareProfile = shareProfile;
 window.openCreatorTools = openCreatorTools;
+
+// IMMEDIATE TEST - Add a test function to global scope
+window.testProfilePictureClick = function() {
+    alert('TEST FUNCTION WORKS! The problem is somewhere else.');
+    console.log('🧪 TEST FUNCTION EXECUTED');
+};
+
+// Force log the function status immediately
+console.log('🔧 PROFILE-FUNCTIONS.JS STATUS CHECK:');
+console.log('  - changeProfilePicture function exists:', typeof window.changeProfilePicture);
+console.log('  - testProfilePictureClick function exists:', typeof window.testProfilePictureClick);
+
+// Test changeProfilePicture directly
+setTimeout(() => {
+    console.log('🧪 TESTING changeProfilePicture function directly...');
+    try {
+        // Don't actually call it, just verify it exists and log its source
+        console.log('🧪 Function source preview:', window.changeProfilePicture.toString().substring(0, 200));
+    } catch (e) {
+        console.error('🧪 Function test failed:', e);
+    }
+}, 1000);
