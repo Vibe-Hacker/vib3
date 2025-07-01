@@ -73,12 +73,168 @@ function editProfile() {
 
 // saveProfile function is now handled by vib3-complete.js
 
-function changeProfilePicture() {
-    if (window.changeProfilePicture) {
-        window.changeProfilePicture();
-    } else {
-        alert('Profile picture change functionality will be available soon!');
-    }
+async function changeProfilePicture() {
+    console.log('📸 PROFILE-FUNCTIONS.JS changeProfilePicture called directly!');
+    const emojis = ['👤', '😀', '😎', '🤩', '🥳', '🦄', '🌟', '💫', '🎵', '🎭', '🎨', '🏆'];
+    const currentPicture = document.getElementById('profilePicture');
+    const currentEmoji = currentPicture?.textContent || '👤';
+    
+    // Create profile picture picker modal
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.8); z-index: 2000; display: flex; 
+        align-items: center; justify-content: center;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: #222; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%;">
+            <h3 style="color: white; margin-bottom: 20px;">Choose Profile Picture</h3>
+            
+            <!-- Upload Image Option -->
+            <div style="margin-bottom: 20px;">
+                <input type="file" id="profileImageUpload" accept="image/*" style="display: none;">
+                <button onclick="document.getElementById('profileImageUpload').click()" style="width: 100%; padding: 15px; background: #fe2c55; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 10px;">
+                    📷 Upload Photo
+                </button>
+                <div style="color: #888; font-size: 12px; text-align: center;">JPG, PNG, GIF up to 5MB</div>
+            </div>
+            
+            <!-- Emoji Options -->
+            <div style="border-top: 1px solid #444; padding-top: 20px;">
+                <h4 style="color: white; margin-bottom: 15px; font-size: 16px;">Or choose an emoji:</h4>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                    ${emojis.map(emoji => `
+                        <button onclick="selectProfilePicture('${emoji}')" style="width: 60px; height: 60px; font-size: 30px; background: ${emoji === currentEmoji ? '#fe2c55' : '#333'}; border: none; border-radius: 12px; cursor: pointer; color: white;">
+                            ${emoji}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <button onclick="closePictureModal()" style="background: #666; color: white; border: none; padding: 12px 24px; border-radius: 8px; width: 100%; margin-top: 20px; cursor: pointer;">
+                Cancel
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Handle file upload
+    modal.querySelector('#profileImageUpload').onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image too large. Maximum size is 5MB.');
+                return;
+            }
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select a valid image file.');
+                return;
+            }
+            
+            try {
+                console.log('📸 Starting profile picture upload...');
+                console.log('📸 File details:', { name: file.name, size: file.size, type: file.type });
+                
+                // Use EXACT same approach as video upload
+                const formData = new FormData();
+                formData.append('profileImage', file);
+                
+                // Add user information EXACTLY like video upload
+                const currentUser = window.currentUser;
+                if (currentUser) {
+                    const username = currentUser.username || 
+                                   currentUser.displayName || 
+                                   currentUser.name ||
+                                   currentUser.email?.split('@')[0] || 
+                                   'user';
+                    formData.append('username', username);
+                    formData.append('userId', currentUser.id || currentUser._id || currentUser.uid || '');
+                    
+                    console.log('📸 Adding user info to upload:');
+                    console.log('  - Username:', username);
+                    console.log('  - User ID:', currentUser.id || currentUser._id || currentUser.uid);
+                    
+                    // Log all FormData entries like video upload does
+                    console.log('🔍 COMPLETE FORMDATA CONTENTS:');
+                    for (let [key, value] of formData.entries()) {
+                        if (value instanceof File) {
+                            console.log(`  ${key}: [File] ${value.name} (${value.size} bytes, ${value.type})`);
+                        } else {
+                            console.log(`  ${key}: ${value}`);
+                        }
+                    }
+                } else {
+                    console.warn('⚠️ No currentUser found for upload');
+                }
+                
+                // Use EXACT same API base URL and request format as video upload
+                const response = await fetch(`${window.API_BASE_URL}/api/user/profile-image`, {
+                    method: 'POST',
+                    credentials: 'include', // EXACT same as video upload
+                    headers: {
+                        // EXACT same header logic as video upload
+                        ...(window.authToken && window.authToken !== 'session-based' ? 
+                            { 'Authorization': `Bearer ${window.authToken}` } : {})
+                    },
+                    body: formData
+                });
+                
+                console.log('📡 RESPONSE STATUS:', response.status, response.statusText);
+                console.log('📡 RESPONSE HEADERS:', Object.fromEntries(response.headers.entries()));
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('📸 Profile image upload SUCCESS response:', data);
+                    
+                    // Update profile picture display immediately
+                    const profilePicEl = document.getElementById('profilePicture');
+                    if (profilePicEl && data.profilePictureUrl) {
+                        console.log('📸 Updating profile picture element immediately with:', data.profilePictureUrl);
+                        profilePicEl.style.backgroundImage = `url(${data.profilePictureUrl})`;
+                        profilePicEl.style.backgroundSize = 'cover';
+                        profilePicEl.style.backgroundPosition = 'center';
+                        profilePicEl.textContent = '';
+                    }
+                    
+                    // Update current user data
+                    if (window.currentUser) {
+                        console.log('📸 Updating currentUser with new profile picture');
+                        window.currentUser.profilePicture = data.profilePictureUrl;
+                        window.currentUser.profileImage = data.profilePictureUrl;
+                        console.log('📸 Updated currentUser:', window.currentUser);
+                    }
+                    
+                    alert('Profile picture updated successfully!');
+                    modal.remove();
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ PROFILE PICTURE UPLOAD ERROR:', errorText);
+                    alert('Failed to upload profile picture');
+                }
+            } catch (error) {
+                console.error('❌ Profile picture upload exception:', error);
+                alert('Error uploading profile picture');
+            }
+        }
+    };
+    
+    window.closePictureModal = () => modal.remove();
+    
+    window.selectProfilePicture = async (emoji) => {
+        console.log('📸 Setting emoji profile picture:', emoji);
+        const profilePicEl = document.getElementById('profilePicture');
+        if (profilePicEl) {
+            profilePicEl.style.backgroundImage = '';
+            profilePicEl.textContent = emoji;
+        }
+        alert('Profile picture updated!');
+        modal.remove();
+    };
 }
 
 function showProfileSettings() {
