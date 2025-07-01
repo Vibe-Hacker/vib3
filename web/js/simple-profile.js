@@ -3,6 +3,21 @@
 function createSimpleProfilePage() {
     console.log('🔧 Creating comprehensive VIB3 profile page...');
     
+    // EMERGENCY: Define changeProfilePicture inline if it doesn't exist
+    if (!window.changeProfilePicture) {
+        console.log('⚠️ EMERGENCY: changeProfilePicture not found, creating inline version!');
+        window.changeProfilePicture = function() {
+            alert('🚨 INLINE EMERGENCY FUNCTION CALLED!');
+            console.log('🚨 This is the emergency inline changeProfilePicture function');
+            
+            // Show a basic modal
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+            modal.innerHTML = '<div style="background:white;padding:20px;border-radius:10px;"><h2>Profile Picture Upload</h2><p>The upload feature is temporarily unavailable.</p><button onclick="this.parentElement.parentElement.remove()">Close</button></div>';
+            document.body.appendChild(modal);
+        };
+    }
+    
     // Remove any existing profile page
     const existingProfile = document.getElementById('profilePage');
     if (existingProfile) {
@@ -38,30 +53,91 @@ function createSimpleProfilePage() {
         }
     };
     
+    console.log('🔧 INITIAL USER DATA FOR PROFILE CREATION:', {
+        hasProfileImage: !!user.profileImage,
+        profileImage: user.profileImage,
+        hasProfilePicture: !!user.profilePicture,
+        profilePicture: user.profilePicture,
+        username: user.username
+    });
+    
     // Add click listeners after page creation
     setTimeout(() => {
-        console.log('🔧 Adding profile picture click listeners...');
+        console.log('🔧 FORCING CLICK HANDLERS...');
         const profilePic = document.getElementById('profilePicture');
-        const cameraBtn = document.querySelector('button[onclick="changeProfilePicture()"]');
+        const cameraBtn = document.querySelector('button[style*="📷"]');
         
-        console.log('🔧 Profile picture element:', !!profilePic);
-        console.log('🔧 Camera button element:', !!cameraBtn);
+        console.log('🔧 Profile picture element found:', !!profilePic);
+        console.log('🔧 Camera button element found:', !!cameraBtn);
         
         if (profilePic) {
-            profilePic.addEventListener('click', () => {
-                alert('Profile picture clicked!');
-                changeProfilePicture();
-            });
+            // Remove any existing onclick
+            profilePic.onclick = null;
+            profilePic.removeAttribute('onclick');
+            
+            // Force new click handler
+            profilePic.addEventListener('click', function(e) {
+                e.stopPropagation();
+                console.log('🎯 PROFILE PIC CLICKED VIA EVENT LISTENER!');
+                alert('🎯 EVENT LISTENER CLICK DETECTED!');
+                
+                // Try multiple ways to call the function
+                try {
+                    if (window.changeProfilePicture) {
+                        console.log('🎯 Calling window.changeProfilePicture...');
+                        window.changeProfilePicture();
+                    } else if (typeof changeProfilePicture !== 'undefined') {
+                        console.log('🎯 Calling changeProfilePicture directly...');
+                        changeProfilePicture();
+                    } else {
+                        console.error('❌ changeProfilePicture function not found!');
+                        alert('❌ Function not found!');
+                    }
+                } catch (err) {
+                    console.error('❌ Error calling function:', err);
+                    alert('❌ Error: ' + err.message);
+                }
+            }, true); // Use capture phase
+            
+            console.log('✅ Click handler attached to profile picture');
         }
         
         if (cameraBtn) {
-            cameraBtn.addEventListener('click', (e) => {
+            // Remove any existing onclick
+            cameraBtn.onclick = null;
+            cameraBtn.removeAttribute('onclick');
+            
+            // Force new click handler
+            cameraBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
                 e.preventDefault();
-                alert('Camera button clicked!');
-                changeProfilePicture();
-            });
+                console.log('📷 CAMERA BUTTON CLICKED VIA EVENT LISTENER!');
+                alert('📷 CAMERA EVENT LISTENER CLICK!');
+                
+                try {
+                    if (window.changeProfilePicture) {
+                        window.changeProfilePicture();
+                    }
+                } catch (err) {
+                    console.error('❌ Camera button error:', err);
+                    alert('❌ Camera Error: ' + err.message);
+                }
+            }, true);
+            
+            console.log('✅ Click handler attached to camera button');
         }
-    }, 100);
+        
+        // Also check what's preventing clicks
+        console.log('🔍 Checking for overlapping elements...');
+        const rect = profilePic?.getBoundingClientRect();
+        if (rect) {
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const topElement = document.elementFromPoint(centerX, centerY);
+            console.log('🔍 Element at center of profile pic:', topElement);
+            console.log('🔍 Is it the profile pic?', topElement === profilePic);
+        }
+    }, 500); // Increased delay to ensure DOM is ready
     
     // Load user profile data
     if (window.authToken) {
@@ -100,8 +176,8 @@ function createSimpleProfilePage() {
             <!-- Profile Info -->
             <div style="display: flex; align-items: center; gap: 30px; max-width: 1000px; margin: 0 auto;">
                 <div style="position: relative;">
-                    <div id="profilePicture" style="width: 140px; height: 140px; background: linear-gradient(135deg, #333, #666); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; border: 4px solid rgba(255,255,255,0.2); cursor: pointer;" onclick="alert('INLINE CLICK WORKS!'); console.log('INLINE CLICK LOG!'); window.testProfilePictureClick(); changeProfilePicture();">
-                        ${user.profilePicture || '👤'}
+                    <div id="profilePicture" style="width: 140px; height: 140px; background: ${user.profileImage ? `url(${user.profileImage})` : 'linear-gradient(135deg, #333, #666)'}; ${user.profileImage ? 'background-size: cover; background-position: center;' : ''} border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; border: 4px solid rgba(255,255,255,0.2); cursor: pointer;" onclick="alert('INLINE CLICK WORKS!'); console.log('INLINE CLICK LOG!'); window.testProfilePictureClick(); changeProfilePicture();">
+${user.profileImage ? '' : (user.profilePicture || '👤')}
                     </div>
                     <button onclick="alert('CAMERA BUTTON CLICK WORKS!'); changeProfilePicture();" style="position: absolute; bottom: 0; right: 0; background: #fe2c55; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 16px; cursor: pointer;">
                         📷
