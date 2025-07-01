@@ -334,18 +334,29 @@ function updateProfileDisplay(userData) {
     
     // Update profile picture
     const profilePicEl = document.getElementById('profilePicture');
+    console.log('🖼️ Updating profile picture:', { 
+        hasElement: !!profilePicEl, 
+        profileImage: userData.profileImage, 
+        profilePicture: userData.profilePicture 
+    });
     if (profilePicEl) {
         if (userData.profileImage) {
             // Show uploaded image
+            console.log('🖼️ Setting background image:', userData.profileImage);
             profilePicEl.style.backgroundImage = `url(${userData.profileImage})`;
             profilePicEl.style.backgroundSize = 'cover';
             profilePicEl.style.backgroundPosition = 'center';
             profilePicEl.textContent = '';
         } else if (userData.profilePicture) {
             // Show emoji
+            console.log('🖼️ Setting emoji:', userData.profilePicture);
             profilePicEl.style.backgroundImage = '';
             profilePicEl.textContent = userData.profilePicture;
+        } else {
+            console.log('🖼️ No profile image or picture found in userData');
         }
+    } else {
+        console.log('❌ Profile picture element not found');
     }
 }
 
@@ -1225,8 +1236,14 @@ async function changeProfilePicture() {
                     }
                     
                     // Force reload profile data to get updated image
+                    console.log('📸 Reloading profile data to show new image');
                     if (window.loadUserProfileData) {
-                        setTimeout(() => window.loadUserProfileData(), 500);
+                        setTimeout(() => {
+                            console.log('📸 Calling loadUserProfileData...');
+                            window.loadUserProfileData();
+                        }, 500);
+                    } else {
+                        console.log('❌ loadUserProfileData function not found');
                     }
                     
                     showNotification('Profile picture updated!', 'success');
