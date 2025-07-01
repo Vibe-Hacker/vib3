@@ -2,6 +2,8 @@
 
 function createSimpleProfilePage() {
     console.log('🔧 Creating comprehensive VIB3 profile page...');
+    console.log('🔍 IMMEDIATE DEBUG - window.currentUser:', window.currentUser);
+    console.log('🔍 IMMEDIATE DEBUG - profileImage value:', window.currentUser?.profileImage);
     
     // EMERGENCY: Define changeProfilePicture inline if it doesn't exist
     if (!window.changeProfilePicture) {
