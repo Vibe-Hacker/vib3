@@ -1140,9 +1140,11 @@ async function editUsername() {
 }
 
 async function changeProfilePicture() {
+    alert('📸 simple-profile.js changeProfilePicture called!');
+    console.log('📸 SIMPLE-PROFILE.JS changeProfilePicture called!');
     const emojis = ['👤', '😀', '😎', '🤩', '🥳', '🦄', '🌟', '💫', '🎵', '🎭', '🎨', '🏆'];
     const currentPicture = document.getElementById('profilePicture');
-    const currentEmoji = currentPicture.textContent;
+    const currentEmoji = currentPicture?.textContent || '👤';
     
     // Create profile picture picker modal
     const modal = document.createElement('div');
