@@ -31,9 +31,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
-    // Only initialize when actually playing to reduce resource usage
+    // Initialize for playing videos immediately, preload videos with delay
     if (widget.isPlaying) {
       _initializeVideo();
+    } else if (widget.preload) {
+      // Delay preloading to avoid resource conflicts
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && !_isInitialized) {
+          _initializeVideo();
+        }
+      });
     }
   }
 
@@ -53,12 +60,22 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _handlePlayPause();
       }
     }
+    if (oldWidget.preload != widget.preload && widget.preload && !_isInitialized) {
+      // Handle preload changes with delay
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted && !_isInitialized) {
+          _initializeVideo();
+        }
+      });
+    }
   }
 
   Future<void> _initializeVideo() async {
     try {
-      // Add small delay to prevent resource conflicts
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Only delay for preloaded videos, not current video
+      if (!widget.isPlaying) {
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
       
       _controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.videoUrl),
@@ -192,10 +209,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       );
     }
 
-    // Show black screen while loading (like TikTok)
+    // Show loading indicator while initializing
     if (!_isInitialized) {
       return Container(
         color: Colors.black,
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFFFF0080),
+            strokeWidth: 2,
+          ),
+        ),
       );
     }
 

@@ -226,8 +226,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
 
             final video = videoProvider.videos[index];
             final isCurrentVideo = index == _currentIndex;
-            // Disable preloading completely to eliminate resource conflicts
-            final shouldPreload = false;
+            // Smart preloading - only preload next video, with resource management
+            final shouldPreload = index == _currentIndex + 1;
             
             return Container(
               color: Colors.black,
