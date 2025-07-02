@@ -120,26 +120,76 @@ class VideoService {
   }
 
   static Future<List<Video>> getUserVideos(String userId, String token) async {
-    try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/videos/user/$userId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+    // Try different endpoints that match the web version
+    final endpoints = [
+      '${AppConfig.baseUrl}/api/user/videos?userId=$userId',
+      '${AppConfig.baseUrl}/api/user/videos',
+      '${AppConfig.baseUrl}/api/videos/user/$userId',
+      '${AppConfig.baseUrl}/api/videos?userId=$userId',
+    ];
+    
+    String debugLog = 'getUserVideos Debug:\n';
+    debugLog += 'UserId: $userId\n';
+    
+    for (final url in endpoints) {
+      try {
+        debugLog += 'Trying: $url\n';
+        
+        final response = await http.get(
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        final List<dynamic> videosJson = data['videos'] ?? [];
-        return videosJson.map((json) => Video.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load user videos');
+        debugLog += 'Status: ${response.statusCode}\n';
+        debugLog += 'Response length: ${response.body.length}\n';
+        debugLog += 'Response preview: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...\n';
+
+        if (response.statusCode == 200) {
+          try {
+            final dynamic responseData = jsonDecode(response.body);
+            
+            List<dynamic> videosJson = [];
+            
+            if (responseData is Map<String, dynamic>) {
+              if (responseData.containsKey('videos')) {
+                videosJson = responseData['videos'] ?? [];
+              } else if (responseData.containsKey('data')) {
+                videosJson = responseData['data'] ?? [];
+              }
+            } else if (responseData is List) {
+              videosJson = responseData;
+            }
+            
+            debugLog += 'Found ${videosJson.length} videos\n';
+            
+            if (videosJson.isNotEmpty) {
+              final videos = videosJson.map((json) {
+                try {
+                  return Video.fromJson(json as Map<String, dynamic>);
+                } catch (e) {
+                  debugLog += 'Video parse error: $e\n';
+                  return null;
+                }
+              }).where((video) => video != null).cast<Video>().toList();
+              
+              debugLog += 'Successfully parsed: ${videos.length} videos\n';
+              print(debugLog);
+              return videos;
+            }
+          } catch (e) {
+            debugLog += 'Parse error: $e\n';
+          }
+        }
+      } catch (e) {
+        debugLog += 'Error: $e\n';
       }
-    } catch (e) {
-      print('Error fetching user videos: $e');
-      return [];
     }
+    
+    print(debugLog);
+    return [];
   }
 
   static Future<bool> deleteVideo(String videoId, String token) async {
@@ -160,26 +210,76 @@ class VideoService {
   }
 
   static Future<List<Video>> getLikedVideos(String userId, String token) async {
-    try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/videos/liked/$userId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+    // Try different endpoints that match the web version
+    final endpoints = [
+      '${AppConfig.baseUrl}/api/user/liked-videos?userId=$userId',
+      '${AppConfig.baseUrl}/api/user/liked-videos',
+      '${AppConfig.baseUrl}/api/videos/liked/$userId',
+      '${AppConfig.baseUrl}/api/videos/liked?userId=$userId',
+    ];
+    
+    String debugLog = 'getLikedVideos Debug:\n';
+    debugLog += 'UserId: $userId\n';
+    
+    for (final url in endpoints) {
+      try {
+        debugLog += 'Trying: $url\n';
+        
+        final response = await http.get(
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        final List<dynamic> videosJson = data['videos'] ?? [];
-        return videosJson.map((json) => Video.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load liked videos');
+        debugLog += 'Status: ${response.statusCode}\n';
+        debugLog += 'Response length: ${response.body.length}\n';
+        debugLog += 'Response preview: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...\n';
+
+        if (response.statusCode == 200) {
+          try {
+            final dynamic responseData = jsonDecode(response.body);
+            
+            List<dynamic> videosJson = [];
+            
+            if (responseData is Map<String, dynamic>) {
+              if (responseData.containsKey('videos')) {
+                videosJson = responseData['videos'] ?? [];
+              } else if (responseData.containsKey('data')) {
+                videosJson = responseData['data'] ?? [];
+              }
+            } else if (responseData is List) {
+              videosJson = responseData;
+            }
+            
+            debugLog += 'Found ${videosJson.length} liked videos\n';
+            
+            if (videosJson.isNotEmpty) {
+              final videos = videosJson.map((json) {
+                try {
+                  return Video.fromJson(json as Map<String, dynamic>);
+                } catch (e) {
+                  debugLog += 'Video parse error: $e\n';
+                  return null;
+                }
+              }).where((video) => video != null).cast<Video>().toList();
+              
+              debugLog += 'Successfully parsed: ${videos.length} liked videos\n';
+              print(debugLog);
+              return videos;
+            }
+          } catch (e) {
+            debugLog += 'Parse error: $e\n';
+          }
+        }
+      } catch (e) {
+        debugLog += 'Error: $e\n';
       }
-    } catch (e) {
-      print('Error fetching liked videos: $e');
-      return [];
     }
+    
+    print(debugLog);
+    return [];
   }
 
   static String formatDuration(int seconds) {
