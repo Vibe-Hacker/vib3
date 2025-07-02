@@ -100,8 +100,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (_controller != null && _isInitialized) {
       if (widget.isPlaying && !_isPaused) {
         _controller!.play();
+        setState(() {
+          _isPaused = false;
+          _showPlayIcon = false;
+        });
       } else {
         _controller!.pause();
+        // Don't set _isPaused to true here because this might be from screen navigation
+        // Only set _isPaused when user manually pauses
       }
     }
   }

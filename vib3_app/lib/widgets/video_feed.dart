@@ -7,28 +7,52 @@ import '../models/video.dart';
 import 'video_player_widget.dart';
 
 class VideoFeed extends StatefulWidget {
-  const VideoFeed({super.key});
+  final bool isVisible;
+
+  const VideoFeed({super.key, this.isVisible = true});
 
   @override
   State<VideoFeed> createState() => _VideoFeedState();
 }
 
-class _VideoFeedState extends State<VideoFeed> {
+class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   int _currentIndex = 0;
   late PageController _pageController;
   final Map<String, bool> _likedVideos = {};
   final Map<String, bool> _followedUsers = {};
+  bool _isAppInForeground = true;
+  bool _isScreenVisible = true;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    WidgetsBinding.instance.addObserver(this);
+    _isScreenVisible = widget.isVisible;
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(VideoFeed oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isVisible != widget.isVisible) {
+      setState(() {
+        _isScreenVisible = widget.isVisible;
+      });
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    setState(() {
+      _isAppInForeground = state == AppLifecycleState.resumed;
+    });
   }
 
   void _onPageChanged(int index) {
@@ -209,7 +233,7 @@ class _VideoFeedState extends State<VideoFeed> {
                   if (video.videoUrl != null && video.videoUrl!.isNotEmpty)
                     VideoPlayerWidget(
                       videoUrl: video.videoUrl!,
-                      isPlaying: isCurrentVideo,
+                      isPlaying: isCurrentVideo && _isAppInForeground && _isScreenVisible,
                       preload: shouldPreload,
                     )
                   else

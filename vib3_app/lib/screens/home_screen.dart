@@ -111,7 +111,7 @@ $analysis
           IndexedStack(
             index: _currentIndex,
             children: [
-              const VideoFeed(),
+              VideoFeed(isVisible: _currentIndex == 0),
               const SearchScreen(),
               const UploadScreen(),
               const NotificationsScreen(),
