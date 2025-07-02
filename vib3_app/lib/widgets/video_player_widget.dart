@@ -25,6 +25,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _hasError = false;
   bool _isPaused = false;
   bool _showPlayIcon = false;
+  int _retryCount = 0;
+  static const int _maxRetries = 2;
 
   @override
   void initState() {
@@ -39,6 +41,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoUrl != widget.videoUrl) {
       _disposeController();
+      _retryCount = 0; // Reset retry count for new video
       _initializeVideo();
     }
     if (oldWidget.isPlaying != widget.isPlaying) {
@@ -76,8 +79,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           }
         }
       }).catchError((e) {
-        print('Video initialization error: $e');
-        if (mounted) {
+        print('Video initialization error (attempt ${_retryCount + 1}): $e');
+        if (_retryCount < _maxRetries && mounted) {
+          _retryCount++;
+          print('Retrying video initialization in 1 second...');
+          Future.delayed(const Duration(seconds: 1), () {
+            if (mounted) {
+              _disposeController();
+              _initializeVideo();
+            }
+          });
+        } else if (mounted) {
           setState(() {
             _hasError = true;
             _isInitialized = false;

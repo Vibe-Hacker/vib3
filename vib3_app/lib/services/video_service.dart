@@ -33,14 +33,10 @@ class VideoService {
                 continue;
               }
               
-              // Check if video is properly processed
-              final isProcessed = json['processed'] == true || json['processingInfo'] != null;
+              // Don't filter videos - let the player handle all formats
+              // Track video info for debugging
               final mimeType = json['mimeType']?.toString() ?? '';
-              
-              // Skip WebM videos and unprocessed videos that cause playback issues
-              if (mimeType.contains('webm') || !isProcessed) {
-                continue;
-              }
+              final isProcessed = json['processed'] == true || json['processingInfo'] != null;
               
               // Ensure the URL is complete
               if (!videoUrl.startsWith('http')) {

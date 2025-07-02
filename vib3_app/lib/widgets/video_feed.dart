@@ -223,7 +223,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
 
             final video = videoProvider.videos[index];
             final isCurrentVideo = index == _currentIndex;
-            final shouldPreload = (index - _currentIndex).abs() <= 2; // Preload current +/- 2 videos
+            // Simplified preloading - only preload next video to avoid memory issues
+            final shouldPreload = (index - _currentIndex).abs() <= 1;
             
             return Container(
               color: Colors.black,
@@ -269,10 +270,10 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'Debug: ${videoProvider.debugInfo}',
+                            'Debug: URL=${video.videoUrl?.split('/').last ?? 'NO_URL'}',
                             style: const TextStyle(
                               color: Colors.yellow,
-                              fontSize: 12,
+                              fontSize: 10,
                             ),
                           ),
                         ),
