@@ -77,10 +77,10 @@ function createSimpleProfilePage() {
             <!-- Profile Info -->
             <div style="display: flex; align-items: center; gap: 30px; max-width: 1000px; margin: 0 auto;">
                 <div style="position: relative;">
-                    <div id="profilePicture" style="width: 140px; height: 140px; background: linear-gradient(135deg, #333, #666); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; border: 4px solid rgba(255,255,255,0.2); cursor: pointer;" onclick="changeProfilePicture()">
+                    <div id="profilePicture" style="width: 140px; height: 140px; background: linear-gradient(135deg, #333, #666); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; border: 4px solid rgba(255,255,255,0.2); cursor: pointer;">
                         ${user.profilePicture || '👤'}
                     </div>
-                    <button onclick="changeProfilePicture()" style="position: absolute; bottom: 0; right: 0; background: #fe2c55; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 16px; cursor: pointer;">
+                    <button id="profilePictureButton" style="position: absolute; bottom: 0; right: 0; background: #fe2c55; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 16px; cursor: pointer;">
                         📷
                     </button>
                 </div>
@@ -191,8 +191,9 @@ function createSimpleProfilePage() {
     // Add click event listeners after profile page is created
     setTimeout(() => {
         console.log('🔧 Adding profile picture click handlers...');
+        console.log('🔧 Checking if changeProfilePicture function is available:', typeof window.changeProfilePicture);
         const profilePic = document.getElementById('profilePicture');
-        const cameraBtn = profilePic?.parentElement?.querySelector('button');
+        const cameraBtn = document.getElementById('profilePictureButton');
         
         if (profilePic) {
             console.log('✅ Found profile picture element, adding click handler');
@@ -200,9 +201,12 @@ function createSimpleProfilePage() {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('🔥 PROFILE PICTURE CLICKED VIA EVENT LISTENER!');
-                alert('Profile picture clicked via event listener!');
-                if (window.changeProfilePicture) {
+                if (typeof window.changeProfilePicture === 'function') {
+                    console.log('✅ Calling changeProfilePicture function');
                     window.changeProfilePicture();
+                } else {
+                    console.error('❌ changeProfilePicture function not available:', typeof window.changeProfilePicture);
+                    alert('Profile picture change functionality not loaded yet. Try again in a moment.');
                 }
             });
         } else {
@@ -215,9 +219,12 @@ function createSimpleProfilePage() {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('🔥 CAMERA BUTTON CLICKED VIA EVENT LISTENER!');
-                alert('Camera button clicked via event listener!');
-                if (window.changeProfilePicture) {
+                if (typeof window.changeProfilePicture === 'function') {
+                    console.log('✅ Calling changeProfilePicture function from camera button');
                     window.changeProfilePicture();
+                } else {
+                    console.error('❌ changeProfilePicture function not available:', typeof window.changeProfilePicture);
+                    alert('Profile picture change functionality not loaded yet. Try again in a moment.');
                 }
             });
         } else {
