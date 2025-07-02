@@ -74,6 +74,16 @@
             </svg>
             <div class="sidebar-text">Network</div>
         </button>
+
+        <button class="sidebar-item" onclick="showPage('viberooms')" id="sidebarVibeRooms">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                <circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.7"/>
+                <circle cx="7" cy="9" r="2" fill="currentColor" opacity="0.5"/>
+                <circle cx="17" cy="9" r="2" fill="currentColor" opacity="0.5"/>
+            </svg>
+            <div class="sidebar-text">Vibe Rooms</div>
+        </button>
         
         <button class="sidebar-item" onclick="showUploadModal()">
             <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -132,6 +142,15 @@
             </svg>
             <div class="sidebar-text">Analytics</div>
         </button>
+
+        <button class="sidebar-item" onclick="showPage('energymeter')" id="sidebarEnergyMeter">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                <path d="M12 6v6l4 2-1 1.7-5-3V6h2z" fill="var(--accent-primary)"/>
+                <circle cx="12" cy="12" r="2" fill="var(--accent-secondary)"/>
+            </svg>
+            <div class="sidebar-text">Energy Meter</div>
+        </button>
         
         <button class="sidebar-item" onclick="showMoreOptions()">
             <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -179,6 +198,9 @@
                 <button class="feed-tab active" onclick="switchFeedTab('home')" id="homeTab" aria-label="Home Feed">Home</button>
                 <button class="feed-tab" onclick="switchFeedTab('subscriptions')" id="subscriptionsTab" aria-label="Subscriptions Feed">Subscriptions</button>
                 <button class="feed-tab" onclick="switchFeedTab('network')" id="networkTab" aria-label="Network Feed">Network</button>
+                <button class="feed-tab vib3-pulse-tab" onclick="switchFeedTab('pulse')" id="pulseTab" aria-label="Pulse Feed">
+                    <span class="pulse-icon">⚡</span> Pulse Feed
+                </button>
                 <button class="feed-tab" onclick="switchFeedTab('discover')" id="discoverTab" aria-label="Discover Feed">Discover</button>
             </div>
             <div class="feed-content active" id="homeFeed">
@@ -186,6 +208,8 @@
             <div class="feed-content" id="subscriptionsFeed">
             </div>
             <div class="feed-content" id="networkFeed">
+            </div>
+            <div class="feed-content" id="pulseFeed">
             </div>
             <div class="feed-content" id="discoverFeed">
                 <!-- Explore Top Navigation -->
@@ -1112,7 +1136,7 @@
     <script src="js/comments-simple.js"></script>
     <script src="js/search-simple.js"></script>
     <script src="js/components/upload-manager.js?v=20250702001"></script>
-    <script src="js/vib3-complete.js?v=20250702009"></script>
+    <script src="js/vib3-complete.js?v=20250702010"></script>
     
     <!-- Auto-testing and fixing scripts for development -->
     <script>

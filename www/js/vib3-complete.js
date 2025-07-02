@@ -669,9 +669,198 @@ function mapFeedType(feedType) {
         'home': 'foryou',
         'subscriptions': 'following', 
         'network': 'friends',
-        'discover': 'explore'
+        'discover': 'explore',
+        'pulse': 'pulse'
     };
     return feedMapping[feedType] || feedType;
+}
+
+// ================ VIB3 UNIQUE FEATURES ================
+
+// VIB3 Pulse Feed - Shows trending content with real-time engagement
+async function loadPulseFeed() {
+    console.log('⚡ Loading VIB3 Pulse Feed - Real-time trending content');
+    
+    const pulseContainer = document.getElementById('pulseFeed');
+    if (!pulseContainer) return;
+    
+    pulseContainer.innerHTML = `
+        <div class="pulse-header" style="padding: 20px; background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%); color: white; text-align: center;">
+            <h2 style="margin: 0; font-size: 24px; font-weight: 700;">⚡ Pulse Feed</h2>
+            <p style="margin: 8px 0 0; opacity: 0.9;">Real-time trending content with live engagement</p>
+        </div>
+        <div class="pulse-metrics" style="padding: 16px; background: var(--bg-secondary); display: flex; justify-content: space-around; border-bottom: 1px solid var(--border-primary);">
+            <div class="metric-item" style="text-align: center;">
+                <div class="metric-value" style="font-size: 20px; font-weight: 700; color: var(--accent-primary);" id="pulseViews">0</div>
+                <div class="metric-label" style="font-size: 12px; color: var(--text-secondary);">Live Views</div>
+            </div>
+            <div class="metric-item" style="text-align: center;">
+                <div class="metric-value" style="font-size: 20px; font-weight: 700; color: var(--accent-secondary);" id="pulseHeartbeats">0</div>
+                <div class="metric-label" style="font-size: 12px; color: var(--text-secondary);">Heartbeats/min</div>
+            </div>
+            <div class="metric-item" style="text-align: center;">
+                <div class="metric-value" style="font-size: 20px; font-weight: 700; color: #ff6b6b;" id="pulseEnergy">100</div>
+                <div class="metric-label" style="font-size: 12px; color: var(--text-secondary);">Energy Level</div>
+            </div>
+        </div>
+        <div class="pulse-content" style="padding: 20px;">
+            <div style="text-align: center; color: var(--text-secondary);">
+                <div style="font-size: 48px; margin-bottom: 16px;">⚡</div>
+                <h3>Pulse Feed is Charging Up!</h3>
+                <p>This revolutionary feature shows real-time trending content<br>with live engagement metrics and energy levels.</p>
+                <button onclick="simulatePulseActivity()" style="margin-top: 16px; background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    ⚡ Activate Pulse Mode
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Start simulated real-time metrics
+    startPulseMetrics();
+}
+
+// VIB3 Energy Meter - Shows real-time engagement energy
+function showEnergyMeter() {
+    console.log('🔋 Opening VIB3 Energy Meter');
+    
+    const energyModal = document.createElement('div');
+    energyModal.className = 'vib3-energy-modal';
+    energyModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.9);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+    `;
+    
+    energyModal.innerHTML = `
+        <div class="energy-meter-content" style="background: var(--bg-secondary); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; position: relative; border: 1px solid var(--border-primary);">
+            <button onclick="closeEnergyMeter()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer;">&times;</button>
+            
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 style="background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 8px;">Energy Meter</h2>
+                <p style="color: var(--text-secondary); margin: 0;">Real-time platform engagement energy</p>
+            </div>
+            
+            <div class="energy-display" style="text-align: center; margin: 30px 0;">
+                <div class="energy-circle" style="width: 150px; height: 150px; border-radius: 50%; background: conic-gradient(var(--accent-primary) 0deg, var(--accent-secondary) 120deg, #ff6b6b 240deg, var(--accent-primary) 360deg); margin: 0 auto; display: flex; align-items: center; justify-content: center; position: relative; animation: energy-spin 3s linear infinite;">
+                    <div class="energy-inner" style="width: 120px; height: 120px; border-radius: 50%; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <div class="energy-value" style="font-size: 28px; font-weight: 700; color: white;" id="energyValue">87</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">ENERGY</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="energy-stats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="stat-item" style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 18px; font-weight: 600; color: var(--accent-primary);" id="liveUsers">1,247</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Live Users</div>
+                </div>
+                <div class="stat-item" style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 18px; font-weight: 600; color: var(--accent-secondary);" id="vibeScore">9.4</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Vibe Score</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(energyModal);
+    
+    // Add spinning animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes energy-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Start energy meter updates
+    startEnergyUpdates();
+}
+
+// VIB3 Vibe Rooms - Community spaces for shared interests
+function showVibeRooms() {
+    console.log('🏠 Opening VIB3 Vibe Rooms');
+    
+    // Hide other content and show vibe rooms
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    let vibeRoomsPage = document.getElementById('vibeRoomsPage');
+    if (!vibeRoomsPage) {
+        vibeRoomsPage = document.createElement('div');
+        vibeRoomsPage.id = 'vibeRoomsPage';
+        vibeRoomsPage.className = 'vibe-rooms-page';
+        vibeRoomsPage.style.cssText = 'margin-left: 240px; margin-top: 60px; width: calc(100vw - 240px); height: calc(100vh - 60px); overflow-y: auto; background: var(--bg-primary); padding: 20px;';
+        
+        vibeRoomsPage.innerHTML = `
+            <div class="vibe-rooms-header" style="background: var(--accent-gradient); padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; color: white;">
+                <h1 style="margin: 0 0 10px; font-size: 32px; font-weight: 800;">🏠 Vibe Rooms</h1>
+                <p style="margin: 0; font-size: 16px; opacity: 0.9;">Join community spaces based on your interests and vibes</p>
+            </div>
+            
+            <div class="room-categories" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <div class="room-category" onclick="joinVibeRoom('music')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 15px; cursor: pointer; transition: transform 0.2s; color: white;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">🎵</div>
+                    <h3 style="margin: 0 0 8px; font-size: 20px;">Music Vibes</h3>
+                    <p style="margin: 0; opacity: 0.9; font-size: 14px;">Share beats, discover new artists, and vibe to music together</p>
+                    <div style="margin-top: 15px; font-size: 12px; opacity: 0.8;">🔥 847 users vibing</div>
+                </div>
+                
+                <div class="room-category" onclick="joinVibeRoom('dance')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 25px; border-radius: 15px; cursor: pointer; transition: transform 0.2s; color: white;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">💃</div>
+                    <h3 style="margin: 0 0 8px; font-size: 20px;">Dance Floor</h3>
+                    <p style="margin: 0; opacity: 0.9; font-size: 14px;">Show your moves, learn new dances, and battle it out</p>
+                    <div style="margin-top: 15px; font-size: 12px; opacity: 0.8;">⚡ 632 users dancing</div>
+                </div>
+                
+                <div class="room-category" onclick="joinVibeRoom('creativity')" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 25px; border-radius: 15px; cursor: pointer; transition: transform 0.2s; color: white;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">🎨</div>
+                    <h3 style="margin: 0 0 8px; font-size: 20px;">Creative Space</h3>
+                    <p style="margin: 0; opacity: 0.9; font-size: 14px;">Art, design, photography, and creative collaborations</p>
+                    <div style="margin-top: 15px; font-size: 12px; opacity: 0.8;">✨ 423 creators online</div>
+                </div>
+                
+                <div class="room-category" onclick="joinVibeRoom('gaming')" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 25px; border-radius: 15px; cursor: pointer; transition: transform 0.2s; color: white;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">🎮</div>
+                    <h3 style="margin: 0 0 8px; font-size: 20px;">Gaming Zone</h3>
+                    <p style="margin: 0; opacity: 0.9; font-size: 14px;">Gaming content, streams, reviews, and gamer community</p>
+                    <div style="margin-top: 15px; font-size: 12px; opacity: 0.8;">🎯 1,205 gamers active</div>
+                </div>
+            </div>
+            
+            <div class="create-room-section" style="background: var(--bg-secondary); padding: 25px; border-radius: 15px; text-align: center; border: 2px dashed var(--border-primary);">
+                <h3 style="color: var(--text-primary); margin: 0 0 10px;">Create Your Own Vibe Room</h3>
+                <p style="color: var(--text-secondary); margin: 0 0 20px;">Start a new community space for your unique interests</p>
+                <button onclick="showCreateRoomModal()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    ➕ Create New Room
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(vibeRoomsPage);
+    }
+    
+    vibeRoomsPage.style.display = 'block';
+    
+    // Add hover effects
+    const style = document.createElement('style');
+    style.textContent = `
+        .room-category:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, append = false) {
@@ -4836,8 +5025,19 @@ function showPage(page) {
         console.log('🧹 Pre-cleanup: Removed analytics overlay');
     }
 
+    // Handle VIB3 unique features
+    if (page === 'viberooms') {
+        showVibeRooms();
+        return;
+    }
+    
+    if (page === 'energymeter') {
+        showEnergyMeter();
+        return;
+    }
+
     // Handle feed tabs - don't show "coming soon" for these
-    if (page === 'home' || page === 'subscriptions' || page === 'discover' || page === 'network' || 
+    if (page === 'home' || page === 'subscriptions' || page === 'discover' || page === 'network' || page === 'pulse' ||
         page === 'foryou' || page === 'following' || page === 'explore' || page === 'friends') {
         // CRITICAL: Force hide ALL activity and special pages when going to feeds
         document.querySelectorAll('.activity-page, .analytics-page, .messages-page, .profile-page').forEach(el => {
@@ -12613,4 +12813,268 @@ function trackNotInterested(videoId) {
         reason: 'user_action'
     });
 }
+
+// ================ VIB3 UNIQUE FEATURES SUPPORT FUNCTIONS ================
+
+// Start real-time pulse metrics
+let pulseMetricsInterval = null;
+function startPulseMetrics() {
+    if (pulseMetricsInterval) clearInterval(pulseMetricsInterval);
+    
+    pulseMetricsInterval = setInterval(() => {
+        const viewsEl = document.getElementById('pulseViews');
+        const heartbeatsEl = document.getElementById('pulseHeartbeats');
+        const energyEl = document.getElementById('pulseEnergy');
+        
+        if (viewsEl && heartbeatsEl && energyEl) {
+            // Simulate real-time metrics with random variations
+            const baseViews = 15420;
+            const baseHeartbeats = 847;
+            const baseEnergy = 87;
+            
+            const newViews = baseViews + Math.floor(Math.random() * 200) - 100;
+            const newHeartbeats = baseHeartbeats + Math.floor(Math.random() * 50) - 25;
+            const newEnergy = Math.max(50, Math.min(100, baseEnergy + Math.floor(Math.random() * 20) - 10));
+            
+            viewsEl.textContent = formatCount(newViews);
+            heartbeatsEl.textContent = newHeartbeats.toLocaleString();
+            energyEl.textContent = newEnergy;
+            
+            // Add pulse animation to energy when high
+            if (newEnergy > 90) {
+                energyEl.style.animation = 'pulse 0.5s ease-in-out';
+                setTimeout(() => energyEl.style.animation = '', 500);
+            }
+        }
+    }, 2000);
+}
+
+// Simulate pulse activity with visual feedback
+function simulatePulseActivity() {
+    const button = event.target;
+    button.innerHTML = '⚡ Activating...';
+    button.disabled = true;
+    
+    setTimeout(() => {
+        button.innerHTML = '✨ Pulse Mode Active!';
+        
+        // Add some visual effects
+        const pulseContent = document.querySelector('.pulse-content');
+        if (pulseContent) {
+            pulseContent.innerHTML += `
+                <div style="margin-top: 20px; padding: 15px; background: var(--bg-tertiary); border-radius: 10px; text-align: center;">
+                    <div style="font-size: 24px; margin-bottom: 10px;">⚡✨🔥</div>
+                    <p style="color: var(--text-primary); margin: 0;">Pulse Mode is now active! You're seeing the most energetic content in real-time.</p>
+                </div>
+            `;
+        }
+        
+        setTimeout(() => {
+            button.innerHTML = '⚡ Pulse Active';
+            button.style.background = 'linear-gradient(135deg, #00ff88 0%, #00cc66 100%)';
+        }, 1000);
+    }, 1500);
+}
+
+// Start energy meter real-time updates
+let energyUpdateInterval = null;
+function startEnergyUpdates() {
+    if (energyUpdateInterval) clearInterval(energyUpdateInterval);
+    
+    energyUpdateInterval = setInterval(() => {
+        const energyValueEl = document.getElementById('energyValue');
+        const liveUsersEl = document.getElementById('liveUsers');
+        const vibeScoreEl = document.getElementById('vibeScore');
+        
+        if (energyValueEl && liveUsersEl && vibeScoreEl) {
+            // Simulate fluctuating energy metrics
+            const currentEnergy = parseInt(energyValueEl.textContent);
+            const newEnergy = Math.max(60, Math.min(100, currentEnergy + Math.floor(Math.random() * 6) - 3));
+            
+            const baseLiveUsers = 1200;
+            const newLiveUsers = baseLiveUsers + Math.floor(Math.random() * 100) - 50;
+            
+            const baseVibeScore = 9.2;
+            const newVibeScore = Math.max(8.5, Math.min(9.9, baseVibeScore + (Math.random() * 0.4) - 0.2));
+            
+            energyValueEl.textContent = newEnergy;
+            liveUsersEl.textContent = newLiveUsers.toLocaleString();
+            vibeScoreEl.textContent = newVibeScore.toFixed(1);
+            
+            // Change energy circle color based on level
+            const energyCircle = document.querySelector('.energy-circle');
+            if (energyCircle) {
+                if (newEnergy > 90) {
+                    energyCircle.style.background = 'conic-gradient(#00ff88 0deg, #00cc66 120deg, #ff6b6b 240deg, #00ff88 360deg)';
+                } else if (newEnergy < 70) {
+                    energyCircle.style.background = 'conic-gradient(#ff6b6b 0deg, #ff8e53 120deg, #ffa726 240deg, #ff6b6b 360deg)';
+                } else {
+                    energyCircle.style.background = 'conic-gradient(var(--accent-primary) 0deg, var(--accent-secondary) 120deg, #ff6b6b 240deg, var(--accent-primary) 360deg)';
+                }
+            }
+        }
+    }, 3000);
+}
+
+// Close energy meter modal
+function closeEnergyMeter() {
+    const modal = document.querySelector('.vib3-energy-modal');
+    if (modal) {
+        modal.remove();
+    }
+    if (energyUpdateInterval) {
+        clearInterval(energyUpdateInterval);
+        energyUpdateInterval = null;
+    }
+}
+
+// Join a vibe room
+function joinVibeRoom(roomType) {
+    console.log(`🏠 Joining ${roomType} vibe room`);
+    
+    const roomNames = {
+        music: 'Music Vibes',
+        dance: 'Dance Floor',
+        creativity: 'Creative Space',
+        gaming: 'Gaming Zone'
+    };
+    
+    const roomName = roomNames[roomType] || roomType;
+    
+    // Create room interface
+    const roomModal = document.createElement('div');
+    roomModal.className = 'vibe-room-modal';
+    roomModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.95);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(15px);
+    `;
+    
+    roomModal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 20px; padding: 30px; max-width: 600px; width: 90%; border: 1px solid var(--border-primary); position: relative;">
+            <button onclick="this.closest('.vibe-room-modal').remove()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer;">&times;</button>
+            
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 style="background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 8px;">Welcome to ${roomName}!</h2>
+                <p style="color: var(--text-secondary); margin: 0;">You've joined the community. Start vibing!</p>
+            </div>
+            
+            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-size: 24px;">🎵</div>
+                    <div>
+                        <div style="font-weight: 600; color: var(--text-primary);">Room Activity</div>
+                        <div style="font-size: 14px; color: var(--text-secondary);">Live discussions and content sharing</div>
+                    </div>
+                </div>
+                <div style="color: var(--text-secondary); font-size: 14px; font-style: italic;">
+                    "This room feature is coming soon! We're building amazing community spaces where you can connect with others who share your interests and collaborate on content together."
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <button onclick="this.closest('.vibe-room-modal').remove()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: 600; margin-right: 10px;">
+                    Got it! 
+                </button>
+                <button onclick="showCreateRoomModal(); this.closest('.vibe-room-modal').remove();" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    Create My Own
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(roomModal);
+}
+
+// Show create room modal
+function showCreateRoomModal() {
+    console.log('➕ Opening create room modal');
+    
+    const createModal = document.createElement('div');
+    createModal.className = 'create-room-modal';
+    createModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.9);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+    `;
+    
+    createModal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid var(--border-primary); position: relative;">
+            <button onclick="this.closest('.create-room-modal').remove()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer;">&times;</button>
+            
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 style="background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 8px;">Create Vibe Room</h2>
+                <p style="color: var(--text-secondary); margin: 0;">Start your own community space</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Room Name</label>
+                <input type="text" placeholder="Enter room name..." style="width: 100%; padding: 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); box-sizing: border-box;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Category</label>
+                <select style="width: 100%; padding: 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); box-sizing: border-box;">
+                    <option>Music & Audio</option>
+                    <option>Dance & Movement</option>
+                    <option>Art & Creativity</option>
+                    <option>Gaming & Tech</option>
+                    <option>Lifestyle & Vlog</option>
+                    <option>Comedy & Entertainment</option>
+                    <option>Education & Learning</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 30px;">
+                <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Description</label>
+                <textarea placeholder="Describe what your room is about..." style="width: 100%; height: 80px; padding: 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); resize: vertical; box-sizing: border-box;"></textarea>
+            </div>
+            
+            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                <div style="color: var(--text-secondary); font-size: 14px;">
+                    🚧 Room creation is coming soon! We're building the infrastructure to support custom community spaces.
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <button onclick="this.closest('.create-room-modal').remove()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: 600; margin-right: 10px;">
+                    Coming Soon!
+                </button>
+                <button onclick="this.closest('.create-room-modal').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(createModal);
+}
+
+// Export VIB3 unique functions to window
+window.startPulseMetrics = startPulseMetrics;
+window.simulatePulseActivity = simulatePulseActivity;
+window.startEnergyUpdates = startEnergyUpdates;
+window.closeEnergyMeter = closeEnergyMeter;
+window.joinVibeRoom = joinVibeRoom;
+window.showCreateRoomModal = showCreateRoomModal;
+window.showEnergyMeter = showEnergyMeter;
+window.showVibeRooms = showVibeRooms;
+window.loadPulseFeed = loadPulseFeed;
   
