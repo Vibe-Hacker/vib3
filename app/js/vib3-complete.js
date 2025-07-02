@@ -1058,7 +1058,7 @@ function createAdvancedVideoCard(video) {
     
     // Add comprehensive error handling
     video_elem.onerror = (e) => {
-        console.error('🚨 VIDEO ERROR:', video_elem.src, e);
+        console.error('🚨 VIDEO ERROR FROM VIB3-COMPLETE.JS:', video_elem.src, e);
         console.error('Error details:', {
             error: e.target.error,
             errorCode: e.target.error?.code,
