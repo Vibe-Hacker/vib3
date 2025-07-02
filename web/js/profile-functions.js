@@ -197,19 +197,41 @@ async function changeProfilePicture() {
                     console.log('📸 Profile image upload SUCCESS response:', data);
                     
                     // Update profile picture display immediately
-                    const profilePicEl = document.getElementById('profilePicture');
-                    const imageUrl = data.profilePictureUrl || data.profileImageUrl;
-                    if (profilePicEl && imageUrl) {
-                        console.log('📸 Updating profile picture element immediately with:', imageUrl);
-                        profilePicEl.style.backgroundImage = `url(${imageUrl})`;
-                        profilePicEl.style.backgroundSize = 'cover';
-                        profilePicEl.style.backgroundPosition = 'center';
-                        profilePicEl.textContent = '';
+                    const imageUrl = data.profilePictureUrl || data.profileImageUrl || data.profileImage;
+                    console.log('📸 Received image URL from server:', imageUrl);
+                    console.log('📸 Full server response:', data);
+                    
+                    if (imageUrl) {
+                        // Update main profile picture element
+                        const profilePicEl = document.getElementById('profilePicture');
+                        console.log('📸 Found profile picture element:', !!profilePicEl);
+                        
+                        if (profilePicEl) {
+                            console.log('📸 Updating main profile picture element with:', imageUrl);
+                            profilePicEl.style.backgroundImage = `url(${imageUrl})`;
+                            profilePicEl.style.backgroundSize = 'cover';
+                            profilePicEl.style.backgroundPosition = 'center';
+                            profilePicEl.textContent = '';
+                            console.log('📸 Profile picture element updated successfully');
+                        }
+                        
+                        // Update any other profile picture elements that might exist
+                        const allProfileEls = document.querySelectorAll('[id*="profile"], [class*="profile-pic"], [class*="avatar"]');
+                        console.log('📸 Found additional profile elements:', allProfileEls.length);
+                        allProfileEls.forEach((el, index) => {
+                            if (el.id !== 'profilePicture') { // Don't duplicate the main one
+                                console.log(`📸 Updating additional profile element ${index}:`, el.id || el.className);
+                                el.style.backgroundImage = `url(${imageUrl})`;
+                                el.style.backgroundSize = 'cover';
+                                el.style.backgroundPosition = 'center';
+                                if (el.textContent && el.textContent.match(/[👤😀😎🤩🥳🦄🌟💫🎵🎭🎨🏆]/)) {
+                                    el.textContent = '';
+                                }
+                            }
+                        });
                     } else {
-                        console.error('❌ No profile picture element found or no image URL in response');
-                        console.log('📸 profilePicEl found:', !!profilePicEl);
-                        console.log('📸 imageUrl:', imageUrl);
-                        console.log('📸 Full response data:', data);
+                        console.error('❌ No image URL found in server response');
+                        console.log('📸 Available response fields:', Object.keys(data));
                     }
                     
                     // Update current user data
@@ -223,13 +245,46 @@ async function changeProfilePicture() {
                     alert('Profile picture updated successfully!');
                     modal.remove();
                     
-                    // Force reload of profile data to ensure it shows the new image
-                    setTimeout(() => {
-                        if (window.loadUserProfileData && typeof window.loadUserProfileData === 'function') {
-                            console.log('📸 Refreshing profile data after upload...');
-                            window.loadUserProfileData();
+                    // Force reload of user data from server to get updated profile
+                    setTimeout(async () => {
+                        console.log('📸 Refreshing user data from server after upload...');
+                        try {
+                            // Fetch fresh user data from server
+                            const userResponse = await fetch(`${window.API_BASE_URL}/api/auth/me`, {
+                                credentials: 'include',
+                                headers: {
+                                    ...(window.authToken && window.authToken !== 'session-based' ? 
+                                        { 'Authorization': `Bearer ${window.authToken}` } : {})
+                                }
+                            });
+                            
+                            if (userResponse.ok) {
+                                const freshUserData = await userResponse.json();
+                                console.log('📸 Got fresh user data:', freshUserData);
+                                
+                                // Update currentUser with fresh data
+                                if (freshUserData.user) {
+                                    window.currentUser = freshUserData.user;
+                                    console.log('📸 Updated currentUser with fresh data:', window.currentUser);
+                                    
+                                    // Update profile display with fresh data
+                                    if (window.updateProfileDisplay && typeof window.updateProfileDisplay === 'function') {
+                                        window.updateProfileDisplay(freshUserData.user);
+                                    }
+                                    
+                                    // Also trigger a profile page refresh if we're on profile page
+                                    if (window.loadUserProfileData && typeof window.loadUserProfileData === 'function') {
+                                        console.log('📸 Refreshing profile page display...');
+                                        window.loadUserProfileData();
+                                    }
+                                }
+                            } else {
+                                console.error('❌ Failed to fetch fresh user data');
+                            }
+                        } catch (error) {
+                            console.error('❌ Error fetching fresh user data:', error);
                         }
-                    }, 500);
+                    }, 1000);
                 } else {
                     const errorText = await response.text();
                     console.error('❌ PROFILE PICTURE UPLOAD ERROR:', errorText);
@@ -249,15 +304,15 @@ async function changeProfilePicture() {
         
         try {
             // Call server to update profile picture
-            const response = await fetch(`${window.API_BASE_URL}/api/user/profile-emoji`, {
-                method: 'POST',
+            const response = await fetch(`${window.API_BASE_URL}/api/user/profile`, {
+                method: 'PUT',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     ...(window.authToken && window.authToken !== 'session-based' ? 
                         { 'Authorization': `Bearer ${window.authToken}` } : {})
                 },
-                body: JSON.stringify({ emoji })
+                body: JSON.stringify({ profilePicture: emoji })
             });
             
             if (response.ok) {
