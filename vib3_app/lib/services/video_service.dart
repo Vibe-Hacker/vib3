@@ -28,8 +28,22 @@ class VideoService {
           final List<dynamic> videosJson = data['videos'];
           print('✅ Found ${videosJson.length} videos in main endpoint');
           
-          final videos = videosJson.map((json) => Video.fromJson(json)).toList();
-          print('🎯 Successfully parsed ${videos.length} videos');
+          final videos = <Video>[];
+          int parseErrors = 0;
+          
+          for (int i = 0; i < videosJson.length; i++) {
+            try {
+              final video = Video.fromJson(videosJson[i]);
+              videos.add(video);
+              print('📹 Video ${i + 1}: ${video.id} - ${video.description}');
+            } catch (e) {
+              parseErrors++;
+              print('❌ Failed to parse video ${i + 1}: $e');
+              print('📄 Raw video data: ${videosJson[i]}');
+            }
+          }
+          
+          print('🎯 Successfully parsed ${videos.length} videos (${parseErrors} parse errors)');
           return videos;
         }
       }

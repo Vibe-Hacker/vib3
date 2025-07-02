@@ -34,22 +34,26 @@ class Video {
   factory Video.fromJson(Map<String, dynamic> json) {
     return Video(
       id: json['_id'] ?? '',
-      userId: json['userid'] ?? '',
+      userId: json['userId'] ?? json['userid'] ?? '',
       videoUrl: json['videoUrl'] ?? '',
-      thumbnailUrl: json['thumbnailurl'] ?? '',
+      thumbnailUrl: json['thumbnailUrl'] ?? json['thumbnailurl'] ?? '',
       description: json['title'] ?? json['description'] ?? 'Untitled',
-      likesCount: json['likecount'] ?? json['likes'] ?? 0,
-      commentsCount: json['commentcount'] ?? json['comments'] ?? 0,
-      sharesCount: json['sharecount'] ?? 0,
+      likesCount: json['likeCount'] ?? json['likecount'] ?? json['likes'] ?? 0,
+      commentsCount: json['commentCount'] ?? json['commentcount'] ?? json['comments'] ?? 0,
+      sharesCount: json['shareCount'] ?? json['sharecount'] ?? 0,
       viewsCount: json['views'] ?? 0,
       duration: json['duration'] ?? 30,
       isPrivate: json['isPrivate'] ?? false,
-      createdAt: json['createdat'] != null 
-          ? DateTime.parse(json['createdat']) 
-          : DateTime.now(),
-      updatedAt: json['updatedat'] != null 
-          ? DateTime.parse(json['updatedat']) 
-          : DateTime.now(),
+      createdAt: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt']) 
+          : (json['createdat'] != null 
+              ? DateTime.parse(json['createdat']) 
+              : DateTime.now()),
+      updatedAt: json['updatedAt'] != null 
+          ? DateTime.parse(json['updatedAt']) 
+          : (json['updatedat'] != null 
+              ? DateTime.parse(json['updatedat']) 
+              : DateTime.now()),
       user: json['user'] ?? {'username': json['username']},
     );
   }
