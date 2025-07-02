@@ -11785,4 +11785,82 @@ function trackNotInterested(videoId) {
         reason: 'user_action'
     });
 }
+
+// ================ PROFILE PICTURE UPLOAD ================
+async function changeProfilePicture() {
+    console.log('📸 Profile picture upload started - CALLED FROM VIBE3-COMPLETE.JS');
+    alert('Profile picture clicked! Function working from vib3-complete.js');
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    
+    modal.innerHTML = `
+        <div style="background:#222;padding:30px;border-radius:12px;max-width:400px;width:90%;">
+            <h3 style="color:white;margin-bottom:20px;">Update Profile Picture</h3>
+            
+            <div style="background:#333;padding:20px;border-radius:8px;margin-bottom:20px;">
+                <h4 style="color:#fe2c55;margin-bottom:15px;">📷 Upload Image</h4>
+                <input type="file" id="profileImageInput" accept="image/*" style="margin-bottom:15px;width:100%;">
+                <button onclick="uploadImageNow()" style="background:#fe2c55;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;width:100%;">
+                    Upload
+                </button>
+            </div>
+            
+            <button onclick="closeUploadModal()" style="background:#333;color:white;border:none;padding:12px;border-radius:6px;cursor:pointer;width:100%;">
+                Cancel
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    window.uploadImageNow = async () => {
+        const input = document.getElementById('profileImageInput');
+        const file = input.files[0];
+        
+        if (!file) {
+            alert('Please select an image');
+            return;
+        }
+        
+        try {
+            const formData = new FormData();
+            formData.append('profileImage', file);
+            
+            const response = await fetch('/api/user/profile-image', {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Upload success:', data);
+                
+                // Update profile picture immediately
+                const profilePic = document.getElementById('profilePicture');
+                if (profilePic && data.profileImageUrl) {
+                    profilePic.style.backgroundImage = `url(${data.profileImageUrl})`;
+                    profilePic.style.backgroundSize = 'cover';
+                    profilePic.textContent = '';
+                }
+                
+                // Update currentUser
+                if (window.currentUser) {
+                    window.currentUser.profileImage = data.profileImageUrl;
+                }
+                
+                alert('Profile picture updated!');
+                modal.remove();
+            } else {
+                alert('Upload failed');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert('Upload error');
+        }
+    };
+    
+    window.closeUploadModal = () => modal.remove();
+}
   
