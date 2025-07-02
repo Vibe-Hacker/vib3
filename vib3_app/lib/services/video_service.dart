@@ -24,6 +24,16 @@ class VideoService {
       '${AppConfig.baseUrl}/health/videos',
       '${AppConfig.baseUrl}/api/videos?debug=true',
       '${AppConfig.baseUrl}/feed?debug=true',
+      // Test server configuration endpoints
+      '${AppConfig.baseUrl}/api/config',
+      '${AppConfig.baseUrl}/health',
+      '${AppConfig.baseUrl}/api/health',
+      // Test direct database bypass
+      '${AppConfig.baseUrl}/api/videos/raw',
+      '${AppConfig.baseUrl}/api/database/videos',
+      // Test without any query processing
+      '${AppConfig.baseUrl}/api/videos/all?bypass=true',
+      '${AppConfig.baseUrl}/api/videos?raw=true&limit=1000',
     ];
     
     for (final url in debugEndpoints) {
