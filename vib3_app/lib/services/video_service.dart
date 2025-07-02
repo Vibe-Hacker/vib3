@@ -5,8 +5,127 @@ import '../models/video.dart';
 
 class VideoService {
   static Future<List<Video>> getAllVideos(String token) async {
-    // Use the EXACT same endpoint as the working web version
-    return await _fetchAllVideosFromFeed(token);
+    // Since server is limiting to 8 videos per request, make MULTIPLE requests to get ALL videos
+    return await _fetchAllVideosByMakingMultipleRequests(token);
+  }
+  
+  static Future<List<Video>> _fetchAllVideosByMakingMultipleRequests(String token) async {
+    List<Video> allVideos = [];
+    Set<String> seenVideoIds = {};
+    int page = 0;
+    bool keepGoing = true;
+    int emptyResponses = 0;
+    
+    print('🚀 MULTI-REQUEST APPROACH: Making multiple requests to bypass 8-video server limit');
+    
+    while (keepGoing && page < 20) { // Max 20 pages to prevent infinite loops (20 * 8 = 160 videos max)
+      try {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        
+        // Try multiple pagination patterns for each page
+        final pageUrls = [
+          '${AppConfig.baseUrl}/feed?page=$page&_t=$timestamp',
+          '${AppConfig.baseUrl}/api/videos?page=$page&_t=$timestamp',
+          '${AppConfig.baseUrl}/feed?offset=${page * 8}&_t=$timestamp',
+          '${AppConfig.baseUrl}/api/videos?offset=${page * 8}&_t=$timestamp',
+          '${AppConfig.baseUrl}/feed?skip=${page * 8}&_t=$timestamp',
+          '${AppConfig.baseUrl}/api/videos?skip=${page * 8}&_t=$timestamp',
+        ];
+        
+        bool pageHadNewVideos = false;
+        
+        for (final url in pageUrls) {
+          try {
+            print('📄 PAGE $page REQUEST: $url');
+            
+            final headers = <String, String>{
+              'Content-Type': 'application/json',
+            };
+            
+            if (token != 'no-token') {
+              headers['Authorization'] = 'Bearer $token';
+            }
+            
+            final response = await http.get(
+              Uri.parse(url),
+              headers: headers,
+            );
+
+            if (response.statusCode == 200) {
+              final dynamic responseData = jsonDecode(response.body);
+              
+              List<dynamic> videosJson = [];
+              
+              if (responseData is Map<String, dynamic>) {
+                if (responseData.containsKey('videos')) {
+                  videosJson = responseData['videos'] ?? [];
+                } else if (responseData.containsKey('data')) {
+                  videosJson = responseData['data'] ?? [];
+                }
+              } else if (responseData is List) {
+                videosJson = responseData;
+              }
+              
+              print('📊 PAGE $page RESPONSE: ${videosJson.length} videos from $url');
+              
+              if (videosJson.isNotEmpty) {
+                int newVideosCount = 0;
+                
+                for (final videoJson in videosJson) {
+                  try {
+                    final video = Video.fromJson(videoJson as Map<String, dynamic>);
+                    
+                    // Only add if we haven't seen this video ID before
+                    if (!seenVideoIds.contains(video.id)) {
+                      seenVideoIds.add(video.id);
+                      allVideos.add(video);
+                      newVideosCount++;
+                    }
+                  } catch (e) {
+                    print('❌ Parse error: $e');
+                  }
+                }
+                
+                print('✅ PAGE $page: Added $newVideosCount new videos (${allVideos.length} total)');
+                
+                if (newVideosCount > 0) {
+                  pageHadNewVideos = true;
+                  emptyResponses = 0; // Reset empty counter
+                  break; // Found videos with this URL pattern, move to next page
+                }
+              }
+            } else {
+              print('❌ PAGE $page ERROR: ${response.statusCode} for $url');
+            }
+          } catch (e) {
+            print('❌ PAGE $page EXCEPTION: $e for $url');
+          }
+        }
+        
+        if (!pageHadNewVideos) {
+          emptyResponses++;
+          print('⚠️ PAGE $page: No new videos found');
+          
+          // Stop if we get 3 consecutive pages with no new videos
+          if (emptyResponses >= 3) {
+            print('🛑 Stopping: 3 consecutive empty pages');
+            keepGoing = false;
+          }
+        }
+        
+        page++;
+        
+        // Small delay to avoid overwhelming the server
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+      } catch (e) {
+        print('❌ PAGE $page CRITICAL ERROR: $e');
+        break;
+      }
+    }
+    
+    print('🏁 MULTI-REQUEST COMPLETE: Found ${allVideos.length} total unique videos after $page pages');
+    return allVideos;
   }
   
   static Future<List<Video>> _fetchAllVideosFromFeed(String token) async {
