@@ -7471,43 +7471,27 @@ function createFriendsPage() {
         friendsPage.style.cssText = 'margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px;';
         friendsPage.innerHTML = `
             <h2>Friends</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">People you follow who also follow you back</p>
             <div class="friends-tabs">
-                <button class="tab-btn active" onclick="filterFriends('suggested')">Suggested</button>
+                <button class="tab-btn active" onclick="filterFriends('mutual')">Mutual Friends</button>
                 <button class="tab-btn" onclick="filterFriends('following')">Following</button>
                 <button class="tab-btn" onclick="filterFriends('followers')">Followers</button>
-                <button class="tab-btn" onclick="filterFriends('requests')">Requests</button>
+                <button class="tab-btn" onclick="filterFriends('suggested')">Suggested</button>
             </div>
             <div class="friends-search">
                 <input type="text" placeholder="Search friends..." onkeypress="if(event.key==='Enter') searchFriends(this.value)">
             </div>
-            <div class="friends-list">
-                <div class="friend-item">
-                    <div class="friend-avatar">👤</div>
-                    <div class="friend-info">
-                        <div class="friend-name">alex_creator</div>
-                        <div class="friend-stats">1.2M followers</div>
-                    </div>
-                    <button class="follow-btn" onclick="toggleFollow('alex_creator')">Follow</button>
-                </div>
-                <div class="friend-item">
-                    <div class="friend-avatar">👤</div>
-                    <div class="friend-info">
-                        <div class="friend-name">dance_queen</div>
-                        <div class="friend-stats">856K followers</div>
-                    </div>
-                    <button class="follow-btn" onclick="toggleFollow('dance_queen')">Follow</button>
-                </div>
-                <div class="friend-item">
-                    <div class="friend-avatar">👤</div>
-                    <div class="friend-info">
-                        <div class="friend-name">tech_reviewer</div>
-                        <div class="friend-stats">2.1M followers</div>
-                    </div>
-                    <button class="follow-btn" onclick="toggleFollow('tech_reviewer')">Follow</button>
+            <div id="friendsListContainer" class="friends-list">
+                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <div style="font-size: 32px; margin-bottom: 16px;">👥</div>
+                    <div>Loading friends...</div>
                 </div>
             </div>
         `;
         document.body.appendChild(friendsPage);
+        
+        // Load mutual friends when page is created
+        loadMutualFriends();
     }
     
     // Hide all other pages including activity and friends
@@ -7521,11 +7505,214 @@ function createFriendsPage() {
 }
 
 
+async function loadMutualFriends() {
+    const container = document.getElementById('friendsListContainer');
+    if (!container) return;
+    
+    try {
+        console.log('👥 Loading mutual friends...');
+        
+        // Show loading state
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                <div style="font-size: 32px; margin-bottom: 16px;">👥</div>
+                <div>Loading friends...</div>
+            </div>
+        `;
+        
+        // Get user's following and followers lists
+        const followingResponse = await fetch(`${window.API_BASE_URL}/api/user/following`, {
+            credentials: 'include',
+            headers: {
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
+        });
+        
+        const followersResponse = await fetch(`${window.API_BASE_URL}/api/user/followers`, {
+            credentials: 'include',
+            headers: {
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
+        });
+        
+        if (followingResponse.ok && followersResponse.ok) {
+            const following = await followingResponse.json();
+            const followers = await followersResponse.json();
+            
+            // Find mutual connections (people you follow who also follow you)
+            const followingIds = new Set(following.map(user => user.id || user._id));
+            const mutualFriends = followers.filter(user => 
+                followingIds.has(user.id || user._id)
+            );
+            
+            console.log('👥 Found mutual friends:', mutualFriends.length);
+            
+            if (mutualFriends.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <div style="font-size: 32px; margin-bottom: 16px;">👥</div>
+                        <div style="margin-bottom: 8px;">No mutual friends yet</div>
+                        <div style="font-size: 14px;">Start following people to build your network!</div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = mutualFriends.map(user => `
+                    <div class="friend-item" style="display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--border-primary); cursor: pointer;" onclick="viewUserProfile('${user.id || user._id}')">
+                        <div class="friend-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #fe2c55, #ff006e); display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 16px; ${user.profileImage ? `background-image: url(${user.profileImage}); background-size: cover; background-position: center;` : ''}">
+                            ${user.profileImage ? '' : (user.profilePicture || '👤')}
+                        </div>
+                        <div class="friend-info" style="flex: 1;">
+                            <div class="friend-name" style="font-weight: 600; margin-bottom: 4px;">@${user.username || user.displayName || 'Unknown User'}</div>
+                            <div class="friend-stats" style="color: var(--text-secondary); font-size: 14px;">${user.stats?.followers || 0} followers • Mutual friend</div>
+                        </div>
+                        <div class="friend-actions" style="display: flex; gap: 8px;">
+                            <button onclick="event.stopPropagation(); openDirectMessage('${user.id || user._id}')" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                                Message
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } else {
+            throw new Error('Failed to load friends data');
+        }
+    } catch (error) {
+        console.error('❌ Error loading mutual friends:', error);
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                <div style="font-size: 32px; margin-bottom: 16px;">❌</div>
+                <div style="margin-bottom: 8px;">Failed to load friends</div>
+                <button onclick="loadMutualFriends()" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    Try Again
+                </button>
+            </div>
+        `;
+    }
+}
+
 function filterFriends(type) {
-    showNotification(`Showing ${type} friends`, 'info');
+    console.log('👥 Filtering friends by type:', type);
+    
     // Update tab styles
     document.querySelectorAll('.friends-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
+    
+    const container = document.getElementById('friendsListContainer');
+    if (!container) return;
+    
+    // Load different data based on filter type
+    switch (type) {
+        case 'mutual':
+            loadMutualFriends();
+            break;
+        case 'following':
+            loadFollowingList();
+            break;
+        case 'followers': 
+            loadFollowersList();
+            break;
+        case 'suggested':
+            loadSuggestedFriends();
+            break;
+        default:
+            loadMutualFriends();
+    }
+}
+
+async function loadFollowingList() {
+    const container = document.getElementById('friendsListContainer');
+    try {
+        const response = await fetch(`${window.API_BASE_URL}/api/user/following`, {
+            credentials: 'include',
+            headers: {
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
+        });
+        
+        if (response.ok) {
+            const following = await response.json();
+            if (following.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <div style="font-size: 32px; margin-bottom: 16px;">👤</div>
+                        <div>You're not following anyone yet</div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = following.map(user => `
+                    <div class="friend-item" style="display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--border-primary);">
+                        <div class="friend-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #fe2c55, #ff006e); display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 16px;">
+                            ${user.profilePicture || '👤'}
+                        </div>
+                        <div class="friend-info" style="flex: 1;">
+                            <div class="friend-name" style="font-weight: 600; margin-bottom: 4px;">@${user.username || user.displayName}</div>
+                            <div class="friend-stats" style="color: var(--text-secondary); font-size: 14px;">${user.stats?.followers || 0} followers</div>
+                        </div>
+                        <button onclick="toggleFollow('${user.id || user._id}')" style="padding: 8px 16px; background: var(--border-primary); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer;">
+                            Following
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading following list:', error);
+    }
+}
+
+async function loadFollowersList() {
+    const container = document.getElementById('friendsListContainer');
+    try {
+        const response = await fetch(`${window.API_BASE_URL}/api/user/followers`, {
+            credentials: 'include',
+            headers: {
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            }
+        });
+        
+        if (response.ok) {
+            const followers = await response.json();
+            if (followers.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <div style="font-size: 32px; margin-bottom: 16px;">👥</div>
+                        <div>No followers yet</div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = followers.map(user => `
+                    <div class="friend-item" style="display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--border-primary);">
+                        <div class="friend-avatar" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #fe2c55, #ff006e); display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 16px;">
+                            ${user.profilePicture || '👤'}
+                        </div>
+                        <div class="friend-info" style="flex: 1;">
+                            <div class="friend-name" style="font-weight: 600; margin-bottom: 4px;">@${user.username || user.displayName}</div>
+                            <div class="friend-stats" style="color: var(--text-secondary); font-size: 14px;">${user.stats?.followers || 0} followers</div>
+                        </div>
+                        <button onclick="toggleFollow('${user.id || user._id}')" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            Follow Back
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading followers list:', error);
+    }
+}
+
+function loadSuggestedFriends() {
+    const container = document.getElementById('friendsListContainer');
+    container.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+            <div style="font-size: 32px; margin-bottom: 16px;">🔍</div>
+            <div>Friend suggestions coming soon!</div>
+        </div>
+    `;
 }
 
 function searchFriends(query) {
