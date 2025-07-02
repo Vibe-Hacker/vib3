@@ -93,6 +93,8 @@ async function changeProfilePicture() {
         fileInput.remove();
     };
     
+    // Show the modal with upload options
+    showProfilePictureModal(fileInput);
 }
 
 function showProfilePictureModal(quickFileInput) {
