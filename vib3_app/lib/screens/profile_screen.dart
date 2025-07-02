@@ -105,26 +105,67 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     final user = authProvider.currentUser;
 
     if (user == null) {
-      return const Center(
-        child: Text('Not logged in', style: TextStyle(color: Colors.white)),
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [
+                    Color(0xFF00CED1), // Cyan
+                    Color(0xFFFF1493), // Deep Pink
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds),
+                child: const Text(
+                  'VIB3',
+                  style: TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Please login to view profile',
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: Row(
-          children: [
-            Text(user.username),
-            const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down, size: 16),
-          ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [
+              Color(0xFF00CED1), // Cyan
+              Color(0xFFFF1493), // Deep Pink
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(bounds),
+          child: Text(
+            user.username,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
         ),
         actions: [
-          // Add friends icon
           IconButton(
-            icon: const Icon(Icons.person_add_outlined),
+            icon: const Icon(Icons.person_add_outlined, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
@@ -132,9 +173,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               );
             },
           ),
-          // Menu icon
           IconButton(
-            icon: const Icon(Icons.menu),
+            icon: const Icon(Icons.menu, color: Colors.white),
             onPressed: () {
               _showOptionsMenu(context);
             },
@@ -149,23 +189,51 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // Profile Picture
+                  // Profile Picture with VIB3 gradient border
                   GestureDetector(
                     onTap: () {
                       // TODO: Add profile picture change functionality
                     },
-                    child: CircleAvatar(
-                      radius: 50,
-                      backgroundColor: const Color(0xFF1A1A1A),
-                      backgroundImage: user.profilePicture != null
-                          ? NetworkImage(user.profilePicture!)
-                          : null,
-                      child: user.profilePicture == null
-                          ? Text(
-                              user.username[0].toUpperCase(),
-                              style: const TextStyle(fontSize: 40),
-                            )
-                          : null,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF00CED1), // Cyan
+                            Color(0xFFFF1493), // Deep Pink
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.black,
+                        backgroundImage: user.profilePicture != null
+                            ? NetworkImage(user.profilePicture!)
+                            : null,
+                        child: user.profilePicture == null
+                            ? ShaderMask(
+                                shaderCallback: (bounds) => const LinearGradient(
+                                  colors: [
+                                    Color(0xFF00CED1), // Cyan
+                                    Color(0xFFFF1493), // Deep Pink
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ).createShader(bounds),
+                                child: Text(
+                                  user.username[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 40,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              )
+                            : null,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -324,12 +392,22 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Widget _buildStatColumn(String label, int count) {
     return Column(
       children: [
-        Text(
-          count.toString(),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+        ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [
+              Color(0xFF00CED1), // Cyan
+              Color(0xFFFF1493), // Deep Pink
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(bounds),
+          child: Text(
+            count.toString(),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
         Text(
@@ -345,18 +423,93 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   Widget _buildVideoGrid(List<Video> videos, {required bool showDeleteButton}) {
     if (isLoadingVideos) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFFFF0080),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [
+                  Color(0xFF00CED1), // Cyan
+                  Color(0xFFFF1493), // Deep Pink
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              child: const Text(
+                'VIB3',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const CircularProgressIndicator(
+              color: Color(0xFFFF1493),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Loading videos...',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
       );
     }
 
     if (videos.isEmpty) {
-      return const Center(
-        child: Text(
-          'No videos yet',
-          style: TextStyle(color: Colors.grey),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [
+                  Color(0xFF00CED1), // Cyan
+                  Color(0xFFFF1493), // Deep Pink
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              child: const Icon(
+                Icons.video_library_outlined,
+                size: 64,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [
+                  Color(0xFF00CED1), // Cyan
+                  Color(0xFFFF1493), // Deep Pink
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              child: const Text(
+                'No videos yet',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Start creating amazing content!',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
       );
     }
