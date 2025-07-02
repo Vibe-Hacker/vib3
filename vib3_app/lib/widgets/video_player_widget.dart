@@ -1,6 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+// Global video controller manager to prevent resource exhaustion
+class VideoControllerManager {
+  static final List<VideoPlayerController> _activeControllers = [];
+  static const int maxControllers = 3; // Limit active controllers
+  
+  static void addController(VideoPlayerController controller) {
+    // Dispose oldest controllers if we have too many
+    while (_activeControllers.length >= maxControllers) {
+      final oldController = _activeControllers.removeAt(0);
+      oldController.dispose();
+    }
+    _activeControllers.add(controller);
+  }
+  
+  static void removeController(VideoPlayerController controller) {
+    _activeControllers.remove(controller);
+  }
+  
+  static int get activeCount => _activeControllers.length;
+}
+
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
   final bool isPlaying;
@@ -31,16 +52,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
-    // Initialize for playing videos immediately, preload videos with delay
+    // Only initialize when playing - no preloading at all
     if (widget.isPlaying) {
       _initializeVideo();
-    } else if (widget.preload) {
-      // Delay preloading to avoid resource conflicts
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted && !_isInitialized) {
-          _initializeVideo();
-        }
-      });
     }
   }
 
@@ -60,30 +74,26 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _handlePlayPause();
       }
     }
-    if (oldWidget.preload != widget.preload && widget.preload && !_isInitialized) {
-      // Handle preload changes with delay
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted && !_isInitialized) {
-          _initializeVideo();
-        }
-      });
-    }
+    // Remove preloading logic entirely
   }
 
   Future<void> _initializeVideo() async {
     try {
-      // Only delay for preloaded videos, not current video
-      if (!widget.isPlaying) {
-        await Future.delayed(const Duration(milliseconds: 200));
-      }
-      
+      // No delays - initialize immediately for best performance
       _controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.videoUrl),
         videoPlayerOptions: VideoPlayerOptions(
           allowBackgroundPlayback: false,
           mixWithOthers: false,
+          webOptions: const VideoPlayerWebOptions(
+            allowRemotePlayback: false,
+            allowPictureInPicture: false,
+          ),
         ),
       );
+      
+      // Add to global controller manager
+      VideoControllerManager.addController(_controller!);
       
       // Start initialization immediately
       _controller!.initialize().then((_) {
@@ -177,8 +187,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _disposeController() {
-    _controller?.dispose();
-    _controller = null;
+    if (_controller != null) {
+      VideoControllerManager.removeController(_controller!);
+      _controller!.dispose();
+      _controller = null;
+    }
     _isInitialized = false;
   }
 

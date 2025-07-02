@@ -226,8 +226,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
 
             final video = videoProvider.videos[index];
             final isCurrentVideo = index == _currentIndex;
-            // Smart preloading - only preload next video, with resource management
-            final shouldPreload = index == _currentIndex + 1;
+            // Disable all preloading to eliminate resource conflicts completely
+            final shouldPreload = false;
             
             return Container(
               color: Colors.black,
@@ -305,7 +305,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        'API returned ${videoProvider.videos.length} videos',
+                        'Videos: ${videoProvider.videos.length} | Active: ${index + 1}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
