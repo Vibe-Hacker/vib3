@@ -927,6 +927,14 @@ class UploadManager {
                     const objectUrl = URL.createObjectURL(file);
                     video.src = objectUrl;
                     
+                    console.log('🎬 Video setup complete, adding error handler for:', file.name);
+                    console.log('📋 Video properties:', {
+                        src: video.src,
+                        readyState: video.readyState,
+                        networkState: video.networkState,
+                        canPlayType: video.canPlayType(file.type)
+                    });
+                    
                     // Add timeout to prevent hanging
                     const timeout = setTimeout(() => {
                         console.warn('Video preview timeout for:', file.name);
@@ -1018,7 +1026,8 @@ class UploadManager {
                     
                     video.addEventListener('error', (e) => {
                         clearTimeout(timeout);
-                        console.error('Video preview error for file:', file.name, e);
+                        console.error('🚨 Video preview error for file:', file.name);
+                        console.error('🚨 Error event:', e);
                         const mediaError = video.error;
                         console.error('Video error details:', {
                             error: mediaError,
