@@ -144,4 +144,10 @@ class VideoProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  void removeVideo(String videoId) {
+    _videos.removeWhere((video) => video.id == videoId);
+    _debugInfo = 'Removed video $videoId. Total videos: ${_videos.length}';
+    notifyListeners();
+  }
 }

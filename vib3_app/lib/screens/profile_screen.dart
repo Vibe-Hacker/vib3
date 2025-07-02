@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/video_provider.dart';
 import '../services/video_service.dart';
 import '../models/video.dart';
 import '../widgets/video_thumbnail.dart';
@@ -81,20 +82,62 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
     if (token == null) return;
 
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('Delete Video', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Are you sure you want to delete this video? This action cannot be undone.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Optimistically remove video from UI immediately
+    setState(() {
+      userVideos.removeWhere((v) => v.id == video.id);
+      privateVideos.removeWhere((v) => v.id == video.id);
+      likedVideos.removeWhere((v) => v.id == video.id);
+    });
+
+    // Also remove from global video provider immediately
+    try {
+      final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+      videoProvider.removeVideo(video.id);
+    } catch (e) {
+      print('Could not update global video provider: $e');
+    }
+
+    // Show immediate success feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Video deleted successfully')),
+    );
+
+    // Delete on server in background
     final success = await VideoService.deleteVideo(video.id, token);
     
-    if (success) {
-      setState(() {
-        userVideos.removeWhere((v) => v.id == video.id);
-        privateVideos.removeWhere((v) => v.id == video.id);
-      });
-      
+    if (!success) {
+      // If server deletion failed, restore the video
+      await _loadUserVideos(); // Reload to restore the video
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Video deleted successfully')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to delete video')),
+        const SnackBar(
+          content: Text('Failed to delete video on server. Video restored.'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
