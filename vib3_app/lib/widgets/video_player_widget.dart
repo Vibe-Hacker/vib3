@@ -31,7 +31,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
-    if (widget.isPlaying || widget.preload) {
+    // Only initialize when actually playing to reduce resource usage
+    if (widget.isPlaying) {
       _initializeVideo();
     }
   }
@@ -45,15 +46,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _initializeVideo();
     }
     if (oldWidget.isPlaying != widget.isPlaying) {
-      _handlePlayPause();
-    }
-    if (oldWidget.preload != widget.preload && widget.preload && !_isInitialized) {
-      _initializeVideo();
+      if (widget.isPlaying && !_isInitialized) {
+        // Initialize video when it becomes current
+        _initializeVideo();
+      } else if (_isInitialized) {
+        _handlePlayPause();
+      }
     }
   }
 
   Future<void> _initializeVideo() async {
     try {
+      // Add small delay to prevent resource conflicts
+      await Future.delayed(const Duration(milliseconds: 100));
+      
       _controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.videoUrl),
         videoPlayerOptions: VideoPlayerOptions(

@@ -60,20 +60,23 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       _currentIndex = index;
     });
 
-    // Load more videos when approaching the end
-    final videoProvider = Provider.of<VideoProvider>(context, listen: false);
-    final totalVideos = videoProvider.videos.length;
-    
-    // Trigger loading more videos when we're 5 videos from the end
-    if (index >= totalVideos - 5 && 
-        videoProvider.hasMoreVideos && 
-        !videoProvider.isLoadingMore) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.authToken;
-      if (token != null) {
-        videoProvider.loadMoreVideos(token);
+    // Add small delay to prevent rapid resource allocation causing scroll sticking
+    Future.delayed(const Duration(milliseconds: 50), () {
+      // Load more videos when approaching the end
+      final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+      final totalVideos = videoProvider.videos.length;
+      
+      // Trigger loading more videos when we're 5 videos from the end
+      if (index >= totalVideos - 5 && 
+          videoProvider.hasMoreVideos && 
+          !videoProvider.isLoadingMore) {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final token = authProvider.authToken;
+        if (token != null) {
+          videoProvider.loadMoreVideos(token);
+        }
       }
-    }
+    });
   }
 
   Future<void> _handleLike(Video video) async {
@@ -223,8 +226,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
 
             final video = videoProvider.videos[index];
             final isCurrentVideo = index == _currentIndex;
-            // Simplified preloading - only preload next video to avoid memory issues
-            final shouldPreload = (index - _currentIndex).abs() <= 1;
+            // Disable preloading completely to eliminate resource conflicts
+            final shouldPreload = false;
             
             return Container(
               color: Colors.black,
