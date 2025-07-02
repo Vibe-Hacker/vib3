@@ -5,7 +5,159 @@ import '../models/video.dart';
 
 class VideoService {
   static Future<List<Video>> getAllVideos(String token) async {
-    return getVideosPage(token, 0, 50); // Get first page with more videos
+    // Use the EXACT same endpoint as the working web version
+    return await _fetchAllVideosFromFeed(token);
+  }
+  
+  static Future<List<Video>> _fetchAllVideosFromFeed(String token) async {
+    List<Video> allVideos = [];
+    
+    // First, try to get ALL videos without pagination (like early web version attempt)
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final url = '${AppConfig.baseUrl}/feed?_t=$timestamp';
+      
+      print('Trying to fetch ALL videos from: $url');
+      
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+      
+      if (token != 'no-token') {
+        headers['Authorization'] = 'Bearer $token';
+      }
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      print('All videos - Status: ${response.statusCode}');
+      print('All videos - Response length: ${response.body.length}');
+      
+      if (response.statusCode == 200) {
+        final dynamic responseData = jsonDecode(response.body);
+        
+        List<dynamic> videosJson = [];
+        
+        if (responseData is Map<String, dynamic>) {
+          if (responseData.containsKey('videos')) {
+            videosJson = responseData['videos'] ?? [];
+          } else if (responseData.containsKey('data')) {
+            videosJson = responseData['data'] ?? [];
+          }
+        } else if (responseData is List) {
+          videosJson = responseData;
+        }
+        
+        print('All videos approach - Found ${videosJson.length} videos');
+        
+        if (videosJson.isNotEmpty) {
+          final allFetchedVideos = videosJson.map((json) {
+            try {
+              return Video.fromJson(json as Map<String, dynamic>);
+            } catch (e) {
+              print('Video parse error in all videos: $e');
+              return null;
+            }
+          }).where((video) => video != null).cast<Video>().toList();
+          
+          print('All videos approach - Successfully parsed ${allFetchedVideos.length} videos');
+          return allFetchedVideos;
+        }
+      }
+    } catch (e) {
+      print('All videos approach failed: $e');
+    }
+    
+    // If all videos approach failed, fall back to pagination
+    print('Falling back to pagination approach...');
+    
+    int page = 1;
+    bool hasMoreVideos = true;
+    
+    while (hasMoreVideos && page <= 10) { // Limit to 10 pages to prevent infinite loops
+      try {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        // Use EXACT same endpoint as web version: /feed with limit and cache busting
+        final url = '${AppConfig.baseUrl}/feed?limit=50&page=$page&_t=$timestamp';
+        
+        print('Fetching page $page from: $url');
+        
+        final headers = <String, String>{
+          'Content-Type': 'application/json',
+        };
+        
+        if (token != 'no-token') {
+          headers['Authorization'] = 'Bearer $token';
+        }
+        
+        final response = await http.get(
+          Uri.parse(url),
+          headers: headers,
+        );
+
+        print('Page $page - Status: ${response.statusCode}');
+        print('Page $page - Response length: ${response.body.length}');
+        
+        if (response.statusCode == 200) {
+          final dynamic responseData = jsonDecode(response.body);
+          
+          List<dynamic> videosJson = [];
+          
+          if (responseData is Map<String, dynamic>) {
+            if (responseData.containsKey('videos')) {
+              videosJson = responseData['videos'] ?? [];
+            } else if (responseData.containsKey('data')) {
+              videosJson = responseData['data'] ?? [];
+            }
+          } else if (responseData is List) {
+            videosJson = responseData;
+          }
+          
+          print('Page $page - Found ${videosJson.length} videos');
+          
+          if (videosJson.isEmpty) {
+            hasMoreVideos = false;
+            break;
+          }
+          
+          final pageVideos = videosJson.map((json) {
+            try {
+              return Video.fromJson(json as Map<String, dynamic>);
+            } catch (e) {
+              print('Video parse error on page $page: $e');
+              return null;
+            }
+          }).where((video) => video != null).cast<Video>().toList();
+          
+          // Add only new unique videos
+          for (final video in pageVideos) {
+            if (!allVideos.any((existing) => existing.id == video.id)) {
+              allVideos.add(video);
+            }
+          }
+          
+          print('Page $page - Added ${pageVideos.length} videos, total: ${allVideos.length}');
+          
+          // If we got less than the limit, we've reached the end
+          if (videosJson.length < 50) {
+            hasMoreVideos = false;
+          }
+          
+          page++;
+        } else {
+          print('Page $page - HTTP Error: ${response.statusCode}');
+          hasMoreVideos = false;
+        }
+      } catch (e) {
+        print('Page $page - Exception: $e');
+        hasMoreVideos = false;
+      }
+    }
+    
+    print('Final result: ${allVideos.length} total unique videos loaded');
+    return allVideos;
   }
 
   static Future<List<Video>> getVideosPage(String token, int page, int limit) async {
