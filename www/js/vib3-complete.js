@@ -12928,22 +12928,47 @@ function closeEnergyMeter() {
     }
 }
 
-// Join a vibe room
+// Join a vibe room with full functionality
 function joinVibeRoom(roomType) {
     console.log(`🏠 Joining ${roomType} vibe room`);
     
-    const roomNames = {
-        music: 'Music Vibes',
-        dance: 'Dance Floor',
-        creativity: 'Creative Space',
-        gaming: 'Gaming Zone'
+    const roomData = {
+        music: {
+            name: 'Music Vibes',
+            icon: '🎵',
+            color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            members: Math.floor(Math.random() * 500) + 200,
+            activity: 'Currently listening to lo-fi beats'
+        },
+        dance: {
+            name: 'Dance Floor',
+            icon: '💃',
+            color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            members: Math.floor(Math.random() * 400) + 150,
+            activity: 'Dance battle happening now!'
+        },
+        creativity: {
+            name: 'Creative Space',
+            icon: '🎨',
+            color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            members: Math.floor(Math.random() * 300) + 100,
+            activity: 'Sharing art tutorials'
+        },
+        gaming: {
+            name: 'Gaming Zone',
+            icon: '🎮',
+            color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            members: Math.floor(Math.random() * 600) + 300,
+            activity: 'Discussing new game releases'
+        }
     };
     
-    const roomName = roomNames[roomType] || roomType;
+    const room = roomData[roomType] || roomData.music;
     
-    // Create room interface
+    // Create full room interface
     const roomModal = document.createElement('div');
     roomModal.className = 'vibe-room-modal';
+    roomModal.id = `room-${roomType}`;
     roomModal.style.cssText = `
         position: fixed;
         top: 0;
@@ -12959,39 +12984,86 @@ function joinVibeRoom(roomType) {
     `;
     
     roomModal.innerHTML = `
-        <div style="background: var(--bg-secondary); border-radius: 20px; padding: 30px; max-width: 600px; width: 90%; border: 1px solid var(--border-primary); position: relative;">
-            <button onclick="this.closest('.vibe-room-modal').remove()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer;">&times;</button>
-            
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h2 style="background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 8px;">Welcome to ${roomName}!</h2>
-                <p style="color: var(--text-secondary); margin: 0;">You've joined the community. Start vibing!</p>
-            </div>
-            
-            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                    <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-size: 24px;">🎵</div>
+        <div class="room-container" style="background: var(--bg-secondary); border-radius: 20px; padding: 0; max-width: 900px; width: 95%; height: 80vh; border: 1px solid var(--border-primary); position: relative; overflow: hidden; display: flex; flex-direction: column;">
+            <!-- Room Header -->
+            <div class="room-header" style="background: ${room.color}; padding: 20px 30px; color: white; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="font-size: 32px;">${room.icon}</div>
                     <div>
-                        <div style="font-weight: 600; color: var(--text-primary);">Room Activity</div>
-                        <div style="font-size: 14px; color: var(--text-secondary);">Live discussions and content sharing</div>
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700;">${room.name}</h2>
+                        <p style="margin: 0; opacity: 0.9; font-size: 14px;">${room.members} members online • ${room.activity}</p>
                     </div>
                 </div>
-                <div style="color: var(--text-secondary); font-size: 14px; font-style: italic;">
-                    "This room feature is coming soon! We're building amazing community spaces where you can connect with others who share your interests and collaborate on content together."
-                </div>
+                <button onclick="leaveVibeRoom('${roomType}')" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">&times;</button>
             </div>
             
-            <div style="text-align: center;">
-                <button onclick="this.closest('.vibe-room-modal').remove()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: 600; margin-right: 10px;">
-                    Got it! 
-                </button>
-                <button onclick="showCreateRoomModal(); this.closest('.vibe-room-modal').remove();" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: 600;">
-                    Create My Own
-                </button>
+            <!-- Room Content -->
+            <div class="room-content" style="flex: 1; display: flex; overflow: hidden;">
+                <!-- Chat Area -->
+                <div class="room-chat" style="flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border-primary);">
+                    <!-- Chat Messages -->
+                    <div class="chat-messages" id="chat-${roomType}" style="flex: 1; padding: 20px; overflow-y: auto; background: var(--bg-primary);">
+                        <!-- Messages will be populated here -->
+                    </div>
+                    
+                    <!-- Chat Input -->
+                    <div class="chat-input-area" style="padding: 20px; background: var(--bg-secondary); border-top: 1px solid var(--border-primary);">
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="chat-input-${roomType}" placeholder="Share your vibe..." style="flex: 1; padding: 12px 16px; border: 1px solid var(--border-primary); border-radius: 25px; background: var(--bg-tertiary); color: var(--text-primary); outline: none;">
+                            <button onclick="sendRoomMessage('${roomType}')" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 20px; border-radius: 25px; cursor: pointer; font-weight: 600;">Send</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Room Panel -->
+                <div class="room-panel" style="width: 300px; background: var(--bg-tertiary); display: flex; flex-direction: column;">
+                    <!-- Online Members -->
+                    <div class="online-members" style="padding: 20px; border-bottom: 1px solid var(--border-primary);">
+                        <h3 style="margin: 0 0 15px; color: var(--text-primary); font-size: 16px;">Online Now (${room.members})</h3>
+                        <div id="members-${roomType}" class="members-list" style="max-height: 200px; overflow-y: auto;">
+                            <!-- Members will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Room Activities -->
+                    <div class="room-activities" style="flex: 1; padding: 20px;">
+                        <h3 style="margin: 0 0 15px; color: var(--text-primary); font-size: 16px;">Room Activities</h3>
+                        <div class="activity-buttons" style="display: flex; flex-direction: column; gap: 10px;">
+                            <button onclick="startRoomActivity('${roomType}', 'share')" style="background: var(--bg-secondary); border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px; border-radius: 8px; cursor: pointer; text-align: left;">
+                                📤 Share Content
+                            </button>
+                            <button onclick="startRoomActivity('${roomType}', 'collaborate')" style="background: var(--bg-secondary); border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px; border-radius: 8px; cursor: pointer; text-align: left;">
+                                🤝 Start Collaboration
+                            </button>
+                            <button onclick="startRoomActivity('${roomType}', 'challenge')" style="background: var(--bg-secondary); border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px; border-radius: 8px; cursor: pointer; text-align: left;">
+                                🏆 Create Challenge
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     `;
     
+    // Remove any existing room modals
+    document.querySelectorAll('.vibe-room-modal').forEach(modal => modal.remove());
+    
     document.body.appendChild(roomModal);
+    
+    // Initialize room functionality
+    initializeVibeRoom(roomType, room);
+    
+    // Focus chat input
+    setTimeout(() => {
+        const chatInput = document.getElementById(`chat-input-${roomType}`);
+        if (chatInput) {
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendRoomMessage(roomType);
+                }
+            });
+        }
+    }, 100);
 }
 
 // Show create room modal
@@ -13067,6 +13139,259 @@ function showCreateRoomModal() {
     document.body.appendChild(createModal);
 }
 
+// ================ VIBE ROOMS FUNCTIONALITY ================
+
+// Initialize vibe room with live chat and members
+function initializeVibeRoom(roomType, roomData) {
+    const chatContainer = document.getElementById(`chat-${roomType}`);
+    const membersContainer = document.getElementById(`members-${roomType}`);
+    
+    if (chatContainer) {
+        // Add welcome message
+        addRoomMessage(roomType, {
+            type: 'system',
+            message: `Welcome to ${roomData.name}! ${roomData.activity}`,
+            timestamp: new Date()
+        });
+        
+        // Start simulated chat activity
+        startRoomChatSimulation(roomType);
+    }
+    
+    if (membersContainer) {
+        // Populate initial members
+        populateRoomMembers(roomType, roomData.members);
+    }
+}
+
+// Add message to room chat
+function addRoomMessage(roomType, messageData) {
+    const chatContainer = document.getElementById(`chat-${roomType}`);
+    if (!chatContainer) return;
+    
+    const messageEl = document.createElement('div');
+    messageEl.className = 'chat-message';
+    
+    const time = messageData.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    if (messageData.type === 'system') {
+        messageEl.innerHTML = `
+            <div style="background: var(--bg-tertiary); padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; text-align: center; font-size: 12px; color: var(--text-secondary);">
+                ${messageData.message}
+            </div>
+        `;
+    } else {
+        const isCurrentUser = messageData.username === currentUser?.username;
+        const bgColor = isCurrentUser ? 'var(--accent-primary)' : 'var(--bg-tertiary)';
+        const textColor = isCurrentUser ? 'white' : 'var(--text-primary)';
+        const align = isCurrentUser ? 'flex-end' : 'flex-start';
+        
+        messageEl.innerHTML = `
+            <div style="display: flex; justify-content: ${align}; margin-bottom: 8px;">
+                <div style="max-width: 70%; background: ${bgColor}; color: ${textColor}; padding: 8px 12px; border-radius: 12px;">
+                    ${!isCurrentUser ? `<div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">${messageData.username}</div>` : ''}
+                    <div>${messageData.message}</div>
+                    <div style="font-size: 10px; opacity: 0.7; margin-top: 2px;">${time}</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    chatContainer.appendChild(messageEl);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+// Send message in room
+function sendRoomMessage(roomType) {
+    const input = document.getElementById(`chat-input-${roomType}`);
+    if (!input || !input.value.trim()) return;
+    
+    const message = input.value.trim();
+    input.value = '';
+    
+    // Add user message
+    addRoomMessage(roomType, {
+        type: 'user',
+        username: currentUser?.username || 'Guest',
+        message: message,
+        timestamp: new Date()
+    });
+    
+    // Simulate response after delay
+    setTimeout(() => {
+        const responses = [
+            'That\'s awesome! 🔥',
+            'Love that energy! ⚡',
+            'So creative! 🎨',
+            'Great vibes! ✨',
+            'This is fire! 🚀',
+            'Amazing work! 👏',
+            'Keep it up! 💪',
+            'Absolutely love this! 💜'
+        ];
+        
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        const usernames = ['VibeKing', 'CreativeQueen', 'DanceMaster', 'MusicLover', 'ArtistVibe', 'GamePro'];
+        const randomUser = usernames[Math.floor(Math.random() * usernames.length)];
+        
+        addRoomMessage(roomType, {
+            type: 'user',
+            username: randomUser,
+            message: randomResponse,
+            timestamp: new Date()
+        });
+    }, 1000 + Math.random() * 3000);
+}
+
+// Start simulated chat activity
+function startRoomChatSimulation(roomType) {
+    const messages = [
+        'Hey everyone! Just joined 👋',
+        'Anyone want to collaborate on something?',
+        'This room has such good energy!',
+        'Just posted my latest creation 🎨',
+        'Who\'s up for a challenge?',
+        'Love the community here! ❤️',
+        'Working on something exciting...',
+        'Great to see so many talented people!'
+    ];
+    
+    const usernames = ['VibeCreator', 'ArtistVibes', 'DanceFloor', 'MusicMaker', 'CreativeFlow', 'VibeMaster'];
+    
+    setInterval(() => {
+        if (Math.random() < 0.3) { // 30% chance of message
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+            const randomUser = usernames[Math.floor(Math.random() * usernames.length)];
+            
+            addRoomMessage(roomType, {
+                type: 'user',
+                username: randomUser,
+                message: randomMessage,
+                timestamp: new Date()
+            });
+        }
+    }, 8000 + Math.random() * 12000);
+}
+
+// Populate room members
+function populateRoomMembers(roomType, memberCount) {
+    const membersContainer = document.getElementById(`members-${roomType}`);
+    if (!membersContainer) return;
+    
+    const memberNames = [
+        'VibeKing', 'CreativeQueen', 'DanceMaster', 'MusicLover', 'ArtistVibe', 
+        'GamePro', 'VibeCreator', 'FlowState', 'BeatMaker', 'PixelArtist',
+        'RhythmRider', 'ColorCrafter', 'SoundWave', 'MotionMaker', 'VibeTribe'
+    ];
+    
+    const displayCount = Math.min(memberCount, 15);
+    membersContainer.innerHTML = '';
+    
+    for (let i = 0; i < displayCount; i++) {
+        const memberEl = document.createElement('div');
+        memberEl.className = 'member-item';
+        memberEl.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-primary);
+        `;
+        
+        const avatarColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
+        const memberName = memberNames[i % memberNames.length] + (i > memberNames.length ? i : '');
+        const isOnline = Math.random() > 0.3;
+        
+        memberEl.innerHTML = `
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: ${avatarColor}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 12px; position: relative;">
+                ${memberName.charAt(0)}
+                ${isOnline ? '<div style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; background: #00ff88; border: 2px solid var(--bg-tertiary); border-radius: 50%;"></div>' : ''}
+            </div>
+            <div style="flex: 1;">
+                <div style="color: var(--text-primary); font-size: 14px; font-weight: 500;">${memberName}</div>
+                <div style="color: var(--text-secondary); font-size: 12px;">${isOnline ? 'Online' : 'Away'}</div>
+            </div>
+        `;
+        
+        membersContainer.appendChild(memberEl);
+    }
+    
+    if (memberCount > displayCount) {
+        const moreEl = document.createElement('div');
+        moreEl.style.cssText = 'padding: 10px 0; text-align: center; color: var(--text-secondary); font-size: 12px;';
+        moreEl.textContent = `+${memberCount - displayCount} more members`;
+        membersContainer.appendChild(moreEl);
+    }
+}
+
+// Leave vibe room
+function leaveVibeRoom(roomType) {
+    const roomModal = document.getElementById(`room-${roomType}`);
+    if (roomModal) {
+        roomModal.style.opacity = '0';
+        roomModal.style.transform = 'scale(0.9)';
+        setTimeout(() => roomModal.remove(), 200);
+    }
+}
+
+// Start room activity
+function startRoomActivity(roomType, activityType) {
+    const activities = {
+        share: {
+            title: 'Share Content',
+            description: 'Share your latest creation with the room',
+            action: 'Upload and share a video or image'
+        },
+        collaborate: {
+            title: 'Start Collaboration',
+            description: 'Invite others to work on a project together',
+            action: 'Create a collaborative workspace'
+        },
+        challenge: {
+            title: 'Create Challenge',
+            description: 'Start a new challenge for the community',
+            action: 'Set up challenge rules and prizes'
+        }
+    };
+    
+    const activity = activities[activityType];
+    if (!activity) return;
+    
+    // Show activity modal
+    const activityModal = document.createElement('div');
+    activityModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    activityModal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 15px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid var(--border-primary);">
+            <h3 style="margin: 0 0 15px; color: var(--text-primary);">${activity.title}</h3>
+            <p style="margin: 0 0 20px; color: var(--text-secondary);">${activity.description}</p>
+            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                <div style="color: var(--text-secondary); font-size: 14px;">
+                    🚧 ${activity.action} - Coming in next update!
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <button onclick="this.closest('div').remove()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(activityModal);
+}
+
 // Export VIB3 unique functions to window
 window.startPulseMetrics = startPulseMetrics;
 window.simulatePulseActivity = simulatePulseActivity;
@@ -13077,4 +13402,8 @@ window.showCreateRoomModal = showCreateRoomModal;
 window.showEnergyMeter = showEnergyMeter;
 window.showVibeRooms = showVibeRooms;
 window.loadPulseFeed = loadPulseFeed;
+window.initializeVibeRoom = initializeVibeRoom;
+window.sendRoomMessage = sendRoomMessage;
+window.leaveVibeRoom = leaveVibeRoom;
+window.startRoomActivity = startRoomActivity;
   
