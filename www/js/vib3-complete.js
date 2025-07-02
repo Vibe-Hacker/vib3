@@ -742,13 +742,43 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
             
             // Add cache busting to prevent stale data
             const timestamp = Date.now();
-            // ROOT LEVEL ENDPOINT: Use /feed like /health
-            const response = await fetch(`${window.API_BASE_URL}/feed?limit=10&_t=${timestamp}`, {
-                headers: window.authToken ? { 'Authorization': `Bearer ${window.authToken}` } : {}
+            
+            // Determine the correct endpoint based on feed type
+            let feedUrl;
+            if (feedType === 'friends') {
+                // Friends feed should exclude current user's videos
+                feedUrl = `${window.API_BASE_URL}/api/videos/friends?limit=10&_t=${timestamp}`;
+            } else if (feedType === 'following') {
+                // Following feed shows videos from people you follow (could include your own)
+                feedUrl = `${window.API_BASE_URL}/api/videos/following?limit=10&_t=${timestamp}`;
+            } else {
+                // Default feed endpoint
+                feedUrl = `${window.API_BASE_URL}/feed?limit=10&_t=${timestamp}`;
+            }
+            
+            const response = await fetch(feedUrl, {
+                credentials: 'include',
+                headers: {
+                    ...(window.authToken && window.authToken !== 'session-based' ? 
+                        { 'Authorization': `Bearer ${window.authToken}` } : {})
+                }
             });
             
             const data = await response.json();
             console.log(`📦 Received data for page ${page}:`, data.videos?.length, 'videos');
+            
+            // Filter out current user's videos for friends feed
+            if (feedType === 'friends' && data.videos && window.currentUser) {
+                const currentUserId = window.currentUser.id || window.currentUser._id || window.currentUser.uid;
+                if (currentUserId) {
+                    const originalCount = data.videos.length;
+                    data.videos = data.videos.filter(video => {
+                        const videoUserId = video.user?.id || video.user?._id || video.userId || video.uploadedBy;
+                        return videoUserId !== currentUserId;
+                    });
+                    console.log(`👥 Friends feed: Filtered out ${originalCount - data.videos.length} own videos, showing ${data.videos.length} from friends`);
+                }
+            }
             
             // For explore feed, supplement with sample data if needed
             if (feedType === 'explore' && (!data.videos || data.videos.length < 6)) {
@@ -4887,7 +4917,8 @@ function showPage(page) {
     }
     
     if (page === 'friends') {
-        createFriendsPage();
+        // Friends should show video feed from people you follow, not a friends list page
+        loadVideoFeed('friends', true);
         return;
     }
     
@@ -7463,45 +7494,17 @@ function createProfilePage() {
 }
 
 function createFriendsPage() {
-    let friendsPage = document.getElementById('friendsPage');
-    if (!friendsPage) {
-        friendsPage = document.createElement('div');
-        friendsPage.id = 'friendsPage';
-        friendsPage.className = 'friends-page';
-        friendsPage.style.cssText = 'margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px;';
-        friendsPage.innerHTML = `
-            <h2>Friends</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 20px;">People you follow who also follow you back</p>
-            <div class="friends-tabs">
-                <button class="tab-btn active" onclick="filterFriends('mutual')">Mutual Friends</button>
-                <button class="tab-btn" onclick="filterFriends('following')">Following</button>
-                <button class="tab-btn" onclick="filterFriends('followers')">Followers</button>
-                <button class="tab-btn" onclick="filterFriends('suggested')">Suggested</button>
-            </div>
-            <div class="friends-search">
-                <input type="text" placeholder="Search friends..." onkeypress="if(event.key==='Enter') searchFriends(this.value)">
-            </div>
-            <div id="friendsListContainer" class="friends-list">
-                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                    <div style="font-size: 32px; margin-bottom: 16px;">👥</div>
-                    <div>Loading friends...</div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(friendsPage);
-        
-        // Load mutual friends when page is created
-        loadMutualFriends();
-    }
-    
-    // Hide all other pages including activity and friends
+    // Hide all other pages
     document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
         el.style.display = 'none';
     });
-    const mainApp = document.getElementById('mainApp');
-    if (mainApp) mainApp.style.display = 'none';
     
-    friendsPage.style.display = 'block';
+    // Show main app and load friends video feed
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) mainApp.style.display = 'block';
+    
+    // Load friends video feed (which excludes current user's videos)
+    loadVideoFeed('friends', true);
 }
 
 
