@@ -390,6 +390,118 @@ function shareProfile() {
     };
     
     window.shareProfileNative = (url) => {
+        // Close the QR modal first
+        const qrModal = document.getElementById('shareProfileModal');
+        if (qrModal) qrModal.remove();
+        
+        // Use the same share modal as videos for consistency
+        if (window.openShareModal) {
+            // Create a temporary video-like object for the share modal
+            const profileShareData = {
+                id: 'profile-' + (currentUser?.username || currentUser?.id || 'user'),
+                title: 'Check out my VIB3 profile!',
+                url: url,
+                isProfile: true
+            };
+            
+            // Use the video share modal but with profile data
+            openCustomShareModal(profileShareData);
+        } else {
+            // Fallback to copy if share modal not available
+            window.copyProfileLink(url);
+        }
+    };
+}
+
+// Custom share modal that matches video sharing style
+function openCustomShareModal(shareData) {
+    console.log('📱 Creating TikTok-style share modal for profile:', shareData.id);
+    
+    // Remove any existing modals first
+    document.querySelectorAll('[id^="vib3-share-modal"]').forEach(m => m.remove());
+    
+    const modal = document.createElement('div');
+    modal.id = 'vib3-share-modal-' + Date.now();
+    
+    // Apply same styles as video share modal
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    modal.style.zIndex = '2147483647';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'flex-end';
+    modal.style.justifyContent = 'center';
+    modal.style.pointerEvents = 'all';
+    
+    const content = document.createElement('div');
+    content.style.backgroundColor = '#161823';
+    content.style.borderRadius = '20px 20px 0 0';
+    content.style.padding = '24px';
+    content.style.width = '100%';
+    content.style.maxWidth = '400px';
+    content.style.color = 'white';
+    content.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+    
+    content.innerHTML = `
+        <div style="text-align: center; margin-bottom: 24px;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Share Profile</h3>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px;">
+            <div onclick="copyToClipboard('${shareData.url}')" style="display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.1);">
+                <div style="width: 48px; height: 48px; background: #fe2c55; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 20px;">
+                    📋
+                </div>
+                <span style="font-size: 12px; text-align: center;">Copy Link</span>
+            </div>
+            
+            <div onclick="shareToMessaging('${shareData.url}')" style="display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.1);">
+                <div style="width: 48px; height: 48px; background: #25D366; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 20px;">
+                    💬
+                </div>
+                <span style="font-size: 12px; text-align: center;">Messages</span>
+            </div>
+            
+            <div onclick="shareToSocial('${shareData.url}')" style="display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.1);">
+                <div style="width: 48px; height: 48px; background: #1DA1F2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 20px;">
+                    🐦
+                </div>
+                <span style="font-size: 12px; text-align: center;">Twitter</span>
+            </div>
+            
+            <div onclick="shareMore('${shareData.url}')" style="display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.1);">
+                <div style="width: 48px; height: 48px; background: #666; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 20px;">
+                    ⋯
+                </div>
+                <span style="font-size: 12px; text-align: center;">More</span>
+            </div>
+        </div>
+        
+        <button onclick="closeShareModal()" style="width: 100%; padding: 16px; background: rgba(255,255,255,0.1); border: none; border-radius: 12px; color: white; font-size: 16px; cursor: pointer;">
+            Cancel
+        </button>
+    `;
+    
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    
+    // Add click outside to close
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+    
+    // Global functions for share actions
+    window.copyToClipboard = (url) => {
+        navigator.clipboard.writeText(url).then(() => {
+            showNotification('Profile link copied!', 'success');
+            modal.remove();
+        });
+    };
+    
+    window.shareToMessaging = (url) => {
         if (navigator.share) {
             navigator.share({
                 title: 'Check out my VIB3 profile!',
@@ -397,10 +509,32 @@ function shareProfile() {
                 url: url
             });
         } else {
-            // Fallback to copy
-            window.copyProfileLink(url);
+            window.copyToClipboard(url);
         }
+        modal.remove();
     };
+    
+    window.shareToSocial = (url) => {
+        const text = encodeURIComponent('Check out my VIB3 profile!');
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}`;
+        window.open(twitterUrl, '_blank');
+        modal.remove();
+    };
+    
+    window.shareMore = (url) => {
+        if (navigator.share) {
+            navigator.share({
+                title: 'Check out my VIB3 profile!',
+                text: 'Follow me on VIB3 for awesome videos!',
+                url: url
+            });
+        } else {
+            window.copyToClipboard(url);
+        }
+        modal.remove();
+    };
+    
+    window.closeShareModal = () => modal.remove();
 }
 
 // QR Code generator using API service
