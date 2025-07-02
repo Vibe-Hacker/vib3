@@ -5,15 +5,173 @@ import '../models/video.dart';
 
 class VideoService {
   static Future<List<Video>> getAllVideos(String token) async {
-    // First try to get raw database count to understand what we're dealing with
-    await _debugDatabaseContent(token);
+    print('🎬 Getting all videos with token: ${token.length > 10 ? '${token.substring(0, 10)}...' : token}');
     
-    // Since server is limiting to 8 videos per request, make MULTIPLE requests to get ALL videos
-    return await _fetchAllVideosByMakingMultipleRequests(token);
+    try {
+      // Try the main endpoint with high limit first
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=50'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != 'no-token') 'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('🌐 Main endpoint response: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('📊 Raw response data keys: ${data.keys}');
+        
+        if (data['videos'] != null) {
+          final List<dynamic> videosJson = data['videos'];
+          print('✅ Found ${videosJson.length} videos in main endpoint');
+          
+          final videos = videosJson.map((json) => Video.fromJson(json)).toList();
+          print('🎯 Successfully parsed ${videos.length} videos');
+          return videos;
+        }
+      }
+      
+      print('❌ Main endpoint failed, falling back to debug methods');
+      // If main endpoint fails, try the debug approach
+      await _debugDatabaseContent(token);
+      return await _fetchAllVideosByMakingMultipleRequests(token);
+      
+    } catch (e) {
+      print('❌ Error in getAllVideos: $e');
+      // Fallback to old method
+      await _debugDatabaseContent(token);
+      return await _fetchAllVideosByMakingMultipleRequests(token);
+    }
   }
   
   static Future<void> _debugDatabaseContent(String token) async {
     print('🔍 DEBUGGING: Checking actual database content...');
+    print('🔍 MongoDB Connection: Cluster0.y06bp.mongodb.net/vib3');
+    
+    // First, let's test if the web version really gets more than 8 videos
+    print('🌐 TESTING: Web version behavior comparison...');
+    
+    // Try the exact same requests that the working web version makes
+    final webVersionEndpoints = [
+      // These are the exact patterns used by the working web version
+      '${AppConfig.baseUrl}/feed?limit=10&_t=${DateTime.now().millisecondsSinceEpoch}',
+      '${AppConfig.baseUrl}/api/videos?limit=10&_t=${DateTime.now().millisecondsSinceEpoch}',
+      // Try without cache busting like early requests
+      '${AppConfig.baseUrl}/feed?limit=10',
+      '${AppConfig.baseUrl}/api/videos?limit=10',
+      // Try exact web browser headers
+      '${AppConfig.baseUrl}/feed',
+      '${AppConfig.baseUrl}/api/videos',
+    ];
+    
+    for (final url in webVersionEndpoints) {
+      try {
+        final headers = <String, String>{
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, text/plain, */*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': '${AppConfig.baseUrl}/',
+          'Origin': AppConfig.baseUrl,
+        };
+        
+        if (token != 'no-token') {
+          headers['Authorization'] = 'Bearer $token';
+        }
+        
+        print('🔗 WEB TEST: $url');
+        
+        final response = await http.get(Uri.parse(url), headers: headers);
+        
+        if (response.statusCode == 200) {
+          try {
+            final data = jsonDecode(response.body);
+            int videoCount = 0;
+            
+            if (data is Map<String, dynamic>) {
+              if (data.containsKey('videos') && data['videos'] is List) {
+                videoCount = data['videos'].length;
+              }
+            } else if (data is List) {
+              videoCount = data.length;
+            }
+            
+            print('🎬 WEB VERSION RESULT: $videoCount videos from $url');
+            
+            // If we get more than 8, this confirms the server CAN return more
+            if (videoCount > 8) {
+              print('✅ BREAKTHROUGH! Web headers got $videoCount videos!');
+              print('🔍 Response sample: ${response.body.substring(0, 500)}...');
+            } else if (videoCount == 8) {
+              print('⚠️ Even web headers only get 8 videos - might be database limit');
+            }
+            
+          } catch (e) {
+            print('❌ Parse error for web test: $e');
+          }
+        } else {
+          print('❌ Web test failed: ${response.statusCode}');
+        }
+      } catch (e) {
+        print('❌ Web test exception: $e');
+      }
+    }
+    
+    // Test direct database count queries
+    print('🗄️ TESTING: Direct database queries...');
+    final dbTestEndpoints = [
+      // Try database-specific count endpoints
+      '${AppConfig.baseUrl}/api/db/videos/count',
+      '${AppConfig.baseUrl}/api/mongodb/count', 
+      '${AppConfig.baseUrl}/api/videos/total',
+      '${AppConfig.baseUrl}/api/stats/videos',
+      // Try bypassing pagination entirely
+      '${AppConfig.baseUrl}/api/videos?nolimit=true',
+      '${AppConfig.baseUrl}/api/videos?all=true',
+      '${AppConfig.baseUrl}/api/videos?bypass=pagination',
+      // Try database dump endpoints
+      '${AppConfig.baseUrl}/api/videos/dump',
+      '${AppConfig.baseUrl}/api/export/videos',
+    ];
+    
+    for (final url in dbTestEndpoints) {
+      try {
+        final headers = <String, String>{
+          'Content-Type': 'application/json',
+        };
+        
+        if (token != 'no-token') {
+          headers['Authorization'] = 'Bearer $token';
+        }
+        
+        final response = await http.get(Uri.parse(url), headers: headers);
+        
+        if (response.statusCode == 200) {
+          print('💾 DATABASE SUCCESS: $url');
+          try {
+            final data = jsonDecode(response.body);
+            if (data is Map<String, dynamic>) {
+              if (data.containsKey('count') || data.containsKey('total')) {
+                print('📊 TOTAL COUNT: ${data['count'] ?? data['total']} videos in MongoDB');
+              }
+              if (data.containsKey('videos') && data['videos'] is List) {
+                print('📊 VIDEOS FOUND: ${data['videos'].length} videos');
+                if (data['videos'].length > 8) {
+                  print('🎉 FOUND MORE THAN 8! Database has ${data['videos'].length} videos');
+                }
+              }
+            }
+          } catch (e) {
+            print('📝 DB Response (non-JSON): ${response.body.substring(0, 200)}...');
+          }
+        }
+      } catch (e) {
+        // Silently continue - these are test endpoints
+      }
+    }
     
     // Try various debug/admin endpoints that might show total count
     final debugEndpoints = [

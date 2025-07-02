@@ -82,6 +82,9 @@ function initializeAuth() {
     const sharedVideoId = urlParams.get('video');
     const sharedUserId = urlParams.get('user');
     
+    // Flag to prevent default feed loading when handling shared links
+    let skipDefaultLoad = false;
+    
     if (window.auth && window.auth.onAuthStateChanged) {
         window.auth.onAuthStateChanged((user) => {
             currentUser = user;
@@ -103,15 +106,21 @@ function initializeAuth() {
                 // Handle shared profile link
                 if (sharedUserId) {
                     console.log('🔗 Opening shared profile:', sharedUserId);
+                    skipDefaultLoad = true;
+                    loadUserProfile();
+                    // Go directly to profile without loading video feed first
                     setTimeout(() => {
                         showPage('profile');
                         // If viewing someone else's profile, you'd load their data here
                         // For now, just show the profile page
-                    }, 1000);
+                    }, 100);
                     return;
                 }
-                loadUserProfile();
-                loadVideoFeed(currentFeed);
+                
+                if (!skipDefaultLoad) {
+                    loadUserProfile();
+                    loadVideoFeed(currentFeed);
+                }
             } else {
                 showAuthContainer();
                 hideMainApp();
