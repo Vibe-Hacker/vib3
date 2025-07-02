@@ -15,7 +15,7 @@ class UploadManager {
     }
 
     init() {
-        console.log('Upload manager initializing...');
+        console.log('🚨 CACHE BUSTER: Upload manager v2.1 initializing...');
         this.setupStateSubscriptions();
         this.setupGlobalUploadFunctions();
     }
