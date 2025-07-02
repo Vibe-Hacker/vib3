@@ -1,7 +1,7 @@
 /* VIB3 Video Feed Styles */
 .video-feed {
-    height: 100vh;
-    margin-top: 0;
+    height: calc(100vh - 60px);
+    margin-top: 60px;
     margin-left: 240px;
     width: calc(100vw - 240px);
     overflow: hidden;
@@ -52,6 +52,39 @@
     box-shadow: var(--vib3-glow);
 }
 
+/* VIB3 Pulse Feed Special Styling */
+.vib3-pulse-tab {
+    position: relative;
+    overflow: hidden;
+}
+
+.vib3-pulse-tab.active {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%) !important;
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { 
+        box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+        transform: scale(1);
+    }
+    50% { 
+        box-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
+        transform: scale(1.05);
+    }
+}
+
+.pulse-icon {
+    display: inline-block;
+    animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+    0%, 50%, 100% { transform: scale(1); }
+    25% { transform: scale(1.2); }
+    75% { transform: scale(1.1); }
+}
+
 .feed-tab.active::after {
     content: '';
     position: absolute;
@@ -70,7 +103,7 @@
 
 .feed-content {
     display: none;
-    height: 100vh;
+    height: calc(100vh - 60px);
     width: 100%;
     max-width: 500px;
     overflow-y: auto;
