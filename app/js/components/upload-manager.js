@@ -959,15 +959,84 @@ class UploadManager {
                     });
                     
                     video.addEventListener('error', (e) => {
-                        console.error('Video error:', e);
+                        console.error('Video preview error for file:', file.name, e);
+                        console.error('File details:', {
+                            name: file.name,
+                            size: file.size,
+                            type: file.type,
+                            lastModified: new Date(file.lastModified)
+                        });
+                        
+                        // Show a simple preview with file info instead of failing completely
                         container.innerHTML = `
-                            <div style="color: white; text-align: center;">
-                                ❌ Video Load Failed<br>
-                                <small>${file.name}</small>
+                            <div style="
+                                width: 190px;
+                                height: 340px;
+                                background: linear-gradient(45deg, #333, #555);
+                                border-radius: 10px;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: center;
+                                color: white;
+                                text-align: center;
+                                padding: 20px;
+                                box-sizing: border-box;
+                            ">
+                                <div style="font-size: 48px; margin-bottom: 15px;">🎬</div>
+                                <div style="font-size: 14px; margin-bottom: 10px; font-weight: bold;">Preview Unavailable</div>
+                                <div style="font-size: 12px; color: #ccc; margin-bottom: 15px;">${file.name}</div>
+                                <div style="font-size: 11px; color: #999; line-height: 1.4;">
+                                    ${(file.size / 1024 / 1024).toFixed(1)}MB<br>
+                                    ${file.type}<br><br>
+                                    <strong>Video will upload normally</strong>
+                                </div>
                             </div>
                         `;
                         video.remove();
+                        URL.revokeObjectURL(objectUrl);
                     });
+                    
+                    // Add timeout to prevent infinite loading
+                    const timeout = setTimeout(() => {
+                        console.warn('Video preview timeout for:', file.name);
+                        container.innerHTML = `
+                            <div style="
+                                width: 190px;
+                                height: 340px;
+                                background: linear-gradient(45deg, #333, #555);
+                                border-radius: 10px;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: center;
+                                color: white;
+                                text-align: center;
+                                padding: 20px;
+                                box-sizing: border-box;
+                            ">
+                                <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
+                                <div style="font-size: 14px; margin-bottom: 10px; font-weight: bold;">Loading Preview...</div>
+                                <div style="font-size: 12px; color: #ccc; margin-bottom: 15px;">${file.name}</div>
+                                <div style="font-size: 11px; color: #999; line-height: 1.4;">
+                                    ${(file.size / 1024 / 1024).toFixed(1)}MB<br>
+                                    Taking longer than expected<br><br>
+                                    <strong>Video will upload normally</strong>
+                                </div>
+                            </div>
+                        `;
+                        video.remove();
+                        URL.revokeObjectURL(objectUrl);
+                    }, 10000); // 10 second timeout
+                    
+                    // Clear timeout if video loads successfully
+                    video.addEventListener('loadeddata', () => {
+                        clearTimeout(timeout);
+                    }, { once: true });
+                    
+                    video.addEventListener('error', () => {
+                        clearTimeout(timeout);
+                    }, { once: true });
                     
                     video.load();
                     
