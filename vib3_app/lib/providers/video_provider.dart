@@ -10,7 +10,7 @@ class VideoProvider extends ChangeNotifier {
   String? _error;
   String _debugInfo = 'Not loaded yet';
   int _currentPage = 0;
-  final int _pageSize = 20;
+  final int _pageSize = 50;
 
   List<Video> get videos => _videos;
   bool get isLoading => _isLoading;
@@ -60,25 +60,50 @@ class VideoProvider extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      // Try to get more videos from server first
-      final newVideos = await VideoService.getVideosPage(token, _currentPage, _pageSize);
-      print('VideoProvider: Received ${newVideos.length} new videos from server');
+      // Try to get more videos from server with different strategies
+      List<Video> newVideos = [];
+      
+      // Strategy 1: Try pagination
+      newVideos = await VideoService.getVideosPage(token, _currentPage, _pageSize);
+      print('VideoProvider: Page $_currentPage returned ${newVideos.length} videos');
+      
+      // Strategy 2: If no new videos and it's early pages, try different limits
+      if (newVideos.isEmpty && _currentPage < 3) {
+        print('VideoProvider: Trying with different page size...');
+        newVideos = await VideoService.getVideosPage(token, _currentPage, 100);
+        print('VideoProvider: Larger page size returned ${newVideos.length} videos');
+      }
+      
+      // Strategy 3: If still no videos, try getting all videos again (server might not support pagination)
+      if (newVideos.isEmpty && _currentPage < 2) {
+        print('VideoProvider: Trying to get all videos (server might not support pagination)...');
+        newVideos = await VideoService.getAllVideos(token);
+        print('VideoProvider: getAllVideos returned ${newVideos.length} videos');
+      }
       
       if (newVideos.isNotEmpty) {
         // Add new unique videos
+        int addedCount = 0;
         for (final video in newVideos) {
           if (!_videos.any((existing) => existing.id == video.id)) {
             _videos.add(video);
+            addedCount++;
           }
         }
+        print('VideoProvider: Added $addedCount new unique videos');
         _currentPage++;
-      } else {
-        // No more videos from server - cycle existing videos for infinite scroll
-        if (_videos.isNotEmpty) {
-          final existingVideos = List<Video>.from(_videos);
-          _videos.addAll(existingVideos); // Duplicate the list for infinite scrolling
-          print('VideoProvider: Recycling ${existingVideos.length} videos for infinite scroll');
+        
+        // Only recycle if we truly have no new content after multiple attempts
+        if (addedCount == 0 && _currentPage > 2) {
+          print('VideoProvider: No new unique videos found, starting to recycle');
+          final existingVideos = List<Video>.from(_videos.take(_videos.length ~/ 2));
+          _videos.addAll(existingVideos);
         }
+      } else if (_videos.isNotEmpty) {
+        // Only recycle as last resort
+        final existingVideos = List<Video>.from(_videos);
+        _videos.addAll(existingVideos);
+        print('VideoProvider: No new videos available, recycling ${existingVideos.length} videos');
       }
       
       _debugInfo = 'Total videos: ${_videos.length} (cycling for infinite scroll)';

@@ -9,30 +9,47 @@ class VideoService {
   }
 
   static Future<List<Video>> getVideosPage(String token, int page, int limit) async {
-    // For now, get all videos and simulate pagination on client side
-    if (page == 0) {
-      final endpoints = [
+    final offset = page * limit;
+    
+    // Try different endpoints with various pagination parameters
+    final endpoints = [
+      // Standard pagination
+      '${AppConfig.baseUrl}/api/videos?feed=foryou&page=$page&limit=$limit',
+      '${AppConfig.baseUrl}/api/videos?page=$page&limit=$limit',
+      '${AppConfig.baseUrl}/feed?page=$page&limit=$limit',
+      
+      // Offset-based pagination
+      '${AppConfig.baseUrl}/api/videos?feed=foryou&offset=$offset&limit=$limit',
+      '${AppConfig.baseUrl}/api/videos?offset=$offset&limit=$limit',
+      '${AppConfig.baseUrl}/feed?offset=$offset&limit=$limit',
+      
+      // Skip-based pagination
+      '${AppConfig.baseUrl}/api/videos?feed=foryou&skip=$offset&limit=$limit',
+      '${AppConfig.baseUrl}/api/videos?skip=$offset&limit=$limit',
+      
+      // Different feed types with pagination
+      '${AppConfig.baseUrl}/api/videos?feed=following&page=$page&limit=$limit', 
+      '${AppConfig.baseUrl}/api/videos?feed=explore&page=$page&limit=$limit',
+      '${AppConfig.baseUrl}/api/videos?feed=trending&page=$page&limit=$limit',
+      
+      // Alternative endpoints
+      '${AppConfig.baseUrl}/videos?page=$page&limit=$limit',
+      '${AppConfig.baseUrl}/api/feed?page=$page&limit=$limit',
+      
+      // Fallback without pagination for first page
+      if (page == 0) ...[
         '${AppConfig.baseUrl}/api/videos?feed=foryou',
         '${AppConfig.baseUrl}/api/videos',
         '${AppConfig.baseUrl}/feed',
-      ];
-      
-      // Use existing logic to get all videos
-      return _fetchFromEndpoints(endpoints, token);
-    } else {
-      // Return empty list for subsequent pages until we get more videos
-      return [];
-    }
+        '${AppConfig.baseUrl}/videos',
+      ],
+    ];
+    
+    return _fetchFromEndpoints(endpoints, token);
   }
 
   static Future<List<Video>> _fetchFromEndpoints(List<String> endpoints, String token) async {
-    final endpoints_to_try = [
-      '${AppConfig.baseUrl}/api/videos?feed=foryou',
-      '${AppConfig.baseUrl}/api/videos?feed=following', 
-      '${AppConfig.baseUrl}/api/videos?feed=explore',
-      '${AppConfig.baseUrl}/api/videos',
-      '${AppConfig.baseUrl}/feed',
-    ];
+    final endpoints_to_try = endpoints;
     
     String debugLog = '';
     
@@ -54,7 +71,8 @@ class VideoService {
         );
 
         debugLog += 'Status: ${response.statusCode}\n';
-        debugLog += 'Response: ${response.body.substring(0, response.body.length > 100 ? 100 : response.body.length)}...\n';
+        debugLog += 'Response length: ${response.body.length}\n';
+        debugLog += 'Response preview: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...\n';
 
         if (response.statusCode == 200) {
           try {
