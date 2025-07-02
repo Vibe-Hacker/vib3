@@ -308,7 +308,6 @@ class _VideoActionButton extends StatelessWidget {
   final int? count;
   final bool isActive;
   final VoidCallback onTap;
-  final Color? activeColor;
 
   const _VideoActionButton({
     required this.icon,
@@ -316,7 +315,6 @@ class _VideoActionButton extends StatelessWidget {
     this.count,
     this.isActive = false,
     required this.onTap,
-    this.activeColor,
   });
 
   @override
@@ -335,7 +333,7 @@ class _VideoActionButton extends StatelessWidget {
             child: Icon(
               isActive && activeIcon != null ? activeIcon! : icon,
               color: isActive 
-                ? (activeColor ?? const Color(0xFFFF0080))
+                ? const Color(0xFFFF0080)
                 : Colors.white,
               size: 24,
             ),
