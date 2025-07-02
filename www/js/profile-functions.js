@@ -446,38 +446,73 @@ function openCustomShareModal(shareData) {
     content.style.fontFamily = 'system-ui, -apple-system, sans-serif';
     
     content.innerHTML = `
-        <div style="text-align: center; margin-bottom: 24px;">
-            <h3 style="margin: 0; font-size: 18px; font-weight: 600;">Share Profile</h3>
+        <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 0 auto 20px;"></div>
+        <h3 style="margin: 0 0 25px 0; color: white; font-size: 20px; font-weight: 600;">Share Profile</h3>
+        
+        <div id="shareOptionsGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
+            <!-- Initial options -->
+            <button onclick="copyToClipboard('${shareData.url}')" style="text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px;">
+                <div style="width: 45px; height: 45px; background: #fe2c55; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">📋</div>
+                <span style="color: white; font-size: 11px; display: block;">Copy Link</span>
+            </button>
+            
+            <button onclick="shareToWhatsApp('${shareData.url}')" style="text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px;">
+                <div style="width: 45px; height: 45px; background: #25d366; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">📱</div>
+                <span style="color: white; font-size: 11px; display: block;">WhatsApp</span>
+            </button>
+            
+            <button onclick="shareToTwitter('${shareData.url}')" style="text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px;">
+                <div style="width: 45px; height: 45px; background: #1da1f2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">🐦</div>
+                <span style="color: white; font-size: 11px; display: block;">Twitter</span>
+            </button>
+            
+            <button onclick="toggleMoreOptions('${shareData.url}')" style="text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px;">
+                <div style="width: 45px; height: 45px; background: #666; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">⋯</div>
+                <span style="color: white; font-size: 11px; display: block;">More</span>
+            </button>
         </div>
         
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px;">
-            <div onclick="copyToClipboard('${shareData.url}')" style="display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.1);">
-                <div style="width: 48px; height: 48px; background: #fe2c55; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 20px;">
-                    📋
-                </div>
-                <span style="font-size: 12px; text-align: center;">Copy Link</span>
-            </div>
+        <!-- Hidden additional options -->
+        <div id="moreShareOptions" style="display: none; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
+            <button onclick="shareToFacebook('${shareData.url}')" style="text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px;">
+                <div style="width: 45px; height: 45px; background: #4267b2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">📘</div>
+                <span style="color: white; font-size: 11px; display: block;">Facebook</span>
+            </button>
             
-            <div onclick="shareToMessaging('${shareData.url}')" style="display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.1);">
-                <div style="width: 48px; height: 48px; background: #25D366; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 20px;">
-                    💬
-                </div>
-                <span style="font-size: 12px; text-align: center;">Messages</span>
-            </div>
+            <button onclick="shareToInstagram('${shareData.url}')" style="text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px;">
+                <div style="width: 45px; height: 45px; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">📷</div>
+                <span style="color: white; font-size: 11px; display: block;">Instagram</span>
+            </button>
             
-            <div onclick="shareToSocial('${shareData.url}')" style="display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.1);">
-                <div style="width: 48px; height: 48px; background: #1DA1F2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 20px;">
-                    🐦
-                </div>
-                <span style="font-size: 12px; text-align: center;">Twitter</span>
-            </div>
+            <button onclick="shareToTelegram('${shareData.url}')" style="text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px;">
+                <div style="width: 45px; height: 45px; background: #0088cc; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">✈️</div>
+                <span style="color: white; font-size: 11px; display: block;">Telegram</span>
+            </button>
             
-            <div onclick="shareMore('${shareData.url}')" style="display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.1);">
-                <div style="width: 48px; height: 48px; background: #666; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 20px;">
-                    ⋯
-                </div>
-                <span style="font-size: 12px; text-align: center;">More</span>
-            </div>
+            <button onclick="shareToSnapchat('${shareData.url}')" style="text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px;">
+                <div style="width: 45px; height: 45px; background: #fffc00; color: black; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">👻</div>
+                <span style="color: white; font-size: 11px; display: block;">Snapchat</span>
+            </button>
+            
+            <button onclick="shareToReddit('${shareData.url}')" style="text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px;">
+                <div style="width: 45px; height: 45px; background: #ff4500; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">🤖</div>
+                <span style="color: white; font-size: 11px; display: block;">Reddit</span>
+            </button>
+            
+            <button onclick="shareToLinkedIn('${shareData.url}')" style="text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px;">
+                <div style="width: 45px; height: 45px; background: #0077b5; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">💼</div>
+                <span style="color: white; font-size: 11px; display: block;">LinkedIn</span>
+            </button>
+            
+            <button onclick="shareViaSMS('${shareData.url}')" style="text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px;">
+                <div style="width: 45px; height: 45px; background: #00d4aa; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">💬</div>
+                <span style="color: white; font-size: 11px; display: block;">SMS</span>
+            </button>
+            
+            <button onclick="shareViaEmail('${shareData.url}')" style="text-align: center; cursor: pointer; padding: 12px; background: none; border: none; border-radius: 12px;">
+                <div style="width: 45px; height: 45px; background: #ea4335; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 20px;">📧</div>
+                <span style="color: white; font-size: 11px; display: block;">Email</span>
+            </button>
         </div>
         
         <button onclick="closeShareModal()" style="width: 100%; padding: 16px; background: rgba(255,255,255,0.1); border: none; border-radius: 12px; color: white; font-size: 16px; cursor: pointer;">
@@ -501,36 +536,72 @@ function openCustomShareModal(shareData) {
         });
     };
     
-    window.shareToMessaging = (url) => {
-        if (navigator.share) {
-            navigator.share({
-                title: 'Check out my VIB3 profile!',
-                text: 'Follow me on VIB3 for awesome videos!',
-                url: url
-            });
+    window.toggleMoreOptions = (url) => {
+        const moreOptions = document.getElementById('moreShareOptions');
+        if (moreOptions.style.display === 'none') {
+            moreOptions.style.display = 'grid';
         } else {
-            window.copyToClipboard(url);
+            moreOptions.style.display = 'none';
         }
+    };
+    
+    window.shareToWhatsApp = (url) => {
+        const text = encodeURIComponent('Check out my VIB3 profile! ' + url);
+        window.open(`https://wa.me/?text=${text}`, '_blank');
         modal.remove();
     };
     
-    window.shareToSocial = (url) => {
+    window.shareToTwitter = (url) => {
         const text = encodeURIComponent('Check out my VIB3 profile!');
-        const twitterUrl = `https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}`;
-        window.open(twitterUrl, '_blank');
+        window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}`, '_blank');
         modal.remove();
     };
     
-    window.shareMore = (url) => {
-        if (navigator.share) {
-            navigator.share({
-                title: 'Check out my VIB3 profile!',
-                text: 'Follow me on VIB3 for awesome videos!',
-                url: url
-            });
-        } else {
-            window.copyToClipboard(url);
-        }
+    window.shareToFacebook = (url) => {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+        modal.remove();
+    };
+    
+    window.shareToInstagram = (url) => {
+        // Instagram doesn't support direct web sharing, copy link instead
+        window.copyToClipboard(url);
+        showNotification('Link copied! Share it on Instagram', 'info');
+        modal.remove();
+    };
+    
+    window.shareToTelegram = (url) => {
+        const text = encodeURIComponent('Check out my VIB3 profile!');
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${text}`, '_blank');
+        modal.remove();
+    };
+    
+    window.shareToSnapchat = (url) => {
+        // Snapchat web sharing
+        window.open(`https://www.snapchat.com/scan?attachmentUrl=${encodeURIComponent(url)}`, '_blank');
+        modal.remove();
+    };
+    
+    window.shareToReddit = (url) => {
+        const title = encodeURIComponent('Check out my VIB3 profile!');
+        window.open(`https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${title}`, '_blank');
+        modal.remove();
+    };
+    
+    window.shareToLinkedIn = (url) => {
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+        modal.remove();
+    };
+    
+    window.shareViaSMS = (url) => {
+        const text = encodeURIComponent('Check out my VIB3 profile! ' + url);
+        window.open(`sms:?body=${text}`, '_self');
+        modal.remove();
+    };
+    
+    window.shareViaEmail = (url) => {
+        const subject = encodeURIComponent('Check out my VIB3 profile!');
+        const body = encodeURIComponent(`Hey! Check out my VIB3 profile: ${url}`);
+        window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
         modal.remove();
     };
     
