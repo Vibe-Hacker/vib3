@@ -13,10 +13,10 @@ const appConfig = {
     name: 'VIB3',
     version: '1.0.0',
     debug: true,
-    maxVideoSize: 500 * 1024 * 1024, // 500MB for 4K videos
-    supportedVideoFormats: ['video/mp4', 'video/quicktime', 'video/x-msvideo'],
+    maxVideoSize: 5 * 1024 * 1024 * 1024, // 5GB - allows any resolution
+    supportedVideoFormats: ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/mov', 'video/avi'],
     videoCompressionQuality: 0.8,
-    maxVideoDuration: 180, // 3 minutes
+    maxVideoDuration: 600, // 10 minutes
     defaultUserAvatar: '👤',
     feedPageSize: 10
 };
@@ -3180,14 +3180,14 @@ function handleVideoSelect(event) {
     
     if (files.length === 0) return;
     
-    // Validate video files
+    // Validate video files - accept any size and resolution
     const validFiles = files.filter(file => {
-        const validTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/quicktime'];
-        return validTypes.includes(file.type) && file.size <= 500 * 1024 * 1024; // 500MB limit for 4K
+        const validTypes = ['video/mp4', 'video/mov', 'video/avi', 'video/quicktime', 'video/x-msvideo'];
+        return validTypes.includes(file.type); // No size limit - accept any resolution
     });
     
     if (validFiles.length === 0) {
-        showNotification('Please select valid video files (MP4, MOV, AVI under 500MB)', 'error');
+        showNotification('Please select valid video files (MP4, MOV, AVI)', 'error');
         return;
     }
     

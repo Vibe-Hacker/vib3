@@ -1779,7 +1779,7 @@ function calculateContentSimilarity(video, userProfile) {
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 500 * 1024 * 1024 // 500MB limit for 4K videos
+        fileSize: 5 * 1024 * 1024 * 1024 // 5GB limit - allows any resolution videos
     },
     fileFilter: (req, file, cb) => {
         // Accept all common video formats - we'll convert them to standard MP4
