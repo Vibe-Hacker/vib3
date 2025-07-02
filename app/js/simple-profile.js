@@ -1,5 +1,7 @@
 // Simple Profile Page for Testing
 
+console.log('🔥🔥🔥 SIMPLE-PROFILE.JS LOADED WITH EVENT LISTENERS! 🔥🔥🔥');
+
 function createSimpleProfilePage() {
     console.log('🔧 Creating comprehensive VIB3 profile page...');
     
