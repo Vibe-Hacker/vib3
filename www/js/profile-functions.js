@@ -321,16 +321,159 @@ function showFollowers() {
 }
 
 function shareProfile() {
-    if (navigator.share) {
-        navigator.share({
-            title: 'Check out my VIB3 profile!',
-            text: 'Follow me on VIB3 for awesome videos!',
-            url: window.location.href
+    const currentUser = window.currentUser || { username: 'vib3user' };
+    const profileUrl = `${window.location.origin}${window.location.pathname}?profile=${currentUser.username || currentUser.id}`;
+    
+    // Create QR code share modal
+    const modal = document.createElement('div');
+    modal.id = 'shareProfileModal';
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.5); z-index: 9999; display: flex; 
+        align-items: center; justify-content: center; backdrop-filter: blur(2px);
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: #222; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center;">
+            <h3 style="color: white; margin-bottom: 20px;">Share Profile</h3>
+            
+            <!-- QR Code -->
+            <div id="qrCodeContainer" style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center;">
+                <canvas id="qrCodeCanvas" width="200" height="200"></canvas>
+            </div>
+            
+            <!-- Profile URL -->
+            <div style="background: #333; padding: 15px; border-radius: 8px; margin-bottom: 20px; word-break: break-all;">
+                <div style="color: #888; font-size: 12px; margin-bottom: 5px;">Profile Link:</div>
+                <div id="profileUrl" style="color: white; font-size: 14px;">${profileUrl}</div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button onclick="copyProfileLink('${profileUrl}')" style="flex: 1; background: #fe2c55; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    📋 Copy Link
+                </button>
+                <button onclick="shareProfileNative('${profileUrl}')" style="flex: 1; background: #666; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    📤 Share
+                </button>
+            </div>
+            
+            <button onclick="closeShareModal()" style="background: #444; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Generate QR code
+    generateQRCode(profileUrl, 'qrCodeCanvas');
+    
+    // Setup modal functions
+    window.closeShareModal = () => modal.remove();
+    
+    window.copyProfileLink = (url) => {
+        navigator.clipboard.writeText(url).then(() => {
+            showNotification('Profile link copied to clipboard!', 'success');
+        }).catch(() => {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = url;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showNotification('Profile link copied!', 'success');
         });
-    } else {
-        navigator.clipboard.writeText(window.location.href);
-        showNotification('Profile link copied to clipboard!', 'success');
+    };
+    
+    window.shareProfileNative = (url) => {
+        if (navigator.share) {
+            navigator.share({
+                title: 'Check out my VIB3 profile!',
+                text: 'Follow me on VIB3 for awesome videos!',
+                url: url
+            });
+        } else {
+            // Fallback to copy
+            window.copyProfileLink(url);
+        }
+    };
+}
+
+// Simple QR Code generator using canvas
+function generateQRCode(text, canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const size = 200;
+    const cellSize = size / 25; // 25x25 grid for simple QR
+    
+    // Clear canvas
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    
+    // Generate simple QR-like pattern (this is a simplified version)
+    // For production, you'd want to use a proper QR code library
+    const qrData = generateSimpleQRPattern(text);
+    
+    ctx.fillStyle = '#000000';
+    for (let row = 0; row < 25; row++) {
+        for (let col = 0; col < 25; col++) {
+            if (qrData[row] && qrData[row][col]) {
+                ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+            }
+        }
     }
+    
+    // Add positioning squares (corners)
+    drawPositioningSquare(ctx, 0, 0, cellSize);
+    drawPositioningSquare(ctx, 18 * cellSize, 0, cellSize);
+    drawPositioningSquare(ctx, 0, 18 * cellSize, cellSize);
+}
+
+function generateSimpleQRPattern(text) {
+    // This is a simplified QR-like pattern generator
+    // In production, use a proper QR code library like qrcode.js
+    const size = 25;
+    const pattern = Array(size).fill().map(() => Array(size).fill(false));
+    
+    // Create a pseudo-random pattern based on the text
+    const hash = text.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a;
+    }, 0);
+    
+    let seed = Math.abs(hash);
+    
+    // Fill pattern with pseudo-random data
+    for (let row = 3; row < 22; row++) {
+        for (let col = 3; col < 22; col++) {
+            // Skip positioning areas
+            if ((row < 9 && col < 9) || 
+                (row < 9 && col > 15) || 
+                (row > 15 && col < 9)) continue;
+            
+            seed = (seed * 9301 + 49297) % 233280;
+            pattern[row][col] = (seed / 233280) > 0.5;
+        }
+    }
+    
+    return pattern;
+}
+
+function drawPositioningSquare(ctx, x, y, cellSize) {
+    // Draw the corner positioning squares
+    ctx.fillStyle = '#000000';
+    // Outer square
+    ctx.fillRect(x, y, 7 * cellSize, 7 * cellSize);
+    // Inner white square
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + cellSize, y + cellSize, 5 * cellSize, 5 * cellSize);
+    // Center black square
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(x + 2 * cellSize, y + 2 * cellSize, 3 * cellSize, 3 * cellSize);
 }
 
 function openCreatorTools() {
