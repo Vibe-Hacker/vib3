@@ -12,66 +12,161 @@ class VideoService {
   static Future<List<Video>> _fetchAllVideosFromFeed(String token) async {
     List<Video> allVideos = [];
     
-    // First, try to get ALL videos without pagination (like early web version attempt)
-    try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final url = '${AppConfig.baseUrl}/feed?_t=$timestamp';
-      
-      print('Trying to fetch ALL videos from: $url');
-      
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-      };
-      
-      if (token != 'no-token') {
-        headers['Authorization'] = 'Bearer $token';
-      }
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: headers,
-      );
+    // Try multiple endpoints that might bypass the server-side limit
+    final allVideoEndpoints = [
+      // Try with very high limit to force all videos
+      '${AppConfig.baseUrl}/feed?limit=1000',
+      '${AppConfig.baseUrl}/api/videos?limit=1000',
+      '${AppConfig.baseUrl}/feed?limit=500',
+      '${AppConfig.baseUrl}/api/videos?limit=500',
+      // Try without limit parameter
+      '${AppConfig.baseUrl}/feed',
+      '${AppConfig.baseUrl}/api/videos',
+      // Try all videos endpoint
+      '${AppConfig.baseUrl}/api/videos/all',
+      '${AppConfig.baseUrl}/feed/all',
+    ];
+    
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    
+    for (final baseUrl in allVideoEndpoints) {
+      try {
+        final url = '$baseUrl${baseUrl.contains('?') ? '&' : '?'}_t=$timestamp';
+        
+        print('🔍 TESTING ENDPOINT: $url');
+        
+        final headers = <String, String>{
+          'Content-Type': 'application/json',
+        };
+        
+        if (token != 'no-token') {
+          headers['Authorization'] = 'Bearer $token';
+        }
+        
+        final response = await http.get(
+          Uri.parse(url),
+          headers: headers,
+        );
 
-      print('All videos - Status: ${response.statusCode}');
-      print('All videos - Response length: ${response.body.length}');
-      
-      if (response.statusCode == 200) {
-        final dynamic responseData = jsonDecode(response.body);
+        print('📊 ENDPOINT RESULT: ${response.statusCode} - ${response.body.length} chars');
         
-        List<dynamic> videosJson = [];
-        
-        if (responseData is Map<String, dynamic>) {
-          if (responseData.containsKey('videos')) {
-            videosJson = responseData['videos'] ?? [];
-          } else if (responseData.containsKey('data')) {
-            videosJson = responseData['data'] ?? [];
-          }
-        } else if (responseData is List) {
-          videosJson = responseData;
-        }
-        
-        print('All videos approach - Found ${videosJson.length} videos');
-        
-        if (videosJson.isNotEmpty) {
-          final allFetchedVideos = videosJson.map((json) {
-            try {
-              return Video.fromJson(json as Map<String, dynamic>);
-            } catch (e) {
-              print('Video parse error in all videos: $e');
-              return null;
-            }
-          }).where((video) => video != null).cast<Video>().toList();
+        if (response.statusCode == 200) {
+          final dynamic responseData = jsonDecode(response.body);
           
-          print('All videos approach - Successfully parsed ${allFetchedVideos.length} videos');
-          return allFetchedVideos;
+          List<dynamic> videosJson = [];
+          
+          if (responseData is Map<String, dynamic>) {
+            print('📦 Response type: Object with keys: ${responseData.keys.join(', ')}');
+            if (responseData.containsKey('videos')) {
+              videosJson = responseData['videos'] ?? [];
+            } else if (responseData.containsKey('data')) {
+              videosJson = responseData['data'] ?? [];
+            }
+          } else if (responseData is List) {
+            print('📦 Response type: Direct array');
+            videosJson = responseData;
+          }
+          
+          print('🎬 ENDPOINT FOUND: ${videosJson.length} videos');
+          
+          if (videosJson.length > 8) { // Only use if we get more than the problematic 8
+            final allFetchedVideos = videosJson.map((json) {
+              try {
+                return Video.fromJson(json as Map<String, dynamic>);
+              } catch (e) {
+                print('❌ Video parse error: $e');
+                print('🔍 Raw video data: ${json.toString().substring(0, 200)}...');
+                return null;
+              }
+            }).where((video) => video != null).cast<Video>().toList();
+            
+            print('✅ SUCCESS! Endpoint returned ${allFetchedVideos.length} videos');
+            return allFetchedVideos;
+          } else if (videosJson.length > 0) {
+            print('⚠️ Endpoint only returned ${videosJson.length} videos (≤8), trying next endpoint...');
+          }
+        } else {
+          print('❌ HTTP Error: ${response.statusCode} - ${response.body}');
         }
+      } catch (e) {
+        print('❌ Exception for $baseUrl: $e');
       }
-    } catch (e) {
-      print('All videos approach failed: $e');
     }
     
-    // If all videos approach failed, fall back to pagination
-    print('Falling back to pagination approach...');
+    // If all direct approaches failed, try aggressive pagination to bypass server limits
+    print('🔄 All direct endpoints failed, trying aggressive pagination...');
+    
+    // Try to get videos using different pagination patterns that might bypass limits
+    final paginationStrategies = [
+      // MongoDB-style pagination
+      {'endpoint': '${AppConfig.baseUrl}/api/videos', 'params': 'skip=0&limit=100'},
+      {'endpoint': '${AppConfig.baseUrl}/feed', 'params': 'offset=0&limit=100'},
+      // Different page numbering (0-based vs 1-based)
+      {'endpoint': '${AppConfig.baseUrl}/api/videos', 'params': 'page=0&limit=100'},
+      {'endpoint': '${AppConfig.baseUrl}/feed', 'params': 'page=0&limit=100'},
+      // Try without any auth requirements
+      {'endpoint': '${AppConfig.baseUrl}/api/videos/public', 'params': 'limit=100'},
+      {'endpoint': '${AppConfig.baseUrl}/public/videos', 'params': 'limit=100'},
+    ];
+    
+    for (final strategy in paginationStrategies) {
+      try {
+        final url = '${strategy['endpoint']}?${strategy['params']}&_t=$timestamp';
+        print('🎯 TESTING PAGINATION: $url');
+        
+        final headers = <String, String>{
+          'Content-Type': 'application/json',
+        };
+        
+        // Try both with and without auth for public endpoints
+        if (token != 'no-token' && !url.contains('public')) {
+          headers['Authorization'] = 'Bearer $token';
+        }
+        
+        final response = await http.get(
+          Uri.parse(url),
+          headers: headers,
+        );
+
+        print('📈 PAGINATION RESULT: ${response.statusCode} - ${response.body.length} chars');
+        
+        if (response.statusCode == 200) {
+          final dynamic responseData = jsonDecode(response.body);
+          
+          List<dynamic> videosJson = [];
+          
+          if (responseData is Map<String, dynamic>) {
+            if (responseData.containsKey('videos')) {
+              videosJson = responseData['videos'] ?? [];
+            } else if (responseData.containsKey('data')) {
+              videosJson = responseData['data'] ?? [];
+            }
+          } else if (responseData is List) {
+            videosJson = responseData;
+          }
+          
+          print('📊 PAGINATION FOUND: ${videosJson.length} videos');
+          
+          if (videosJson.length > 8) {
+            final videos = videosJson.map((json) {
+              try {
+                return Video.fromJson(json as Map<String, dynamic>);
+              } catch (e) {
+                print('❌ Pagination parse error: $e');
+                return null;
+              }
+            }).where((video) => video != null).cast<Video>().toList();
+            
+            print('✅ PAGINATION SUCCESS! Got ${videos.length} videos');
+            return videos;
+          }
+        }
+      } catch (e) {
+        print('❌ Pagination strategy failed: $e');
+      }
+    }
+    
+    print('🔄 All pagination strategies failed, falling back to traditional pagination...');
     
     int page = 1;
     bool hasMoreVideos = true;
