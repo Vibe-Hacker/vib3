@@ -10408,19 +10408,7 @@ async function showFollowers() {
     }
 }
 
-function shareProfile() {
-    if (navigator.share) {
-        navigator.share({
-            title: 'Check out my VIB3 profile!',
-            text: 'Follow me on VIB3 for awesome videos!',
-            url: window.location.href
-        });
-    } else {
-        // Fallback to copy link
-        navigator.clipboard.writeText(window.location.href);
-        showNotification('Profile link copied to clipboard!', 'success');
-    }
-}
+// shareProfile function moved to profile-functions.js with QR code modal
 
 // ================ REACTION BUTTON FUNCTIONS ================
 
