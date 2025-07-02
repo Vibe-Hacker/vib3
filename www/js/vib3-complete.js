@@ -5035,6 +5035,11 @@ function showPage(page) {
         showEnergyMeter();
         return;
     }
+    
+    if (page === 'creator-studio') {
+        showCreatorStudio();
+        return;
+    }
 
     // Handle feed tabs - don't show "coming soon" for these
     if (page === 'home' || page === 'subscriptions' || page === 'discover' || page === 'network' || page === 'pulse' ||
@@ -13392,6 +13397,570 @@ function startRoomActivity(roomType, activityType) {
     document.body.appendChild(activityModal);
 }
 
+// ================ VIB3 CREATOR STUDIO ================
+
+// Show VIB3 Creator Studio
+function showCreatorStudio() {
+    console.log('🎬 Opening VIB3 Creator Studio');
+    
+    // Hide other content and show creator studio
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page, .vibe-rooms-page').forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    let creatorStudioPage = document.getElementById('creatorStudioPage');
+    if (!creatorStudioPage) {
+        creatorStudioPage = document.createElement('div');
+        creatorStudioPage.id = 'creatorStudioPage';
+        creatorStudioPage.className = 'creator-studio-page';
+        creatorStudioPage.style.cssText = 'margin-left: 240px; margin-top: 60px; width: calc(100vw - 240px); height: calc(100vh - 60px); overflow: hidden; background: var(--bg-primary); display: flex; flex-direction: column;';
+        
+        creatorStudioPage.innerHTML = `
+            <!-- Creator Studio Header -->
+            <div class="studio-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px 30px; color: white; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-primary);">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="font-size: 32px;">🎬</div>
+                    <div>
+                        <h1 style="margin: 0; font-size: 28px; font-weight: 800;">VIB3 Creator Studio</h1>
+                        <p style="margin: 0; opacity: 0.9; font-size: 14px;">Professional video editing tools for creators</p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="importCreatorMedia()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        📁 Import Media
+                    </button>
+                    <button onclick="exportCreatorProject()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        💾 Export
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Creator Studio Main Interface -->
+            <div class="studio-interface" style="flex: 1; display: flex; overflow: hidden;">
+                <!-- Left Panel - Tools & Effects -->
+                <div class="studio-left-panel" style="width: 280px; background: var(--bg-secondary); border-right: 1px solid var(--border-primary); display: flex; flex-direction: column;">
+                    <!-- Tool Tabs -->
+                    <div class="tool-tabs" style="display: flex; border-bottom: 1px solid var(--border-primary);">
+                        <button class="tool-tab active" onclick="switchStudioTab('media')" id="mediaTab" style="flex: 1; padding: 12px; background: none; border: none; color: var(--text-primary); cursor: pointer; border-bottom: 2px solid var(--accent-primary);">Media</button>
+                        <button class="tool-tab" onclick="switchStudioTab('effects')" id="effectsTab" style="flex: 1; padding: 12px; background: none; border: none; color: var(--text-secondary); cursor: pointer;">Effects</button>
+                        <button class="tool-tab" onclick="switchStudioTab('audio')" id="audioTab" style="flex: 1; padding: 12px; background: none; border: none; color: var(--text-secondary); cursor: pointer;">Audio</button>
+                    </div>
+                    
+                    <!-- Media Panel -->
+                    <div class="media-panel tool-panel active" id="mediaPanel" style="flex: 1; padding: 20px; overflow-y: auto;">
+                        <h3 style="margin: 0 0 15px; color: var(--text-primary); font-size: 16px;">Project Media</h3>
+                        <div class="media-library" id="mediaLibrary" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <!-- Media items will be populated here -->
+                        </div>
+                        <button onclick="importCreatorMedia()" style="width: 100%; margin-top: 15px; background: var(--accent-gradient); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            + Add Media
+                        </button>
+                    </div>
+                    
+                    <!-- Effects Panel -->
+                    <div class="effects-panel tool-panel" id="effectsPanel" style="flex: 1; padding: 20px; overflow-y: auto; display: none;">
+                        <h3 style="margin: 0 0 15px; color: var(--text-primary); font-size: 16px;">Video Effects</h3>
+                        <div class="effects-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="effect-item" onclick="applyEffect('blur')" style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; cursor: pointer; text-align: center; border: 1px solid var(--border-primary);">
+                                <div style="font-size: 24px; margin-bottom: 5px;">🌫️</div>
+                                <div style="font-size: 12px; color: var(--text-primary);">Blur</div>
+                            </div>
+                            <div class="effect-item" onclick="applyEffect('vintage')" style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; cursor: pointer; text-align: center; border: 1px solid var(--border-primary);">
+                                <div style="font-size: 24px; margin-bottom: 5px;">📸</div>
+                                <div style="font-size: 12px; color: var(--text-primary);">Vintage</div>
+                            </div>
+                            <div class="effect-item" onclick="applyEffect('glow')" style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; cursor: pointer; text-align: center; border: 1px solid var(--border-primary);">
+                                <div style="font-size: 24px; margin-bottom: 5px;">✨</div>
+                                <div style="font-size: 12px; color: var(--text-primary);">Glow</div>
+                            </div>
+                            <div class="effect-item" onclick="applyEffect('particles')" style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; cursor: pointer; text-align: center; border: 1px solid var(--border-primary);">
+                                <div style="font-size: 24px; margin-bottom: 5px;">🎆</div>
+                                <div style="font-size: 12px; color: var(--text-primary);">Particles</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Audio Panel -->
+                    <div class="audio-panel tool-panel" id="audioPanel" style="flex: 1; padding: 20px; overflow-y: auto; display: none;">
+                        <h3 style="margin: 0 0 15px; color: var(--text-primary); font-size: 16px;">Audio Tools</h3>
+                        <div class="audio-controls" style="display: flex; flex-direction: column; gap: 15px;">
+                            <div class="control-group">
+                                <label style="color: var(--text-primary); font-size: 14px; margin-bottom: 5px; display: block;">Volume</label>
+                                <input type="range" min="0" max="100" value="100" oninput="adjustAudioVolume(this.value)" style="width: 100%;">
+                            </div>
+                            <div class="control-group">
+                                <label style="color: var(--text-primary); font-size: 14px; margin-bottom: 5px; display: block;">Fade In/Out</label>
+                                <div style="display: flex; gap: 10px;">
+                                    <button onclick="addAudioFade('in')" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-primary); color: var(--text-primary); padding: 8px; border-radius: 6px; cursor: pointer;">Fade In</button>
+                                    <button onclick="addAudioFade('out')" style="flex: 1; background: var(--bg-tertiary); border: 1px solid var(--border-primary); color: var(--text-primary); padding: 8px; border-radius: 6px; cursor: pointer;">Fade Out</button>
+                                </div>
+                            </div>
+                            <button onclick="addBackgroundMusic()" style="width: 100%; background: var(--accent-gradient); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                🎵 Add Background Music
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Center Panel - Preview -->
+                <div class="studio-center-panel" style="flex: 1; background: var(--bg-primary); display: flex; flex-direction: column;">
+                    <!-- Preview Area -->
+                    <div class="preview-area" style="flex: 1; display: flex; align-items: center; justify-content: center; background: #000; position: relative;">
+                        <div class="preview-container" id="previewContainer" style="width: 80%; max-width: 640px; aspect-ratio: 16/9; background: #111; border-radius: 8px; display: flex; align-items: center; justify-content: center; position: relative;">
+                            <div class="preview-placeholder" style="text-align: center; color: #666;">
+                                <div style="font-size: 48px; margin-bottom: 10px;">🎬</div>
+                                <div style="font-size: 16px;">Import media to start editing</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Preview Controls -->
+                        <div class="preview-controls" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 25px;">
+                            <button onclick="playPausePreview()" id="playPauseBtn" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">▶️</button>
+                            <div style="color: white; font-size: 14px;">00:00 / 00:00</div>
+                            <button onclick="fullscreenPreview()" style="background: none; border: none; color: white; font-size: 16px; cursor: pointer;">⛶</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Panel - Properties -->
+                <div class="studio-right-panel" style="width: 280px; background: var(--bg-secondary); border-left: 1px solid var(--border-primary); padding: 20px; overflow-y: auto;">
+                    <h3 style="margin: 0 0 15px; color: var(--text-primary); font-size: 16px;">Properties</h3>
+                    <div class="properties-content" id="propertiesContent">
+                        <div style="text-align: center; color: var(--text-secondary); font-size: 14px; padding: 20px;">
+                            Select an element to view its properties
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Panel - Timeline -->
+            <div class="studio-timeline" style="height: 200px; background: var(--bg-secondary); border-top: 1px solid var(--border-primary); display: flex; flex-direction: column;">
+                <!-- Timeline Header -->
+                <div class="timeline-header" style="padding: 10px 20px; background: var(--bg-tertiary); border-bottom: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h4 style="margin: 0; color: var(--text-primary); font-size: 14px;">Timeline</h4>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="addVideoTrack()" style="background: var(--accent-primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">+ Video</button>
+                            <button onclick="addAudioTrack()" style="background: var(--accent-secondary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">+ Audio</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="color: var(--text-secondary); font-size: 12px;">Zoom:</span>
+                        <input type="range" min="10" max="200" value="100" oninput="zoomTimeline(this.value)" style="width: 80px;">
+                    </div>
+                </div>
+                
+                <!-- Timeline Content -->
+                <div class="timeline-content" style="flex: 1; display: flex; overflow-x: auto;">
+                    <!-- Track Labels -->
+                    <div class="track-labels" style="width: 120px; background: var(--bg-tertiary); border-right: 1px solid var(--border-primary); flex-shrink: 0;">
+                        <div class="track-label" style="height: 40px; display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid var(--border-primary); color: var(--text-primary); font-size: 12px; font-weight: 600;">
+                            Video Track 1
+                        </div>
+                        <div class="track-label" style="height: 40px; display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid var(--border-primary); color: var(--text-primary); font-size: 12px; font-weight: 600;">
+                            Audio Track 1
+                        </div>
+                    </div>
+                    
+                    <!-- Timeline Tracks -->
+                    <div class="timeline-tracks" id="timelineTracks" style="flex: 1; background: var(--bg-primary); position: relative;">
+                        <!-- Timeline ruler -->
+                        <div class="timeline-ruler" style="height: 20px; background: var(--bg-tertiary); border-bottom: 1px solid var(--border-primary); position: relative;">
+                            <!-- Time markers will be added here -->
+                        </div>
+                        
+                        <!-- Video and audio tracks -->
+                        <div class="video-track track" style="height: 40px; border-bottom: 1px solid var(--border-primary); position: relative;" ondrop="dropMedia(event, 'video')" ondragover="allowDrop(event)">
+                            <!-- Video clips will be added here -->
+                        </div>
+                        <div class="audio-track track" style="height: 40px; border-bottom: 1px solid var(--border-primary); position: relative;" ondrop="dropMedia(event, 'audio')" ondragover="allowDrop(event)">
+                            <!-- Audio clips will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(creatorStudioPage);
+        
+        // Initialize timeline ruler
+        initializeTimelineRuler();
+        
+        // Add sample media to library
+        populateSampleMedia();
+    }
+    
+    creatorStudioPage.style.display = 'flex';
+}
+
+// Switch studio tool tabs
+function switchStudioTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tool-tab').forEach(tab => {
+        tab.classList.remove('active');
+        tab.style.borderBottom = 'none';
+        tab.style.color = 'var(--text-secondary)';
+    });
+    
+    document.getElementById(tabName + 'Tab').classList.add('active');
+    document.getElementById(tabName + 'Tab').style.borderBottom = '2px solid var(--accent-primary)';
+    document.getElementById(tabName + 'Tab').style.color = 'var(--text-primary)';
+    
+    // Update panels
+    document.querySelectorAll('.tool-panel').forEach(panel => {
+        panel.style.display = 'none';
+    });
+    
+    document.getElementById(tabName + 'Panel').style.display = 'block';
+}
+
+// Initialize timeline ruler
+function initializeTimelineRuler() {
+    const ruler = document.querySelector('.timeline-ruler');
+    if (!ruler) return;
+    
+    ruler.innerHTML = '';
+    
+    // Add time markers every 30 seconds for 5 minutes
+    for (let i = 0; i <= 300; i += 30) {
+        const marker = document.createElement('div');
+        marker.style.cssText = `
+            position: absolute;
+            left: ${(i / 300) * 100}%;
+            top: 0;
+            bottom: 0;
+            border-left: 1px solid var(--border-primary);
+            font-size: 10px;
+            color: var(--text-secondary);
+            padding-left: 4px;
+            display: flex;
+            align-items: center;
+        `;
+        marker.textContent = formatTime(i);
+        ruler.appendChild(marker);
+    }
+}
+
+// Format time for timeline
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Populate sample media
+function populateSampleMedia() {
+    const mediaLibrary = document.getElementById('mediaLibrary');
+    if (!mediaLibrary) return;
+    
+    const sampleMedia = [
+        { type: 'video', name: 'Sample Video 1', duration: '0:45' },
+        { type: 'video', name: 'Sample Video 2', duration: '1:20' },
+        { type: 'audio', name: 'Background Music', duration: '2:30' },
+        { type: 'image', name: 'Logo.png', size: '1920x1080' }
+    ];
+    
+    mediaLibrary.innerHTML = '';
+    
+    sampleMedia.forEach((media, index) => {
+        const mediaItem = document.createElement('div');
+        mediaItem.className = 'media-item';
+        mediaItem.draggable = true;
+        mediaItem.ondragstart = (e) => dragMedia(e, media);
+        mediaItem.style.cssText = `
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 10px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            text-align: center;
+        `;
+        
+        const icon = media.type === 'video' ? '🎥' : media.type === 'audio' ? '🎵' : '🖼️';
+        
+        mediaItem.innerHTML = `
+            <div style="font-size: 24px; margin-bottom: 5px;">${icon}</div>
+            <div style="font-size: 10px; color: var(--text-primary); font-weight: 600; margin-bottom: 2px;">${media.name}</div>
+            <div style="font-size: 9px; color: var(--text-secondary);">${media.duration || media.size}</div>
+        `;
+        
+        mediaItem.addEventListener('mouseenter', () => {
+            mediaItem.style.transform = 'scale(1.05)';
+            mediaItem.style.borderColor = 'var(--accent-primary)';
+        });
+        
+        mediaItem.addEventListener('mouseleave', () => {
+            mediaItem.style.transform = 'scale(1)';
+            mediaItem.style.borderColor = 'var(--border-primary)';
+        });
+        
+        mediaLibrary.appendChild(mediaItem);
+    });
+}
+
+// Import media function
+function importCreatorMedia() {
+    // Simulate file import
+    const importModal = document.createElement('div');
+    importModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    importModal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 15px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid var(--border-primary);">
+            <h3 style="margin: 0 0 15px; color: var(--text-primary);">Import Media</h3>
+            <div style="border: 2px dashed var(--border-primary); border-radius: 10px; padding: 40px; text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 48px; margin-bottom: 15px;">📁</div>
+                <p style="margin: 0 0 10px; color: var(--text-primary);">Drag and drop files here</p>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">Supports: MP4, MOV, JPG, PNG, MP3, WAV</p>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="this.closest('div').remove()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    Browse Files
+                </button>
+                <button onclick="this.closest('div').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(importModal);
+}
+
+// Drag media functions
+function dragMedia(event, media) {
+    event.dataTransfer.setData('text/plain', JSON.stringify(media));
+}
+
+function allowDrop(event) {
+    event.preventDefault();
+}
+
+function dropMedia(event, trackType) {
+    event.preventDefault();
+    const mediaData = JSON.parse(event.dataTransfer.getData('text/plain'));
+    
+    if ((trackType === 'video' && mediaData.type === 'video') || 
+        (trackType === 'audio' && mediaData.type === 'audio')) {
+        
+        // Add media clip to timeline
+        const track = event.currentTarget;
+        const clip = document.createElement('div');
+        clip.style.cssText = `
+            position: absolute;
+            left: ${event.offsetX}px;
+            top: 5px;
+            width: 100px;
+            height: 30px;
+            background: ${trackType === 'video' ? 'var(--accent-primary)' : 'var(--accent-secondary)'};
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            cursor: move;
+            border: 1px solid rgba(255,255,255,0.3);
+        `;
+        clip.textContent = mediaData.name;
+        track.appendChild(clip);
+        
+        // Make clip draggable within timeline
+        clip.addEventListener('mousedown', startDragClip);
+    }
+}
+
+// Timeline clip dragging
+function startDragClip(event) {
+    const clip = event.target;
+    const track = clip.parentElement;
+    let isDragging = true;
+    
+    function moveClip(e) {
+        if (!isDragging) return;
+        const rect = track.getBoundingClientRect();
+        const newX = Math.max(0, Math.min(e.clientX - rect.left - 50, rect.width - 100));
+        clip.style.left = newX + 'px';
+    }
+    
+    function stopDrag() {
+        isDragging = false;
+        document.removeEventListener('mousemove', moveClip);
+        document.removeEventListener('mouseup', stopDrag);
+    }
+    
+    document.addEventListener('mousemove', moveClip);
+    document.addEventListener('mouseup', stopDrag);
+}
+
+// Apply effects
+function applyEffect(effectType) {
+    const effects = {
+        blur: 'Blur effect applied to selected clip',
+        vintage: 'Vintage filter applied to selected clip',
+        glow: 'Glow effect applied to selected clip',
+        particles: 'Particle effect applied to selected clip'
+    };
+    
+    showStudioNotification(effects[effectType] || 'Effect applied');
+}
+
+// Audio controls
+function adjustAudioVolume(value) {
+    showStudioNotification(`Audio volume set to ${value}%`);
+}
+
+function addAudioFade(type) {
+    showStudioNotification(`${type === 'in' ? 'Fade in' : 'Fade out'} effect added`);
+}
+
+function addBackgroundMusic() {
+    showStudioNotification('Background music library opened');
+}
+
+// Preview controls
+function playPausePreview() {
+    const btn = document.getElementById('playPauseBtn');
+    if (btn.textContent === '▶️') {
+        btn.textContent = '⏸️';
+        showStudioNotification('Preview playing');
+    } else {
+        btn.textContent = '▶️';
+        showStudioNotification('Preview paused');
+    }
+}
+
+function fullscreenPreview() {
+    showStudioNotification('Entering fullscreen preview');
+}
+
+// Timeline controls
+function addVideoTrack() {
+    showStudioNotification('New video track added');
+}
+
+function addAudioTrack() {
+    showStudioNotification('New audio track added');
+}
+
+function zoomTimeline(value) {
+    showStudioNotification(`Timeline zoom: ${value}%`);
+}
+
+// Export project
+function exportCreatorProject() {
+    const exportModal = document.createElement('div');
+    exportModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    exportModal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 15px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid var(--border-primary);">
+            <h3 style="margin: 0 0 20px; color: var(--text-primary);">Export Project</h3>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Quality</label>
+                <select style="width: 100%; padding: 10px; border: 1px solid var(--border-primary); border-radius: 6px; background: var(--bg-tertiary); color: var(--text-primary);">
+                    <option>4K Ultra HD (3840x2160)</option>
+                    <option selected>1080p HD (1920x1080)</option>
+                    <option>720p HD (1280x720)</option>
+                    <option>480p SD (854x480)</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Format</label>
+                <select style="width: 100%; padding: 10px; border: 1px solid var(--border-primary); border-radius: 6px; background: var(--bg-tertiary); color: var(--text-primary);">
+                    <option selected>MP4 (H.264)</option>
+                    <option>MOV (QuickTime)</option>
+                    <option>AVI (Audio Video Interleave)</option>
+                    <option>WMV (Windows Media Video)</option>
+                </select>
+            </div>
+            
+            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="color: var(--text-secondary); font-size: 14px; margin-bottom: 10px;">Estimated export time: 2-5 minutes</div>
+                <div style="color: var(--text-secondary); font-size: 14px;">File size: ~50-120 MB</div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="startExport(this)" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    🚀 Start Export
+                </button>
+                <button onclick="this.closest('div').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(exportModal);
+}
+
+// Start export simulation
+function startExport(button) {
+    button.innerHTML = 'Exporting...';
+    button.disabled = true;
+    
+    // Simulate export progress
+    setTimeout(() => {
+        button.innerHTML = '✅ Export Complete!';
+        setTimeout(() => {
+            button.closest('div').remove();
+            showStudioNotification('Video exported successfully!');
+        }, 2000);
+    }, 3000);
+}
+
+// Show studio notification
+function showStudioNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        padding: 12px 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border-primary);
+        z-index: 10000;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transform: translateX(300px);
+        transition: transform 0.3s ease;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+    setTimeout(() => {
+        notification.style.transform = 'translateX(300px)';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
 // Export VIB3 unique functions to window
 window.startPulseMetrics = startPulseMetrics;
 window.simulatePulseActivity = simulatePulseActivity;
@@ -13406,4 +13975,17 @@ window.initializeVibeRoom = initializeVibeRoom;
 window.sendRoomMessage = sendRoomMessage;
 window.leaveVibeRoom = leaveVibeRoom;
 window.startRoomActivity = startRoomActivity;
+window.showCreatorStudio = showCreatorStudio;
+window.switchStudioTab = switchStudioTab;
+window.importCreatorMedia = importCreatorMedia;
+window.exportCreatorProject = exportCreatorProject;
+window.applyEffect = applyEffect;
+window.adjustAudioVolume = adjustAudioVolume;
+window.addAudioFade = addAudioFade;
+window.addBackgroundMusic = addBackgroundMusic;
+window.playPausePreview = playPausePreview;
+window.fullscreenPreview = fullscreenPreview;
+window.addVideoTrack = addVideoTrack;
+window.addAudioTrack = addAudioTrack;
+window.zoomTimeline = zoomTimeline;
   
