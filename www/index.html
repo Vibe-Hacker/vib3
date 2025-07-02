@@ -37,7 +37,7 @@
     <div class="sidebar" id="sidebar">
         <!-- VIB3 Logo (clickable to refresh) -->
         <div class="sidebar-logo" onclick="refreshForYou()" style="cursor: pointer; padding: 0 20px 20px 20px;">
-            <h1 style="font-size: 32px; font-weight: 900; letter-spacing: -1px; color: var(--text-primary);">VIB3</h1>
+            <h1 style="font-size: 32px; font-weight: 900; letter-spacing: -1px; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(var(--vib3-glow));">VIB3</h1>
         </div>
         
         <!-- Search Bar -->
@@ -165,7 +165,14 @@
     </div>
     
     
-    <div class="app-container main-app" id="mainApp">
+    <!-- VIB3 Top Header Bar -->
+    <div class="vib3-header" style="position: fixed; top: 0; left: 240px; right: 0; height: 60px; background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%); z-index: 100; display: flex; align-items: center; justify-content: center; box-shadow: var(--vib3-glow);">
+        <div style="color: white; font-size: 18px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+            Welcome to VIB3 - Where Creativity Vibes
+        </div>
+    </div>
+
+    <div class="app-container main-app" id="mainApp" style="margin-top: 60px;">
         
         <div class="video-feed" id="videoFeed">
             <div class="feed-tabs">
@@ -1105,7 +1112,7 @@
     <script src="js/comments-simple.js"></script>
     <script src="js/search-simple.js"></script>
     <script src="js/components/upload-manager.js?v=20250702001"></script>
-    <script src="js/vib3-complete.js?v=20250702008"></script>
+    <script src="js/vib3-complete.js?v=20250702009"></script>
     
     <!-- Auto-testing and fixing scripts for development -->
     <script>

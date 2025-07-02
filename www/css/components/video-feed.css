@@ -1,11 +1,11 @@
-/* Video Feed Styles - TikTok Layout */
+/* VIB3 Video Feed Styles */
 .video-feed {
     height: 100vh;
     margin-top: 0;
     margin-left: 240px;
     width: calc(100vw - 240px);
     overflow: hidden;
-    background: #000;
+    background: var(--bg-primary);
     transition: all 0.3s ease;
     box-sizing: border-box;
     position: relative;
@@ -19,7 +19,12 @@
 }
 
 .feed-tabs {
-    display: none; /* vertical video - no tabs in feed */
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
 }
 
 @media (min-width: 768px) {
@@ -42,6 +47,9 @@
 
 .feed-tab.active {
     color: white;
+    background: var(--accent-gradient);
+    border-radius: 25px;
+    box-shadow: var(--vib3-glow);
 }
 
 .feed-tab.active::after {

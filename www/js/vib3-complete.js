@@ -9564,14 +9564,15 @@ window.favoriteTrack = favoriteTrack;
 window.filterMusic = filterMusic;
 window.closeMusicLibrary = closeMusicLibrary;
 
-// Duet and stitch functions
-window.addDuetEffect = addDuetEffect;
-window.closeDuetModal = closeDuetModal;
-window.publishDuet = publishDuet;
-window.saveDuetDraft = saveDuetDraft;
-window.closeStitchModal = closeStitchModal;
-window.publishStitch = publishStitch;
-window.previewStitch = previewStitch;
+// VIB3 Collaboration Features - Original Alternatives to Duet/Stitch
+window.startCollaboration = startCollaboration;
+window.closeCollabModal = closeCollabModal;
+window.publishCollab = publishCollab;
+window.saveCollabDraft = saveCollabDraft;
+window.startRemix = startRemix;
+window.closeRemixModal = closeRemixModal;
+window.publishRemix = publishRemix;
+window.previewRemix = previewRemix;
 
 // Recording functions
 window.setRecordingTimer = setRecordingTimer;
