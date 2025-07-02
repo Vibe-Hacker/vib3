@@ -33,25 +33,48 @@ class VideoService {
                 continue;
               }
               
+              // Check if video is properly processed
+              final isProcessed = json['processed'] == true || json['processingInfo'] != null;
+              final mimeType = json['mimeType']?.toString() ?? '';
+              
+              // Skip WebM videos and unprocessed videos that cause playback issues
+              if (mimeType.contains('webm') || !isProcessed) {
+                continue;
+              }
+              
               // Ensure the URL is complete
               if (!videoUrl.startsWith('http')) {
                 videoUrl = 'https://vib3-videos.nyc3.digitaloceanspaces.com/$videoUrl';
+              }
+              
+              // Extract duration from processingInfo if available
+              int videoDuration = 30; // default
+              final processingInfo = json['processingInfo'];
+              if (processingInfo != null && processingInfo['videoInfo'] != null) {
+                final videoInfo = processingInfo['videoInfo'];
+                if (videoInfo['duration'] != null && videoInfo['duration'] != 'N/A') {
+                  try {
+                    videoDuration = (double.parse(videoInfo['duration'].toString())).round();
+                  } catch (e) {
+                    // Keep default
+                  }
+                }
               }
               
               // Create simplified video object
               final video = Video(
                 id: json['_id']?.toString() ?? 'video_$i',
                 userId: json['userId']?.toString() ?? json['userid']?.toString() ?? '',
-                videoUrl: videoUrl ?? '',
+                videoUrl: videoUrl,
                 description: json['title']?.toString() ?? json['description']?.toString() ?? 'Video ${i + 1}',
                 likesCount: _parseIntSafely(json['likeCount'] ?? json['likecount'] ?? json['likes'] ?? 0),
                 commentsCount: _parseIntSafely(json['commentCount'] ?? json['commentcount'] ?? json['comments'] ?? 0),
                 sharesCount: _parseIntSafely(json['shareCount'] ?? json['sharecount'] ?? 0),
                 viewsCount: _parseIntSafely(json['views'] ?? 0),
-                duration: 30,
+                duration: videoDuration,
                 isPrivate: false,
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
+                createdAt: _parseDateTime(json['createdAt'] ?? json['createdat']),
+                updatedAt: _parseDateTime(json['updatedAt'] ?? json['updatedat']),
                 user: json['user'] ?? {
                   'username': json['username'] ?? 'user',
                   'displayName': json['username'] ?? 'User',
@@ -1120,5 +1143,18 @@ class VideoService {
       }
     }
     return 0;
+  }
+
+  // Helper function to safely parse DateTime
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (e) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
   }
 }
