@@ -1019,12 +1019,27 @@ class UploadManager {
                     video.addEventListener('error', (e) => {
                         clearTimeout(timeout);
                         console.error('Video preview error for file:', file.name, e);
+                        const mediaError = video.error;
                         console.error('Video error details:', {
-                            error: video.error,
+                            error: mediaError,
+                            errorCode: mediaError ? mediaError.code : 'no error object',
+                            errorMessage: mediaError ? mediaError.message : 'no message',
                             networkState: video.networkState,
                             readyState: video.readyState,
-                            src: video.src
+                            src: video.src,
+                            currentSrc: video.currentSrc
                         });
+                        
+                        // Log specific error codes
+                        if (mediaError) {
+                            const errorTypes = {
+                                1: 'MEDIA_ERR_ABORTED - playback aborted',
+                                2: 'MEDIA_ERR_NETWORK - network error',
+                                3: 'MEDIA_ERR_DECODE - decode error', 
+                                4: 'MEDIA_ERR_SRC_NOT_SUPPORTED - source not supported'
+                            };
+                            console.error('Specific error:', errorTypes[mediaError.code] || `Unknown error code: ${mediaError.code}`);
+                        }
                         console.error('File details:', {
                             name: file.name,
                             size: file.size,
