@@ -5,6 +5,74 @@ import '../models/video.dart';
 
 class VideoService {
   static Future<List<Video>> getAllVideos(String token) async {
+    // First, let's test with a simple direct approach
+    try {
+      final testResponse = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=50'),
+        headers: {
+          'Accept': 'application/json',
+        },
+      );
+
+      if (testResponse.statusCode == 200) {
+        final data = jsonDecode(testResponse.body);
+        if (data['videos'] != null) {
+          final List<dynamic> videosJson = data['videos'];
+          
+          // Create a simple list without complex parsing to see if we get all videos
+          final videos = <Video>[];
+          
+          for (var i = 0; i < videosJson.length && i < 50; i++) {
+            try {
+              final json = videosJson[i];
+              
+              // Get video URL and validate it
+              String? videoUrl = json['videoUrl']?.toString();
+              if (videoUrl == null || videoUrl.isEmpty) {
+                // Skip videos without URLs
+                continue;
+              }
+              
+              // Ensure the URL is complete
+              if (!videoUrl.startsWith('http')) {
+                videoUrl = 'https://vib3-videos.nyc3.digitaloceanspaces.com/$videoUrl';
+              }
+              
+              // Create simplified video object
+              final video = Video(
+                id: json['_id']?.toString() ?? 'video_$i',
+                userId: json['userId']?.toString() ?? json['userid']?.toString() ?? '',
+                videoUrl: videoUrl ?? '',
+                description: json['title']?.toString() ?? json['description']?.toString() ?? 'Video ${i + 1}',
+                likesCount: _parseIntSafely(json['likeCount'] ?? json['likecount'] ?? json['likes'] ?? 0),
+                commentsCount: _parseIntSafely(json['commentCount'] ?? json['commentcount'] ?? json['comments'] ?? 0),
+                sharesCount: _parseIntSafely(json['shareCount'] ?? json['sharecount'] ?? 0),
+                viewsCount: _parseIntSafely(json['views'] ?? 0),
+                duration: 30,
+                isPrivate: false,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                user: json['user'] ?? {
+                  'username': json['username'] ?? 'user',
+                  'displayName': json['username'] ?? 'User',
+                  '_id': json['userId'] ?? '',
+                },
+              );
+              videos.add(video);
+            } catch (e) {
+              // Skip bad videos but continue
+              continue;
+            }
+          }
+          
+          return videos;
+        }
+      }
+    } catch (e) {
+      // Fall through to original method
+    }
+    
+    // Original method as fallback
     print('🎬 Getting all videos with token: ${token.length > 10 ? '${token.substring(0, 10)}...' : token}');
     
     try {
@@ -1037,5 +1105,20 @@ class VideoService {
       print('Error unfollowing user: $e');
       return false;
     }
+  }
+
+  // Helper function to safely parse integers
+  static int _parseIntSafely(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (e) {
+        return 0;
+      }
+    }
+    return 0;
   }
 }

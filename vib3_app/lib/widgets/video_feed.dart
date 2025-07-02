@@ -260,6 +260,22 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                        // Debug info overlay
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Debug: ${videoProvider.debugInfo}',
+                            style: const TextStyle(
+                              color: Colors.yellow,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Text(
                           video.description ?? 'No description',
@@ -271,6 +287,26 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
+                    ),
+                  ),
+                  
+                  // Debug info button (top left)
+                  Positioned(
+                    top: 50,
+                    left: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'API returned ${videoProvider.videos.length} videos',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                      ),
                     ),
                   ),
                   
