@@ -887,9 +887,38 @@ class UploadManager {
             console.log('Setting up simple video preview for:', file?.name);
             
             if (container && file) {
+                // Check if browser supports this video format
+                const video = document.createElement('video');
+                const canPlay = video.canPlayType(file.type);
+                
+                if (!canPlay || canPlay === 'no') {
+                    console.warn('Browser cannot play video format:', file.type);
+                    container.innerHTML = `
+                        <div style="
+                            width: 190px;
+                            height: 340px;
+                            background: linear-gradient(45deg, #333, #555);
+                            border-radius: 10px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            color: white;
+                            text-align: center;
+                            padding: 20px;
+                            box-sizing: border-box;
+                        ">
+                            <div style="font-size: 40px; margin-bottom: 20px;">🎬</div>
+                            <div style="font-size: 14px; margin-bottom: 10px;">${file.name}</div>
+                            <div style="font-size: 12px; opacity: 0.7;">Unsupported format: ${file.type}</div>
+                            <div style="font-size: 12px; margin-top: 10px;">${(file.size / (1024*1024)).toFixed(1)} MB</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
                 try {
                     // Create a hidden video to get a frame
-                    const video = document.createElement('video');
                     video.muted = true;
                     video.preload = 'metadata';
                     video.style.display = 'none';
@@ -898,7 +927,36 @@ class UploadManager {
                     const objectUrl = URL.createObjectURL(file);
                     video.src = objectUrl;
                     
+                    // Add timeout to prevent hanging
+                    const timeout = setTimeout(() => {
+                        console.warn('Video preview timeout for:', file.name);
+                        video.remove();
+                        URL.revokeObjectURL(objectUrl);
+                        container.innerHTML = `
+                            <div style="
+                                width: 190px;
+                                height: 340px;
+                                background: linear-gradient(45deg, #333, #555);
+                                border-radius: 10px;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: center;
+                                color: white;
+                                text-align: center;
+                                padding: 20px;
+                                box-sizing: border-box;
+                            ">
+                                <div style="font-size: 40px; margin-bottom: 20px;">⏱️</div>
+                                <div style="font-size: 14px; margin-bottom: 10px;">${file.name}</div>
+                                <div style="font-size: 12px; opacity: 0.7;">Preview timeout</div>
+                                <div style="font-size: 12px; margin-top: 10px;">${(file.size / (1024*1024)).toFixed(1)} MB</div>
+                            </div>
+                        `;
+                    }, 10000); // 10 second timeout
+                    
                     video.addEventListener('loadeddata', () => {
+                        clearTimeout(timeout);
                         console.log('Video loaded, creating thumbnail');
                         
                         // Create canvas to capture frame
@@ -959,13 +1017,24 @@ class UploadManager {
                     });
                     
                     video.addEventListener('error', (e) => {
+                        clearTimeout(timeout);
                         console.error('Video preview error for file:', file.name, e);
+                        console.error('Video error details:', {
+                            error: video.error,
+                            networkState: video.networkState,
+                            readyState: video.readyState,
+                            src: video.src
+                        });
                         console.error('File details:', {
                             name: file.name,
                             size: file.size,
                             type: file.type,
                             lastModified: new Date(file.lastModified)
                         });
+                        
+                        // Clean up the object URL and video element
+                        URL.revokeObjectURL(objectUrl);
+                        video.remove();
                         
                         // Show a simple preview with file info instead of failing completely
                         container.innerHTML = `
