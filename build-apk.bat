@@ -1,12 +1,14 @@
 @echo off
 echo Building VIB3 Flutter APK...
-cd vib3_flutter
+cd vib3_app
 
 echo Checking for Flutter installation...
 where flutter
 if errorlevel 1 (
     echo Flutter not found in PATH. Checking common locations...
-    if exist "C:\flutter\bin\flutter.bat" (
+    if exist "C:\flutter\flutter\bin\flutter.bat" (
+        set FLUTTER_CMD=C:\flutter\flutter\bin\flutter.bat
+    ) else if exist "C:\flutter\bin\flutter.bat" (
         set FLUTTER_CMD=C:\flutter\bin\flutter.bat
     ) else if exist "C:\dev\flutter\bin\flutter.bat" (
         set FLUTTER_CMD=C:\dev\flutter\bin\flutter.bat

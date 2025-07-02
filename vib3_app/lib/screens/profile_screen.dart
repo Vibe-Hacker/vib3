@@ -51,8 +51,16 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     });
 
     try {
-      final videos = await VideoService.getUserVideos(user.id, token);
-      final liked = await VideoService.getLikedVideos(user.id, token);
+      // Use widget.userId if provided (viewing other user's profile), otherwise use current user
+      final targetUserId = widget.userId ?? user.id;
+      
+      final videos = await VideoService.getUserVideos(targetUserId, token);
+      final liked = await VideoService.getLikedVideos(targetUserId, token);
+      
+      print('ProfileScreen: Loaded ${videos.length} videos for user $targetUserId');
+      for (final video in videos) {
+        print('Video: ${video.id}, thumbnail: ${video.thumbnailUrl}');
+      }
       
       setState(() {
         userVideos = videos;
@@ -277,36 +285,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         style: TextStyle(color: Color(0xFFFF0080)),
                       ),
                     ),
-                  
-                  // Debug info
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[900],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Debug Info:',
-                          style: const TextStyle(color: Colors.white, fontSize: 12),
-                        ),
-                        Text(
-                          'User Videos: ${userVideos.length}',
-                          style: const TextStyle(color: Colors.grey, fontSize: 10),
-                        ),
-                        Text(
-                          'Liked Videos: ${likedVideos.length}',
-                          style: const TextStyle(color: Colors.grey, fontSize: 10),
-                        ),
-                        Text(
-                          'Loading: $isLoadingVideos',
-                          style: const TextStyle(color: Colors.grey, fontSize: 10),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),

@@ -16,6 +16,101 @@ class VideoThumbnail extends StatelessWidget {
     this.onTap,
   });
 
+  Widget _buildThumbnail() {
+    // Try different thumbnail strategies
+    if (video.thumbnailUrl != null && video.thumbnailUrl!.isNotEmpty) {
+      return Image.network(
+        video.thumbnailUrl!,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: Colors.grey[800],
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFFFF0080),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          print('Thumbnail failed to load: ${video.thumbnailUrl}');
+          return _buildFallbackThumbnail();
+        },
+      );
+    }
+    
+    // Try to generate thumbnail from video URL
+    if (video.videoUrl != null && video.videoUrl!.isNotEmpty) {
+      final videoUrl = video.videoUrl!;
+      // Generate thumbnail URL by replacing video with thumbnail
+      String thumbnailUrl = videoUrl;
+      
+      // Common thumbnail URL patterns
+      if (videoUrl.contains('.mp4')) {
+        thumbnailUrl = videoUrl.replaceAll('.mp4', '_thumb.jpg');
+      } else if (videoUrl.contains('.mov')) {
+        thumbnailUrl = videoUrl.replaceAll('.mov', '_thumb.jpg');
+      } else {
+        thumbnailUrl = '$videoUrl.jpg'; // Append .jpg
+      }
+      
+      return Image.network(
+        thumbnailUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildFallbackThumbnail();
+        },
+      );
+    }
+    
+    return _buildFallbackThumbnail();
+  }
+
+  Widget _buildFallbackThumbnail() {
+    return Container(
+      color: Colors.grey[800],
+      child: Stack(
+        children: [
+          // Gradient background
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFFFF0080).withOpacity(0.3),
+                  Colors.grey[800]!,
+                ],
+              ),
+            ),
+          ),
+          // Play icon
+          const Center(
+            child: Icon(
+              Icons.play_circle_outline,
+              color: Colors.white,
+              size: 40,
+            ),
+          ),
+          // VIB3 logo in corner
+          Positioned(
+            bottom: 4,
+            left: 4,
+            child: Text(
+              'VIB3',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 8,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -31,29 +126,7 @@ class VideoThumbnail extends StatelessWidget {
             // Video thumbnail image
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
-              child: video.thumbnailUrl != null
-                  ? Image.network(
-                      video.thumbnailUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[800],
-                          child: const Icon(
-                            Icons.play_circle_outline,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                        );
-                      },
-                    )
-                  : Container(
-                      color: Colors.grey[800],
-                      child: const Icon(
-                        Icons.play_circle_outline,
-                        color: Colors.white,
-                        size: 40,
-                      ),
-                    ),
+              child: _buildThumbnail(),
             ),
             
             // Dark overlay for text readability
