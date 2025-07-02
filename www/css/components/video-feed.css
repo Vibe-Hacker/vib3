@@ -1,7 +1,7 @@
 /* VIB3 Video Feed Styles */
 .video-feed {
     height: calc(100vh - 60px);
-    margin-top: 60px;
+    margin-top: 0;
     margin-left: 240px;
     width: calc(100vw - 240px);
     overflow: hidden;
