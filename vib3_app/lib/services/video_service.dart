@@ -5,8 +5,115 @@ import '../models/video.dart';
 
 class VideoService {
   static Future<List<Video>> getAllVideos(String token) async {
+    // First try to get raw database count to understand what we're dealing with
+    await _debugDatabaseContent(token);
+    
     // Since server is limiting to 8 videos per request, make MULTIPLE requests to get ALL videos
     return await _fetchAllVideosByMakingMultipleRequests(token);
+  }
+  
+  static Future<void> _debugDatabaseContent(String token) async {
+    print('🔍 DEBUGGING: Checking actual database content...');
+    
+    // Try various debug/admin endpoints that might show total count
+    final debugEndpoints = [
+      '${AppConfig.baseUrl}/api/videos/count',
+      '${AppConfig.baseUrl}/api/admin/videos/count', 
+      '${AppConfig.baseUrl}/debug/videos',
+      '${AppConfig.baseUrl}/api/videos/stats',
+      '${AppConfig.baseUrl}/health/videos',
+      '${AppConfig.baseUrl}/api/videos?debug=true',
+      '${AppConfig.baseUrl}/feed?debug=true',
+    ];
+    
+    for (final url in debugEndpoints) {
+      try {
+        final headers = <String, String>{
+          'Content-Type': 'application/json',
+        };
+        
+        if (token != 'no-token') {
+          headers['Authorization'] = 'Bearer $token';
+        }
+        
+        final response = await http.get(Uri.parse(url), headers: headers);
+        
+        if (response.statusCode == 200) {
+          print('💡 DEBUG ENDPOINT SUCCESS: $url');
+          print('📊 Response: ${response.body}');
+          
+          // Try to parse for video count information
+          try {
+            final data = jsonDecode(response.body);
+            if (data is Map<String, dynamic>) {
+              if (data.containsKey('count') || data.containsKey('total')) {
+                print('🎯 FOUND COUNT: ${data['count'] ?? data['total']} videos in database');
+              }
+              if (data.containsKey('videos') && data['videos'] is List) {
+                print('🎯 FOUND VIDEOS: ${data['videos'].length} videos in response');
+              }
+            }
+          } catch (e) {
+            print('📝 Non-JSON response: ${response.body.substring(0, 200)}...');
+          }
+        } else {
+          print('❌ Debug endpoint failed: $url (${response.statusCode})');
+        }
+      } catch (e) {
+        print('❌ Debug endpoint error: $url - $e');
+      }
+    }
+    
+    // Try making raw requests to see response patterns
+    print('🔍 TESTING: Raw response patterns...');
+    
+    final testEndpoints = [
+      '${AppConfig.baseUrl}/feed',
+      '${AppConfig.baseUrl}/api/videos',
+      '${AppConfig.baseUrl}/api/videos?limit=100',
+      '${AppConfig.baseUrl}/feed?limit=100',
+    ];
+    
+    for (final url in testEndpoints) {
+      try {
+        final headers = <String, String>{
+          'Content-Type': 'application/json',
+        };
+        
+        if (token != 'no-token') {
+          headers['Authorization'] = 'Bearer $token';
+        }
+        
+        final response = await http.get(Uri.parse(url), headers: headers);
+        
+        if (response.statusCode == 200) {
+          try {
+            final data = jsonDecode(response.body);
+            int videoCount = 0;
+            
+            if (data is Map<String, dynamic>) {
+              if (data.containsKey('videos') && data['videos'] is List) {
+                videoCount = data['videos'].length;
+              }
+            } else if (data is List) {
+              videoCount = data.length;
+            }
+            
+            print('📊 ENDPOINT $url: Returns $videoCount videos (${response.body.length} chars)');
+            
+            // If we found exactly 8, this might be the real database content
+            if (videoCount == 8) {
+              print('⚠️ EXACTLY 8 VIDEOS: This might be the real database count!');
+            }
+            
+          } catch (e) {
+            print('❌ Parse error for $url: $e');
+          }
+        }
+      } catch (e) {
+        print('❌ Test error for $url: $e');
+      }
+    }
   }
   
   static Future<List<Video>> _fetchAllVideosByMakingMultipleRequests(String token) async {
