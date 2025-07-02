@@ -211,11 +211,20 @@ async function changeProfilePicture() {
                         
                         if (profilePicEl) {
                             console.log('📸 Updating main profile picture element with:', imageUrl);
+                            // Preserve all original styling while adding the background image
                             profilePicEl.style.backgroundImage = `url(${imageUrl})`;
                             profilePicEl.style.backgroundSize = 'cover';
                             profilePicEl.style.backgroundPosition = 'center';
+                            profilePicEl.style.backgroundRepeat = 'no-repeat';
+                            // Ensure the element maintains its circular shape and size
+                            profilePicEl.style.width = '140px';
+                            profilePicEl.style.height = '140px';
+                            profilePicEl.style.borderRadius = '50%';
+                            profilePicEl.style.display = 'flex';
+                            profilePicEl.style.alignItems = 'center';
+                            profilePicEl.style.justifyContent = 'center';
                             profilePicEl.textContent = '';
-                            console.log('📸 Profile picture element updated successfully');
+                            console.log('📸 Profile picture element updated successfully with preserved styling');
                         }
                         
                         // Only update specifically targeted profile picture elements (not entire page!)
