@@ -85,17 +85,42 @@ function initializeAuth() {
     // Flag to prevent default feed loading when handling shared links
     let skipDefaultLoad = false;
     
+    // Handle shared links immediately if no auth system
+    if (!window.auth && (sharedVideoId || sharedUserId)) {
+        console.log('🔗 No auth system - handling shared content directly:', sharedVideoId || sharedUserId);
+        hideAuthContainer();
+        showMainApp();
+        
+        if (sharedVideoId) {
+            showSharedVideoView(sharedVideoId);
+        } else if (sharedUserId) {
+            setTimeout(() => {
+                showPage('profile');
+            }, 100);
+        }
+        return;
+    }
+    
     if (window.auth && window.auth.onAuthStateChanged) {
         window.auth.onAuthStateChanged((user) => {
             currentUser = user;
             
-            // Handle shared video viewing without login
-            if (!user && sharedVideoId) {
-                console.log('🔗 Viewing shared video without login:', sharedVideoId);
+            // Handle shared content viewing without login
+            if (!user && (sharedVideoId || sharedUserId)) {
+                console.log('🔗 Viewing shared content without login:', sharedVideoId || sharedUserId);
                 hideAuthContainer();
                 showMainApp();
-                // Show the shared video in a limited view
-                showSharedVideoView(sharedVideoId);
+                
+                if (sharedVideoId) {
+                    // Show the shared video in a limited view
+                    showSharedVideoView(sharedVideoId);
+                } else if (sharedUserId) {
+                    // Show shared profile in limited view
+                    setTimeout(() => {
+                        showPage('profile');
+                        // Could load public profile data here if needed
+                    }, 100);
+                }
                 return;
             }
             
