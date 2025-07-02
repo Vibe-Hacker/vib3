@@ -339,7 +339,7 @@ function shareProfile() {
             
             <!-- QR Code -->
             <div id="qrCodeContainer" style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center;">
-                <canvas id="qrCodeCanvas" width="200" height="200"></canvas>
+                <div id="qrCodeDiv" style="width: 200px; height: 200px;"></div>
             </div>
             
             <!-- Profile URL -->
@@ -366,8 +366,8 @@ function shareProfile() {
     
     document.body.appendChild(modal);
     
-    // Generate QR code
-    generateQRCode(profileUrl, 'qrCodeCanvas');
+    // Generate QR code using external API
+    generateQRCodeAPI(profileUrl, 'qrCodeDiv');
     
     // Setup modal functions
     window.closeShareModal = () => modal.remove();
@@ -401,79 +401,41 @@ function shareProfile() {
     };
 }
 
-// Simple QR Code generator using canvas
-function generateQRCode(text, canvasId) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
+// QR Code generator using API service
+function generateQRCodeAPI(text, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
     
-    const ctx = canvas.getContext('2d');
-    const size = 200;
-    const cellSize = size / 25; // 25x25 grid for simple QR
+    // Use QR Server API (free service)
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}`;
     
-    // Clear canvas
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, size, size);
+    const img = document.createElement('img');
+    img.src = qrUrl;
+    img.style.width = '200px';
+    img.style.height = '200px';
+    img.style.display = 'block';
+    img.alt = 'QR Code for profile';
     
-    // Generate simple QR-like pattern (this is a simplified version)
-    // For production, you'd want to use a proper QR code library
-    const qrData = generateSimpleQRPattern(text);
+    // Add loading state
+    container.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; width: 200px; height: 200px; color: #666;">Loading QR...</div>';
     
-    ctx.fillStyle = '#000000';
-    for (let row = 0; row < 25; row++) {
-        for (let col = 0; col < 25; col++) {
-            if (qrData[row] && qrData[row][col]) {
-                ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
-            }
-        }
-    }
+    img.onload = () => {
+        container.innerHTML = '';
+        container.appendChild(img);
+    };
     
-    // Add positioning squares (corners)
-    drawPositioningSquare(ctx, 0, 0, cellSize);
-    drawPositioningSquare(ctx, 18 * cellSize, 0, cellSize);
-    drawPositioningSquare(ctx, 0, 18 * cellSize, cellSize);
-}
-
-function generateSimpleQRPattern(text) {
-    // This is a simplified QR-like pattern generator
-    // In production, use a proper QR code library like qrcode.js
-    const size = 25;
-    const pattern = Array(size).fill().map(() => Array(size).fill(false));
-    
-    // Create a pseudo-random pattern based on the text
-    const hash = text.split('').reduce((a, b) => {
-        a = ((a << 5) - a) + b.charCodeAt(0);
-        return a & a;
-    }, 0);
-    
-    let seed = Math.abs(hash);
-    
-    // Fill pattern with pseudo-random data
-    for (let row = 3; row < 22; row++) {
-        for (let col = 3; col < 22; col++) {
-            // Skip positioning areas
-            if ((row < 9 && col < 9) || 
-                (row < 9 && col > 15) || 
-                (row > 15 && col < 9)) continue;
-            
-            seed = (seed * 9301 + 49297) % 233280;
-            pattern[row][col] = (seed / 233280) > 0.5;
-        }
-    }
-    
-    return pattern;
-}
-
-function drawPositioningSquare(ctx, x, y, cellSize) {
-    // Draw the corner positioning squares
-    ctx.fillStyle = '#000000';
-    // Outer square
-    ctx.fillRect(x, y, 7 * cellSize, 7 * cellSize);
-    // Inner white square
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(x + cellSize, y + cellSize, 5 * cellSize, 5 * cellSize);
-    // Center black square
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(x + 2 * cellSize, y + 2 * cellSize, 3 * cellSize, 3 * cellSize);
+    img.onerror = () => {
+        // Fallback to text-based QR if image fails
+        container.innerHTML = `
+            <div style="width: 200px; height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #ccc; background: #f5f5f5;">
+                <div style="font-size: 40px; margin-bottom: 10px;">📱</div>
+                <div style="font-size: 12px; color: #666; text-align: center; padding: 10px;">
+                    QR Code<br>
+                    <small>Scan with camera</small>
+                </div>
+            </div>
+        `;
+    };
 }
 
 function openCreatorTools() {
