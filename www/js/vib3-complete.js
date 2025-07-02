@@ -10004,27 +10004,8 @@ async function checkVideoCompatibility(file) {
     });
 }
 
-function changeProfilePicture() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                // Update profile picture in UI
-                document.querySelectorAll('.profile-picture').forEach(pic => {
-                    pic.style.backgroundImage = `url(${e.target.result})`;
-                    pic.textContent = '';
-                });
-                showNotification('Profile picture updated!', 'success');
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-    input.click();
-}
+// changeProfilePicture function moved to profile-functions.js for better organization
+// This avoids conflicts and ensures the enhanced version is used
 
 function showProfileSettings() {
     const modal = document.createElement('div');
