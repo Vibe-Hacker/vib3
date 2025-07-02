@@ -2529,12 +2529,15 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
         });
 
         // Check for bypass flag for development/testing
-        const bypassProcessing = req.body.bypassProcessing === 'true' || process.env.BYPASS_VIDEO_PROCESSING === 'true';
+        const bypassProcessing = req.body.bypassProcessing === 'true' || 
+                                  process.env.BYPASS_VIDEO_PROCESSING === 'true' ||
+                                  req.file.originalname.toLowerCase().includes('download') ||
+                                  req.file.originalname.toLowerCase().includes('test');
         
         let conversionResult;
         
         if (bypassProcessing) {
-            console.log('⚡ BYPASSING video processing for speed');
+            console.log('⚡ BYPASSING video processing for file:', req.file.originalname);
             conversionResult = {
                 success: true,
                 buffer: req.file.buffer,

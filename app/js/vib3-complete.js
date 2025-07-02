@@ -1065,16 +1065,54 @@ function createAdvancedVideoCard(video) {
             errorMessage: getVideoErrorMessage(e.target.error?.code),
             networkState: e.target.networkState,
             readyState: e.target.readyState,
-            currentSrc: e.target.currentSrc
+            currentSrc: e.target.currentSrc,
+            videoTitle: video.title || video.originalFilename || 'Unknown'
         });
         
-        // Try to recover by setting different attributes
-        video_elem.setAttribute('crossorigin', 'anonymous');
-        video_elem.preload = 'none';
+        // Log specific error info to help debug
+        if (video.originalFilename && video.originalFilename.includes('Download')) {
+            console.error('Download video error - may need re-encoding');
+        }
         
-        // If still failing, show error placeholder
-        setTimeout(() => {
-            if (video_elem.error) {
+        // Try multiple recovery strategies
+        const retryStrategies = [
+            () => {
+                // Strategy 1: Remove crossorigin and try again
+                video_elem.removeAttribute('crossorigin');
+                video_elem.load();
+            },
+            () => {
+                // Strategy 2: Try with preload auto
+                video_elem.preload = 'auto';
+                video_elem.load();
+            },
+            () => {
+                // Strategy 3: Try direct URL without any attributes
+                const newVideo = document.createElement('video');
+                newVideo.src = video.videoUrl;
+                newVideo.style.cssText = video_elem.style.cssText;
+                newVideo.muted = true;
+                newVideo.loop = true;
+                video_elem.parentNode.replaceChild(newVideo, video_elem);
+                video_elem = newVideo;
+            }
+        ];
+        
+        let retryIndex = 0;
+        const tryNextStrategy = () => {
+            if (retryIndex < retryStrategies.length) {
+                console.log(`Trying recovery strategy ${retryIndex + 1}...`);
+                retryStrategies[retryIndex]();
+                retryIndex++;
+                setTimeout(() => {
+                    if (video_elem.error) {
+                        tryNextStrategy();
+                    } else {
+                        console.log('✅ Video recovered with strategy', retryIndex);
+                    }
+                }, 1000);
+            } else {
+                // All strategies failed, show error
                 const errorDiv = document.createElement('div');
                 errorDiv.style.cssText = `
                     position: absolute;
@@ -1090,15 +1128,27 @@ function createAdvancedVideoCard(video) {
                     justify-content: center;
                     z-index: 5;
                 `;
+                
+                const errorCode = video_elem.error?.code || 'Unknown';
+                const errorMsg = getVideoErrorMessage(errorCode);
+                
                 errorDiv.innerHTML = `
                     <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
-                    <div style="font-size: 16px; margin-bottom: 10px;">Video failed to load</div>
-                    <div style="font-size: 12px; color: #888;">URL: ${video.videoUrl}</div>
-                    <button onclick="location.reload()" style="margin-top: 20px; padding: 8px 16px; background: #fe2c55; color: white; border: none; border-radius: 4px;">Retry</button>
+                    <div style="font-size: 18px; margin-bottom: 10px; font-weight: bold;">Video Load Failed</div>
+                    <div style="font-size: 14px; margin-bottom: 5px; color: #ff6b6b;">${errorMsg}</div>
+                    <div style="font-size: 12px; color: #888; margin-bottom: 5px;">File: ${video.originalFilename || 'Unknown'}</div>
+                    <div style="font-size: 12px; color: #888; margin-bottom: 20px;">Error Code: ${errorCode}</div>
+                    <div style="font-size: 12px; color: #aaa; text-align: center; max-width: 80%; margin-bottom: 20px;">
+                        This video may need to be re-encoded. Try uploading in H.264 MP4 format.
+                    </div>
+                    <button onclick="location.reload()" style="padding: 10px 20px; background: #fe2c55; color: white; border: none; border-radius: 4px; cursor: pointer;">Reload Page</button>
                 `;
                 card.appendChild(errorDiv);
             }
-        }, 2000);
+        };
+        
+        // Start recovery attempts
+        setTimeout(tryNextStrategy, 500);
     };
     video_elem.onloadstart = () => console.log('📹 VIDEO LOADING:', video_elem.src);
     video_elem.oncanplay = () => console.log('✅ VIDEO READY:', video_elem.src);
