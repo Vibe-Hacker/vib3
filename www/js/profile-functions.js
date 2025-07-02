@@ -89,8 +89,8 @@ async function changeProfilePicture() {
     modal.id = 'profilePictureModal';
     modal.style.cssText = `
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-        background: rgba(0,0,0,0.8); z-index: 9999; display: flex; 
-        align-items: center; justify-content: center;
+        background: rgba(0,0,0,0.5); z-index: 9999; display: flex; 
+        align-items: center; justify-content: center; backdrop-filter: blur(2px);
     `;
     
     console.log('📸 Creating modal overlay with z-index 9999');
@@ -218,18 +218,16 @@ async function changeProfilePicture() {
                             console.log('📸 Profile picture element updated successfully');
                         }
                         
-                        // Update any other profile picture elements that might exist
-                        const allProfileEls = document.querySelectorAll('[id*="profile"], [class*="profile-pic"], [class*="avatar"]');
-                        console.log('📸 Found additional profile elements:', allProfileEls.length);
-                        allProfileEls.forEach((el, index) => {
-                            if (el.id !== 'profilePicture') { // Don't duplicate the main one
-                                console.log(`📸 Updating additional profile element ${index}:`, el.id || el.className);
-                                el.style.backgroundImage = `url(${imageUrl})`;
-                                el.style.backgroundSize = 'cover';
-                                el.style.backgroundPosition = 'center';
-                                if (el.textContent && el.textContent.match(/[👤😀😎🤩🥳🦄🌟💫🎵🎭🎨🏆]/)) {
-                                    el.textContent = '';
-                                }
+                        // Only update specifically targeted profile picture elements (not entire page!)
+                        const specificProfileEls = document.querySelectorAll('.profile-picture, .user-avatar, .profile-pic-small');
+                        console.log('📸 Found specific profile picture elements:', specificProfileEls.length);
+                        specificProfileEls.forEach((el, index) => {
+                            console.log(`📸 Updating specific profile element ${index}:`, el.id || el.className);
+                            el.style.backgroundImage = `url(${imageUrl})`;
+                            el.style.backgroundSize = 'cover';
+                            el.style.backgroundPosition = 'center';
+                            if (el.textContent && el.textContent.match(/[👤😀😎🤩🥳🦄🌟💫🎵🎭🎨🏆]/)) {
+                                el.textContent = '';
                             }
                         });
                     } else {
