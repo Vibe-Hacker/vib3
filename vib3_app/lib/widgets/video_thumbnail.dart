@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import '../models/video.dart';
 import '../services/video_service.dart';
 
-class VideoThumbnail extends StatelessWidget {
+class VideoThumbnail extends StatefulWidget {
   final Video video;
   final bool showDeleteButton;
   final VoidCallback? onDelete;
@@ -16,11 +17,83 @@ class VideoThumbnail extends StatelessWidget {
     this.onTap,
   });
 
+  @override
+  State<VideoThumbnail> createState() => _VideoThumbnailState();
+}
+
+class _VideoThumbnailState extends State<VideoThumbnail> {
+  VideoPlayerController? _controller;
+  bool _isInitialized = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideoPlayer();
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeVideoPlayer() async {
+    if (widget.video.videoUrl == null || widget.video.videoUrl!.isEmpty) {
+      setState(() {
+        _hasError = true;
+      });
+      return;
+    }
+
+    try {
+      _controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.video.videoUrl!),
+      );
+
+      await _controller!.initialize();
+      
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      print('Error initializing video player for thumbnail: $e');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
+    }
+  }
+
   Widget _buildThumbnail() {
-    // Try different thumbnail strategies
-    if (video.thumbnailUrl != null && video.thumbnailUrl!.isNotEmpty) {
+    // Priority 1: Use video player first frame if initialized
+    if (_isInitialized && _controller != null) {
+      return AspectRatio(
+        aspectRatio: _controller!.value.aspectRatio,
+        child: VideoPlayer(_controller!),
+      );
+    }
+    
+    // Show loading state while video is initializing
+    if (_controller != null && !_isInitialized && !_hasError) {
+      return Container(
+        color: Colors.grey[800],
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFFFF0080),
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+    
+    // Priority 2: Use provided thumbnail URL
+    if (widget.video.thumbnailUrl != null && widget.video.thumbnailUrl!.isNotEmpty) {
       return Image.network(
-        video.thumbnailUrl!,
+        widget.video.thumbnailUrl!,
         fit: BoxFit.cover,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
@@ -34,15 +107,15 @@ class VideoThumbnail extends StatelessWidget {
           );
         },
         errorBuilder: (context, error, stackTrace) {
-          print('Thumbnail failed to load: ${video.thumbnailUrl}');
+          print('Thumbnail failed to load: ${widget.video.thumbnailUrl}');
           return _buildFallbackThumbnail();
         },
       );
     }
     
-    // Try to generate thumbnail from video URL
-    if (video.videoUrl != null && video.videoUrl!.isNotEmpty) {
-      final videoUrl = video.videoUrl!;
+    // Priority 3: Try to generate thumbnail from video URL
+    if (widget.video.videoUrl != null && widget.video.videoUrl!.isNotEmpty && !_hasError) {
+      final videoUrl = widget.video.videoUrl!;
       // Generate thumbnail URL by replacing video with thumbnail
       String thumbnailUrl = videoUrl;
       
@@ -114,7 +187,7 @@ class VideoThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4),
@@ -148,7 +221,7 @@ class VideoThumbnail extends StatelessWidget {
             ),
             
             // Delete button (top left)
-            if (showDeleteButton)
+            if (widget.showDeleteButton)
               Positioned(
                 top: 4,
                 left: 4,
@@ -189,7 +262,7 @@ class VideoThumbnail extends StatelessWidget {
                     ),
                     const SizedBox(width: 2),
                     Text(
-                      VideoService.formatLikes(video.likesCount),
+                      VideoService.formatLikes(widget.video.likesCount),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -221,7 +294,7 @@ class VideoThumbnail extends StatelessWidget {
                     ),
                     const SizedBox(width: 2),
                     Text(
-                      VideoService.formatViews(video.viewsCount),
+                      VideoService.formatViews(widget.video.viewsCount),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -244,7 +317,7 @@ class VideoThumbnail extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  VideoService.formatDuration(video.duration),
+                  VideoService.formatDuration(widget.video.duration),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10,
@@ -254,14 +327,15 @@ class VideoThumbnail extends StatelessWidget {
               ),
             ),
             
-            // Play icon overlay
-            const Center(
-              child: Icon(
-                Icons.play_circle_outline,
-                color: Colors.white,
-                size: 30,
+            // Play icon overlay (only show if not using video player thumbnail)
+            if (!_isInitialized || _hasError)
+              const Center(
+                child: Icon(
+                  Icons.play_circle_outline,
+                  color: Colors.white,
+                  size: 30,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -292,8 +366,8 @@ class VideoThumbnail extends StatelessWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              if (onDelete != null) {
-                onDelete!();
+              if (widget.onDelete != null) {
+                widget.onDelete!();
               }
             },
             child: const Text(
