@@ -77,9 +77,25 @@ function editProfile() {
 console.log('🔧 profile-functions.js loaded, setting up changeProfilePicture');
 
 async function changeProfilePicture() {
-    console.log('📸 IMMEDIATE CALL - changeProfilePicture function was called!');
-    alert('📸 IMMEDIATE ALERT - changeProfilePicture function was called!');
-    console.log('📸 PROFILE-FUNCTIONS.JS changeProfilePicture called directly!');
+    console.log('📸 Quick upload - profile picture clicked');
+    
+    // Create hidden file input for quick upload
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    
+    fileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            await handleProfileImageUpload(file);
+        }
+        fileInput.remove();
+    };
+    
+}
+
+function showProfilePictureModal(quickFileInput) {
     const emojis = ['👤', '😀', '😎', '🤩', '🥳', '🦄', '🌟', '💫', '🎵', '🎭', '🎨', '🏆'];
     const currentPicture = document.getElementById('profilePicture');
     const currentEmoji = currentPicture?.textContent || '👤';
@@ -93,20 +109,14 @@ async function changeProfilePicture() {
         align-items: center; justify-content: center; backdrop-filter: blur(2px);
     `;
     
-    console.log('📸 Creating modal overlay with z-index 9999');
-    
     modal.innerHTML = `
         <div style="background: #222; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%;">
             <h3 style="color: white; margin-bottom: 20px;">Choose Profile Picture</h3>
             
-            <!-- Upload Image Option -->
-            <div style="margin-bottom: 20px;">
-                <input type="file" id="profileImageUpload" accept="image/*" style="display: none;">
-                <button onclick="document.getElementById('profileImageUpload').click()" style="width: 100%; padding: 15px; background: #fe2c55; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 10px;">
-                    📷 Upload Photo
-                </button>
-                <div style="color: #888; font-size: 12px; text-align: center;">JPG, PNG, GIF up to 5MB</div>
-            </div>
+            <!-- Quick Upload Button -->
+            <button onclick="triggerQuickUpload()" style="width: 100%; padding: 20px; background: #fe2c55; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 20px; font-size: 18px;">
+                📷 Upload New Photo
+            </button>
             
             <!-- Emoji Options -->
             <div style="border-top: 1px solid #444; padding-top: 20px;">
@@ -128,245 +138,157 @@ async function changeProfilePicture() {
     
     document.body.appendChild(modal);
     
-    // Handle file upload
-    modal.querySelector('#profileImageUpload').onchange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            // Validate file size (5MB limit)
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Image too large. Maximum size is 5MB.');
-                return;
-            }
-            
-            // Validate file type
-            if (!file.type.startsWith('image/')) {
-                alert('Please select a valid image file.');
-                return;
-            }
-            
-            try {
-                console.log('📸 Starting profile picture upload...');
-                console.log('📸 File details:', { name: file.name, size: file.size, type: file.type });
-                
-                // Use EXACT same approach as video upload
-                const formData = new FormData();
-                formData.append('profileImage', file);
-                
-                // Add user information EXACTLY like video upload
-                const currentUser = window.currentUser;
-                if (currentUser) {
-                    const username = currentUser.username || 
-                                   currentUser.displayName || 
-                                   currentUser.name ||
-                                   currentUser.email?.split('@')[0] || 
-                                   'user';
-                    formData.append('username', username);
-                    formData.append('userId', currentUser.id || currentUser._id || currentUser.uid || '');
-                    
-                    console.log('📸 Adding user info to upload:');
-                    console.log('  - Username:', username);
-                    console.log('  - User ID:', currentUser.id || currentUser._id || currentUser.uid);
-                    
-                    // Log all FormData entries like video upload does
-                    console.log('🔍 COMPLETE FORMDATA CONTENTS:');
-                    for (let [key, value] of formData.entries()) {
-                        if (value instanceof File) {
-                            console.log(`  ${key}: [File] ${value.name} (${value.size} bytes, ${value.type})`);
-                        } else {
-                            console.log(`  ${key}: ${value}`);
-                        }
-                    }
-                } else {
-                    console.warn('⚠️ No currentUser found for upload');
-                }
-                
-                // Use EXACT same API base URL and request format as video upload
-                const response = await fetch(`${window.API_BASE_URL}/api/user/profile-image`, {
-                    method: 'POST',
-                    credentials: 'include', // EXACT same as video upload
-                    headers: {
-                        // EXACT same header logic as video upload
-                        ...(window.authToken && window.authToken !== 'session-based' ? 
-                            { 'Authorization': `Bearer ${window.authToken}` } : {})
-                    },
-                    body: formData
-                });
-                
-                console.log('📡 RESPONSE STATUS:', response.status, response.statusText);
-                console.log('📡 RESPONSE HEADERS:', Object.fromEntries(response.headers.entries()));
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('📸 Profile image upload SUCCESS response:', data);
-                    
-                    // Update profile picture display immediately
-                    const imageUrl = data.profilePictureUrl || data.profileImageUrl || data.profileImage;
-                    console.log('📸 Received image URL from server:', imageUrl);
-                    console.log('📸 Full server response:', data);
-                    
-                    if (imageUrl) {
-                        // Update main profile picture element
-                        const profilePicEl = document.getElementById('profilePicture');
-                        console.log('📸 Found profile picture element:', !!profilePicEl);
-                        
-                        if (profilePicEl) {
-                            console.log('📸 Updating main profile picture element with:', imageUrl);
-                            // Preserve all original styling while adding the background image
-                            profilePicEl.style.backgroundImage = `url(${imageUrl})`;
-                            profilePicEl.style.backgroundSize = 'cover';
-                            profilePicEl.style.backgroundPosition = 'center';
-                            profilePicEl.style.backgroundRepeat = 'no-repeat';
-                            // Ensure the element maintains its circular shape and size
-                            profilePicEl.style.width = '140px';
-                            profilePicEl.style.height = '140px';
-                            profilePicEl.style.borderRadius = '50%';
-                            profilePicEl.style.display = 'flex';
-                            profilePicEl.style.alignItems = 'center';
-                            profilePicEl.style.justifyContent = 'center';
-                            profilePicEl.textContent = '';
-                            console.log('📸 Profile picture element updated successfully with preserved styling');
-                        }
-                        
-                        // Only update specifically targeted profile picture elements (not entire page!)
-                        const specificProfileEls = document.querySelectorAll('.profile-picture, .user-avatar, .profile-pic-small');
-                        console.log('📸 Found specific profile picture elements:', specificProfileEls.length);
-                        specificProfileEls.forEach((el, index) => {
-                            console.log(`📸 Updating specific profile element ${index}:`, el.id || el.className);
-                            el.style.backgroundImage = `url(${imageUrl})`;
-                            el.style.backgroundSize = 'cover';
-                            el.style.backgroundPosition = 'center';
-                            if (el.textContent && el.textContent.match(/[👤😀😎🤩🥳🦄🌟💫🎵🎭🎨🏆]/)) {
-                                el.textContent = '';
-                            }
-                        });
-                    } else {
-                        console.error('❌ No image URL found in server response');
-                        console.log('📸 Available response fields:', Object.keys(data));
-                    }
-                    
-                    // Update current user data
-                    if (window.currentUser) {
-                        console.log('📸 Updating currentUser with new profile picture');
-                        window.currentUser.profileImage = imageUrl;
-                        window.currentUser.profilePicture = null; // Clear emoji when using image
-                        console.log('📸 Updated currentUser:', window.currentUser);
-                    }
-                    
-                    alert('Profile picture updated successfully!');
-                    console.log('📸 About to remove modal and return to profile page');
-                    modal.remove();
-                    console.log('📸 Modal removed - should be back to profile page now');
-                    
-                    // Ensure profile page is still visible
-                    const profilePage = document.getElementById('profilePage');
-                    if (profilePage) {
-                        console.log('📸 Profile page still exists and is visible');
-                    } else {
-                        console.error('❌ Profile page disappeared! This is the problem.');
-                    }
-                    
-                    // Force reload of user data from server to get updated profile
-                    setTimeout(async () => {
-                        console.log('📸 Refreshing user data from server after upload...');
-                        try {
-                            // Fetch fresh user data from server
-                            const userResponse = await fetch(`${window.API_BASE_URL}/api/auth/me`, {
-                                credentials: 'include',
-                                headers: {
-                                    ...(window.authToken && window.authToken !== 'session-based' ? 
-                                        { 'Authorization': `Bearer ${window.authToken}` } : {})
-                                }
-                            });
-                            
-                            if (userResponse.ok) {
-                                const freshUserData = await userResponse.json();
-                                console.log('📸 Got fresh user data:', freshUserData);
-                                
-                                // Update currentUser with fresh data
-                                if (freshUserData.user) {
-                                    window.currentUser = freshUserData.user;
-                                    console.log('📸 Updated currentUser with fresh data:', window.currentUser);
-                                    
-                                    // Update profile display with fresh data
-                                    if (window.updateProfileDisplay && typeof window.updateProfileDisplay === 'function') {
-                                        window.updateProfileDisplay(freshUserData.user);
-                                    }
-                                    
-                                    // Instead of full page refresh, just update the profile picture element
-                                    console.log('📸 Updating profile picture display without full page refresh...');
-                                    const profilePicEl = document.getElementById('profilePicture');
-                                    if (profilePicEl && freshUserData.user.profileImage) {
-                                        profilePicEl.style.backgroundImage = `url(${freshUserData.user.profileImage})`;
-                                        profilePicEl.style.backgroundSize = 'cover';
-                                        profilePicEl.style.backgroundPosition = 'center';
-                                        profilePicEl.textContent = '';
-                                        console.log('📸 Profile picture updated without page refresh');
-                                    }
-                                }
-                            } else {
-                                console.error('❌ Failed to fetch fresh user data');
-                            }
-                        } catch (error) {
-                            console.error('❌ Error fetching fresh user data:', error);
-                        }
-                    }, 1000);
-                } else {
-                    const errorText = await response.text();
-                    console.error('❌ PROFILE PICTURE UPLOAD ERROR:', errorText);
-                    alert('Failed to upload profile picture');
-                }
-            } catch (error) {
-                console.error('❌ Profile picture upload exception:', error);
-                alert('Error uploading profile picture');
-            }
-        }
-    };
-    
-    window.closePictureModal = () => modal.remove();
-    
-    window.selectProfilePicture = async (emoji) => {
-        console.log('📸 Setting emoji profile picture:', emoji);
-        
-        try {
-            // Call server to update profile picture
-            const response = await fetch(`${window.API_BASE_URL}/api/user/profile`, {
-                method: 'PUT',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(window.authToken && window.authToken !== 'session-based' ? 
-                        { 'Authorization': `Bearer ${window.authToken}` } : {})
-                },
-                body: JSON.stringify({ profilePicture: emoji })
-            });
-            
-            if (response.ok) {
-                // Update current user data
-                if (window.currentUser) {
-                    window.currentUser.profilePicture = emoji;
-                    window.currentUser.profileImage = null; // Clear image when using emoji
-                }
-                
-                // Update UI
-                const profilePicEl = document.getElementById('profilePicture');
-                if (profilePicEl) {
-                    profilePicEl.style.backgroundImage = '';
-                    profilePicEl.textContent = emoji;
-                }
-                
-                alert('Profile picture updated!');
-                modal.remove();
-                
-                // No need for full page refresh since UI is already updated
-            } else {
-                throw new Error('Failed to update profile picture');
-            }
-        } catch (error) {
-            console.error('❌ Error updating emoji profile picture:', error);
-            alert('Error updating profile picture');
-        }
+    // Setup quick upload trigger
+    window.triggerQuickUpload = () => {
+        quickFileInput.click();
     };
 }
+
+async function handleProfileImageUpload(file) {
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Image too large. Maximum size is 5MB.');
+        return;
+    }
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        return;
+    }
+    
+    try {
+        console.log('📸 Starting profile picture upload...');
+        
+        // Use EXACT same approach as video upload
+        const formData = new FormData();
+        formData.append('profileImage', file);
+        
+        // Add user information
+        const currentUser = window.currentUser;
+        if (currentUser) {
+            const username = currentUser.username || 
+                           currentUser.displayName || 
+                           currentUser.name ||
+                           currentUser.email?.split('@')[0] || 
+                           'user';
+            formData.append('username', username);
+            formData.append('userId', currentUser.id || currentUser._id || currentUser.uid || '');
+        }
+        
+        const response = await fetch(`${window.API_BASE_URL}/api/user/profile-image`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const imageUrl = data.profilePictureUrl || data.profileImageUrl || data.profileImage;
+            
+            if (imageUrl) {
+                updateProfilePictureDisplay(imageUrl);
+                
+                // Update current user data
+                if (window.currentUser) {
+                    window.currentUser.profileImage = imageUrl;
+                    window.currentUser.profilePicture = null;
+                }
+                
+                // Close modal
+                const modal = document.getElementById('profilePictureModal');
+                if (modal) modal.remove();
+                
+                showNotification('Profile picture updated!', 'success');
+            }
+        } else {
+            throw new Error('Upload failed');
+        }
+    } catch (error) {
+        console.error('❌ Profile picture upload error:', error);
+        alert('Error uploading profile picture');
+    }
+}
+
+function updateProfilePictureDisplay(imageUrl) {
+    const profilePicEl = document.getElementById('profilePicture');
+    if (profilePicEl) {
+        // Preserve all original styling while adding the background image
+        profilePicEl.style.backgroundImage = `url(${imageUrl})`;
+        profilePicEl.style.backgroundSize = 'cover';
+        profilePicEl.style.backgroundPosition = 'center';
+        profilePicEl.style.backgroundRepeat = 'no-repeat';
+        // Ensure the element maintains its circular shape and size
+        profilePicEl.style.width = '140px';
+        profilePicEl.style.height = '140px';
+        profilePicEl.style.borderRadius = '50%';
+        profilePicEl.style.display = 'flex';
+        profilePicEl.style.alignItems = 'center';
+        profilePicEl.style.justifyContent = 'center';
+        profilePicEl.textContent = '';
+    }
+    
+    // Update other profile picture elements
+    const specificProfileEls = document.querySelectorAll('.profile-picture, .user-avatar, .profile-pic-small');
+    specificProfileEls.forEach((el) => {
+        el.style.backgroundImage = `url(${imageUrl})`;
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+        if (el.textContent && el.textContent.match(/[👤😀😎🤩🥳🦄🌟💫🎵🎭🎨🏆]/)) {
+            el.textContent = '';
+        }
+    });
+}
+
+// Global functions for modal interaction
+window.closePictureModal = () => {
+    const modal = document.getElementById('profilePictureModal');
+    if (modal) modal.remove();
+};
+
+window.selectProfilePicture = async (emoji) => {
+    try {
+        const response = await fetch(`${window.API_BASE_URL}/api/user/profile`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(window.authToken && window.authToken !== 'session-based' ? 
+                    { 'Authorization': `Bearer ${window.authToken}` } : {})
+            },
+            body: JSON.stringify({ profilePicture: emoji })
+        });
+        
+        if (response.ok) {
+            // Update current user data
+            if (window.currentUser) {
+                window.currentUser.profilePicture = emoji;
+                window.currentUser.profileImage = null;
+            }
+            
+            // Update UI
+            const profilePicEl = document.getElementById('profilePicture');
+            if (profilePicEl) {
+                profilePicEl.style.backgroundImage = '';
+                profilePicEl.textContent = emoji;
+            }
+            
+            const modal = document.getElementById('profilePictureModal');
+            if (modal) modal.remove();
+            
+            showNotification('Profile picture updated!', 'success');
+        } else {
+            throw new Error('Failed to update profile picture');
+        }
+    } catch (error) {
+        console.error('❌ Error updating emoji profile picture:', error);
+        alert('Error updating profile picture');
+    }
+};
 
 // Expose function globally
 window.changeProfilePicture = changeProfilePicture;
