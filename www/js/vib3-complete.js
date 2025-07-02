@@ -25,7 +25,7 @@ const appConfig = {
 if (typeof currentUser === 'undefined') {
     window.currentUser = null;
 }
-let currentFeed = 'foryou';
+let currentFeed = 'home';
 let currentVideoId = null;
 let isRecording = false;
 let currentStep = 1;
@@ -663,10 +663,23 @@ function formatCount(count) {
 }
 
 // ================ VIDEO FEED MANAGEMENT ================
-async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1, append = false) {
-    // CRITICAL: Never handle explore through loadVideoFeed - it has its own system
-    if (feedType === 'explore') {
-        console.log('⚠️ loadVideoFeed called for explore - redirecting to initializeExplorePage');
+// Map new feed names to internal logic for backward compatibility
+function mapFeedType(feedType) {
+    const feedMapping = {
+        'home': 'foryou',
+        'subscriptions': 'following', 
+        'network': 'friends',
+        'discover': 'explore'
+    };
+    return feedMapping[feedType] || feedType;
+}
+
+async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, append = false) {
+    // Map new feed names to internal logic
+    const internalFeedType = mapFeedType(feedType);
+    // CRITICAL: Never handle discover through loadVideoFeed - it has its own system
+    if (internalFeedType === 'explore') {
+        console.log('⚠️ loadVideoFeed called for discover - redirecting to initializeExplorePage');
         initializeExplorePage();
         return;
     }
@@ -743,13 +756,13 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
             // Add cache busting to prevent stale data
             const timestamp = Date.now();
             
-            // Determine the correct endpoint based on feed type
+            // Determine the correct endpoint based on internal feed type
             let feedUrl;
-            if (feedType === 'friends') {
-                // Friends feed uses default feed but will filter out current user's videos
+            if (internalFeedType === 'friends') {
+                // Network feed uses default feed but will filter out current user's videos
                 feedUrl = `${window.API_BASE_URL}/feed?limit=20&_t=${timestamp}`;
-            } else if (feedType === 'following') {
-                // Following feed - try following endpoint, fallback to default feed
+            } else if (internalFeedType === 'following') {
+                // Subscriptions feed - try following endpoint, fallback to default feed
                 feedUrl = `${window.API_BASE_URL}/api/videos/following?limit=10&_t=${timestamp}`;
             } else {
                 // Default feed endpoint
@@ -767,8 +780,8 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
             const data = await response.json();
             console.log(`📦 Received data for page ${page}:`, data.videos?.length, 'videos');
             
-            // Filter out current user's videos for friends feed
-            if (feedType === 'friends' && data.videos && window.currentUser) {
+            // Filter out current user's videos for network feed
+            if (internalFeedType === 'friends' && data.videos && window.currentUser) {
                 const currentUserId = window.currentUser.id || window.currentUser._id || window.currentUser.uid;
                 if (currentUserId) {
                     const originalCount = data.videos.length;
@@ -776,13 +789,13 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
                         const videoUserId = video.user?.id || video.user?._id || video.userId || video.uploadedBy;
                         return videoUserId !== currentUserId;
                     });
-                    console.log(`👥 Friends feed: Filtered out ${originalCount - data.videos.length} own videos, showing ${data.videos.length} from friends`);
+                    console.log(`👥 Network feed: Filtered out ${originalCount - data.videos.length} own videos, showing ${data.videos.length} from network`);
                 }
             }
             
-            // For explore feed, supplement with sample data if needed
-            if (feedType === 'explore' && (!data.videos || data.videos.length < 6)) {
-                console.log('🔍 Adding sample explore data');
+            // For discover feed, supplement with sample data if needed
+            if (internalFeedType === 'explore' && (!data.videos || data.videos.length < 6)) {
+                console.log('🔍 Adding sample discover data');
                 const sampleExploreVideos = [
                     {
                         _id: 'sample1',
@@ -1797,7 +1810,7 @@ function openVideoModal(video) {
     window.isLoadingSpecificVideo = true;
     
     // Switch to For You feed to show vertical layout
-    switchFeedTab('foryou');
+    switchFeedTab('home');
     
     // Create a new feed starting with the selected video
     setTimeout(() => {
@@ -4824,7 +4837,8 @@ function showPage(page) {
     }
 
     // Handle feed tabs - don't show "coming soon" for these
-    if (page === 'foryou' || page === 'following' || page === 'explore' || page === 'friends') {
+    if (page === 'home' || page === 'subscriptions' || page === 'discover' || page === 'network' || 
+        page === 'foryou' || page === 'following' || page === 'explore' || page === 'friends') {
         // CRITICAL: Force hide ALL activity and special pages when going to feeds
         document.querySelectorAll('.activity-page, .analytics-page, .messages-page, .profile-page').forEach(el => {
             if (el) {
@@ -4956,7 +4970,7 @@ function showPage(page) {
             if (mainApp) {
                 mainApp.style.display = 'block';
             }
-            switchFeedTab('foryou');
+            switchFeedTab('home');
             return;
         }
         
@@ -5227,6 +5241,9 @@ function showNotification(message, type = 'info', duration = 3000) {
 }
 
 function switchFeedTab(feedType) {
+    // Map new feed names to internal logic for backward compatibility
+    const internalFeedType = mapFeedType(feedType);
+    
     // CRITICAL: Remove analytics overlay when switching feeds
     const analyticsOverlay = document.getElementById('analyticsOverlay');
     if (analyticsOverlay) {
@@ -5294,20 +5311,20 @@ function switchFeedTab(feedType) {
     // Show the target feed container
     const targetFeed = document.getElementById(feedType + 'Feed');
     if (targetFeed) {
-        // Only clear content for non-explore feeds to preserve explore structure
-        if (feedType !== 'explore') {
+        // Only clear content for non-discover feeds to preserve discover structure
+        if (internalFeedType !== 'explore') {
             // Only show loading if not loading a specific video
             if (!window.isLoadingSpecificVideo) {
                 targetFeed.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;">Loading...</div>';
             }
         } else {
-            // For explore feed, ensure the structure exists, then clear the video grid
+            // For discover feed, ensure the structure exists, then clear the video grid
             if (!document.getElementById('exploreVideoGrid')) {
                 // Create the structure if it doesn't exist
                 targetFeed.innerHTML = `
-                    <div class="explore-header" style="padding: 20px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
+                    <div class="discover-header" style="padding: 20px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
                         <div class="search-bar-container" style="margin-bottom: 20px;">
-                            <input type="text" class="explore-search" placeholder="Search videos, creators, hashtags..." style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); font-size: 14px;" onkeypress="if(event.key==='Enter') performExploreSearch(this.value)">
+                            <input type="text" class="discover-search" placeholder="Search videos, creators, hashtags..." style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); font-size: 14px;" onkeypress="if(event.key==='Enter') performDiscoverSearch(this.value)">
                         </div>
                         <div class="trending-hashtags" style="margin-bottom: 15px;">
                             <h3 style="color: var(--text-primary); margin-bottom: 10px; font-size: 16px;">Trending</h3>
@@ -5373,10 +5390,10 @@ function switchFeedTab(feedType) {
         // Clean up any orphaned spinners before loading
         cleanupLoadingSpinners();
         
-        // Initialize explore page if switching to explore  
-        if (feedType === 'explore') {
-            // Don't call loadVideoFeed for explore - use dedicated explore initialization
-            console.log('🔍 Calling initializeExplorePage for explore feed');
+        // Initialize discover page if switching to discover  
+        if (internalFeedType === 'explore') {
+            // Don't call loadVideoFeed for discover - use dedicated discover initialization
+            console.log('🔍 Calling initializeExplorePage for discover feed');
             setTimeout(initializeExplorePage, 100);
         } else {
             // Only load regular feed if not loading a specific video
@@ -5405,7 +5422,7 @@ function switchFeedTab(feedType) {
 }
 
 function refreshForYou() {
-    loadVideoFeed('foryou', true);
+    loadVideoFeed('home', true);
 }
 
 function performSearch(query) {
