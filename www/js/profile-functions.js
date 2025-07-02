@@ -86,11 +86,14 @@ async function changeProfilePicture() {
     
     // Create profile picture picker modal
     const modal = document.createElement('div');
+    modal.id = 'profilePictureModal';
     modal.style.cssText = `
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-        background: rgba(0,0,0,0.8); z-index: 2000; display: flex; 
+        background: rgba(0,0,0,0.8); z-index: 9999; display: flex; 
         align-items: center; justify-content: center;
     `;
+    
+    console.log('📸 Creating modal overlay with z-index 9999');
     
     modal.innerHTML = `
         <div style="background: #222; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%;">
@@ -243,7 +246,17 @@ async function changeProfilePicture() {
                     }
                     
                     alert('Profile picture updated successfully!');
+                    console.log('📸 About to remove modal and return to profile page');
                     modal.remove();
+                    console.log('📸 Modal removed - should be back to profile page now');
+                    
+                    // Ensure profile page is still visible
+                    const profilePage = document.getElementById('profilePage');
+                    if (profilePage) {
+                        console.log('📸 Profile page still exists and is visible');
+                    } else {
+                        console.error('❌ Profile page disappeared! This is the problem.');
+                    }
                     
                     // Force reload of user data from server to get updated profile
                     setTimeout(async () => {
