@@ -340,7 +340,7 @@ class _VideoActionButton extends StatelessWidget {
               size: 24,
             ),
           ),
-          if (count != null) ..[
+          if (count != null) ...[
             const SizedBox(height: 4),
             Text(
               _formatCount(count!),

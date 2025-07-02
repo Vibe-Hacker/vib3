@@ -11,7 +11,9 @@ import 'analytics_screen.dart';
 import 'add_friends_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final String? userId; // Optional userId to view other users' profiles
+
+  const ProfileScreen({super.key, this.userId});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/message_service.dart';
 import '../models/conversation.dart';
-import '../models/message.dart';
 import 'chat_screen.dart';
 
 class MessagesScreen extends StatefulWidget {
