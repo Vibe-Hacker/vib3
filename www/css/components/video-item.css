@@ -39,12 +39,16 @@
     visibility: visible !important;
 }
 
-/* Consistent video sizing across all feeds - TikTok Style */
+/* Consistent video sizing across all feeds - VIB3 Style with Header Space */
 #foryouFeed .video-element,
 #followingFeed .video-element,
-#discoverFeed .video-element {
+#discoverFeed .video-element,
+#homeFeed .video-element,
+#subscriptionsFeed .video-element,
+#networkFeed .video-element,
+#pulseFeed .video-element {
     width: 100% !important;
-    height: 100% !important;
+    height: calc(100vh - 100px) !important;
     max-width: 500px !important;
     object-fit: cover !important;
 }
@@ -57,9 +61,13 @@
 /* Ensure video containers maintain proper structure */
 #foryouFeed .video-container,
 #followingFeed .video-container,
-#discoverFeed .video-container {
+#discoverFeed .video-container,
+#homeFeed .video-container,
+#subscriptionsFeed .video-container,
+#networkFeed .video-container,
+#pulseFeed .video-container {
     width: 100%;
-    height: 100%;
+    height: calc(100vh - 100px);
     display: flex;
     align-items: center;
     justify-content: center;
