@@ -746,8 +746,8 @@ async function loadVideoFeed(feedType = 'foryou', forceRefresh = false, page = 1
             // Determine the correct endpoint based on feed type
             let feedUrl;
             if (feedType === 'friends') {
-                // Friends feed should exclude current user's videos
-                feedUrl = `${window.API_BASE_URL}/api/videos/friends?limit=10&_t=${timestamp}`;
+                // Friends feed uses following endpoint but will filter out current user's videos
+                feedUrl = `${window.API_BASE_URL}/api/videos/following?limit=20&_t=${timestamp}`;
             } else if (feedType === 'following') {
                 // Following feed shows videos from people you follow (could include your own)
                 feedUrl = `${window.API_BASE_URL}/api/videos/following?limit=10&_t=${timestamp}`;
