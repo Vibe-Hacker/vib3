@@ -322,7 +322,9 @@ function showFollowers() {
 
 function shareProfile() {
     const currentUser = window.currentUser || { username: 'vib3user' };
-    const profileUrl = `${window.location.origin}${window.location.pathname}?profile=${currentUser.username || currentUser.id}`;
+    // Create a profile URL that will show the profile page when visited
+    const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    const profileUrl = `${baseUrl}?user=${currentUser.username || currentUser.id}`;
     
     // Create QR code share modal
     const modal = document.createElement('div');

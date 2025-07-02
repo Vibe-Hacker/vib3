@@ -77,9 +77,10 @@ document.addEventListener('visibilitychange', function() {
 
 // ================ AUTHENTICATION ================
 function initializeAuth() {
-    // Check if this is a shared video link
+    // Check if this is a shared video or profile link
     const urlParams = new URLSearchParams(window.location.search);
     const sharedVideoId = urlParams.get('video');
+    const sharedUserId = urlParams.get('user');
     
     if (window.auth && window.auth.onAuthStateChanged) {
         window.auth.onAuthStateChanged((user) => {
@@ -98,6 +99,17 @@ function initializeAuth() {
             if (user) {
                 hideAuthContainer();
                 showMainApp();
+                
+                // Handle shared profile link
+                if (sharedUserId) {
+                    console.log('🔗 Opening shared profile:', sharedUserId);
+                    setTimeout(() => {
+                        showPage('profile');
+                        // If viewing someone else's profile, you'd load their data here
+                        // For now, just show the profile page
+                    }, 1000);
+                    return;
+                }
                 loadUserProfile();
                 loadVideoFeed(currentFeed);
             } else {
