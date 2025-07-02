@@ -272,10 +272,15 @@ async function changeProfilePicture() {
                                         window.updateProfileDisplay(freshUserData.user);
                                     }
                                     
-                                    // Also trigger a profile page refresh if we're on profile page
-                                    if (window.loadUserProfileData && typeof window.loadUserProfileData === 'function') {
-                                        console.log('📸 Refreshing profile page display...');
-                                        window.loadUserProfileData();
+                                    // Instead of full page refresh, just update the profile picture element
+                                    console.log('📸 Updating profile picture display without full page refresh...');
+                                    const profilePicEl = document.getElementById('profilePicture');
+                                    if (profilePicEl && freshUserData.user.profileImage) {
+                                        profilePicEl.style.backgroundImage = `url(${freshUserData.user.profileImage})`;
+                                        profilePicEl.style.backgroundSize = 'cover';
+                                        profilePicEl.style.backgroundPosition = 'center';
+                                        profilePicEl.textContent = '';
+                                        console.log('📸 Profile picture updated without page refresh');
                                     }
                                 }
                             } else {
@@ -332,12 +337,7 @@ async function changeProfilePicture() {
                 alert('Profile picture updated!');
                 modal.remove();
                 
-                // Refresh profile data
-                setTimeout(() => {
-                    if (window.loadUserProfileData && typeof window.loadUserProfileData === 'function') {
-                        window.loadUserProfileData();
-                    }
-                }, 500);
+                // No need for full page refresh since UI is already updated
             } else {
                 throw new Error('Failed to update profile picture');
             }
