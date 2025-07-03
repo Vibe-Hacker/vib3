@@ -30,6 +30,130 @@ let currentVideoId = null;
 let isRecording = false;
 let currentStep = 1;
 
+// Sample live streams for offline mode - moved to top to avoid temporal dead zone
+const sampleLiveStreams = [
+    {
+        id: 'live1',
+        title: 'Morning coffee chat ☕',
+        description: 'Starting the day with good vibes',
+        streamer: {
+            id: 'user1',
+            username: 'morningvibes',
+            displayName: 'Sarah M.',
+            avatar: '☕',
+            followers: 5200,
+            isFollowing: false
+        },
+        category: 'Lifestyle',
+        viewerCount: 234,
+        likes: 45,
+        isLive: true,
+        startTime: Date.now() - 1800000, // 30 minutes ago
+        thumbnail: 'https://picsum.photos/400/600?random=1',
+        tags: ['coffee', 'morning', 'chat']
+    },
+    {
+        id: 'live2',
+        title: 'Cooking Italian pasta 🍝',
+        description: 'Making homemade pasta from scratch',
+        streamer: {
+            id: 'user2',
+            username: 'italianomama',
+            displayName: 'Maria G.',
+            avatar: '👩‍🍳',
+            followers: 12500,
+            isFollowing: true
+        },
+        category: 'Cooking',
+        viewerCount: 567,
+        likes: 89,
+        isLive: true,
+        startTime: Date.now() - 3600000, // 1 hour ago
+        thumbnail: 'https://picsum.photos/400/600?random=2',
+        tags: ['cooking', 'italian', 'pasta']
+    },
+    {
+        id: 'live3',
+        title: 'Gaming session - New RPG! 🎮',
+        description: 'Exploring this new fantasy world',
+        streamer: {
+            id: 'user3',
+            username: 'gamerpro',
+            displayName: 'Alex R.',
+            avatar: '🎮',
+            followers: 8900,
+            isFollowing: false
+        },
+        category: 'Gaming',
+        viewerCount: 1234,
+        likes: 156,
+        isLive: true,
+        startTime: Date.now() - 7200000, // 2 hours ago
+        thumbnail: 'https://picsum.photos/400/600?random=3',
+        tags: ['gaming', 'rpg', 'adventure']
+    },
+    {
+        id: 'live4',
+        title: 'Workout motivation 💪',
+        description: 'HIIT workout for beginners',
+        streamer: {
+            id: 'user4',
+            username: 'fitlifestyle',
+            displayName: 'Jake F.',
+            avatar: '💪',
+            followers: 15600,
+            isFollowing: true
+        },
+        category: 'Fitness',
+        viewerCount: 445,
+        likes: 78,
+        isLive: true,
+        startTime: Date.now() - 900000, // 15 minutes ago
+        thumbnail: 'https://picsum.photos/400/600?random=4',
+        tags: ['fitness', 'workout', 'motivation']
+    },
+    {
+        id: 'live5',
+        title: 'Study with me - Physics 📚',
+        description: 'Quantum mechanics study session',
+        streamer: {
+            id: 'user5',
+            username: 'studybuddy',
+            displayName: 'Emma L.',
+            avatar: '📚',
+            followers: 3400,
+            isFollowing: false
+        },
+        category: 'Education',
+        viewerCount: 89,
+        likes: 23,
+        isLive: true,
+        startTime: Date.now() - 5400000, // 1.5 hours ago
+        thumbnail: 'https://picsum.photos/400/600?random=5',
+        tags: ['study', 'physics', 'education']
+    },
+    {
+        id: 'live6',
+        title: 'Digital art creation 🎨',
+        description: 'Creating a fantasy landscape',
+        streamer: {
+            id: 'user6',
+            username: 'digitalartist',
+            displayName: 'Maya C.',
+            avatar: '🎨',
+            followers: 7800,
+            isFollowing: true
+        },
+        category: 'Art',
+        viewerCount: 312,
+        likes: 67,
+        isLive: true,
+        startTime: Date.now() - 2700000, // 45 minutes ago
+        thumbnail: 'https://picsum.photos/400/600?random=6',
+        tags: ['art', 'digital', 'fantasy']
+    }
+];
+
 // Clean up any ghost audio on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Stop any playing audio/video elements
@@ -6258,7 +6382,7 @@ function showPage(page) {
     }
 
     // Handle feed tabs - don't show "coming soon" for these
-    if (page === 'home' || page === 'discover' || page === 'network' || page === 'pulse' ||
+    if (page === 'home' || page === 'discover' || page === 'vibing' || page === 'network' || page === 'pulse' ||
         page === 'foryou' || page === 'following' || page === 'explore' || page === 'friends') {
         // CRITICAL: Force hide ALL activity and special pages when going to feeds
         document.querySelectorAll('.activity-page, .analytics-page, .messages-page, .profile-page').forEach(el => {
@@ -16924,129 +17048,6 @@ const liveStreamGiftTypes = [
     { id: 'rocket', name: '🚀 Rocket', coins: 100, emoji: '🚀' }
 ];
 
-// Sample live streams for offline mode
-const sampleLiveStreams = [
-    {
-        id: 'live1',
-        title: 'Morning coffee chat ☕',
-        description: 'Starting the day with good vibes',
-        streamer: {
-            id: 'user1',
-            username: 'morningvibes',
-            displayName: 'Sarah M.',
-            avatar: '☕',
-            followers: 5200,
-            isFollowing: false
-        },
-        category: 'Lifestyle',
-        viewerCount: 234,
-        likes: 45,
-        isLive: true,
-        startTime: Date.now() - 1800000, // 30 minutes ago
-        thumbnail: 'https://picsum.photos/400/600?random=1',
-        tags: ['coffee', 'morning', 'chat']
-    },
-    {
-        id: 'live2',
-        title: 'Cooking Italian pasta 🍝',
-        description: 'Making homemade pasta from scratch',
-        streamer: {
-            id: 'user2',
-            username: 'italianomama',
-            displayName: 'Maria G.',
-            avatar: '👩‍🍳',
-            followers: 12500,
-            isFollowing: true
-        },
-        category: 'Cooking',
-        viewerCount: 567,
-        likes: 89,
-        isLive: true,
-        startTime: Date.now() - 3600000, // 1 hour ago
-        thumbnail: 'https://picsum.photos/400/600?random=2',
-        tags: ['cooking', 'italian', 'pasta']
-    },
-    {
-        id: 'live3',
-        title: 'Gaming session - New RPG! 🎮',
-        description: 'Exploring this new fantasy world',
-        streamer: {
-            id: 'user3',
-            username: 'gamerpro',
-            displayName: 'Alex R.',
-            avatar: '🎮',
-            followers: 8900,
-            isFollowing: false
-        },
-        category: 'Gaming',
-        viewerCount: 1234,
-        likes: 156,
-        isLive: true,
-        startTime: Date.now() - 7200000, // 2 hours ago
-        thumbnail: 'https://picsum.photos/400/600?random=3',
-        tags: ['gaming', 'rpg', 'adventure']
-    },
-    {
-        id: 'live4',
-        title: 'Workout motivation 💪',
-        description: 'HIIT workout for beginners',
-        streamer: {
-            id: 'user4',
-            username: 'fitlifestyle',
-            displayName: 'Jake F.',
-            avatar: '💪',
-            followers: 15600,
-            isFollowing: true
-        },
-        category: 'Fitness',
-        viewerCount: 445,
-        likes: 78,
-        isLive: true,
-        startTime: Date.now() - 900000, // 15 minutes ago
-        thumbnail: 'https://picsum.photos/400/600?random=4',
-        tags: ['fitness', 'workout', 'motivation']
-    },
-    {
-        id: 'live5',
-        title: 'Study with me - Physics 📚',
-        description: 'Quantum mechanics study session',
-        streamer: {
-            id: 'user5',
-            username: 'studybuddy',
-            displayName: 'Emma L.',
-            avatar: '📚',
-            followers: 3400,
-            isFollowing: false
-        },
-        category: 'Education',
-        viewerCount: 89,
-        likes: 23,
-        isLive: true,
-        startTime: Date.now() - 5400000, // 1.5 hours ago
-        thumbnail: 'https://picsum.photos/400/600?random=5',
-        tags: ['study', 'physics', 'education']
-    },
-    {
-        id: 'live6',
-        title: 'Digital art creation 🎨',
-        description: 'Creating a fantasy landscape',
-        streamer: {
-            id: 'user6',
-            username: 'digitalartist',
-            displayName: 'Maya C.',
-            avatar: '🎨',
-            followers: 7800,
-            isFollowing: true
-        },
-        category: 'Art',
-        viewerCount: 312,
-        likes: 67,
-        isLive: true,
-        startTime: Date.now() - 2700000, // 45 minutes ago
-        thumbnail: 'https://picsum.photos/400/600?random=6',
-        tags: ['art', 'digital', 'fantasy']
-    }
-];
 
 function showLiveStreaming() {
     console.log('🔴 Showing Live Streaming page');
@@ -17092,17 +17093,15 @@ function showLiveStreaming() {
             
             <div class="live-content">
                 <div id="featuredStreams" class="live-tab-content active">
-                    <div class="live-streams-grid">
-                        ${generateLiveStreamsHTML(sampleLiveStreams)}
+                    <div class="live-streams-grid" id="featuredStreamsGrid">
+                        <!-- Streams will be loaded dynamically -->
                     </div>
                 </div>
                 
                 <div id="followingStreams" class="live-tab-content">
-                    <div class="live-streams-grid">
-                        ${generateLiveStreamsHTML(sampleLiveStreams.filter(s => s.streamer.isFollowing))}
+                    <div class="live-streams-grid" id="followingStreamsGrid">
+                        <!-- Following streams will be loaded dynamically -->
                     </div>
-                    ${sampleLiveStreams.filter(s => s.streamer.isFollowing).length === 0 ? 
-                        '<div class="empty-state">No one you follow is live right now</div>' : ''}
                 </div>
                 
                 <div id="categoriesStreams" class="live-tab-content">
@@ -17110,39 +17109,39 @@ function showLiveStreaming() {
                         <div class="category-card" onclick="showCategoryStreams('Gaming')">
                             <div class="category-icon">🎮</div>
                             <div class="category-name">Gaming</div>
-                            <div class="category-count">${sampleLiveStreams.filter(s => s.category === 'Gaming').length} live</div>
+                            <div class="category-count" id="gaming-count">Loading...</div>
                         </div>
                         <div class="category-card" onclick="showCategoryStreams('Cooking')">
                             <div class="category-icon">🍳</div>
                             <div class="category-name">Cooking</div>
-                            <div class="category-count">${sampleLiveStreams.filter(s => s.category === 'Cooking').length} live</div>
+                            <div class="category-count" id="cooking-count">Loading...</div>
                         </div>
                         <div class="category-card" onclick="showCategoryStreams('Art')">
                             <div class="category-icon">🎨</div>
                             <div class="category-name">Art</div>
-                            <div class="category-count">${sampleLiveStreams.filter(s => s.category === 'Art').length} live</div>
+                            <div class="category-count" id="art-count">Loading...</div>
                         </div>
                         <div class="category-card" onclick="showCategoryStreams('Fitness')">
                             <div class="category-icon">💪</div>
                             <div class="category-name">Fitness</div>
-                            <div class="category-count">${sampleLiveStreams.filter(s => s.category === 'Fitness').length} live</div>
+                            <div class="category-count" id="fitness-count">Loading...</div>
                         </div>
                         <div class="category-card" onclick="showCategoryStreams('Education')">
                             <div class="category-icon">📚</div>
                             <div class="category-name">Education</div>
-                            <div class="category-count">${sampleLiveStreams.filter(s => s.category === 'Education').length} live</div>
+                            <div class="category-count" id="education-count">Loading...</div>
                         </div>
                         <div class="category-card" onclick="showCategoryStreams('Lifestyle')">
                             <div class="category-icon">☕</div>
                             <div class="category-name">Lifestyle</div>
-                            <div class="category-count">${sampleLiveStreams.filter(s => s.category === 'Lifestyle').length} live</div>
+                            <div class="category-count" id="lifestyle-count">Loading...</div>
                         </div>
                     </div>
                 </div>
                 
                 <div id="recentStreams" class="live-tab-content">
-                    <div class="live-streams-grid">
-                        ${generateLiveStreamsHTML(sampleLiveStreams.slice().sort((a, b) => b.startTime - a.startTime))}
+                    <div class="live-streams-grid" id="recentStreamsGrid">
+                        <!-- Recent streams will be loaded dynamically -->
                     </div>
                 </div>
             </div>
@@ -18454,6 +18453,45 @@ function showLiveStreaming() {
     
     // Append page to body
     document.body.appendChild(liveStreamingPage);
+    
+    // Now that DOM is created, populate the streams
+    setTimeout(() => {
+        // Populate featured streams
+        const featuredGrid = document.getElementById('featuredStreamsGrid');
+        if (featuredGrid) {
+            featuredGrid.innerHTML = generateLiveStreamsHTML(sampleLiveStreams);
+        }
+        
+        // Populate following streams
+        const followingGrid = document.getElementById('followingStreamsGrid');
+        if (followingGrid) {
+            const followingStreams = sampleLiveStreams.filter(s => s.streamer.isFollowing);
+            if (followingStreams.length === 0) {
+                followingGrid.innerHTML = '<div class="empty-state">No one you follow is live right now</div>';
+            } else {
+                followingGrid.innerHTML = generateLiveStreamsHTML(followingStreams);
+            }
+        }
+        
+        // Populate recent streams
+        const recentGrid = document.getElementById('recentStreamsGrid');
+        if (recentGrid) {
+            const recentStreams = sampleLiveStreams.slice().sort((a, b) => b.startTime - a.startTime);
+            recentGrid.innerHTML = generateLiveStreamsHTML(recentStreams);
+        }
+        
+        // Update category counts
+        const categories = ['Gaming', 'Cooking', 'Art', 'Fitness', 'Education', 'Lifestyle'];
+        categories.forEach(category => {
+            const countElement = document.getElementById(`${category.toLowerCase()}-count`);
+            if (countElement) {
+                const count = sampleLiveStreams.filter(s => s.category === category).length;
+                countElement.textContent = `${count} live`;
+            }
+        });
+        
+        console.log('✅ Live streams populated dynamically');
+    }, 100);
     
     // Update sidebar active state
     updateSidebarActiveState('live');
