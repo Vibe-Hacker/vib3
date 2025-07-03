@@ -15421,10 +15421,17 @@ function showCreatorStudio() {
                 <div class="studio-center-panel" style="flex: 1; background: var(--bg-primary); display: flex; flex-direction: column;">
                     <!-- Preview Area -->
                     <div class="preview-area" style="flex: 1; display: flex; align-items: center; justify-content: center; background: #000; position: relative;">
-                        <div class="preview-container" id="previewContainer" style="width: 80%; max-width: 640px; aspect-ratio: 16/9; background: #111; border-radius: 8px; display: flex; align-items: center; justify-content: center; position: relative;">
-                            <div class="preview-placeholder" style="text-align: center; color: #666;">
+                        <div class="preview-container" id="previewContainer" style="width: 80%; max-width: 640px; aspect-ratio: 16/9; background: #111; border-radius: 8px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+                            <!-- Video Preview Element -->
+                            <video id="previewVideo" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px; display: none;" controls muted>
+                                Your browser does not support the video tag.
+                            </video>
+                            
+                            <!-- Placeholder when no video is loaded -->
+                            <div id="previewPlaceholder" class="preview-placeholder" style="text-align: center; color: #666; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                                 <div style="font-size: 48px; margin-bottom: 10px;">🎬</div>
                                 <div style="font-size: 16px;">Import media to start editing</div>
+                                <div style="font-size: 14px; color: #888; margin-top: 8px;">Drag video files to timeline or import media</div>
                             </div>
                         </div>
                         
@@ -15811,15 +15818,26 @@ function getUserImportedMedia() {
 // Save imported media file
 function saveImportedMedia(files) {
     const existingMedia = getUserImportedMedia();
-    const newMedia = Array.from(files).map((file, index) => ({
-        id: Date.now() + index,
-        name: file.name,
-        type: file.type,
-        size: formatFileSize(file.size),
-        duration: file.type.startsWith('video/') ? '0:00' : null,
-        file: file, // Store file object for later use
-        dateAdded: new Date().toISOString()
-    }));
+    
+    // Store files in a global object since File objects can't be serialized to localStorage
+    if (!window.creatorStudioFiles) {
+        window.creatorStudioFiles = {};
+    }
+    
+    const newMedia = Array.from(files).map((file, index) => {
+        const id = Date.now() + index;
+        // Store file in global object
+        window.creatorStudioFiles[id] = file;
+        
+        return {
+            id: id,
+            name: file.name,
+            type: file.type,
+            size: formatFileSize(file.size),
+            duration: file.type.startsWith('video/') ? '0:00' : null,
+            dateAdded: new Date().toISOString()
+        };
+    });
     
     const allMedia = [...existingMedia, ...newMedia];
     localStorage.setItem('vib3-creator-media', JSON.stringify(allMedia));
@@ -15875,8 +15893,14 @@ function dropMedia(event, trackType) {
         track.appendChild(clip);
         
         // Update preview if it's a video
-        if (trackType === 'video' && mediaData.file) {
-            updatePreviewVideo(mediaData.file);
+        if (trackType === 'video' && mediaData.id) {
+            const file = window.creatorStudioFiles && window.creatorStudioFiles[mediaData.id];
+            if (file) {
+                updatePreviewVideo(file);
+            } else {
+                console.warn('⚠️ File not found for media ID:', mediaData.id);
+                showStudioNotification('Video file not found - please re-import');
+            }
         }
         
         // Make clip draggable within timeline
@@ -15889,11 +15913,18 @@ function dropMedia(event, trackType) {
 // Update preview video
 function updatePreviewVideo(file) {
     const previewVideo = document.getElementById('previewVideo');
+    const previewPlaceholder = document.getElementById('previewPlaceholder');
+    
     if (previewVideo && file) {
         const videoURL = URL.createObjectURL(file);
         previewVideo.src = videoURL;
         previewVideo.load();
         previewVideo.style.display = 'block';
+        
+        // Hide placeholder when video is loaded
+        if (previewPlaceholder) {
+            previewPlaceholder.style.display = 'none';
+        }
         
         // Revoke old URL to prevent memory leaks
         previewVideo.addEventListener('loadstart', () => {
@@ -15903,7 +15934,30 @@ function updatePreviewVideo(file) {
             previewVideo.previousSrc = videoURL;
         });
         
-        showStudioNotification('Preview updated with video');
+        // Handle video load events
+        previewVideo.addEventListener('loadeddata', () => {
+            console.log('✅ Video loaded successfully in preview');
+            showStudioNotification(`Preview updated: ${file.name}`);
+        });
+        
+        previewVideo.addEventListener('error', () => {
+            console.error('❌ Error loading video in preview');
+            previewVideo.style.display = 'none';
+            if (previewPlaceholder) {
+                previewPlaceholder.style.display = 'block';
+                previewPlaceholder.innerHTML = `
+                    <div style="font-size: 48px; margin-bottom: 10px;">❌</div>
+                    <div style="font-size: 16px;">Error loading video</div>
+                    <div style="font-size: 14px; color: #888; margin-top: 8px;">Please try a different video file</div>
+                `;
+            }
+            showStudioNotification('Error loading video preview');
+        });
+        
+        console.log('🎬 Loading video in preview:', file.name);
+    } else {
+        console.warn('⚠️ Preview video element not found or no file provided');
+        showStudioNotification('Preview not available - video element missing');
     }
 }
 
