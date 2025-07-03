@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VIB3 - Video Social App</title>
-    <link rel="stylesheet" href="css/main.css?v=20250703028">
+    <link rel="stylesheet" href="css/main.css?v=20250703029">
 </head>
 <body>
     <div class="auth-container" id="authContainer">
@@ -98,6 +98,18 @@
                 <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V9h-3V7H5c-1.1 0-2 .9-2 2v9c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2v-3h2v5c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2h8v2H8v2h8z"/>
             </svg>
             <div class="sidebar-text">Upload</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showPage('live')" id="sidebarLive">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="3" fill="#ff0000"/>
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                <circle cx="12" cy="12" r="2" fill="#ff0000" opacity="0.8">
+                    <animate attributeName="r" values="2;4;2" dur="2s" repeatCount="indefinite"/>
+                    <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2s" repeatCount="indefinite"/>
+                </circle>
+            </svg>
+            <div class="sidebar-text">Live</div>
         </button>
         
         <button class="sidebar-item" onclick="showPage('creator-studio')" id="sidebarCreatorStudio">
@@ -1177,7 +1189,7 @@
     <script src="js/comments-simple.js"></script>
     <script src="js/search-simple.js"></script>
     <script src="js/components/upload-manager.js?v=20250702001"></script>
-    <script src="js/vib3-complete.js?v=20250703028"></script>
+    <script src="js/vib3-complete.js?v=20250703029"></script>
     
     <!-- Auto-testing and fixing scripts for development -->
     <script>
