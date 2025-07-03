@@ -309,7 +309,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(25),
                   child: Stack(
                     children: [
                       // Video player
