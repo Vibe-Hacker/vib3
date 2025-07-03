@@ -2094,18 +2094,7 @@ function createAdvancedVideoCard(video) {
         }
     };
     
-    // Create creator panel (top-right) - now clickable with profile and vibe functionality
-    const creatorPanel = document.createElement('div');
-    creatorPanel.className = 'creator-panel';
-    creatorPanel.style.cursor = 'pointer';
-    creatorPanel.setAttribute('data-user-id', video.userId || video.user?._id || 'unknown');
-    creatorPanel.innerHTML = `
-        <div class="creator-info">
-            <div class="creator-avatar">${(video.user?.username || video.username || 'U')[0].toUpperCase()}</div>
-            <div class="creator-name">@${video.user?.username || video.user?.displayName || video.username || 'user'}</div>
-            <div class="vibe-indicator" style="font-size: 16px; margin-left: 8px;">✨</div>
-        </div>
-    `;
+    // Creator panel removed - using sidebar profile button instead
     
     // Create bottom overlay with description
     const overlay = document.createElement('div');
@@ -2205,38 +2194,7 @@ function createAdvancedVideoCard(video) {
         shareVideo(videoId, video);
     });
     
-    // Add creator panel functionality (profile + vibe)
-    creatorPanel.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const userId = creatorPanel.dataset.userId;
-        
-        // Add bounce animation to entire panel
-        creatorPanel.style.transform = 'scale(1.05)';
-        setTimeout(() => {
-            creatorPanel.style.transform = 'scale(1)';
-        }, 200);
-        
-        // Check if user is authenticated for vibe functionality
-        if (window.authToken && window.currentUser) {
-            // Handle vibe toggle first
-            const vibeIndicator = creatorPanel.querySelector('.vibe-indicator');
-            await handleVibeClick(userId, vibeIndicator);
-            
-            // Then navigate to profile after a short delay
-            setTimeout(() => {
-                viewUserProfile(userId);
-            }, 500);
-        } else {
-            // If not authenticated, just go to profile
-            viewUserProfile(userId);
-        }
-    });
-    
-    // Check if user is already vibing and update indicator
-    if (window.authToken && window.currentUser) {
-        const vibeIndicator = creatorPanel.querySelector('.vibe-indicator');
-        checkVibeStatus(video.userId || video.user?._id, vibeIndicator);
-    }
+    // Creator panel functionality removed - using sidebar profile button instead
     
     // Load and set initial like status only if authenticated
     if (window.authToken && window.currentUser) {
@@ -2343,7 +2301,6 @@ function createAdvancedVideoCard(video) {
     
     // Assemble Flutter-inspired video card
     videoContainer.appendChild(video_elem);
-    videoContainer.appendChild(creatorPanel);
     videoContainer.appendChild(overlay);
     videoContainer.appendChild(actions);
     videoContainer.appendChild(pauseIndicator);
