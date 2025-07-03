@@ -2106,6 +2106,7 @@ app.post('/api/auth/register', async (req, res) => {
             profileImage: '',
             followers: 0,
             following: 0,
+            totalLikes: 0,
             createdAt: new Date(),
             updatedAt: new Date()
         };
@@ -2160,15 +2161,31 @@ app.post('/api/auth/login', async (req, res) => {
         // Create session
         const token = createSession(user._id.toString());
         
+        // Calculate total likes from user's videos
+        const userVideos = await db.collection('videos').find({ 
+            userId: user._id.toString(), 
+            status: { $ne: 'deleted' } 
+        }).toArray();
+        
+        let totalLikes = 0;
+        for (const video of userVideos) {
+            const likes = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
+            totalLikes += likes;
+        }
+        
         console.log('🔑 Login successful:', {
             userId: user._id.toString(),
             username: user.username,
             token: token.substring(0, 8) + '...',
-            totalSessions: sessions.size
+            totalSessions: sessions.size,
+            totalLikes: totalLikes
         });
         
         // Remove password from response
         delete user.password;
+        
+        // Add totalLikes to user object
+        user.totalLikes = totalLikes;
         
         res.json({ 
             message: 'Login successful',
@@ -2197,6 +2214,21 @@ app.get('/api/auth/me', requireAuth, async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
+        
+        // Calculate total likes from user's videos
+        const userVideos = await db.collection('videos').find({ 
+            userId: req.user.userId, 
+            status: { $ne: 'deleted' } 
+        }).toArray();
+        
+        let totalLikes = 0;
+        for (const video of userVideos) {
+            const likes = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
+            totalLikes += likes;
+        }
+        
+        // Add totalLikes to user object
+        user.totalLikes = totalLikes;
         
         res.json({ user });
         

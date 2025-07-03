@@ -930,6 +930,9 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
         try {
             let videos = [];
             
+            // TEMPORARY: Skip API entirely and use sample/AI data until server is fixed
+            console.log('🎬 Server API unavailable, using offline mode for', feedType);
+            
             // Use AI recommendations for home and discover feeds
             if ((feedType === 'home' || feedType === 'discover') && window.aiRecommendationEngine && !append) {
                 console.log('🤖 Using AI recommendations for', feedType);
@@ -974,8 +977,9 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                 }
             }
             
-            // Fallback to regular API call for other feeds or if AI fails
-            console.log('📡 Falling back to API for', feedType);
+            // Skip API call entirely and jump to sample data
+            console.log('🎬 Skipping API call, using sample data for', feedType);
+            throw new Error('API temporarily disabled - using offline mode');
             
             // Special handling for different feed types using feed manager
             if (!append && window.feedManager) {
@@ -6149,6 +6153,11 @@ function showPage(page) {
     
     if (page === 'coins') {
         showCoins();
+        return;
+    }
+    
+    if (page === 'live') {
+        showLiveStreaming();
         return;
     }
 
@@ -16646,6 +16655,2180 @@ function loadMoreTransactions() {
     showCoinsNotification('📜 Loading more transactions...');
 }
 
+// ================ LIVE STREAMING FEATURE ================
+
+// Global live streaming state
+let liveStreamingState = {
+    isLive: false,
+    isViewing: false,
+    currentStream: null,
+    streamId: null,
+    viewers: new Map(),
+    comments: [],
+    gifts: [],
+    startTime: null,
+    userStream: null,
+    viewerCount: 0,
+    streamSettings: {
+        title: '',
+        description: '',
+        category: 'General',
+        allowComments: true,
+        allowGifts: true,
+        isPrivate: false
+    }
+};
+
+// Gift types for live streaming
+const liveStreamGiftTypes = [
+    { id: 'heart', name: '❤️ Heart', coins: 1, emoji: '❤️' },
+    { id: 'star', name: '⭐ Star', coins: 5, emoji: '⭐' },
+    { id: 'fire', name: '🔥 Fire', coins: 10, emoji: '🔥' },
+    { id: 'diamond', name: '💎 Diamond', coins: 25, emoji: '💎' },
+    { id: 'crown', name: '👑 Crown', coins: 50, emoji: '👑' },
+    { id: 'rocket', name: '🚀 Rocket', coins: 100, emoji: '🚀' }
+];
+
+// Sample live streams for offline mode
+const sampleLiveStreams = [
+    {
+        id: 'live1',
+        title: 'Morning coffee chat ☕',
+        description: 'Starting the day with good vibes',
+        streamer: {
+            id: 'user1',
+            username: 'morningvibes',
+            displayName: 'Sarah M.',
+            avatar: '☕',
+            followers: 5200,
+            isFollowing: false
+        },
+        category: 'Lifestyle',
+        viewerCount: 234,
+        likes: 45,
+        isLive: true,
+        startTime: Date.now() - 1800000, // 30 minutes ago
+        thumbnail: 'https://picsum.photos/400/600?random=1',
+        tags: ['coffee', 'morning', 'chat']
+    },
+    {
+        id: 'live2',
+        title: 'Cooking Italian pasta 🍝',
+        description: 'Making homemade pasta from scratch',
+        streamer: {
+            id: 'user2',
+            username: 'italianomama',
+            displayName: 'Maria G.',
+            avatar: '👩‍🍳',
+            followers: 12500,
+            isFollowing: true
+        },
+        category: 'Cooking',
+        viewerCount: 567,
+        likes: 89,
+        isLive: true,
+        startTime: Date.now() - 3600000, // 1 hour ago
+        thumbnail: 'https://picsum.photos/400/600?random=2',
+        tags: ['cooking', 'italian', 'pasta']
+    },
+    {
+        id: 'live3',
+        title: 'Gaming session - New RPG! 🎮',
+        description: 'Exploring this new fantasy world',
+        streamer: {
+            id: 'user3',
+            username: 'gamerpro',
+            displayName: 'Alex R.',
+            avatar: '🎮',
+            followers: 8900,
+            isFollowing: false
+        },
+        category: 'Gaming',
+        viewerCount: 1234,
+        likes: 156,
+        isLive: true,
+        startTime: Date.now() - 7200000, // 2 hours ago
+        thumbnail: 'https://picsum.photos/400/600?random=3',
+        tags: ['gaming', 'rpg', 'adventure']
+    },
+    {
+        id: 'live4',
+        title: 'Workout motivation 💪',
+        description: 'HIIT workout for beginners',
+        streamer: {
+            id: 'user4',
+            username: 'fitlifestyle',
+            displayName: 'Jake F.',
+            avatar: '💪',
+            followers: 15600,
+            isFollowing: true
+        },
+        category: 'Fitness',
+        viewerCount: 445,
+        likes: 78,
+        isLive: true,
+        startTime: Date.now() - 900000, // 15 minutes ago
+        thumbnail: 'https://picsum.photos/400/600?random=4',
+        tags: ['fitness', 'workout', 'motivation']
+    },
+    {
+        id: 'live5',
+        title: 'Study with me - Physics 📚',
+        description: 'Quantum mechanics study session',
+        streamer: {
+            id: 'user5',
+            username: 'studybuddy',
+            displayName: 'Emma L.',
+            avatar: '📚',
+            followers: 3400,
+            isFollowing: false
+        },
+        category: 'Education',
+        viewerCount: 89,
+        likes: 23,
+        isLive: true,
+        startTime: Date.now() - 5400000, // 1.5 hours ago
+        thumbnail: 'https://picsum.photos/400/600?random=5',
+        tags: ['study', 'physics', 'education']
+    },
+    {
+        id: 'live6',
+        title: 'Digital art creation 🎨',
+        description: 'Creating a fantasy landscape',
+        streamer: {
+            id: 'user6',
+            username: 'digitalartist',
+            displayName: 'Maya C.',
+            avatar: '🎨',
+            followers: 7800,
+            isFollowing: true
+        },
+        category: 'Art',
+        viewerCount: 312,
+        likes: 67,
+        isLive: true,
+        startTime: Date.now() - 2700000, // 45 minutes ago
+        thumbnail: 'https://picsum.photos/400/600?random=6',
+        tags: ['art', 'digital', 'fantasy']
+    }
+];
+
+function showLiveStreaming() {
+    console.log('🔴 Showing Live Streaming page');
+    
+    // Hide main app content
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'none';
+    }
+    
+    // Remove existing live page if it exists
+    const existingLivePage = document.getElementById('liveStreamingPage');
+    if (existingLivePage) {
+        existingLivePage.remove();
+    }
+    
+    // Create live streaming page
+    const liveStreamingPage = document.createElement('div');
+    liveStreamingPage.id = 'liveStreamingPage';
+    liveStreamingPage.className = 'live-streaming-page';
+    
+    liveStreamingPage.innerHTML = `
+        <div class="live-streaming-container">
+            <div class="live-header">
+                <h1>🔴 Live Streaming</h1>
+                <div class="live-actions">
+                    <button class="go-live-btn" onclick="openLiveSetup()">
+                        <span class="live-indicator">●</span>
+                        Go Live
+                    </button>
+                    <button class="browse-categories-btn" onclick="showLiveCategories()">
+                        Categories
+                    </button>
+                </div>
+            </div>
+            
+            <div class="live-tabs">
+                <button class="live-tab active" onclick="switchLiveTab('featured')">Featured</button>
+                <button class="live-tab" onclick="switchLiveTab('following')">Following</button>
+                <button class="live-tab" onclick="switchLiveTab('categories')">Categories</button>
+                <button class="live-tab" onclick="switchLiveTab('recent')">Recent</button>
+            </div>
+            
+            <div class="live-content">
+                <div id="featuredStreams" class="live-tab-content active">
+                    <div class="live-streams-grid">
+                        ${generateLiveStreamsHTML(sampleLiveStreams)}
+                    </div>
+                </div>
+                
+                <div id="followingStreams" class="live-tab-content">
+                    <div class="live-streams-grid">
+                        ${generateLiveStreamsHTML(sampleLiveStreams.filter(s => s.streamer.isFollowing))}
+                    </div>
+                    ${sampleLiveStreams.filter(s => s.streamer.isFollowing).length === 0 ? 
+                        '<div class="empty-state">No one you follow is live right now</div>' : ''}
+                </div>
+                
+                <div id="categoriesStreams" class="live-tab-content">
+                    <div class="categories-grid">
+                        <div class="category-card" onclick="showCategoryStreams('Gaming')">
+                            <div class="category-icon">🎮</div>
+                            <div class="category-name">Gaming</div>
+                            <div class="category-count">${sampleLiveStreams.filter(s => s.category === 'Gaming').length} live</div>
+                        </div>
+                        <div class="category-card" onclick="showCategoryStreams('Cooking')">
+                            <div class="category-icon">🍳</div>
+                            <div class="category-name">Cooking</div>
+                            <div class="category-count">${sampleLiveStreams.filter(s => s.category === 'Cooking').length} live</div>
+                        </div>
+                        <div class="category-card" onclick="showCategoryStreams('Art')">
+                            <div class="category-icon">🎨</div>
+                            <div class="category-name">Art</div>
+                            <div class="category-count">${sampleLiveStreams.filter(s => s.category === 'Art').length} live</div>
+                        </div>
+                        <div class="category-card" onclick="showCategoryStreams('Fitness')">
+                            <div class="category-icon">💪</div>
+                            <div class="category-name">Fitness</div>
+                            <div class="category-count">${sampleLiveStreams.filter(s => s.category === 'Fitness').length} live</div>
+                        </div>
+                        <div class="category-card" onclick="showCategoryStreams('Education')">
+                            <div class="category-icon">📚</div>
+                            <div class="category-name">Education</div>
+                            <div class="category-count">${sampleLiveStreams.filter(s => s.category === 'Education').length} live</div>
+                        </div>
+                        <div class="category-card" onclick="showCategoryStreams('Lifestyle')">
+                            <div class="category-icon">☕</div>
+                            <div class="category-name">Lifestyle</div>
+                            <div class="category-count">${sampleLiveStreams.filter(s => s.category === 'Lifestyle').length} live</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="recentStreams" class="live-tab-content">
+                    <div class="live-streams-grid">
+                        ${generateLiveStreamsHTML(sampleLiveStreams.slice().sort((a, b) => b.startTime - a.startTime))}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Live Setup Modal -->
+        <div id="liveSetupModal" class="live-modal" style="display: none;">
+            <div class="live-modal-content">
+                <div class="live-modal-header">
+                    <h2>Go Live</h2>
+                    <button class="close-modal" onclick="closeLiveSetup()">×</button>
+                </div>
+                
+                <div class="live-setup-content">
+                    <div class="camera-preview">
+                        <video id="livePreview" class="live-preview-video" autoplay muted></video>
+                        <div class="preview-controls">
+                            <button class="preview-btn" onclick="toggleCamera()">📷</button>
+                            <button class="preview-btn" onclick="toggleMicrophone()">🎤</button>
+                            <button class="preview-btn" onclick="switchCamera()">🔄</button>
+                        </div>
+                    </div>
+                    
+                    <div class="stream-settings">
+                        <div class="setting-group">
+                            <label>Stream Title</label>
+                            <input type="text" id="streamTitle" placeholder="What's happening?" maxlength="100">
+                        </div>
+                        
+                        <div class="setting-group">
+                            <label>Description</label>
+                            <textarea id="streamDescription" placeholder="Tell viewers what you're streaming about..." maxlength="500"></textarea>
+                        </div>
+                        
+                        <div class="setting-group">
+                            <label>Category</label>
+                            <select id="streamCategory">
+                                <option value="General">General</option>
+                                <option value="Gaming">Gaming</option>
+                                <option value="Cooking">Cooking</option>
+                                <option value="Art">Art</option>
+                                <option value="Fitness">Fitness</option>
+                                <option value="Education">Education</option>
+                                <option value="Lifestyle">Lifestyle</option>
+                                <option value="Music">Music</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-toggles">
+                            <div class="toggle-item">
+                                <input type="checkbox" id="allowComments" checked>
+                                <label for="allowComments">Allow Comments</label>
+                            </div>
+                            <div class="toggle-item">
+                                <input type="checkbox" id="allowGifts" checked>
+                                <label for="allowGifts">Allow Gifts</label>
+                            </div>
+                            <div class="toggle-item">
+                                <input type="checkbox" id="recordStream">
+                                <label for="recordStream">Record Stream</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="live-modal-footer">
+                    <button class="cancel-btn" onclick="closeLiveSetup()">Cancel</button>
+                    <button class="start-live-btn" onclick="startLiveStream()">Start Live Stream</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Live Stream Interface -->
+        <div id="liveStreamInterface" class="live-stream-interface" style="display: none;">
+            <div class="stream-container">
+                <div class="stream-video-section">
+                    <div class="stream-video-container">
+                        <video id="liveStreamVideo" class="live-stream-video" autoplay muted></video>
+                        
+                        <div class="stream-overlay">
+                            <div class="stream-info">
+                                <div class="live-indicator-badge">
+                                    <span class="live-dot"></span>
+                                    LIVE
+                                </div>
+                                <div class="viewer-count-badge">
+                                    <span id="liveViewerCount">0</span> viewers
+                                </div>
+                                <div class="stream-duration" id="streamDuration">00:00</div>
+                            </div>
+                            
+                            <div class="stream-controls">
+                                <button class="stream-control-btn" onclick="toggleStreamCamera()">📷</button>
+                                <button class="stream-control-btn" onclick="toggleStreamMicrophone()">🎤</button>
+                                <button class="stream-control-btn" onclick="switchStreamCamera()">🔄</button>
+                                <button class="stream-control-btn" onclick="shareStream()">📤</button>
+                                <button class="end-stream-btn" onclick="endLiveStream()">End Stream</button>
+                            </div>
+                        </div>
+                        
+                        <div class="gifts-animation-area" id="giftsAnimationArea"></div>
+                    </div>
+                </div>
+                
+                <div class="stream-sidebar">
+                    <div class="sidebar-header">
+                        <div class="sidebar-tabs">
+                            <button class="sidebar-tab active" onclick="switchStreamTab('chat')">💬</button>
+                            <button class="sidebar-tab" onclick="switchStreamTab('viewers')">👥</button>
+                            <button class="sidebar-tab" onclick="switchStreamTab('settings')">⚙️</button>
+                        </div>
+                    </div>
+                    
+                    <div class="sidebar-content">
+                        <!-- Chat Tab -->
+                        <div id="chatTab" class="sidebar-panel active">
+                            <div class="chat-messages" id="liveStreamChat"></div>
+                            <div class="chat-input">
+                                <input type="text" id="chatInput" placeholder="Say something..." maxlength="200">
+                                <button onclick="sendChatMessage()">Send</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Viewers Tab -->
+                        <div id="viewersTab" class="sidebar-panel">
+                            <div class="viewers-list" id="liveStreamViewers"></div>
+                        </div>
+                        
+                        <!-- Settings Tab -->
+                        <div id="settingsTab" class="sidebar-panel">
+                            <div class="stream-settings-panel">
+                                <h3>Stream Settings</h3>
+                                <div class="setting-item">
+                                    <label>Quality</label>
+                                    <select id="streamQuality">
+                                        <option value="720p">720p</option>
+                                        <option value="480p">480p</option>
+                                        <option value="360p">360p</option>
+                                    </select>
+                                </div>
+                                <div class="setting-item">
+                                    <label>Comments</label>
+                                    <input type="checkbox" id="streamAllowComments" checked>
+                                </div>
+                                <div class="setting-item">
+                                    <label>Gifts</label>
+                                    <input type="checkbox" id="streamAllowGifts" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Live Stream Viewer Interface -->
+        <div id="liveStreamViewer" class="live-stream-viewer" style="display: none;">
+            <div class="viewer-container">
+                <div class="viewer-video-section">
+                    <div class="viewer-video-container">
+                        <video id="viewerVideo" class="viewer-video" autoplay></video>
+                        <div class="viewer-overlay">
+                            <div class="viewer-info">
+                                <div class="streamer-details">
+                                    <div class="streamer-avatar">
+                                        <span id="viewerStreamerAvatar">👤</span>
+                                    </div>
+                                    <div class="streamer-text">
+                                        <div class="streamer-name" id="viewerStreamerName">Streamer</div>
+                                        <div class="stream-title" id="viewerStreamTitle">Live Stream</div>
+                                    </div>
+                                    <button class="follow-btn" id="viewerFollowBtn" onclick="toggleFollow()">Follow</button>
+                                </div>
+                                <div class="viewer-stats">
+                                    <div class="live-indicator-badge">
+                                        <span class="live-dot"></span>
+                                        LIVE
+                                    </div>
+                                    <div class="viewer-count-badge">
+                                        <span id="viewerViewerCount">0</span> viewers
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="viewer-controls">
+                                <button class="viewer-control-btn" onclick="toggleViewerVolume()">🔊</button>
+                                <button class="viewer-control-btn" onclick="toggleViewerFullscreen()">⛶</button>
+                                <button class="viewer-control-btn" onclick="shareViewerStream()">📤</button>
+                                <button class="leave-stream-btn" onclick="leaveStream()">Leave</button>
+                            </div>
+                        </div>
+                        
+                        <div class="viewer-gifts-animation" id="viewerGiftsAnimation"></div>
+                    </div>
+                </div>
+                
+                <div class="viewer-sidebar">
+                    <div class="viewer-sidebar-header">
+                        <div class="viewer-sidebar-tabs">
+                            <button class="viewer-sidebar-tab active" onclick="switchViewerTab('chat')">💬</button>
+                            <button class="viewer-sidebar-tab" onclick="switchViewerTab('gifts')">🎁</button>
+                            <button class="viewer-sidebar-tab" onclick="switchViewerTab('viewers')">👥</button>
+                        </div>
+                    </div>
+                    
+                    <div class="viewer-sidebar-content">
+                        <!-- Chat Tab -->
+                        <div id="viewerChatTab" class="viewer-sidebar-panel active">
+                            <div class="viewer-chat-messages" id="viewerChat"></div>
+                            <div class="viewer-chat-input">
+                                <input type="text" id="viewerChatInput" placeholder="Say something..." maxlength="200">
+                                <button onclick="sendViewerChatMessage()">Send</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Gifts Tab -->
+                        <div id="viewerGiftsTab" class="viewer-sidebar-panel">
+                            <div class="gifts-grid">
+                                ${liveStreamGiftTypes.map(gift => `
+                                    <button class="gift-btn" onclick="sendGift('${gift.id}')">
+                                        <div class="gift-icon">${gift.emoji}</div>
+                                        <div class="gift-name">${gift.name.split(' ').slice(1).join(' ')}</div>
+                                        <div class="gift-cost">${gift.coins} coins</div>
+                                    </button>
+                                `).join('')}
+                            </div>
+                            <div class="coins-balance">
+                                <span>Balance: <span id="userCoinsBalance">250</span> coins</span>
+                                <button class="buy-coins-btn" onclick="showBuyCoins()">Buy Coins</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Viewers Tab -->
+                        <div id="viewerViewersTab" class="viewer-sidebar-panel">
+                            <div class="viewer-viewers-list" id="viewerViewersList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add styles
+    const liveStreamingStyles = document.createElement('style');
+    liveStreamingStyles.textContent = `
+        .live-streaming-page {
+            width: 100%;
+            height: 100vh;
+            background: var(--bg-primary);
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .live-streaming-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .live-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .live-header h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .live-actions {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .go-live-btn {
+            background: linear-gradient(135deg, #ff4757, #ff3838);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .go-live-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 71, 87, 0.3);
+        }
+        
+        .live-indicator {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .browse-categories-btn {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-primary);
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .browse-categories-btn:hover {
+            background: var(--bg-secondary);
+            transform: translateY(-2px);
+        }
+        
+        .live-tabs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border-primary);
+        }
+        
+        .live-tab {
+            background: none;
+            border: none;
+            padding: 15px 0;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .live-tab.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+        }
+        
+        .live-tab:hover {
+            color: var(--text-primary);
+        }
+        
+        .live-tab-content {
+            display: none;
+        }
+        
+        .live-tab-content.active {
+            display: block;
+        }
+        
+        .live-streams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .live-stream-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .live-stream-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stream-thumbnail {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+        }
+        
+        .stream-live-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #ff4757;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .stream-live-dot {
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .stream-viewer-count {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .stream-card-content {
+            padding: 15px;
+        }
+        
+        .stream-card-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        
+        .stream-card-streamer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .stream-card-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .stream-card-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .stream-card-category {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            background: var(--bg-tertiary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .category-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .category-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .category-name {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+        
+        .category-count {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+        
+        /* Modal Styles */
+        .live-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .live-modal-content {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .live-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-primary);
+        }
+        
+        .live-modal-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        
+        .live-setup-content {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .camera-preview {
+            position: relative;
+        }
+        
+        .live-preview-video {
+            width: 100%;
+            height: 250px;
+            border-radius: 12px;
+            background: #000;
+            object-fit: cover;
+        }
+        
+        .preview-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .preview-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        
+        .stream-settings {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .setting-group label {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .setting-group input,
+        .setting-group textarea,
+        .setting-group select {
+            padding: 12px;
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        
+        .setting-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .setting-toggles {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .toggle-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .toggle-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .live-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            padding: 20px;
+            border-top: 1px solid var(--border-primary);
+        }
+        
+        .cancel-btn {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-primary);
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .start-live-btn {
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        /* Live Stream Interface */
+        .live-stream-interface {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            z-index: 10000;
+        }
+        
+        .stream-container {
+            display: flex;
+            height: 100%;
+        }
+        
+        .stream-video-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stream-video-container {
+            position: relative;
+            flex: 1;
+            background: #000;
+        }
+        
+        .live-stream-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .stream-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.5) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        
+        .stream-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .live-indicator-badge {
+            background: #ff4757;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .viewer-count-badge {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .stream-duration {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .stream-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .stream-control-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+        
+        .end-stream-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .gifts-animation-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        
+        .stream-sidebar {
+            width: 350px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-primary);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-primary);
+        }
+        
+        .sidebar-tabs {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .sidebar-tab {
+            background: none;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+        
+        .sidebar-tab.active {
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-panel {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+        }
+        
+        .sidebar-panel.active {
+            display: flex;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+        }
+        
+        .chat-input {
+            padding: 20px;
+            border-top: 1px solid var(--border-primary);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        .chat-input button {
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+        }
+        
+        .chat-message-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        
+        .chat-message-avatar {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+        
+        .chat-message-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .chat-message-time {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        
+        .chat-message-content {
+            color: var(--text-primary);
+        }
+        
+        .viewers-list {
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .viewer-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .viewer-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .viewer-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .stream-settings-panel {
+            padding: 20px;
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .setting-item label {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .setting-item select,
+        .setting-item input {
+            padding: 8px;
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        /* Live Stream Viewer Interface */
+        .live-stream-viewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            z-index: 10000;
+        }
+        
+        .viewer-container {
+            display: flex;
+            height: 100%;
+        }
+        
+        .viewer-video-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .viewer-video-container {
+            position: relative;
+            flex: 1;
+            background: #000;
+        }
+        
+        .viewer-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .viewer-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.5) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        
+        .viewer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .streamer-details {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .streamer-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .streamer-text {
+            color: white;
+        }
+        
+        .streamer-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .stream-title {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+        
+        .follow-btn {
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .viewer-stats {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .viewer-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .viewer-control-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+        
+        .leave-stream-btn {
+            background: rgba(255, 71, 87, 0.8);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .viewer-gifts-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        
+        .viewer-sidebar {
+            width: 350px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-primary);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .viewer-sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-primary);
+        }
+        
+        .viewer-sidebar-tabs {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .viewer-sidebar-tab {
+            background: none;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+        
+        .viewer-sidebar-tab.active {
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        .viewer-sidebar-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .viewer-sidebar-panel {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+        }
+        
+        .viewer-sidebar-panel.active {
+            display: flex;
+        }
+        
+        .viewer-chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+        }
+        
+        .viewer-chat-input {
+            padding: 20px;
+            border-top: 1px solid var(--border-primary);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .viewer-chat-input input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        
+        .viewer-chat-input button {
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .gifts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            padding: 20px;
+        }
+        
+        .gift-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .gift-btn:hover {
+            background: var(--bg-primary);
+            transform: translateY(-2px);
+        }
+        
+        .gift-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        
+        .gift-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+        
+        .gift-cost {
+            color: var(--accent-color);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .coins-balance {
+            padding: 20px;
+            border-top: 1px solid var(--border-primary);
+            text-align: center;
+        }
+        
+        .buy-coins-btn {
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .viewer-viewers-list {
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .gift-animation {
+            position: absolute;
+            font-size: 3rem;
+            animation: giftRise 3s ease-out forwards;
+            pointer-events: none;
+        }
+        
+        @keyframes giftRise {
+            0% {
+                bottom: 10%;
+                opacity: 1;
+                transform: scale(0.5);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                bottom: 90%;
+                opacity: 0;
+                transform: scale(1);
+            }
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .live-setup-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .stream-container,
+            .viewer-container {
+                flex-direction: column;
+            }
+            
+            .stream-sidebar,
+            .viewer-sidebar {
+                width: 100%;
+                height: 300px;
+            }
+            
+            .live-streams-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .categories-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    `;
+    
+    // Add styles to head
+    document.head.appendChild(liveStreamingStyles);
+    
+    // Append page to body
+    document.body.appendChild(liveStreamingPage);
+    
+    // Update sidebar active state
+    updateSidebarActiveState('live');
+    
+    console.log('✅ Live Streaming page loaded');
+}
+
+function generateLiveStreamsHTML(streams) {
+    return streams.map(stream => `
+        <div class="live-stream-card" onclick="joinLiveStream('${stream.id}')">
+            <div class="stream-thumbnail">
+                <div class="stream-live-badge">
+                    <span class="stream-live-dot"></span>
+                    LIVE
+                </div>
+                <div class="stream-viewer-count">${stream.viewerCount} viewers</div>
+                <div style="font-size: 4rem;">${stream.streamer.avatar}</div>
+            </div>
+            <div class="stream-card-content">
+                <div class="stream-card-title">${stream.title}</div>
+                <div class="stream-card-streamer">
+                    <div class="stream-card-avatar">${stream.streamer.avatar}</div>
+                    <div class="stream-card-name">${stream.streamer.displayName}</div>
+                </div>
+                <div class="stream-card-category">${stream.category}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function switchLiveTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.live-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`[onclick="switchLiveTab('${tabName}')"]`).classList.add('active');
+    
+    // Update tab content
+    document.querySelectorAll('.live-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`${tabName}Streams`).classList.add('active');
+    
+    console.log('🔄 Switched to live tab:', tabName);
+}
+
+function showCategoryStreams(category) {
+    console.log('📂 Showing category streams:', category);
+    const categoryStreams = sampleLiveStreams.filter(stream => stream.category === category);
+    
+    // Switch to featured tab and show filtered streams
+    switchLiveTab('featured');
+    const featuredContent = document.getElementById('featuredStreams');
+    featuredContent.innerHTML = `
+        <div class="category-header">
+            <h2>${category} Streams</h2>
+            <button onclick="switchLiveTab('featured')" class="back-btn">← Back to All</button>
+        </div>
+        <div class="live-streams-grid">
+            ${generateLiveStreamsHTML(categoryStreams)}
+        </div>
+    `;
+}
+
+function openLiveSetup() {
+    console.log('🎥 Opening live setup');
+    document.getElementById('liveSetupModal').style.display = 'flex';
+    setupLivePreview();
+}
+
+function closeLiveSetup() {
+    console.log('❌ Closing live setup');
+    document.getElementById('liveSetupModal').style.display = 'none';
+    
+    // Stop preview stream
+    if (liveStreamingState.userStream) {
+        liveStreamingState.userStream.getTracks().forEach(track => track.stop());
+        liveStreamingState.userStream = null;
+    }
+}
+
+async function setupLivePreview() {
+    try {
+        console.log('📹 Setting up live preview');
+        
+        // Request camera and microphone access
+        liveStreamingState.userStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: 'user'
+            },
+            audio: true
+        });
+        
+        const previewVideo = document.getElementById('livePreview');
+        previewVideo.srcObject = liveStreamingState.userStream;
+        
+        console.log('✅ Live preview setup complete');
+    } catch (error) {
+        console.error('❌ Failed to setup live preview:', error);
+        
+        // Show error message
+        alert('Unable to access camera and microphone. Please ensure permissions are granted.');
+    }
+}
+
+function startLiveStream() {
+    console.log('🔴 Starting live stream');
+    
+    // Get stream settings
+    liveStreamingState.streamSettings.title = document.getElementById('streamTitle').value || 'Live Stream';
+    liveStreamingState.streamSettings.description = document.getElementById('streamDescription').value || '';
+    liveStreamingState.streamSettings.category = document.getElementById('streamCategory').value;
+    liveStreamingState.streamSettings.allowComments = document.getElementById('allowComments').checked;
+    liveStreamingState.streamSettings.allowGifts = document.getElementById('allowGifts').checked;
+    
+    // Generate unique stream ID
+    liveStreamingState.streamId = 'stream_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    liveStreamingState.isLive = true;
+    liveStreamingState.startTime = Date.now();
+    
+    // Close setup modal
+    closeLiveSetup();
+    
+    // Show live stream interface
+    document.getElementById('liveStreamInterface').style.display = 'flex';
+    
+    // Setup live stream video
+    const liveVideo = document.getElementById('liveStreamVideo');
+    liveVideo.srcObject = liveStreamingState.userStream;
+    
+    // Start stream timer
+    startStreamTimer();
+    
+    // Simulate viewers joining
+    setTimeout(() => {
+        simulateViewerJoining();
+    }, 5000);
+    
+    console.log('✅ Live stream started:', liveStreamingState.streamId);
+}
+
+function startStreamTimer() {
+    setInterval(() => {
+        if (liveStreamingState.isLive) {
+            const duration = Date.now() - liveStreamingState.startTime;
+            const minutes = Math.floor(duration / 60000);
+            const seconds = Math.floor((duration % 60000) / 1000);
+            
+            const durationElement = document.getElementById('streamDuration');
+            if (durationElement) {
+                durationElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+    }, 1000);
+}
+
+function simulateViewerJoining() {
+    const viewers = [
+        { id: 'viewer1', name: 'Sarah123', avatar: '👩' },
+        { id: 'viewer2', name: 'Mike_Gaming', avatar: '🎮' },
+        { id: 'viewer3', name: 'ArtLover', avatar: '🎨' },
+        { id: 'viewer4', name: 'FitnessGuru', avatar: '💪' },
+        { id: 'viewer5', name: 'TechReviewer', avatar: '💻' }
+    ];
+    
+    viewers.forEach((viewer, index) => {
+        setTimeout(() => {
+            liveStreamingState.viewers.set(viewer.id, {
+                ...viewer,
+                joinTime: Date.now()
+            });
+            
+            updateViewerCount();
+            updateViewersList();
+            
+            // Simulate viewer comment
+            setTimeout(() => {
+                addChatMessage(viewer.id, viewer.name, viewer.avatar, getRandomComment());
+            }, 2000 + Math.random() * 3000);
+            
+        }, index * 3000 + Math.random() * 2000);
+    });
+}
+
+function getRandomComment() {
+    const comments = [
+        'Great stream! 👍',
+        'Love the content!',
+        'Keep it up! 🔥',
+        'Amazing work!',
+        'This is so cool!',
+        'Thanks for streaming!',
+        'Awesome! 🎉',
+        'So entertaining!',
+        'You're the best!',
+        'More please! 💯'
+    ];
+    return comments[Math.floor(Math.random() * comments.length)];
+}
+
+function updateViewerCount() {
+    const viewerCountElement = document.getElementById('liveViewerCount');
+    if (viewerCountElement) {
+        viewerCountElement.textContent = liveStreamingState.viewers.size;
+    }
+}
+
+function updateViewersList() {
+    const viewersListElement = document.getElementById('liveStreamViewers');
+    if (viewersListElement) {
+        viewersListElement.innerHTML = '';
+        
+        liveStreamingState.viewers.forEach(viewer => {
+            const viewerElement = document.createElement('div');
+            viewerElement.className = 'viewer-item';
+            viewerElement.innerHTML = `
+                <div class="viewer-avatar">${viewer.avatar}</div>
+                <div class="viewer-name">${viewer.name}</div>
+            `;
+            viewersListElement.appendChild(viewerElement);
+        });
+    }
+}
+
+function addChatMessage(userId, username, avatar, message) {
+    const chatElement = document.getElementById('liveStreamChat');
+    if (chatElement) {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'chat-message';
+        messageElement.innerHTML = `
+            <div class="chat-message-header">
+                <div class="chat-message-avatar">${avatar}</div>
+                <div class="chat-message-name">${username}</div>
+                <div class="chat-message-time">${formatTime(Date.now())}</div>
+            </div>
+            <div class="chat-message-content">${message}</div>
+        `;
+        
+        chatElement.appendChild(messageElement);
+        chatElement.scrollTop = chatElement.scrollHeight;
+        
+        // Remove old messages to prevent overflow
+        while (chatElement.children.length > 100) {
+            chatElement.removeChild(chatElement.firstChild);
+        }
+    }
+}
+
+function sendChatMessage() {
+    const chatInput = document.getElementById('chatInput');
+    const message = chatInput.value.trim();
+    
+    if (message) {
+        addChatMessage(
+            'streamer',
+            'You',
+            '👤',
+            message
+        );
+        
+        chatInput.value = '';
+        console.log('💬 Chat message sent:', message);
+    }
+}
+
+function switchStreamTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.sidebar-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`[onclick="switchStreamTab('${tabName}')"]`).classList.add('active');
+    
+    // Update tab content
+    document.querySelectorAll('.sidebar-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    document.getElementById(`${tabName}Tab`).classList.add('active');
+    
+    console.log('🔄 Switched to stream tab:', tabName);
+}
+
+function endLiveStream() {
+    console.log('🛑 Ending live stream');
+    
+    if (confirm('Are you sure you want to end your live stream?')) {
+        liveStreamingState.isLive = false;
+        
+        // Stop all tracks
+        if (liveStreamingState.userStream) {
+            liveStreamingState.userStream.getTracks().forEach(track => track.stop());
+        }
+        
+        // Show stream summary
+        const duration = Date.now() - liveStreamingState.startTime;
+        const minutes = Math.floor(duration / 60000);
+        const maxViewers = liveStreamingState.viewers.size;
+        const totalComments = liveStreamingState.comments.length;
+        
+        alert(`Stream Summary:
+Duration: ${minutes} minutes
+Peak Viewers: ${maxViewers}
+Total Comments: ${totalComments}
+Thanks for streaming!`);
+        
+        // Hide stream interface
+        document.getElementById('liveStreamInterface').style.display = 'none';
+        
+        // Reset state
+        liveStreamingState.viewers.clear();
+        liveStreamingState.comments = [];
+        liveStreamingState.gifts = [];
+        liveStreamingState.streamId = null;
+        liveStreamingState.startTime = null;
+        
+        console.log('✅ Live stream ended');
+    }
+}
+
+function joinLiveStream(streamId) {
+    console.log('🔗 Joining live stream:', streamId);
+    
+    const stream = sampleLiveStreams.find(s => s.id === streamId);
+    if (!stream) {
+        console.error('❌ Stream not found:', streamId);
+        return;
+    }
+    
+    liveStreamingState.currentStream = stream;
+    liveStreamingState.isViewing = true;
+    
+    // Show viewer interface
+    document.getElementById('liveStreamViewer').style.display = 'flex';
+    
+    // Update streamer info
+    document.getElementById('viewerStreamerName').textContent = stream.streamer.displayName;
+    document.getElementById('viewerStreamTitle').textContent = stream.title;
+    document.getElementById('viewerStreamerAvatar').textContent = stream.streamer.avatar;
+    document.getElementById('viewerViewerCount').textContent = stream.viewerCount;
+    
+    // Update follow button
+    const followBtn = document.getElementById('viewerFollowBtn');
+    followBtn.textContent = stream.streamer.isFollowing ? 'Following' : 'Follow';
+    followBtn.style.background = stream.streamer.isFollowing ? 'var(--bg-tertiary)' : 'var(--accent-gradient)';
+    
+    // Setup viewer video (simulate stream)
+    const viewerVideo = document.getElementById('viewerVideo');
+    viewerVideo.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+    viewerVideo.play();
+    
+    // Simulate chat messages
+    setTimeout(() => {
+        simulateViewerChatMessages();
+    }, 2000);
+    
+    console.log('✅ Joined live stream:', stream.title);
+}
+
+function simulateViewerChatMessages() {
+    const messages = [
+        { user: 'ChatMaster', avatar: '💬', message: 'Welcome to the stream!' },
+        { user: 'StreamFan', avatar: '⭐', message: 'Love this content!' },
+        { user: 'Viewer123', avatar: '👋', message: 'Hey everyone!' },
+        { user: 'StreamLover', avatar: '❤️', message: 'Amazing stream!' }
+    ];
+    
+    messages.forEach((msg, index) => {
+        setTimeout(() => {
+            addViewerChatMessage(msg.user, msg.avatar, msg.message);
+        }, index * 3000 + Math.random() * 2000);
+    });
+}
+
+function addViewerChatMessage(username, avatar, message) {
+    const chatElement = document.getElementById('viewerChat');
+    if (chatElement) {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'chat-message';
+        messageElement.innerHTML = `
+            <div class="chat-message-header">
+                <div class="chat-message-avatar">${avatar}</div>
+                <div class="chat-message-name">${username}</div>
+                <div class="chat-message-time">${formatTime(Date.now())}</div>
+            </div>
+            <div class="chat-message-content">${message}</div>
+        `;
+        
+        chatElement.appendChild(messageElement);
+        chatElement.scrollTop = chatElement.scrollHeight;
+        
+        // Remove old messages to prevent overflow
+        while (chatElement.children.length > 100) {
+            chatElement.removeChild(chatElement.firstChild);
+        }
+    }
+}
+
+function sendViewerChatMessage() {
+    const chatInput = document.getElementById('viewerChatInput');
+    const message = chatInput.value.trim();
+    
+    if (message) {
+        addViewerChatMessage(
+            window.currentUser?.displayName || 'You',
+            '👤',
+            message
+        );
+        
+        chatInput.value = '';
+        console.log('💬 Viewer chat message sent:', message);
+    }
+}
+
+function switchViewerTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.viewer-sidebar-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`[onclick="switchViewerTab('${tabName}')"]`).classList.add('active');
+    
+    // Update tab content
+    document.querySelectorAll('.viewer-sidebar-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    document.getElementById(`viewer${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Tab`).classList.add('active');
+    
+    console.log('🔄 Switched to viewer tab:', tabName);
+}
+
+function sendGift(giftId) {
+    console.log('🎁 Sending gift:', giftId);
+    
+    const gift = liveStreamGiftTypes.find(g => g.id === giftId);
+    if (!gift) return;
+    
+    const userCoins = parseInt(document.getElementById('userCoinsBalance').textContent);
+    if (userCoins < gift.coins) {
+        alert('Not enough coins!');
+        return;
+    }
+    
+    // Update coins balance
+    document.getElementById('userCoinsBalance').textContent = userCoins - gift.coins;
+    
+    // Animate gift
+    animateGift(gift);
+    
+    // Add gift message to chat
+    addViewerChatMessage(
+        window.currentUser?.displayName || 'You',
+        '🎁',
+        `Sent ${gift.name}!`
+    );
+    
+    console.log('✅ Gift sent:', gift.name);
+}
+
+function animateGift(gift) {
+    const animationArea = document.getElementById('viewerGiftsAnimation');
+    if (animationArea) {
+        const giftElement = document.createElement('div');
+        giftElement.className = 'gift-animation';
+        giftElement.textContent = gift.emoji;
+        giftElement.style.left = Math.random() * 80 + 10 + '%';
+        
+        animationArea.appendChild(giftElement);
+        
+        setTimeout(() => {
+            animationArea.removeChild(giftElement);
+        }, 3000);
+    }
+}
+
+function leaveStream() {
+    console.log('👋 Leaving stream');
+    
+    document.getElementById('liveStreamViewer').style.display = 'none';
+    
+    liveStreamingState.isViewing = false;
+    liveStreamingState.currentStream = null;
+    
+    console.log('✅ Left stream');
+}
+
+function toggleFollow() {
+    if (liveStreamingState.currentStream) {
+        liveStreamingState.currentStream.streamer.isFollowing = !liveStreamingState.currentStream.streamer.isFollowing;
+        
+        const followBtn = document.getElementById('viewerFollowBtn');
+        followBtn.textContent = liveStreamingState.currentStream.streamer.isFollowing ? 'Following' : 'Follow';
+        followBtn.style.background = liveStreamingState.currentStream.streamer.isFollowing ? 'var(--bg-tertiary)' : 'var(--accent-gradient)';
+        
+        console.log('🔄 Follow toggled:', liveStreamingState.currentStream.streamer.isFollowing);
+    }
+}
+
+function toggleCamera() {
+    if (liveStreamingState.userStream) {
+        const videoTrack = liveStreamingState.userStream.getVideoTracks()[0];
+        if (videoTrack) {
+            videoTrack.enabled = !videoTrack.enabled;
+            console.log('📷 Camera toggled:', videoTrack.enabled);
+        }
+    }
+}
+
+function toggleMicrophone() {
+    if (liveStreamingState.userStream) {
+        const audioTrack = liveStreamingState.userStream.getAudioTracks()[0];
+        if (audioTrack) {
+            audioTrack.enabled = !audioTrack.enabled;
+            console.log('🎤 Microphone toggled:', audioTrack.enabled);
+        }
+    }
+}
+
+function switchCamera() {
+    console.log('🔄 Switching camera');
+    // In a real implementation, this would switch between front and back camera
+    // For now, we'll just log the action
+}
+
+function toggleStreamCamera() {
+    toggleCamera();
+}
+
+function toggleStreamMicrophone() {
+    toggleMicrophone();
+}
+
+function switchStreamCamera() {
+    switchCamera();
+}
+
+function shareStream() {
+    if (liveStreamingState.streamId) {
+        const streamUrl = `${window.location.origin}${window.location.pathname}?stream=${liveStreamingState.streamId}`;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: liveStreamingState.streamSettings.title,
+                text: 'Check out my live stream on VIB3!',
+                url: streamUrl
+            });
+        } else {
+            // Fallback to clipboard
+            navigator.clipboard.writeText(streamUrl).then(() => {
+                alert('Stream link copied to clipboard!');
+            });
+        }
+        
+        console.log('📤 Stream shared:', streamUrl);
+    }
+}
+
+function shareViewerStream() {
+    if (liveStreamingState.currentStream) {
+        const streamUrl = `${window.location.origin}${window.location.pathname}?stream=${liveStreamingState.currentStream.id}`;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: liveStreamingState.currentStream.title,
+                text: `Check out ${liveStreamingState.currentStream.streamer.displayName}'s live stream on VIB3!`,
+                url: streamUrl
+            });
+        } else {
+            // Fallback to clipboard
+            navigator.clipboard.writeText(streamUrl).then(() => {
+                alert('Stream link copied to clipboard!');
+            });
+        }
+        
+        console.log('📤 Viewer stream shared:', streamUrl);
+    }
+}
+
+function toggleViewerVolume() {
+    const viewerVideo = document.getElementById('viewerVideo');
+    if (viewerVideo) {
+        viewerVideo.muted = !viewerVideo.muted;
+        const btn = document.querySelector('[onclick="toggleViewerVolume()"]');
+        btn.textContent = viewerVideo.muted ? '🔇' : '🔊';
+        console.log('🔊 Viewer volume toggled:', !viewerVideo.muted);
+    }
+}
+
+function toggleViewerFullscreen() {
+    const viewerVideo = document.getElementById('viewerVideo');
+    if (viewerVideo) {
+        if (viewerVideo.requestFullscreen) {
+            viewerVideo.requestFullscreen();
+        } else if (viewerVideo.webkitRequestFullscreen) {
+            viewerVideo.webkitRequestFullscreen();
+        } else if (viewerVideo.msRequestFullscreen) {
+            viewerVideo.msRequestFullscreen();
+        }
+        console.log('⛶ Viewer fullscreen toggled');
+    }
+}
+
+function showBuyCoins() {
+    alert('Buy Coins feature coming soon!');
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 // Export VIB3 unique functions to window
 window.startPulseMetrics = startPulseMetrics;
 window.simulatePulseActivity = simulatePulseActivity;
@@ -16680,4 +18863,29 @@ window.viewChallengeDetails = viewChallengeDetails;
 window.createNewChallenge = createNewChallenge;
 window.showMyParticipations = showMyParticipations;
 window.startChallengeParticipation = startChallengeParticipation;
+
+// Live Streaming exports
+window.showLiveStreaming = showLiveStreaming;
+window.switchLiveTab = switchLiveTab;
+window.showCategoryStreams = showCategoryStreams;
+window.openLiveSetup = openLiveSetup;
+window.closeLiveSetup = closeLiveSetup;
+window.startLiveStream = startLiveStream;
+window.endLiveStream = endLiveStream;
+window.joinLiveStream = joinLiveStream;
+window.leaveStream = leaveStream;
+window.sendChatMessage = sendChatMessage;
+window.sendViewerChatMessage = sendViewerChatMessage;
+window.switchStreamTab = switchStreamTab;
+window.switchViewerTab = switchViewerTab;
+window.sendGift = sendGift;
+window.toggleFollow = toggleFollow;
+window.toggleCamera = toggleCamera;
+window.toggleMicrophone = toggleMicrophone;
+window.switchCamera = switchCamera;
+window.shareStream = shareStream;
+window.shareViewerStream = shareViewerStream;
+window.toggleViewerVolume = toggleViewerVolume;
+window.toggleViewerFullscreen = toggleViewerFullscreen;
+window.showBuyCoins = showBuyCoins;
   
