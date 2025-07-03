@@ -17358,14 +17358,8 @@ function showLiveStreaming() {
                         
                         <!-- Gifts Tab -->
                         <div id="viewerGiftsTab" class="viewer-sidebar-panel">
-                            <div class="gifts-grid">
-                                ${liveStreamGiftTypes.map(gift => `
-                                    <button class="gift-btn" onclick="sendGift('${gift.id}')">
-                                        <div class="gift-icon">${gift.emoji}</div>
-                                        <div class="gift-name">${gift.name.split(' ').slice(1).join(' ')}</div>
-                                        <div class="gift-cost">${gift.coins} coins</div>
-                                    </button>
-                                `).join('')}
+                            <div class="gifts-grid" id="giftsGridContainer">
+                                <!-- Gifts will be loaded dynamically -->
                             </div>
                             <div class="coins-balance">
                                 <span>Balance: <span id="userCoinsBalance">250</span> coins</span>
@@ -18488,6 +18482,18 @@ function showLiveStreaming() {
                 countElement.textContent = `${count} live`;
             }
         });
+        
+        // Populate gifts grid
+        const giftsGrid = document.getElementById('giftsGridContainer');
+        if (giftsGrid) {
+            giftsGrid.innerHTML = liveStreamGiftTypes.map(gift => `
+                <button class="gift-btn" onclick="sendGift('${gift.id}')">
+                    <div class="gift-icon">${gift.emoji}</div>
+                    <div class="gift-name">${gift.name.split(' ').slice(1).join(' ')}</div>
+                    <div class="gift-cost">${gift.coins} coins</div>
+                </button>
+            `).join('');
+        }
         
         console.log('✅ Live streams populated dynamically');
     }, 100);
