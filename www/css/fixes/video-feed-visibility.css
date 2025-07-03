@@ -29,8 +29,9 @@
     position: relative !important;
     background: #000 !important;
     margin: 0 auto !important;
-    scroll-snap-align: start !important;
+    scroll-snap-align: center !important;
     scroll-snap-stop: always !important;
+    min-height: calc(88vh - 60px) !important;
 }
 
 /* Force feed content to stay visible */
@@ -57,14 +58,17 @@
     opacity: 1 !important;
     background: #000 !important;
     scroll-snap-type: y mandatory !important;
-    scroll-behavior: smooth !important;
+    scroll-behavior: auto !important;
     -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
 }
 
 /* Ensure feed content containers support scroll snap */
 .feed-content {
     scroll-snap-type: y mandatory !important;
-    scroll-behavior: smooth !important;
+    scroll-behavior: auto !important;
     overflow-y: auto !important;
     height: 100vh !important;
+    overscroll-behavior: contain !important;
+    -webkit-scroll-snap-type: y mandatory !important;
 }
