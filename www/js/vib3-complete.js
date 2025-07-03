@@ -1152,14 +1152,6 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                     feedElement.innerHTML = '';
                     
                     // Add AI recommendation indicator
-                    const aiIndicator = document.createElement('div');
-                    aiIndicator.className = 'ai-recommendations-indicator';
-                    aiIndicator.innerHTML = `
-                        <div style="padding: 12px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 14px; text-align: center; border-radius: 8px; margin: 10px 20px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
-                            🤖 Personalized for you using AI
-                        </div>
-                    `;
-                    feedElement.appendChild(aiIndicator);
                     
                     // Set up feed layout
                     feedElement.style.display = 'block';
