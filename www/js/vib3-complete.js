@@ -94,6 +94,9 @@ const sampleCollaborationData = {
     ]
 };
 
+// Energy meter interval - moved to top to avoid temporal dead zone
+let energyUpdateInterval = null;
+
 // Sample live streams for offline mode - moved to top to avoid temporal dead zone
 const sampleLiveStreams = [
     {
@@ -6455,6 +6458,21 @@ function showPage(page) {
         return;
     }
     
+    if (page === 'messages') {
+        createMessagesPage();
+        return;
+    }
+    
+    if (page === 'creator') {
+        showCreatorFundPage();
+        return;
+    }
+    
+    if (page === 'shop') {
+        showShopPage();
+        return;
+    }
+    
     if (page === 'live') {
         showLiveStreaming();
         return;
@@ -6562,6 +6580,13 @@ function showPage(page) {
     
     if (page === 'analytics') {
         console.log('📊 Analytics page case triggered');
+        
+        // Hide main app completely when showing analytics
+        const mainApp = document.getElementById('mainApp');
+        if (mainApp) {
+            mainApp.style.display = 'none';
+        }
+        
         // Show analytics page specifically
         const analyticsPage = document.getElementById('analyticsPage');
         console.log('📊 Analytics page element:', analyticsPage);
@@ -6569,7 +6594,7 @@ function showPage(page) {
             analyticsPage.style.display = 'block';
             analyticsPage.style.visibility = 'visible';
             analyticsPage.style.opacity = '1';
-            analyticsPage.style.zIndex = '1000';
+            analyticsPage.style.zIndex = '10000';
             console.log('📊 Analytics page display set to block with visibility fixes');
             // Trigger analytics data loading from the HTML page function
             if (window.loadAnalyticsData) {
@@ -14686,7 +14711,6 @@ function simulatePulseActivity() {
 }
 
 // Start energy meter real-time updates
-let energyUpdateInterval = null;
 function startEnergyUpdates() {
     if (energyUpdateInterval) clearInterval(energyUpdateInterval);
     
@@ -19261,6 +19285,46 @@ function toggleViewerFullscreen() {
 
 function showBuyCoins() {
     alert('Buy Coins feature coming soon!');
+}
+
+// Creator Fund page function
+function showCreatorFundPage() {
+    console.log('💰 Opening Creator Fund Page');
+    
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'none';
+    }
+    
+    // Show the creator fund page that exists in HTML
+    const creatorPage = document.querySelector('.creator-page');
+    if (creatorPage) {
+        creatorPage.style.display = 'block';
+        console.log('✅ Creator Fund page displayed');
+    } else {
+        console.log('❌ Creator Fund page not found in HTML');
+        showNotification('Creator Fund page coming soon!', 'info');
+    }
+}
+
+// Shop page function
+function showShopPage() {
+    console.log('🛒 Opening Shop Page');
+    
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'none';
+    }
+    
+    // Show the shop page that exists in HTML
+    const shopPage = document.querySelector('.shop-page');
+    if (shopPage) {
+        shopPage.style.display = 'block';
+        console.log('✅ Shop page displayed');
+    } else {
+        console.log('❌ Shop page not found in HTML');
+        showNotification('Shop page coming soon!', 'info');
+    }
 }
 
 function formatTime(timestamp) {
