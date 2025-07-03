@@ -404,30 +404,30 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                         left: 16,
                         right: 90,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(15),
+                            // Dark bubble background
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(20),
+                            // Border for definition
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.1),
+                              width: 1,
+                            ),
+                            // Glow effect
                             boxShadow: [
-                              // Dark glow effect
+                              // Outer glow
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.9),
+                                color: Colors.white.withOpacity(0.2),
                                 blurRadius: 20,
-                                spreadRadius: 8,
-                                offset: const Offset(0, 0),
+                                spreadRadius: 2,
                               ),
-                              // Secondary glow
+                              // Dark shadow for depth
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.7),
+                                color: Colors.black.withOpacity(0.8),
                                 blurRadius: 15,
                                 spreadRadius: 5,
-                                offset: const Offset(0, 2),
-                              ),
-                              // Subtle colored glow
-                              BoxShadow(
-                                color: const Color(0xFF00CED1).withOpacity(0.1),
-                                blurRadius: 25,
-                                spreadRadius: 2,
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
