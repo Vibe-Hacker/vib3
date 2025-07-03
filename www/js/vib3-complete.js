@@ -5040,6 +5040,11 @@ function showPage(page) {
         showCreatorStudio();
         return;
     }
+    
+    if (page === 'challenges') {
+        showChallenges();
+        return;
+    }
 
     // Handle feed tabs - don't show "coming soon" for these
     if (page === 'home' || page === 'subscriptions' || page === 'discover' || page === 'network' || page === 'pulse' ||
@@ -13961,6 +13966,686 @@ function showStudioNotification(message) {
     }, 3000);
 }
 
+// ================ VIB3 CHALLENGES SYSTEM ================
+
+// Show VIB3 Challenges page
+function showChallenges() {
+    console.log('🏆 Opening VIB3 Challenges');
+    
+    // Hide other content and show challenges
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page, .vibe-rooms-page, .creator-studio-page').forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    let challengesPage = document.getElementById('challengesPage');
+    if (!challengesPage) {
+        challengesPage = document.createElement('div');
+        challengesPage.id = 'challengesPage';
+        challengesPage.className = 'challenges-page';
+        challengesPage.style.cssText = 'margin-left: 240px; margin-top: 60px; width: calc(100vw - 240px); height: calc(100vh - 60px); overflow-y: auto; background: var(--bg-primary);';
+        
+        challengesPage.innerHTML = `
+            <!-- Challenges Header -->
+            <div class="challenges-header" style="background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%); padding: 30px; color: white; text-align: center;">
+                <h1 style="margin: 0 0 10px; font-size: 36px; font-weight: 800;">🏆 VIB3 Challenges</h1>
+                <p style="margin: 0; font-size: 18px; opacity: 0.9;">Join trending challenges and go viral</p>
+                <div style="margin-top: 20px; display: flex; justify-content: center; gap: 15px;">
+                    <button onclick="createNewChallenge()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600; backdrop-filter: blur(10px);">
+                        ➕ Create Challenge
+                    </button>
+                    <button onclick="showMyParticipations()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600; backdrop-filter: blur(10px);">
+                        📊 My Participations
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Challenge Tabs -->
+            <div class="challenge-tabs" style="display: flex; justify-content: center; gap: 8px; padding: 20px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
+                <button class="challenge-tab active" onclick="switchChallengeTab('trending')" id="trendingTab" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    🔥 Trending
+                </button>
+                <button class="challenge-tab" onclick="switchChallengeTab('new')" id="newTab" style="background: none; border: 1px solid var(--border-primary); color: var(--text-secondary); padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    ✨ New
+                </button>
+                <button class="challenge-tab" onclick="switchChallengeTab('ending')" id="endingTab" style="background: none; border: 1px solid var(--border-primary); color: var(--text-secondary); padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    ⏰ Ending Soon
+                </button>
+                <button class="challenge-tab" onclick="switchChallengeTab('completed')" id="completedTab" style="background: none; border: 1px solid var(--border-primary); color: var(--text-secondary); padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    ✅ Completed
+                </button>
+            </div>
+            
+            <!-- Challenge Content Area -->
+            <div class="challenge-content-area" style="padding: 30px; max-width: 1200px; margin: 0 auto;">
+                <!-- Trending Challenges -->
+                <div class="challenge-content active" id="trendingContent">
+                    <div class="challenges-grid" id="trendingChallenges" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
+                        <!-- Trending challenges will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- New Challenges -->
+                <div class="challenge-content" id="newContent" style="display: none;">
+                    <div class="challenges-grid" id="newChallenges" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
+                        <!-- New challenges will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Ending Soon Challenges -->
+                <div class="challenge-content" id="endingContent" style="display: none;">
+                    <div class="challenges-grid" id="endingChallenges" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
+                        <!-- Ending challenges will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Completed Challenges -->
+                <div class="challenge-content" id="completedContent" style="display: none;">
+                    <div class="challenges-grid" id="completedChallenges" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
+                        <!-- Completed challenges will be populated here -->
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(challengesPage);
+        
+        // Initialize challenges data
+        initializeChallenges();
+    }
+    
+    challengesPage.style.display = 'block';
+}
+
+// Switch challenge tabs
+function switchChallengeTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.challenge-tab').forEach(tab => {
+        tab.classList.remove('active');
+        tab.style.background = 'none';
+        tab.style.border = '1px solid var(--border-primary)';
+        tab.style.color = 'var(--text-secondary)';
+    });
+    
+    const activeTab = document.getElementById(tabName + 'Tab');
+    activeTab.classList.add('active');
+    activeTab.style.background = 'var(--accent-gradient)';
+    activeTab.style.border = 'none';
+    activeTab.style.color = 'white';
+    
+    // Update content
+    document.querySelectorAll('.challenge-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    document.getElementById(tabName + 'Content').style.display = 'block';
+}
+
+// Initialize challenges with sample data
+function initializeChallenges() {
+    const challengesData = {
+        trending: [
+            {
+                id: 'dance-trend-2024',
+                title: '#VibeDanceChallenge',
+                description: 'Show us your best dance moves to this viral beat!',
+                category: 'Dance',
+                participants: 15420,
+                videos: 8903,
+                timeLeft: '5 days',
+                prize: 'VIB3 Coins + Featured',
+                difficulty: 'Easy',
+                thumbnail: '💃',
+                creator: 'VibeDanceKing',
+                trending: true
+            },
+            {
+                id: 'art-challenge-creative',
+                title: '#CreativeArtChallenge',
+                description: 'Transform everyday objects into art in 60 seconds',
+                category: 'Art',
+                participants: 8750,
+                videos: 5200,
+                timeLeft: '12 days',
+                prize: '1000 VIB3 Coins',
+                difficulty: 'Medium',
+                thumbnail: '🎨',
+                creator: 'ArtMasterVibe',
+                trending: true
+            },
+            {
+                id: 'cooking-quick',
+                title: '#QuickCookChallenge',
+                description: 'Create a delicious meal in under 3 minutes!',
+                category: 'Lifestyle',
+                participants: 12300,
+                videos: 7800,
+                timeLeft: '8 days',
+                prize: 'Featured + Collaboration',
+                difficulty: 'Hard',
+                thumbnail: '👨‍🍳',
+                creator: 'ChefVibes',
+                trending: true
+            }
+        ],
+        new: [
+            {
+                id: 'music-remix-new',
+                title: '#RemixMasterChallenge',
+                description: 'Create a unique remix of this trending song',
+                category: 'Music',
+                participants: 450,
+                videos: 120,
+                timeLeft: '25 days',
+                prize: '500 VIB3 Coins',
+                difficulty: 'Medium',
+                thumbnail: '🎵',
+                creator: 'MusicVibeStudio',
+                isNew: true
+            },
+            {
+                id: 'fitness-morning',
+                title: '#MorningVibeWorkout',
+                description: 'Share your energizing morning workout routine',
+                category: 'Fitness',
+                participants: 280,
+                videos: 95,
+                timeLeft: '20 days',
+                prize: 'Health Brand Partnership',
+                difficulty: 'Easy',
+                thumbnail: '💪',
+                creator: 'FitnessVibeCoach',
+                isNew: true
+            }
+        ],
+        ending: [
+            {
+                id: 'fashion-style',
+                title: '#StyleTransformChallenge',
+                description: 'Show a complete style transformation',
+                category: 'Fashion',
+                participants: 5600,
+                videos: 3200,
+                timeLeft: '2 days',
+                prize: 'Fashion Brand Collab',
+                difficulty: 'Medium',
+                thumbnail: '👗',
+                creator: 'StyleVibeQueen',
+                endingSoon: true
+            }
+        ],
+        completed: [
+            {
+                id: 'comedy-laughs',
+                title: '#LaughChallenge2024',
+                description: 'Make us laugh in 30 seconds or less!',
+                category: 'Comedy',
+                participants: 25600,
+                videos: 18900,
+                timeLeft: 'Ended',
+                prize: '2000 VIB3 Coins',
+                difficulty: 'Easy',
+                thumbnail: '😂',
+                creator: 'ComedyVibeKing',
+                completed: true,
+                winner: 'FunnyVibeGirl'
+            }
+        ]
+    };
+    
+    // Populate each tab
+    Object.keys(challengesData).forEach(tabName => {
+        const container = document.getElementById(tabName + 'Challenges');
+        if (container) {
+            container.innerHTML = '';
+            challengesData[tabName].forEach(challenge => {
+                const challengeCard = createChallengeCard(challenge);
+                container.appendChild(challengeCard);
+            });
+        }
+    });
+}
+
+// Create challenge card
+function createChallengeCard(challenge) {
+    const card = document.createElement('div');
+    card.className = 'challenge-card';
+    card.style.cssText = `
+        background: var(--bg-secondary);
+        border-radius: 15px;
+        padding: 20px;
+        border: 1px solid var(--border-primary);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    `;
+    
+    const statusBadge = challenge.trending ? '🔥 Trending' : 
+                       challenge.isNew ? '✨ New' : 
+                       challenge.endingSoon ? '⏰ Ending Soon' : 
+                       challenge.completed ? '✅ Completed' : '';
+    
+    const statusColor = challenge.trending ? '#ff6b6b' : 
+                       challenge.isNew ? '#00ff88' : 
+                       challenge.endingSoon ? '#ffa726' : 
+                       challenge.completed ? '#4caf50' : '';
+    
+    card.innerHTML = `
+        ${statusBadge ? `<div class="status-badge" style="position: absolute; top: 15px; right: 15px; background: ${statusColor}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 600;">${statusBadge}</div>` : ''}
+        
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+            <div style="font-size: 48px;">${challenge.thumbnail}</div>
+            <div style="flex: 1;">
+                <h3 style="margin: 0 0 5px; color: var(--text-primary); font-size: 18px; font-weight: 700;">${challenge.title}</h3>
+                <p style="margin: 0 0 8px; color: var(--text-secondary); font-size: 14px; line-height: 1.4;">${challenge.description}</p>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span style="background: var(--bg-tertiary); color: var(--text-primary); padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 600;">${challenge.category}</span>
+                    <span style="background: var(--bg-tertiary); color: var(--text-primary); padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 600;">${challenge.difficulty}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div style="text-align: center;">
+                <div style="font-size: 20px; font-weight: 700; color: var(--accent-primary);">${challenge.participants.toLocaleString()}</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">Participants</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 20px; font-weight: 700; color: var(--accent-secondary);">${challenge.videos.toLocaleString()}</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">Videos</div>
+            </div>
+        </div>
+        
+        <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="color: var(--text-primary); font-size: 12px; font-weight: 600;">Prize:</span>
+                <span style="color: var(--text-primary); font-size: 12px;">${challenge.prize}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-primary); font-size: 12px; font-weight: 600;">Time Left:</span>
+                <span style="color: ${challenge.completed ? '#4caf50' : challenge.endingSoon ? '#ff6b6b' : 'var(--text-primary)'}; font-size: 12px; font-weight: 600;">${challenge.timeLeft}</span>
+            </div>
+            ${challenge.winner ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-primary);"><span style="color: var(--text-primary); font-size: 12px; font-weight: 600;">Winner: </span><span style="color: var(--accent-primary); font-size: 12px;">${challenge.winner}</span></div>` : ''}
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            ${!challenge.completed ? `
+                <button onclick="joinChallenge('${challenge.id}')" style="flex: 1; background: var(--accent-gradient); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    🚀 Join Challenge
+                </button>
+                <button onclick="viewChallengeDetails('${challenge.id}')" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 16px; border-radius: 8px; cursor: pointer;">
+                    👁️
+                </button>
+            ` : `
+                <button onclick="viewChallengeResults('${challenge.id}')" style="flex: 1; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    📊 View Results
+                </button>
+            `}
+        </div>
+        
+        <div style="margin-top: 10px; font-size: 11px; color: var(--text-secondary); text-align: center;">
+            Created by ${challenge.creator}
+        </div>
+    `;
+    
+    // Add hover effects
+    card.addEventListener('mouseenter', () => {
+        card.style.transform = 'translateY(-5px)';
+        card.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)';
+        card.style.borderColor = 'var(--accent-primary)';
+    });
+    
+    card.addEventListener('mouseleave', () => {
+        card.style.transform = 'translateY(0)';
+        card.style.boxShadow = 'none';
+        card.style.borderColor = 'var(--border-primary)';
+    });
+    
+    return card;
+}
+
+// Join challenge
+function joinChallenge(challengeId) {
+    const joinModal = document.createElement('div');
+    joinModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    joinModal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid var(--border-primary); text-align: center;">
+            <div style="font-size: 64px; margin-bottom: 20px;">🚀</div>
+            <h3 style="margin: 0 0 15px; color: var(--text-primary);">Join Challenge</h3>
+            <p style="margin: 0 0 20px; color: var(--text-secondary);">Ready to participate in this challenge? You can create and submit your video using VIB3 Creator Studio!</p>
+            
+            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+                <h4 style="margin: 0 0 10px; color: var(--text-primary);">Challenge Tips:</h4>
+                <ul style="text-align: left; margin: 0; padding-left: 20px; color: var(--text-secondary); font-size: 14px;">
+                    <li>Be creative and original</li>
+                    <li>Follow the challenge guidelines</li>
+                    <li>Use trending hashtags</li>
+                    <li>Engage with other participants</li>
+                </ul>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="startChallengeParticipation('${challengeId}')" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    🎬 Create Video
+                </button>
+                <button onclick="this.closest('div').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(joinModal);
+}
+
+// Start challenge participation
+function startChallengeParticipation(challengeId) {
+    // Close modal and show notification
+    document.querySelector('.vib3-energy-modal, [style*="position: fixed"]')?.remove();
+    
+    showChallengeNotification('🎬 Opening Creator Studio for challenge participation!');
+    
+    // Simulate opening Creator Studio for challenge
+    setTimeout(() => {
+        showCreatorStudio();
+        showChallengeNotification('💡 Tip: Use #' + challengeId + ' hashtag in your video!');
+    }, 1000);
+}
+
+// View challenge details
+function viewChallengeDetails(challengeId) {
+    const detailsModal = document.createElement('div');
+    detailsModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    detailsModal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 20px; padding: 30px; max-width: 600px; width: 90%; border: 1px solid var(--border-primary); max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: var(--text-primary);">Challenge Details</h3>
+                <button onclick="this.closest('div').remove()" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: var(--text-primary); margin-bottom: 10px;">Rules & Guidelines:</h4>
+                <ul style="color: var(--text-secondary); line-height: 1.6;">
+                    <li>Video must be original and created by you</li>
+                    <li>Maximum duration: 60 seconds</li>
+                    <li>Use the official challenge hashtag</li>
+                    <li>Content must be appropriate for all audiences</li>
+                    <li>No copyrighted music without permission</li>
+                </ul>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: var(--text-primary); margin-bottom: 10px;">Judging Criteria:</h4>
+                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: var(--text-primary);">Creativity (40%)</span>
+                        <span style="color: var(--text-secondary);">Originality and innovation</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: var(--text-primary);">Execution (30%)</span>
+                        <span style="color: var(--text-secondary);">Quality and technique</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: var(--text-primary);">Engagement (20%)</span>
+                        <span style="color: var(--text-secondary);">Likes, comments, shares</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-primary);">Challenge Adherence (10%)</span>
+                        <span style="color: var(--text-secondary);">Following guidelines</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: var(--text-primary); margin-bottom: 10px;">Top Submissions:</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+                    <div style="background: var(--bg-tertiary); aspect-ratio: 9/16; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 12px; text-align: center;">Top Video 1<br>🔥 2.3M views</div>
+                    <div style="background: var(--bg-tertiary); aspect-ratio: 9/16; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 12px; text-align: center;">Top Video 2<br>⚡ 1.8M views</div>
+                    <div style="background: var(--bg-tertiary); aspect-ratio: 9/16; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 12px; text-align: center;">Top Video 3<br>✨ 1.5M views</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <button onclick="joinChallenge('${challengeId}'); this.closest('div').remove();" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-right: 10px;">
+                    🚀 Join Challenge
+                </button>
+                <button onclick="this.closest('div').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 30px; border-radius: 8px; cursor: pointer;">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(detailsModal);
+}
+
+// Create new challenge
+function createNewChallenge() {
+    const createModal = document.createElement('div');
+    createModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    createModal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 20px; padding: 30px; max-width: 600px; width: 90%; border: 1px solid var(--border-primary); max-height: 80vh; overflow-y: auto;">
+            <h3 style="margin: 0 0 20px; color: var(--text-primary);">Create New Challenge</h3>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Challenge Title</label>
+                <input type="text" placeholder="#YourChallengeHashtag" style="width: 100%; padding: 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); box-sizing: border-box;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Description</label>
+                <textarea placeholder="Describe your challenge..." style="width: 100%; height: 80px; padding: 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); resize: vertical; box-sizing: border-box;"></textarea>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Category</label>
+                    <select style="width: 100%; padding: 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary);">
+                        <option>Dance</option>
+                        <option>Music</option>
+                        <option>Art</option>
+                        <option>Comedy</option>
+                        <option>Lifestyle</option>
+                        <option>Fitness</option>
+                        <option>Cooking</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Difficulty</label>
+                    <select style="width: 100%; padding: 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary);">
+                        <option>Easy</option>
+                        <option>Medium</option>
+                        <option>Hard</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Duration</label>
+                <select style="width: 100%; padding: 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary);">
+                    <option>7 days</option>
+                    <option>14 days</option>
+                    <option>30 days</option>
+                    <option>Custom</option>
+                </select>
+            </div>
+            
+            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                <div style="color: var(--text-secondary); font-size: 14px;">
+                    🚧 Challenge creation requires VIB3 Creator status<br>
+                    Apply for Creator Program to unlock this feature!
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <button onclick="applyChallengeCreator()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-right: 10px;">
+                    📝 Apply for Creator Program
+                </button>
+                <button onclick="this.closest('div').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(createModal);
+}
+
+// Apply for challenge creator program
+function applyChallengeCreator() {
+    document.querySelectorAll('[style*="position: fixed"]').forEach(modal => modal.remove());
+    showChallengeNotification('📝 Creator Program application opened! Check your messages for details.');
+}
+
+// Show my participations
+function showMyParticipations() {
+    const participationsModal = document.createElement('div');
+    participationsModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    participationsModal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 20px; padding: 30px; max-width: 700px; width: 90%; border: 1px solid var(--border-primary); max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: var(--text-primary);">My Challenge Participations</h3>
+                <button onclick="this.closest('div').remove()" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: var(--accent-primary);">3</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Active</div>
+                    </div>
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: var(--accent-secondary);">8</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Completed</div>
+                    </div>
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: #ffa726;">1</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Won</div>
+                    </div>
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: 700; color: #4caf50;">1,250</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">VIB3 Coins Earned</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h4 style="color: var(--text-primary); margin-bottom: 15px;">Recent Participations:</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">#VibeDanceChallenge</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">Submitted 2 days ago • 1.2K views</div>
+                        </div>
+                        <div style="background: #ffa726; color: white; padding: 4px 8px; border-radius: 12px; font-size: 10px;">🏆 Top 10</div>
+                    </div>
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">#CreativeArtChallenge</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">Submitted 5 days ago • 890 views</div>
+                        </div>
+                        <div style="background: var(--accent-primary); color: white; padding: 4px 8px; border-radius: 12px; font-size: 10px;">✨ Featured</div>
+                    </div>
+                    <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">#LaughChallenge2024</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">Won 1st place • 25K views</div>
+                        </div>
+                        <div style="background: #4caf50; color: white; padding: 4px 8px; border-radius: 12px; font-size: 10px;">🥇 Winner</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="this.closest('div').remove()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(participationsModal);
+}
+
+// Show challenge notification
+function showChallengeNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        padding: 12px 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border-primary);
+        z-index: 10000;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transform: translateX(300px);
+        transition: transform 0.3s ease;
+        max-width: 300px;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+    setTimeout(() => {
+        notification.style.transform = 'translateX(300px)';
+        setTimeout(() => notification.remove(), 300);
+    }, 4000);
+}
+
 // Export VIB3 unique functions to window
 window.startPulseMetrics = startPulseMetrics;
 window.simulatePulseActivity = simulatePulseActivity;
@@ -13988,4 +14673,11 @@ window.fullscreenPreview = fullscreenPreview;
 window.addVideoTrack = addVideoTrack;
 window.addAudioTrack = addAudioTrack;
 window.zoomTimeline = zoomTimeline;
+window.showChallenges = showChallenges;
+window.switchChallengeTab = switchChallengeTab;
+window.joinChallenge = joinChallenge;
+window.viewChallengeDetails = viewChallengeDetails;
+window.createNewChallenge = createNewChallenge;
+window.showMyParticipations = showMyParticipations;
+window.startChallengeParticipation = startChallengeParticipation;
   
