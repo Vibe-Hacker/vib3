@@ -914,6 +914,16 @@ async function loadPulseFeed() {
 function showEnergyMeter() {
     console.log('🔋 Opening VIB3 Energy Meter');
     
+    // Remove existing dynamic pages that might interfere
+    const pagesToRemove = ['coinsPage', 'collaborationPage', 'challengesPage', 'vibeRoomsPage', 'creatorStudioPage', 'activityPage'];
+    pagesToRemove.forEach(pageId => {
+        const page = document.getElementById(pageId);
+        if (page) {
+            page.remove();
+            console.log(`🧹 Removed ${pageId} for energy meter`);
+        }
+    });
+    
     const energyModal = document.createElement('div');
     energyModal.className = 'vib3-energy-modal';
     energyModal.style.cssText = `
@@ -6587,6 +6597,16 @@ function showPage(page) {
             mainApp.style.display = 'none';
         }
         
+        // Remove existing dynamic pages that might interfere
+        const pagesToRemove = ['coinsPage', 'collaborationPage', 'challengesPage', 'vibeRoomsPage', 'creatorStudioPage', 'activityPage'];
+        pagesToRemove.forEach(pageId => {
+            const page = document.getElementById(pageId);
+            if (page) {
+                page.remove();
+                console.log(`🧹 Removed ${pageId} for analytics page`);
+            }
+        });
+        
         // Show analytics page specifically
         const analyticsPage = document.getElementById('analyticsPage');
         console.log('📊 Analytics page element:', analyticsPage);
@@ -8084,6 +8104,20 @@ function sendSpecificGift(giftType, cost) {
 
 // ================ PAGE CREATORS FOR MISSING PAGES ================
 function createActivityPage() {
+    // Hide main app and remove other dynamic pages
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) mainApp.style.display = 'none';
+    
+    // Remove existing dynamic pages that might interfere
+    const pagesToRemove = ['coinsPage', 'collaborationPage', 'challengesPage', 'vibeRoomsPage', 'creatorStudioPage'];
+    pagesToRemove.forEach(pageId => {
+        const page = document.getElementById(pageId);
+        if (page) {
+            page.remove();
+            console.log(`🧹 Removed ${pageId} for activity page`);
+        }
+    });
+    
     let activityPage = document.getElementById('activityPage');
     if (!activityPage) {
         activityPage = document.createElement('div');
@@ -8509,6 +8543,20 @@ function handleActivityClick(activityId) {
 
 // Messages page creation and management
 function createMessagesPage() {
+    // Hide main app and remove other dynamic pages
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) mainApp.style.display = 'none';
+    
+    // Remove existing dynamic pages that might interfere
+    const pagesToRemove = ['coinsPage', 'collaborationPage', 'challengesPage', 'vibeRoomsPage', 'creatorStudioPage', 'activityPage'];
+    pagesToRemove.forEach(pageId => {
+        const page = document.getElementById(pageId);
+        if (page) {
+            page.remove();
+            console.log(`🧹 Removed ${pageId} for messages page`);
+        }
+    });
+    
     let messagesPage = document.getElementById('messagesPage');
     if (!messagesPage) {
         messagesPage = document.createElement('div');
@@ -19310,6 +19358,16 @@ function showCreatorFundPage() {
         mainApp.style.display = 'none';
     }
     
+    // Remove existing dynamic pages that might interfere
+    const pagesToRemove = ['coinsPage', 'collaborationPage', 'challengesPage', 'vibeRoomsPage', 'creatorStudioPage', 'activityPage'];
+    pagesToRemove.forEach(pageId => {
+        const page = document.getElementById(pageId);
+        if (page) {
+            page.remove();
+            console.log(`🧹 Removed ${pageId} for creator fund page`);
+        }
+    });
+    
     // Show the creator fund page that exists in HTML
     const creatorPage = document.querySelector('.creator-page');
     if (creatorPage) {
@@ -19329,6 +19387,16 @@ function showShopPage() {
     if (mainApp) {
         mainApp.style.display = 'none';
     }
+    
+    // Remove existing dynamic pages that might interfere
+    const pagesToRemove = ['coinsPage', 'collaborationPage', 'challengesPage', 'vibeRoomsPage', 'creatorStudioPage', 'activityPage'];
+    pagesToRemove.forEach(pageId => {
+        const page = document.getElementById(pageId);
+        if (page) {
+            page.remove();
+            console.log(`🧹 Removed ${pageId} for shop page`);
+        }
+    });
     
     // Show the shop page that exists in HTML
     const shopPage = document.querySelector('.shop-page');
