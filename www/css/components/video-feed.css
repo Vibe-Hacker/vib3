@@ -4,14 +4,19 @@
     margin-top: 60px;
     margin-left: 240px;
     width: calc(100vw - 240px);
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     background: var(--bg-primary);
     transition: all 0.3s ease;
     box-sizing: border-box;
     position: relative;
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    padding: 40px 0;
 }
 
 .video-feed::-webkit-scrollbar {

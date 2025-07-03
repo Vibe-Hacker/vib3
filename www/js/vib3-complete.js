@@ -1962,7 +1962,7 @@ function createAdvancedVideoCard(video) {
     // Flutter-inspired card with modern design
     card.className = 'video-item';
     card.style.cssText = `
-        height: calc(100vh - 100px) !important;
+        height: calc(80vh - 60px) !important;
         width: 100% !important;
         max-width: 500px !important;
         display: block !important;
@@ -1970,10 +1970,10 @@ function createAdvancedVideoCard(video) {
         opacity: 1 !important;
         position: relative !important;
         background: var(--bg-primary) !important;
-        margin: 0 auto 8px auto !important;
+        margin: 20px auto 20px auto !important;
         padding: 8px !important;
         overflow: visible !important;
-        scroll-snap-align: start !important;
+        scroll-snap-align: center !important;
         scroll-snap-stop: always !important;
         border-radius: var(--card-border-radius) !important;
         box-sizing: border-box !important;
