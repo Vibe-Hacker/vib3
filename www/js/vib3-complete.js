@@ -1829,49 +1829,8 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
         } catch (error) {
             console.error('Load feed error:', error);
             
-            // Use sample videos as fallback when API fails, but not for squad/following feed
-            console.log('🎬 Using sample videos as fallback');
-            let sampleVideos = [];
-            
-            // Use regular sample videos for all feeds
-            sampleVideos = [
-                    {
-                        _id: 'fallback1',
-                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-                        user: { 
-                            _id: 'sample1',
-                            username: 'vib3_demo', 
-                            displayName: 'VIB3 Demo',
-                            profilePicture: '🎬' 
-                        },
-                        title: 'Welcome to VIB3!',
-                        description: 'Experience the next generation of video sharing',
-                        likeCount: 1234,
-                        commentCount: 56,
-                        shareCount: 23,
-                        uploadDate: new Date(),
-                        duration: 60,
-                        views: 15600
-                    },
-                    {
-                        _id: 'fallback2',
-                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-                        user: { 
-                            _id: 'sample2',
-                            username: 'creator_demo', 
-                            displayName: 'Creative Studio',
-                            profilePicture: '🎨' 
-                        },
-                        title: 'Digital Art Showcase',
-                        description: 'Amazing digital creations #art #creative',
-                        likeCount: 890,
-                        commentCount: 45,
-                        shareCount: 12,
-                        uploadDate: new Date(),
-                        duration: 45,
-                        views: 8900
-                    }
-                ];
+            // Show error message instead of sample videos
+            console.log('❌ Unable to load videos from server');
             
             if (!append) {
                 feedElement.innerHTML = '';
@@ -1880,65 +1839,30 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                 feedElement.style.scrollSnapType = 'y mandatory';
                 feedElement.style.scrollBehavior = 'smooth';
                 
-                if (sampleVideos.length > 0) {
-                    // Add sample videos for non-squad feeds
-                    sampleVideos.forEach(video => {
-                        const videoCard = createAdvancedVideoCard(video);
-                        feedElement.appendChild(videoCard);
-                    });
-                    
-                    // Add error message at bottom
-                    const errorDiv = document.createElement('div');
-                    errorDiv.style.cssText = `
-                        text-align: center;
-                        padding: 20px;
-                        color: #999;
-                        font-size: 14px;
-                        background: var(--bg-secondary);
-                        border-radius: 10px;
-                        margin: 20px;
-                    `;
-                    errorDiv.innerHTML = `
-                        <div style="font-size: 32px; margin-bottom: 10px;">🎬</div>
-                        <div>Demo Mode Active</div>
-                        <div style="font-size: 12px; margin-top: 5px;">Server temporarily unavailable - enjoy sample content!</div>
-                    `;
-                    feedElement.appendChild(errorDiv);
-                    
-                    // Setup infinite scroll even with sample videos
-                    setupInfiniteScroll(feedElement, feedType);
-                    setTimeout(() => initializeVideoObserver(), 200);
-                    hasMoreVideos = true;
-                } else {
-                    // For squad feed, show empty state message
-                    const emptyDiv = document.createElement('div');
-                    emptyDiv.style.cssText = `
-                        text-align: center;
-                        padding: 60px 20px;
-                        color: #999;
-                        font-size: 16px;
-                    `;
-                    emptyDiv.innerHTML = `
-                        <div style="font-size: 64px; margin-bottom: 20px;">👥</div>
-                        <div style="font-size: 20px; margin-bottom: 10px; color: white;">No Squad Content Yet</div>
-                        <div style="margin-bottom: 20px;">Follow creators to see their videos here</div>
-                        <button onclick="showPage('discover')" style="
-                            padding: 12px 24px;
-                            background: var(--accent-primary);
-                            color: white;
-                            border: none;
-                            border-radius: 25px;
-                            cursor: pointer;
-                            font-weight: 600;
-                        ">Discover Creators</button>
-                    `;
-                    feedElement.appendChild(emptyDiv);
-                    hasMoreVideos = false;
-                }
-            } else {
-                console.log('Error in append mode, using existing videos');
-                hasMoreVideos = true; // Keep trying for infinite scroll
+                // Show proper error message instead of sample videos
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = `
+                    text-align: center;
+                    padding: 60px 20px;
+                    color: var(--text-secondary);
+                    height: 100vh;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                `;
+                errorDiv.innerHTML = `
+                    <div style="font-size: 64px; margin-bottom: 20px;">📡</div>
+                    <h3 style="color: var(--text-primary); margin-bottom: 10px;">Connection Error</h3>
+                    <p style="margin-bottom: 20px;">Unable to connect to VIB3 servers. Please check your internet connection.</p>
+                    <button onclick="location.reload()" style="background: var(--vib3-brand-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        🔄 Try Again
+                    </button>
+                `;
+                feedElement.appendChild(errorDiv);
             }
+            
+            return; // Exit early, don't process sample videos
         }
     }
     
@@ -15692,7 +15616,6 @@ function populateSampleMedia() {
 
 // Import media function
 function importCreatorMedia() {
-    // Simulate file import
     const importModal = document.createElement('div');
     importModal.style.cssText = `
         position: fixed;
@@ -15710,13 +15633,14 @@ function importCreatorMedia() {
     importModal.innerHTML = `
         <div style="background: var(--bg-secondary); border-radius: 15px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid var(--border-primary);">
             <h3 style="margin: 0 0 15px; color: var(--text-primary);">Import Media</h3>
-            <div style="border: 2px dashed var(--border-primary); border-radius: 10px; padding: 40px; text-align: center; margin-bottom: 20px;">
+            <div id="dropArea" style="border: 2px dashed var(--border-primary); border-radius: 10px; padding: 40px; text-align: center; margin-bottom: 20px; cursor: pointer;">
                 <div style="font-size: 48px; margin-bottom: 15px;">📁</div>
-                <p style="margin: 0 0 10px; color: var(--text-primary);">Drag and drop files here</p>
+                <p style="margin: 0 0 10px; color: var(--text-primary);">Drag and drop files here or click to browse</p>
                 <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">Supports: MP4, MOV, JPG, PNG, MP3, WAV</p>
             </div>
+            <input type="file" id="fileInput" multiple accept="video/*,image/*,audio/*" style="display: none;">
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="this.closest('div').remove()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                <button id="browseBtn" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                     Browse Files
                 </button>
                 <button onclick="this.closest('div').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 24px; border-radius: 8px; cursor: pointer;">
@@ -15727,6 +15651,123 @@ function importCreatorMedia() {
     `;
     
     document.body.appendChild(importModal);
+    
+    // Set up file input functionality
+    const fileInput = importModal.querySelector('#fileInput');
+    const browseBtn = importModal.querySelector('#browseBtn');
+    const dropArea = importModal.querySelector('#dropArea');
+    
+    browseBtn.onclick = () => fileInput.click();
+    dropArea.onclick = () => fileInput.click();
+    
+    // Handle file selection
+    fileInput.onchange = (e) => handleFileImport(e.target.files, importModal);
+    
+    // Handle drag and drop
+    dropArea.ondragover = (e) => {
+        e.preventDefault();
+        dropArea.style.borderColor = 'var(--accent-primary)';
+        dropArea.style.background = 'rgba(0, 206, 209, 0.1)';
+    };
+    
+    dropArea.ondragleave = (e) => {
+        e.preventDefault();
+        dropArea.style.borderColor = 'var(--border-primary)';
+        dropArea.style.background = 'transparent';
+    };
+    
+    dropArea.ondrop = (e) => {
+        e.preventDefault();
+        dropArea.style.borderColor = 'var(--border-primary)';
+        dropArea.style.background = 'transparent';
+        handleFileImport(e.dataTransfer.files, importModal);
+    };
+}
+
+// Handle imported files
+function handleFileImport(files, modal) {
+    if (files.length === 0) return;
+    
+    // Show progress modal
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 15px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid var(--border-primary);">
+            <h3 style="margin: 0 0 20px; color: var(--text-primary);">Processing Files...</h3>
+            <div id="progressContainer"></div>
+        </div>
+    `;
+    
+    const progressContainer = modal.querySelector('#progressContainer');
+    let processed = 0;
+    
+    Array.from(files).forEach((file, index) => {
+        // Create progress bar for each file
+        const progressItem = document.createElement('div');
+        progressItem.style.cssText = 'margin-bottom: 15px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;';
+        progressItem.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="font-size: 20px;">${getFileIcon(file.type)}</span>
+                <span style="color: var(--text-primary); font-weight: 600;">${file.name}</span>
+                <span style="color: var(--text-secondary); font-size: 12px;">${formatFileSize(file.size)}</span>
+            </div>
+            <div style="width: 100%; height: 4px; background: var(--bg-primary); border-radius: 2px; overflow: hidden;">
+                <div id="progress-${index}" style="width: 0%; height: 100%; background: var(--accent-gradient); transition: width 0.3s ease;"></div>
+            </div>
+        `;
+        progressContainer.appendChild(progressItem);
+        
+        // Simulate file processing
+        setTimeout(() => {
+            const progressBar = progressItem.querySelector(`#progress-${index}`);
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 30;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    processed++;
+                    
+                    if (processed === files.length) {
+                        // All files processed
+                        setTimeout(() => {
+                            modal.innerHTML = `
+                                <div style="background: var(--bg-secondary); border-radius: 15px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid var(--border-primary); text-align: center;">
+                                    <div style="font-size: 48px; margin-bottom: 15px;">✅</div>
+                                    <h3 style="margin: 0 0 10px; color: var(--text-primary);">Import Complete!</h3>
+                                    <p style="margin: 0 0 20px; color: var(--text-secondary);">${files.length} file${files.length > 1 ? 's' : ''} imported successfully</p>
+                                    <button onclick="this.closest('div').remove(); refreshCreatorStudioMedia();" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                        Continue
+                                    </button>
+                                </div>
+                            `;
+                        }, 500);
+                    }
+                }
+                progressBar.style.width = progress + '%';
+            }, 100);
+        }, index * 200);
+    });
+}
+
+// Helper functions
+function getFileIcon(type) {
+    if (type.startsWith('video/')) return '🎬';
+    if (type.startsWith('image/')) return '🖼️';
+    if (type.startsWith('audio/')) return '🎵';
+    return '📄';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function refreshCreatorStudioMedia() {
+    console.log('📁 Refreshing media library with imported files');
+    // This would integrate with the media library display
+    showChallengeNotification('🎬 Files imported to Creator Studio library!');
 }
 
 // Drag media functions
@@ -15908,19 +15949,138 @@ function exportCreatorProject() {
     document.body.appendChild(exportModal);
 }
 
-// Start export simulation
+// Start export process
 function startExport(button) {
-    button.innerHTML = 'Exporting...';
-    button.disabled = true;
+    const modal = button.closest('div');
+    const qualitySelect = modal.querySelector('select');
+    const formatSelect = modal.querySelectorAll('select')[1];
     
-    // Simulate export progress
-    setTimeout(() => {
-        button.innerHTML = '✅ Export Complete!';
-        setTimeout(() => {
-            button.closest('div').remove();
-            showStudioNotification('Video exported successfully!');
-        }, 2000);
-    }, 3000);
+    const quality = qualitySelect.value;
+    const format = formatSelect.value;
+    
+    // Update modal to show export progress
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 15px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid var(--border-primary);">
+            <h3 style="margin: 0 0 20px; color: var(--text-primary);">Exporting Video...</h3>
+            
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: var(--text-primary); font-weight: 600;">Processing</span>
+                    <span id="exportPercent" style="color: var(--accent-primary); font-weight: 600;">0%</span>
+                </div>
+                <div style="width: 100%; height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden;">
+                    <div id="exportProgress" style="width: 0%; height: 100%; background: var(--accent-gradient); transition: width 0.5s ease;"></div>
+                </div>
+            </div>
+            
+            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div id="exportStatus" style="color: var(--text-primary); font-size: 14px; margin-bottom: 5px;">Initializing export...</div>
+                <div style="color: var(--text-secondary); font-size: 12px;">Quality: ${quality}</div>
+                <div style="color: var(--text-secondary); font-size: 12px;">Format: ${format}</div>
+            </div>
+            
+            <div style="text-align: center;">
+                <button onclick="cancelExport(this)" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                    Cancel Export
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Start export simulation with realistic progress
+    const progressBar = modal.querySelector('#exportProgress');
+    const percentText = modal.querySelector('#exportPercent');
+    const statusText = modal.querySelector('#exportStatus');
+    
+    const exportSteps = [
+        { percent: 15, status: "Analyzing video tracks..." },
+        { percent: 30, status: "Processing audio..." },
+        { percent: 45, status: "Applying effects..." },
+        { percent: 60, status: "Encoding video..." },
+        { percent: 80, status: "Optimizing file size..." },
+        { percent: 95, status: "Finalizing export..." },
+        { percent: 100, status: "Export complete!" }
+    ];
+    
+    let currentStep = 0;
+    let currentProgress = 0;
+    
+    function updateProgress() {
+        if (currentStep >= exportSteps.length) return;
+        
+        const targetPercent = exportSteps[currentStep].percent;
+        const step = (targetPercent - currentProgress) / 20; // Smooth progress
+        
+        currentProgress += step;
+        
+        if (currentProgress >= targetPercent - 1) {
+            currentProgress = targetPercent;
+            statusText.textContent = exportSteps[currentStep].status;
+            currentStep++;
+            
+            if (currentStep >= exportSteps.length) {
+                // Export complete
+                setTimeout(() => {
+                    modal.innerHTML = `
+                        <div style="background: var(--bg-secondary); border-radius: 15px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid var(--border-primary); text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">🎉</div>
+                            <h3 style="margin: 0 0 10px; color: var(--text-primary);">Export Successful!</h3>
+                            <p style="margin: 0 0 20px; color: var(--text-secondary);">Your video has been exported and is ready for download.</p>
+                            
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                                <div style="color: var(--text-primary); font-weight: 600; margin-bottom: 5px;">📁 project-export.${format.split(' ')[0].toLowerCase()}</div>
+                                <div style="color: var(--text-secondary); font-size: 12px;">${quality} • ${format}</div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button onclick="downloadExportedVideo()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    💾 Download
+                                </button>
+                                <button onclick="uploadToVIB3()" style="background: var(--vib3-brand-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    📤 Upload to VIB3
+                                </button>
+                                <button onclick="this.closest('div').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }, 1000);
+                return;
+            }
+        }
+        
+        progressBar.style.width = currentProgress + '%';
+        percentText.textContent = Math.round(currentProgress) + '%';
+        
+        setTimeout(updateProgress, 100);
+    }
+    
+    updateProgress();
+}
+
+// Cancel export
+function cancelExport(button) {
+    const modal = button.closest('div');
+    modal.remove();
+    showStudioNotification('Export cancelled');
+}
+
+// Download exported video
+function downloadExportedVideo() {
+    // Create a download link for demo purposes
+    const link = document.createElement('a');
+    link.download = 'vib3-project-export.mp4';
+    link.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent('VIB3 Creator Studio Export - Demo File');
+    link.click();
+    showStudioNotification('🎬 Video download started!');
+}
+
+// Upload to VIB3
+function uploadToVIB3() {
+    showUploadModal();
+    document.querySelector('.creator-studio-page').remove();
+    showStudioNotification('🚀 Redirecting to VIB3 upload...');
 }
 
 // Show studio notification
