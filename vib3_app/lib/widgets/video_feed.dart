@@ -314,16 +314,26 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                     children: [
                       // Video player
                       if (video.videoUrl != null && video.videoUrl!.isNotEmpty)
-                        VideoPlayerWidget(
-                          videoUrl: video.videoUrl!,
-                          isPlaying: isCurrentVideo && _isAppInForeground && _isScreenVisible,
-                          preload: shouldPreload,
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: VideoPlayerWidget(
+                              videoUrl: video.videoUrl!,
+                              isPlaying: isCurrentVideo && _isAppInForeground && _isScreenVisible,
+                              preload: shouldPreload,
+                            ),
+                          ),
                         )
                       else
-                        Container(
-                          color: Colors.grey[900],
-                          child: const Center(
-                            child: Icon(Icons.play_circle_outline, size: 80, color: Colors.white),
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              color: Colors.grey[900],
+                              child: const Center(
+                                child: Icon(Icons.play_circle_outline, size: 80, color: Colors.white),
+                              ),
+                            ),
                           ),
                         ),
                       
