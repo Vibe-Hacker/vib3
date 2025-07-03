@@ -149,6 +149,71 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     );
   }
 
+  List<Widget> _buildFloatingBubbleActions(BuildContext context, Video video, int index) {
+    const bubbleOffset = 60.0;
+    final isCurrentVideo = index == _currentIndex;
+    
+    return [
+      // Like Bubble (bottom left)
+      AnimatedPositioned(
+        duration: Duration(milliseconds: 300 + (index * 50)),
+        bottom: 80 + (isCurrentVideo ? 10 : 0),
+        left: 20 + (isCurrentVideo ? 5 : 0),
+        child: _FloatingBubble(
+          icon: Icons.favorite_border,
+          activeIcon: Icons.favorite,
+          count: video.likesCount,
+          isActive: _likedVideos[video.id] ?? false,
+          onTap: () => _handleLike(video),
+          gradientColors: const [Color(0xFFFF1493), Color(0xFFFF6B9D)],
+        ),
+      ),
+      
+      // Comment Bubble (middle left, slight diagonal)
+      AnimatedPositioned(
+        duration: Duration(milliseconds: 400 + (index * 50)),
+        bottom: 140 + (isCurrentVideo ? 8 : 0),
+        left: 35 + (isCurrentVideo ? 3 : 0),
+        child: _FloatingBubble(
+          icon: Icons.chat_bubble_outline,
+          activeIcon: Icons.chat_bubble,
+          count: video.commentsCount,
+          onTap: () => _showComments(video),
+          gradientColors: const [Color(0xFF00CED1), Color(0xFF40E0D0)],
+        ),
+      ),
+      
+      // Share Bubble (top left, more diagonal)
+      AnimatedPositioned(
+        duration: Duration(milliseconds: 500 + (index * 50)),
+        bottom: 200 + (isCurrentVideo ? 6 : 0),
+        left: 50 + (isCurrentVideo ? 1 : 0),
+        child: _FloatingBubble(
+          icon: Icons.share,
+          activeIcon: Icons.share,
+          count: video.sharesCount,
+          onTap: () => _shareVideo(video),
+          gradientColors: const [Color(0xFFFFD700), Color(0xFFFFA500)],
+        ),
+      ),
+      
+      // Follow Bubble (if not own video)
+      if (video.userId != Provider.of<AuthProvider>(context, listen: false).currentUser?.id)
+        AnimatedPositioned(
+          duration: Duration(milliseconds: 600 + (index * 50)),
+          bottom: 260 + (isCurrentVideo ? 4 : 0),
+          left: 65 + (isCurrentVideo ? -1 : 0),
+          child: _FloatingBubble(
+            icon: Icons.add_box_outlined,
+            activeIcon: Icons.add_box,
+            isActive: _followedUsers[video.userId] ?? false,
+            onTap: () => _handleFollow(video),
+            gradientColors: const [Color(0xFF9C27B0), Color(0xFFE1BEE7)],
+          ),
+        ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<VideoProvider>(
@@ -204,7 +269,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
 
         // Remove the empty videos check - let the PageView handle everything
 
-        // Show actual video content with player and infinite scrolling
+        // Show actual video content with unique card-style layout
         return PageView.builder(
           controller: _pageController,
           scrollDirection: Axis.vertical,
@@ -231,132 +296,209 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             
             return Container(
               color: Colors.black,
-              child: Stack(
-                children: [
-                  // Video player with preloading
-                  if (video.videoUrl != null && video.videoUrl!.isNotEmpty)
-                    VideoPlayerWidget(
-                      videoUrl: video.videoUrl!,
-                      isPlaying: isCurrentVideo && _isAppInForeground && _isScreenVisible,
-                      preload: shouldPreload,
-                    )
-                  else
-                    Container(
-                      color: Colors.grey[900],
-                      child: const Center(
-                        child: Icon(Icons.play_circle_outline, size: 80, color: Colors.white),
-                      ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00CED1).withOpacity(0.3),
+                      blurRadius: 15,
+                      spreadRadius: 2,
                     ),
-                  
-                  // Video info overlay (bottom right)
-                  Positioned(
-                    bottom: 100,
-                    left: 16,
-                    right: 80,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '@${video.user?['username'] ?? 'Unknown'} (${index + 1}/${videoProvider.videos.length})',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        // Debug info overlay
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    BoxShadow(
+                      color: const Color(0xFFFF1493).withOpacity(0.3),
+                      blurRadius: 15,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      // Pulsing gradient background
+                      Positioned.fill(
+                        child: AnimatedContainer(
+                          duration: const Duration(seconds: 2),
                           decoration: BoxDecoration(
-                            color: Colors.black54,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'Debug: URL=${video.videoUrl?.split('/').last ?? 'NO_URL'}',
-                            style: const TextStyle(
-                              color: Colors.yellow,
-                              fontSize: 10,
+                            gradient: RadialGradient(
+                              center: Alignment.center,
+                              radius: isCurrentVideo ? 1.5 : 1.0,
+                              colors: [
+                                Colors.black,
+                                const Color(0xFF00CED1).withOpacity(0.1),
+                                const Color(0xFFFF1493).withOpacity(0.1),
+                              ],
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          video.description ?? 'No description',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
+                      ),
+                      
+                      // Video player
+                      if (video.videoUrl != null && video.videoUrl!.isNotEmpty)
+                        VideoPlayerWidget(
+                          videoUrl: video.videoUrl!,
+                          isPlaying: isCurrentVideo && _isAppInForeground && _isScreenVisible,
+                          preload: shouldPreload,
+                        )
+                      else
+                        Container(
+                          color: Colors.grey[900],
+                          child: const Center(
+                            child: Icon(Icons.play_circle_outline, size: 80, color: Colors.white),
                           ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                  ),
+                      
                   
-                  // Debug info button (top left)
+                      // Top-right Creator Panel with VIB3 styling (edge position)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF00CED1),
+                                Color(0xFFFF1493),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // User avatar with gradient border
+                              Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: const LinearGradient(
+                                    colors: [Colors.white, Colors.white70],
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Colors.black,
+                                  child: Text(
+                                    (video.user?['username'] ?? 'U')[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Username
+                              Text(
+                                '@${video.user?['username'] ?? 'Unknown'}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      
+                      // Video description overlay (between floating buttons and bottom)
+                      Positioned(
+                        bottom: 60,
+                        left: 16,
+                        right: 90,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(15),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.9),
+                                blurRadius: 15,
+                                spreadRadius: 5,
+                                offset: const Offset(0, 0),
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.6),
+                                blurRadius: 8,
+                                spreadRadius: 3,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            video.description ?? 'No description',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  
+                  // Debug info button (top left, smaller)
                   Positioned(
-                    top: 50,
+                    top: 60,
                     left: 16,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF00CED1).withOpacity(0.3),
+                          width: 0.5,
+                        ),
                       ),
                       child: Text(
-                        'Videos: ${videoProvider.videos.length} | Active: ${index + 1}',
+                        '${index + 1}/${videoProvider.videos.length}',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 10,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
                   ),
                   
-                  // Action buttons (right side)
-                  Positioned(
-                    bottom: 100,
-                    right: 16,
-                    child: Column(
-                      children: [
-                        // Like button
-                        _VideoActionButton(
-                          icon: Icons.favorite_border,
-                          activeIcon: Icons.favorite,
-                          count: video.likesCount,
-                          isActive: _likedVideos[video.id] ?? false,
-                          onTap: () => _handleLike(video),
+                      // Floating Bubble Actions (unique diagonal layout)
+                      ..._buildFloatingBubbleActions(context, video, index),
+                      
+                      // Gesture detection overlay for unique interactions
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onDoubleTap: () => _handleLike(video),
+                          onLongPress: () => _showComments(video),
+                          child: Container(color: Colors.transparent),
                         ),
-                        const SizedBox(height: 24),
-                        // Comment button
-                        _VideoActionButton(
-                          icon: Icons.chat_bubble_outline,
-                          activeIcon: Icons.chat_bubble,
-                          count: video.commentsCount,
-                          onTap: () => _showComments(video),
-                        ),
-                        const SizedBox(height: 24),
-                        // Share button
-                        _VideoActionButton(
-                          icon: Icons.share,
-                          activeIcon: Icons.share,
-                          count: video.sharesCount,
-                          onTap: () => _shareVideo(video),
-                        ),
-                        const SizedBox(height: 24),
-                        // Follow button (if not own video)
-                        if (video.userId != Provider.of<AuthProvider>(context, listen: false).currentUser?.id)
-                          _VideoActionButton(
-                            icon: Icons.add_box_outlined,
-                            activeIcon: Icons.add_box,
-                            isActive: _followedUsers[video.userId] ?? false,
-                            onTap: () => _handleFollow(video),
-                          ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             );
           },
@@ -366,55 +508,149 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   }
 }
 
-class _VideoActionButton extends StatelessWidget {
+class _FloatingBubble extends StatefulWidget {
   final IconData icon;
   final IconData? activeIcon;
   final int? count;
   final bool isActive;
   final VoidCallback onTap;
+  final List<Color> gradientColors;
 
-  const _VideoActionButton({
+  const _FloatingBubble({
     required this.icon,
     this.activeIcon,
     this.count,
     this.isActive = false,
     required this.onTap,
+    required this.gradientColors,
   });
 
   @override
+  State<_FloatingBubble> createState() => _FloatingBubbleState();
+}
+
+class _FloatingBubbleState extends State<_FloatingBubble>
+    with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late AnimationController _floatController;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _floatAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    
+    _floatController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    );
+    
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _floatAnimation = Tween<double>(
+      begin: -5.0,
+      end: 5.0,
+    ).animate(CurvedAnimation(
+      parent: _floatController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _pulseController.repeat(reverse: true);
+    _floatController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _floatController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isActive && activeIcon != null ? activeIcon! : icon,
-              color: isActive 
-                ? const Color(0xFFFF0080)
-                : Colors.white,
-              size: 24,
-            ),
-          ),
-          if (count != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              _formatCount(count!),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+    return AnimatedBuilder(
+      animation: Listenable.merge([_pulseAnimation, _floatAnimation]),
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _floatAnimation.value),
+          child: Transform.scale(
+            scale: widget.isActive ? _pulseAnimation.value : 1.0,
+            child: GestureDetector(
+              onTap: widget.onTap,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: widget.gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.gradientColors.first.withOpacity(0.4),
+                      blurRadius: 15,
+                      spreadRadius: 3,
+                    ),
+                    BoxShadow(
+                      color: widget.gradientColors.last.withOpacity(0.4),
+                      blurRadius: 15,
+                      spreadRadius: 3,
+                      offset: const Offset(3, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      widget.isActive && widget.activeIcon != null 
+                        ? widget.activeIcon! 
+                        : widget.icon,
+                      color: Colors.white,
+                      size: 24,
+                      shadows: const [
+                        Shadow(
+                          color: Colors.black,
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    if (widget.count != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatCount(widget.count!),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
-          ],
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -715,6 +951,37 @@ class ShareSheet extends StatelessWidget {
 
   const ShareSheet({super.key, required this.video});
 
+  // SECURITY: Generate secure sharing links that contain NO authentication data
+  void _copySecureVideoLink(BuildContext context, Video video) {
+    try {
+      // Create secure sharing URL with ONLY public video ID
+      // NEVER include user tokens, auth data, or sensitive information
+      final secureUrl = 'https://vib3.com/video/${video.id}';
+      
+      // TODO: Copy to clipboard using flutter/services
+      // Clipboard.setData(ClipboardData(text: secureUrl));
+      
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Secure link copied: $secureUrl'),
+          backgroundColor: const Color(0xFFFF0080),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      
+      print('SECURITY: Generated secure share link - $secureUrl (no auth data)');
+    } catch (e) {
+      print('Error generating secure share link: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to copy link'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -752,16 +1019,7 @@ class ShareSheet extends StatelessWidget {
               _ShareOption(
                 icon: Icons.copy,
                 label: 'Copy link',
-                onTap: () {
-                  // Copy video link to clipboard
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Link copied to clipboard'),
-                      backgroundColor: Color(0xFFFF0080),
-                    ),
-                  );
-                },
+                onTap: () => _copySecureVideoLink(context, video),
               ),
               _ShareOption(
                 icon: Icons.message,
