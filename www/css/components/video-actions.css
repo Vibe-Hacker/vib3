@@ -55,24 +55,24 @@
 
 /* Flutter-style floating action bubbles */
 .action-btn {
-    width: 48px;
-    height: 48px;
+    width: auto;
+    height: auto;
+    padding: 12px;
     border-radius: 20px;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: none;
     color: white;
     cursor: pointer;
-    backdrop-filter: blur(15px);
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    border: none;
     font-family: inherit;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+    animation: floatAnimation 3s ease-in-out infinite;
     box-shadow: 
         0 4px 15px rgba(0, 0, 0, 0.3),
         0 2px 8px rgba(0, 0, 0, 0.2);
@@ -90,44 +90,98 @@
     transform: translateY(0) scale(0.98);
 }
 
-/* Action button variants */
+/* Action button variants matching Flutter app exactly */
 .action-btn.liked {
     background: linear-gradient(135deg, #FF1493, #FF6B9D);
     box-shadow: 
         0 0 15px rgba(255, 20, 147, 0.4),
-        0 4px 15px rgba(0, 0, 0, 0.3);
+        0 0 15px rgba(255, 107, 157, 0.4),
+        0 3px 3px rgba(255, 107, 157, 0.4);
+    animation: floatAnimation 3s ease-in-out infinite, pulseAnimation 2s ease-in-out infinite;
 }
 
 .action-btn.bookmarked {
     background: linear-gradient(135deg, #FFD700, #FFA500);
     box-shadow: 
         0 0 15px rgba(255, 215, 0, 0.4),
-        0 4px 15px rgba(0, 0, 0, 0.3);
+        0 0 15px rgba(255, 165, 0, 0.4),
+        0 3px 3px rgba(255, 165, 0, 0.4);
 }
 
 .action-btn.shared {
     background: linear-gradient(135deg, #00CED1, #40E0D0);
     box-shadow: 
         0 0 15px rgba(0, 206, 209, 0.4),
-        0 4px 15px rgba(0, 0, 0, 0.3);
+        0 0 15px rgba(64, 224, 208, 0.4),
+        0 3px 3px rgba(64, 224, 208, 0.4);
 }
 
-/* Action button icons */
+/* Comment/Chat button - cyan gradient */
+.action-btn[onclick*="comment"] {
+    background: linear-gradient(135deg, #00CED1, #40E0D0);
+    box-shadow: 
+        0 0 15px rgba(0, 206, 209, 0.4),
+        0 0 15px rgba(64, 224, 208, 0.4),
+        0 3px 3px rgba(64, 224, 208, 0.4);
+}
+
+/* Share button - gold gradient */
+.action-btn[onclick*="share"] {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    box-shadow: 
+        0 0 15px rgba(255, 215, 0, 0.4),
+        0 0 15px rgba(255, 165, 0, 0.4),
+        0 3px 3px rgba(255, 165, 0, 0.4);
+}
+
+/* Profile button - purple gradient */
+.action-btn[data-user-id] {
+    background: linear-gradient(135deg, #9C27B0, #E1BEE7);
+    box-shadow: 
+        0 0 15px rgba(156, 39, 176, 0.4),
+        0 0 15px rgba(225, 190, 231, 0.4),
+        0 3px 3px rgba(225, 190, 231, 0.4);
+}
+
+/* Action button icons - matching Flutter 24px size */
 .action-btn .icon {
-    font-size: 20px;
-    margin-bottom: 3px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+    font-size: 24px;
+    margin-bottom: 4px;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.8));
 }
 
-/* Action button counts */
+/* Action button counts - matching Flutter 10px bold */
 .action-btn .count {
     font-size: 10px;
-    font-weight: 700;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    font-weight: bold;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
     white-space: nowrap;
-    margin-top: 1px;
+    margin-top: 0;
     line-height: 1;
+    background: linear-gradient(135deg, #FFFFFF, #000000);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Flutter-style animations */
+@keyframes floatAnimation {
+    0%, 100% {
+        transform: translateY(-5px);
+    }
+    50% {
+        transform: translateY(5px);
+    }
+}
+
+@keyframes pulseAnimation {
+    0%, 100% {
+        transform: scale(1.0);
+    }
+    50% {
+        transform: scale(1.2);
+    }
 }
 
 /* Creator panel bubble - now clickable with profile and vibe functionality */
