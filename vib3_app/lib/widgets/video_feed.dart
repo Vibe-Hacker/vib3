@@ -417,7 +417,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
                             // Dark bubble background
-                            color: Colors.black.withOpacity(0.8),
+                            color: Colors.black.withOpacity(0.7),
                             borderRadius: BorderRadius.circular(25),
                             // Border for definition
                             border: Border.all(
@@ -458,6 +458,13 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black,
+                                  blurRadius: 2,
+                                ),
+                              ],
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,

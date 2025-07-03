@@ -204,11 +204,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   Widget build(BuildContext context) {
     if (_hasError) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          color: Colors.grey[900],
-          child: const Center(
+      return Container(
+        color: Colors.grey[900],
+        child: const Center(
             child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -221,25 +219,21 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             ],
             ),
           ),
-        ),
-      );
+        );
     }
 
     // Show black screen while initializing - no loading spinner
     if (!_isInitialized) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          color: Colors.black,
-          child: const Center(
+      return Container(
+        color: Colors.black,
+        child: const Center(
             child: Icon(
             Icons.play_circle_outline,
             size: 80,
             color: Colors.white30,
             ),
           ),
-        ),
-      );
+        );
     }
 
     return GestureDetector(
@@ -247,10 +241,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       child: Container(
         width: double.infinity,
         height: double.infinity,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            children: [
+        child: Stack(
+          children: [
               FittedBox(
                 fit: BoxFit.cover,
                 child: SizedBox(
@@ -280,8 +272,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   ),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
