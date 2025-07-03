@@ -120,7 +120,7 @@
     margin-top: 2px;
 }
 
-/* Creator panel bubble */
+/* Creator panel bubble - now clickable with profile and vibe functionality */
 .creator-panel {
     position: absolute;
     top: 20px;
@@ -131,6 +131,21 @@
     z-index: 15;
     box-shadow: var(--vib3-multi-glow);
     animation: vib3Float 3s ease-in-out infinite;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.creator-panel:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 
+        0 0 25px rgba(0, 206, 209, 0.6),
+        0 0 35px rgba(255, 20, 147, 0.5),
+        0 6px 12px rgba(0, 0, 0, 0.6);
+}
+
+.creator-panel:active {
+    transform: translateY(0) scale(0.98);
 }
 
 .creator-panel .creator-info {
@@ -151,12 +166,26 @@
     justify-content: center;
     font-weight: bold;
     text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .creator-panel .creator-name {
     font-weight: 600;
     font-size: 14px;
     text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+    margin-right: 4px;
+}
+
+.creator-panel .vibe-indicator {
+    opacity: 0.7;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
+}
+
+.creator-panel .vibe-indicator.vibing {
+    opacity: 1;
+    animation: vib3ActivePulse 1s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
 }
 
 /* Video description bubble */
