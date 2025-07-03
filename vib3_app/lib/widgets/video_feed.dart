@@ -407,27 +407,33 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
                             // Dark bubble background
-                            color: Colors.black.withOpacity(0.7),
+                            color: Colors.black.withOpacity(0.8),
                             borderRadius: BorderRadius.circular(20),
                             // Border for definition
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.1),
-                              width: 1,
+                              color: Colors.white.withOpacity(0.2),
+                              width: 1.5,
                             ),
-                            // Glow effect
+                            // Strong glow effect like floating buttons
                             boxShadow: [
-                              // Outer glow
+                              // Primary white glow
+                              BoxShadow(
+                                color: Colors.white.withOpacity(0.4),
+                                blurRadius: 25,
+                                spreadRadius: 5,
+                              ),
+                              // Secondary glow
                               BoxShadow(
                                 color: Colors.white.withOpacity(0.2),
-                                blurRadius: 20,
-                                spreadRadius: 2,
+                                blurRadius: 35,
+                                spreadRadius: 8,
                               ),
-                              // Dark shadow for depth
+                              // Inner shadow for depth
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.8),
-                                blurRadius: 15,
-                                spreadRadius: 5,
-                                offset: const Offset(0, 3),
+                                color: Colors.black.withOpacity(0.9),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
