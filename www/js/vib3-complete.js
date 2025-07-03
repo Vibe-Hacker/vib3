@@ -966,6 +966,20 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                 }
             });
             
+            // Check if response is ok and content type is JSON
+            if (!response.ok) {
+                console.error(`API error: ${response.status} ${response.statusText}`);
+                throw new Error(`API returned ${response.status}`);
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('Invalid response type:', contentType);
+                const text = await response.text();
+                console.error('Response preview:', text.substring(0, 200));
+                throw new Error('API returned non-JSON response');
+            }
+            
             const data = await response.json();
             console.log(`📦 Received data for page ${page}:`, data.videos?.length, 'videos');
             
@@ -1306,18 +1320,85 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
             }
         } catch (error) {
             console.error('Load feed error:', error);
-            if (!append) {
-                if (feedType === 'explore') {
-                    const exploreGrid = document.getElementById('exploreVideoGrid');
-                    if (exploreGrid) {
-                        exploreGrid.innerHTML = createErrorMessage(feedType);
-                    }
-                } else {
-                    feedElement.innerHTML = createErrorMessage(feedType);
+            
+            // Use sample videos as fallback when API fails
+            console.log('🎬 Using sample videos as fallback');
+            const sampleVideos = [
+                {
+                    _id: 'fallback1',
+                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                    user: { 
+                        _id: 'sample1',
+                        username: 'vib3_demo', 
+                        displayName: 'VIB3 Demo',
+                        profilePicture: '🎬' 
+                    },
+                    title: 'Welcome to VIB3!',
+                    description: 'Experience the next generation of video sharing',
+                    likeCount: 1234,
+                    commentCount: 56,
+                    shareCount: 23,
+                    uploadDate: new Date(),
+                    duration: 60,
+                    views: 15600
+                },
+                {
+                    _id: 'fallback2',
+                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+                    user: { 
+                        _id: 'sample2',
+                        username: 'creator_demo', 
+                        displayName: 'Creative Studio',
+                        profilePicture: '🎨' 
+                    },
+                    title: 'Digital Art Showcase',
+                    description: 'Amazing digital creations #art #creative',
+                    likeCount: 890,
+                    commentCount: 45,
+                    shareCount: 12,
+                    uploadDate: new Date(),
+                    duration: 45,
+                    views: 8900
                 }
-                hasMoreVideos = false;
+            ];
+            
+            if (!append) {
+                feedElement.innerHTML = '';
+                feedElement.style.display = 'block';
+                feedElement.style.overflow = 'auto';
+                feedElement.style.scrollSnapType = 'y mandatory';
+                feedElement.style.scrollBehavior = 'smooth';
+                
+                // Add sample videos
+                sampleVideos.forEach(video => {
+                    const videoCard = createAdvancedVideoCard(video);
+                    feedElement.appendChild(videoCard);
+                });
+                
+                // Add error message at bottom
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = `
+                    text-align: center;
+                    padding: 20px;
+                    color: #999;
+                    font-size: 14px;
+                    background: var(--bg-secondary);
+                    border-radius: 10px;
+                    margin: 20px;
+                `;
+                errorDiv.innerHTML = `
+                    <div style="font-size: 32px; margin-bottom: 10px;">⚠️</div>
+                    <div>Unable to load live feed</div>
+                    <div style="font-size: 12px; margin-top: 5px;">Showing demo content</div>
+                `;
+                feedElement.appendChild(errorDiv);
+                
+                // Setup infinite scroll even with sample videos
+                setupInfiniteScroll(feedElement, feedType);
+                setTimeout(() => initializeVideoObserver(), 200);
+                hasMoreVideos = true;
             } else {
-                console.log('Error in append mode, but keeping hasMoreVideos true');
+                console.log('Error in append mode, using existing videos');
                 hasMoreVideos = true; // Keep trying for infinite scroll
             }
         }
