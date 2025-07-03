@@ -28,6 +28,16 @@ if (typeof currentUser === 'undefined') {
 let currentFeed = 'home';
 let currentVideoId = null;
 let isRecording = false;
+
+// Gift types for live streaming
+const liveStreamGiftTypes = [
+    { id: 'heart', name: '❤️ Heart', coins: 1, emoji: '❤️' },
+    { id: 'star', name: '⭐ Star', coins: 5, emoji: '⭐' },
+    { id: 'fire', name: '🔥 Fire', coins: 10, emoji: '🔥' },
+    { id: 'diamond', name: '💎 Diamond', coins: 25, emoji: '💎' },
+    { id: 'crown', name: '👑 Crown', coins: 50, emoji: '👑' },
+    { id: 'rocket', name: '🚀 Rocket', coins: 100, emoji: '🚀' }
+];
 let currentStep = 1;
 
 // Sample live streams for offline mode - moved to top to avoid temporal dead zone
@@ -17037,17 +17047,6 @@ let liveStreamingState = {
         isPrivate: false
     }
 };
-
-// Gift types for live streaming
-const liveStreamGiftTypes = [
-    { id: 'heart', name: '❤️ Heart', coins: 1, emoji: '❤️' },
-    { id: 'star', name: '⭐ Star', coins: 5, emoji: '⭐' },
-    { id: 'fire', name: '🔥 Fire', coins: 10, emoji: '🔥' },
-    { id: 'diamond', name: '💎 Diamond', coins: 25, emoji: '💎' },
-    { id: 'crown', name: '👑 Crown', coins: 50, emoji: '👑' },
-    { id: 'rocket', name: '🚀 Rocket', coins: 100, emoji: '🚀' }
-];
-
 
 function showLiveStreaming() {
     console.log('🔴 Showing Live Streaming page');
