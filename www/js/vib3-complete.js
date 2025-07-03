@@ -1467,7 +1467,6 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                         views: 8900
                     }
                 ];
-            }
             
             if (!append) {
                 feedElement.innerHTML = '';
