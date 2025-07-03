@@ -1189,8 +1189,8 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                 console.log('✨ Loading Vibing feed - attempting to get real followed content');
                 
                 try {
-                    // Try to load from API first
-                    const response = await fetch(`${window.API_BASE_URL}/api/videos/following?limit=10`, {
+                    // Get the user's following list first
+                    const followingResponse = await fetch(`${window.API_BASE_URL}/api/user/following`, {
                         credentials: 'include',
                         headers: {
                             'Accept': 'application/json',
@@ -1200,137 +1200,207 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                         }
                     });
                     
-                    if (response.ok) {
-                        const contentType = response.headers.get('content-type');
-                        if (contentType && contentType.includes('application/json')) {
-                            const data = await response.json();
-                            if (data.videos && data.videos.length > 0) {
-                                console.log('✅ Got real content from followed users:', data.videos.length);
-                                
-                                feedElement.innerHTML = '';
-                                feedElement.style.display = 'block';
-                                feedElement.style.overflow = 'auto';
-                                feedElement.style.scrollSnapType = 'y mandatory';
-                                feedElement.style.scrollBehavior = 'smooth';
-                                
-                                data.videos.forEach(video => {
-                                    const videoCard = createAdvancedVideoCard(video);
-                                    feedElement.appendChild(videoCard);
-                                });
-                                
-                                setupInfiniteScroll(feedElement, feedType);
-                                setTimeout(() => initializeVideoObserver(), 200);
-                                hasMoreVideos = true;
-                                
-                                if (tabElement) {
-                                    tabElement.classList.add('active');
-                                }
-                                return;
-                            }
-                        }
+                    if (!followingResponse.ok) {
+                        throw new Error('Failed to get following list');
                     }
-                } catch (err) {
-                    console.log('⚠️ API error details:', err);
-                }
-                
-                // If API failed, try alternative approach - check if we have any following data
-                console.log('📱 API failed, checking authentication and trying alternative approach');
-                console.log('🔑 Current authToken:', window.authToken ? 'exists' : 'missing');
-                console.log('👤 Current user:', window.currentUser ? window.currentUser.username : 'not set');
-                
-                // Try a different endpoint or approach
-                try {
-                    const response = await fetch(`${window.API_BASE_URL}/api/feed/following`, {
-                        method: 'GET',
-                        credentials: 'include',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            ...(window.authToken && window.authToken !== 'session-based' ? 
-                                { 'Authorization': `Bearer ${window.authToken}` } : {})
-                        }
-                    });
                     
-                    console.log('🔄 Alternative API response status:', response.status);
+                    const followingData = await followingResponse.json();
+                    const followingList = followingData.following || followingData || [];
                     
-                    if (response.ok) {
-                        const data = await response.json();
-                        console.log('✅ Alternative API data:', data);
+                    console.log('📋 Following list:', followingList.length, 'users');
+                    
+                    if (followingList.length === 0) {
+                        // Show empty state if user isn't following anyone
+                        feedElement.innerHTML = '';
+                        feedElement.style.display = 'block';
+                        feedElement.style.overflow = 'hidden';
                         
-                        if (data.videos && data.videos.length > 0) {
-                            console.log('✅ Found videos from followed accounts:', data.videos.length);
-                            
-                            feedElement.innerHTML = '';
-                            feedElement.style.display = 'block';
-                            feedElement.style.overflow = 'auto';
-                            feedElement.style.scrollSnapType = 'y mandatory';
-                            feedElement.style.scrollBehavior = 'smooth';
-                            
-                            data.videos.forEach(video => {
-                                const videoCard = createAdvancedVideoCard(video);
-                                feedElement.appendChild(videoCard);
-                            });
-                            
-                            setupInfiniteScroll(feedElement, feedType);
-                            setTimeout(() => initializeVideoObserver(), 200);
-                            hasMoreVideos = true;
-                            
-                            if (tabElement) {
-                                tabElement.classList.add('active');
-                            }
-                            return;
+                        const emptyState = document.createElement('div');
+                        emptyState.style.cssText = `
+                            text-align: center;
+                            padding: 60px 20px;
+                            color: #999;
+                            font-size: 16px;
+                            height: 100%;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                        `;
+                        emptyState.innerHTML = `
+                            <div style="font-size: 64px; margin-bottom: 20px;">✨</div>
+                            <div style="font-size: 24px; margin-bottom: 10px; color: white;">Start Vibing!</div>
+                            <div style="margin-bottom: 20px; max-width: 400px; font-size: 14px;">
+                                Follow some creators to see their videos here!
+                            </div>
+                            <button onclick="showPage('discover')" style="
+                                padding: 12px 32px;
+                                background: var(--accent-gradient);
+                                color: white;
+                                border: none;
+                                border-radius: 25px;
+                                cursor: pointer;
+                                font-weight: 600;
+                                font-size: 16px;
+                                box-shadow: var(--vib3-glow);
+                            ">Discover Creators</button>
+                        `;
+                        feedElement.appendChild(emptyState);
+                        hasMoreVideos = false;
+                        
+                        if (tabElement) {
+                            tabElement.classList.add('active');
                         }
+                        return;
                     }
-                } catch (altErr) {
-                    console.log('⚠️ Alternative API also failed:', altErr);
-                }
-                
-                // Show empty state with better debugging info
-                feedElement.innerHTML = '';
-                feedElement.style.display = 'block';
-                feedElement.style.overflow = 'hidden';
-                
-                const emptyState = document.createElement('div');
-                emptyState.style.cssText = `
-                    text-align: center;
-                    padding: 60px 20px;
-                    color: #999;
-                    font-size: 16px;
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                `;
-                emptyState.innerHTML = `
-                    <div style="font-size: 64px; margin-bottom: 20px;">✨</div>
-                    <div style="font-size: 24px; margin-bottom: 10px; color: white;">Vibing Feed Debug</div>
-                    <div style="margin-bottom: 20px; max-width: 400px; font-size: 14px;">
-                        Auth: ${window.authToken ? '✅ Token exists' : '❌ No token'}<br>
-                        User: ${window.currentUser ? '✅ ' + window.currentUser.username : '❌ Not logged in'}<br>
-                        API Base: ${window.API_BASE_URL || 'Not set'}<br>
-                        <br>
-                        Follow some creators to see their videos here!
-                    </div>
-                    <button onclick="showPage('discover')" style="
-                        padding: 12px 32px;
-                        background: var(--accent-gradient);
-                        color: white;
-                        border: none;
-                        border-radius: 25px;
-                        cursor: pointer;
-                        font-weight: 600;
+                    
+                    // Create a Set of following user IDs for quick lookup
+                    const followingIds = new Set(followingList.map(user => user._id || user.id));
+                    
+                    // Get all videos
+                    const videosResponse = await fetch(`${window.API_BASE_URL}/api/videos?limit=50`, {
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            ...(window.authToken && window.authToken !== 'session-based' ? 
+                                { 'Authorization': `Bearer ${window.authToken}` } : {})
+                        }
+                    });
+                    
+                    if (!videosResponse.ok) {
+                        throw new Error('Failed to get videos');
+                    }
+                    
+                    const videosData = await videosResponse.json();
+                    const allVideos = videosData.videos || videosData || [];
+                    
+                    console.log('📹 Total videos:', allVideos.length);
+                    
+                    // Filter videos to only show those from followed users
+                    const followedVideos = allVideos.filter(video => {
+                        const videoUserId = video.user?._id || video.user?.id || video.userId;
+                        return followingIds.has(videoUserId);
+                    });
+                    
+                    console.log('✨ Videos from followed users:', followedVideos.length);
+                    
+                    if (followedVideos.length > 0) {
+                        // Sort by creation date (newest first)
+                        followedVideos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                        
+                        feedElement.innerHTML = '';
+                        feedElement.style.display = 'block';
+                        feedElement.style.overflow = 'auto';
+                        feedElement.style.scrollSnapType = 'y mandatory';
+                        feedElement.style.scrollBehavior = 'smooth';
+                        
+                        followedVideos.forEach(video => {
+                            const videoCard = createAdvancedVideoCard(video);
+                            feedElement.appendChild(videoCard);
+                        });
+                        
+                        setupInfiniteScroll(feedElement, feedType);
+                        setTimeout(() => initializeVideoObserver(), 200);
+                        hasMoreVideos = true;
+                        
+                        if (tabElement) {
+                            tabElement.classList.add('active');
+                        }
+                        return;
+                    } else {
+                        // Show message that followed users haven't posted yet
+                        feedElement.innerHTML = '';
+                        feedElement.style.display = 'block';
+                        feedElement.style.overflow = 'hidden';
+                        
+                        const emptyState = document.createElement('div');
+                        emptyState.style.cssText = `
+                            text-align: center;
+                            padding: 60px 20px;
+                            color: #999;
+                            font-size: 16px;
+                            height: 100%;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                        `;
+                        emptyState.innerHTML = `
+                            <div style="font-size: 64px; margin-bottom: 20px;">✨</div>
+                            <div style="font-size: 24px; margin-bottom: 10px; color: white;">No New Vibes</div>
+                            <div style="margin-bottom: 20px; max-width: 400px; font-size: 14px;">
+                                The creators you're vibing with haven't posted new content yet.<br>
+                                Check back later or discover new creators!
+                            </div>
+                            <button onclick="showPage('discover')" style="
+                                padding: 12px 32px;
+                                background: var(--accent-gradient);
+                                color: white;
+                                border: none;
+                                border-radius: 25px;
+                                cursor: pointer;
+                                font-weight: 600;
+                                font-size: 16px;
+                                box-shadow: var(--vib3-glow);
+                            ">Discover More</button>
+                        `;
+                        feedElement.appendChild(emptyState);
+                        hasMoreVideos = false;
+                        
+                        if (tabElement) {
+                            tabElement.classList.add('active');
+                        }
+                        return;
+                    }
+                    
+                } catch (err) {
+                    console.log('⚠️ Error loading vibing feed:', err);
+                    
+                    // Show error state
+                    feedElement.innerHTML = '';
+                    feedElement.style.display = 'block';
+                    feedElement.style.overflow = 'hidden';
+                    
+                    const errorState = document.createElement('div');
+                    errorState.style.cssText = `
+                        text-align: center;
+                        padding: 60px 20px;
+                        color: #999;
                         font-size: 16px;
-                        box-shadow: var(--vib3-glow);
-                    ">Discover Creators</button>
-                `;
-                feedElement.appendChild(emptyState);
-                hasMoreVideos = false;
-                
-                if (tabElement) {
-                    tabElement.classList.add('active');
+                        height: 100%;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                    `;
+                    errorState.innerHTML = `
+                        <div style="font-size: 64px; margin-bottom: 20px;">⚠️</div>
+                        <div style="font-size: 24px; margin-bottom: 10px; color: white;">Connection Error</div>
+                        <div style="margin-bottom: 20px; max-width: 400px; font-size: 14px;">
+                            Unable to load your vibing feed right now.<br>
+                            Please check your connection and try again.
+                        </div>
+                        <button onclick="switchFeedTab('vibing')" style="
+                            padding: 12px 32px;
+                            background: var(--accent-gradient);
+                            color: white;
+                            border: none;
+                            border-radius: 25px;
+                            cursor: pointer;
+                            font-weight: 600;
+                            font-size: 16px;
+                            box-shadow: var(--vib3-glow);
+                        ">Try Again</button>
+                    `;
+                    feedElement.appendChild(errorState);
+                    hasMoreVideos = false;
+                    
+                    if (tabElement) {
+                        tabElement.classList.add('active');
+                    }
+                    return;
                 }
-                return;
             }
             
             // Special handling for different feed types using feed manager
@@ -1356,8 +1426,8 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                 // Network feed uses default feed but will filter out current user's videos
                 feedUrl = `${window.API_BASE_URL}/api/videos?limit=20&_t=${timestamp}`;
             } else if (internalFeedType === 'following') {
-                // Subscriptions feed - try following endpoint, fallback to default feed
-                feedUrl = `${window.API_BASE_URL}/api/videos/following?limit=10&_t=${timestamp}`;
+                // Subscriptions feed - use regular videos endpoint and filter client-side
+                feedUrl = `${window.API_BASE_URL}/api/videos?limit=50&_t=${timestamp}`;
             } else {
                 // Default feed endpoint - use /api/videos instead of /feed
                 feedUrl = `${window.API_BASE_URL}/api/videos?limit=10&_t=${timestamp}`;
@@ -1405,6 +1475,38 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                         return videoUserId !== currentUserId;
                     });
                     console.log(`👥 Network feed: Filtered out ${originalCount - data.videos.length} own videos, showing ${data.videos.length} from network`);
+                }
+            }
+            
+            // Filter for following feed - only show videos from followed users
+            if (internalFeedType === 'following' && data.videos && window.currentUser) {
+                try {
+                    // Get following list and filter videos
+                    const followingResponse = await fetch(`${window.API_BASE_URL}/api/user/following`, {
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            ...(window.authToken && window.authToken !== 'session-based' ? 
+                                { 'Authorization': `Bearer ${window.authToken}` } : {})
+                        }
+                    });
+                    
+                    if (followingResponse.ok) {
+                        const followingData = await followingResponse.json();
+                        const followingList = followingData.following || followingData || [];
+                        const followingIds = new Set(followingList.map(user => user._id || user.id));
+                        
+                        const originalCount = data.videos.length;
+                        data.videos = data.videos.filter(video => {
+                            const videoUserId = video.user?._id || video.user?.id || video.userId;
+                            return followingIds.has(videoUserId);
+                        });
+                        console.log(`✨ Following feed: Filtered to ${data.videos.length} videos from ${followingList.length} followed users (from ${originalCount} total)`);
+                    }
+                } catch (err) {
+                    console.log('⚠️ Error filtering following feed:', err);
+                    // Keep all videos if filtering fails
                 }
             }
             
