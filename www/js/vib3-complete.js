@@ -18498,7 +18498,29 @@ function showLiveStreaming() {
         console.log('✅ Live streams populated dynamically');
     }, 100);
     
-    console.log('✅ Live Streaming page loaded');
+    // Add viewport resize listener for console/dev tools
+    const handleViewportResize = () => {
+        const livePage = document.getElementById('liveStreamingPage');
+        if (livePage) {
+            const height = window.innerHeight;
+            const width = window.innerWidth;
+            
+            // Detect if console/dev tools are likely open (reduced viewport)
+            if (height < 600 || width < 800) {
+                livePage.classList.add('console-open');
+            } else {
+                livePage.classList.remove('console-open');
+            }
+        }
+    };
+    
+    // Listen for resize events
+    window.addEventListener('resize', handleViewportResize);
+    
+    // Initial check
+    handleViewportResize();
+    
+    console.log('✅ Live Streaming page loaded with responsive viewport detection');
 }
 
 function generateLiveStreamsHTML(streams) {
