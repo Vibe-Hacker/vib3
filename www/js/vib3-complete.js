@@ -690,8 +690,10 @@ function initializeVideoObserver() {
                 
                 // Only play if not manually paused
                 if (!video.hasAttribute('data-manually-paused')) {
+                    // Restart video from beginning when scrolling back to it
+                    video.currentTime = 0;
                     video.play().catch(e => console.log('Play failed:', e));
-                    console.log('🎬 Auto-playing video:', video.src.split('/').pop());
+                    console.log('🎬 Auto-playing video from start:', video.src.split('/').pop());
                     
                     // Track video view start
                     const videoCard = video.closest('.video-card');
