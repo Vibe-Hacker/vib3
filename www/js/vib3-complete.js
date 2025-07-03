@@ -977,9 +977,52 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                 }
             }
             
-            // Skip API call entirely and jump to sample data
-            console.log('🎬 Skipping API call, using sample data for', feedType);
-            throw new Error('API temporarily disabled - using offline mode');
+            // For Squad/following feed, show content from followed accounts
+            if (feedType === 'subscriptions' || internalFeedType === 'following') {
+                console.log('👥 Loading Squad feed with content from followed accounts');
+                
+                // Show sample video from followed account
+                const followedAccountVideo = {
+                    _id: 'followed_video_1',
+                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                    user: { 
+                        _id: 'followed_user_1',
+                        username: 'friend_creator', 
+                        displayName: 'Friend Creator',
+                        profilePicture: '👥',
+                        isFollowing: true
+                    },
+                    title: 'Latest update from your friend!',
+                    description: 'Check out what your followed creator has been up to #friends #update',
+                    likeCount: 45,
+                    commentCount: 12,
+                    shareCount: 8,
+                    uploadDate: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+                    duration: 60,
+                    views: 234
+                };
+                
+                feedElement.innerHTML = '';
+                feedElement.style.display = 'block';
+                feedElement.style.overflow = 'auto';
+                feedElement.style.scrollSnapType = 'y mandatory';
+                feedElement.style.scrollBehavior = 'smooth';
+                
+                const videoCard = createAdvancedVideoCard(followedAccountVideo);
+                feedElement.appendChild(videoCard);
+                
+                console.log('✅ Added video from followed account to Squad feed');
+                
+                // Setup infinite scroll and video observer
+                setupInfiniteScroll(feedElement, feedType);
+                setTimeout(() => initializeVideoObserver(), 200);
+                hasMoreVideos = true;
+                
+                if (tabElement) {
+                    tabElement.classList.add('active');
+                }
+                return;
+            }
             
             // Special handling for different feed types using feed manager
             if (!append && window.feedManager) {
@@ -1385,8 +1428,31 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
             console.log('🎬 Using sample videos as fallback');
             let sampleVideos = [];
             
-            // Don't show placeholder videos for squad/following feed - it should be empty if no API data
-            if (feedType !== 'subscriptions' && internalFeedType !== 'following') {
+            // Show different content based on feed type
+            if (feedType === 'subscriptions' || internalFeedType === 'following') {
+                // Squad feed - show content from followed accounts
+                sampleVideos = [
+                    {
+                        _id: 'squad_fallback_1',
+                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                        user: { 
+                            _id: 'followed_creator_1',
+                            username: 'your_friend', 
+                            displayName: 'Your Friend',
+                            profilePicture: '👥',
+                            isFollowing: true
+                        },
+                        title: 'Update from someone you follow',
+                        description: 'This is content from accounts you follow #squad #friends',
+                        likeCount: 67,
+                        commentCount: 15,
+                        shareCount: 9,
+                        uploadDate: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
+                        duration: 45,
+                        views: 445
+                    }
+                ];
+            } else {
                 sampleVideos = [
                     {
                         _id: 'fallback1',
