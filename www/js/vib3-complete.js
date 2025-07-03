@@ -8186,8 +8186,6 @@ function createActivityPage() {
     document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
         el.style.display = 'none';
     });
-    const mainApp = document.getElementById('mainApp');
-    if (mainApp) mainApp.style.display = 'none';
     
     activityPage.style.display = 'block';
 }
