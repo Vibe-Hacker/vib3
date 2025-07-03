@@ -1,15 +1,15 @@
 /* Video Item Components - VIB3 Style with Header Space */
 .video-item {
-    height: calc(100vh - 140px);
+    height: calc(100vh - 180px);
     width: 100%;
     max-width: 500px;
     position: relative;
     display: block !important;
     background: #000;
-    margin: 0 auto 20px auto;
+    margin: 0 auto 40px auto;
     padding: 0;
     flex-shrink: 0;
-    min-height: calc(100vh - 140px);
+    min-height: calc(100vh - 180px);
     opacity: 1 !important;
     visibility: visible !important;
     scroll-snap-align: center;
@@ -30,13 +30,14 @@
 
 .video-element {
     width: auto;
-    height: calc(100vh - 140px);
+    height: calc(100vh - 180px);
     max-width: 100vw;
     object-fit: cover;
     background: #000;
     display: block !important;
     opacity: 1 !important;
     visibility: visible !important;
+    border-radius: 12px;
 }
 
 /* Consistent video sizing across all feeds - VIB3 Style with Header Space */
@@ -48,9 +49,10 @@
 #networkFeed .video-element,
 #pulseFeed .video-element {
     width: 100% !important;
-    height: calc(100vh - 140px) !important;
+    height: calc(100vh - 180px) !important;
     max-width: 500px !important;
     object-fit: cover !important;
+    border-radius: 12px !important;
 }
 
 /* Only landscape videos get cropped */
@@ -67,10 +69,12 @@
 #networkFeed .video-container,
 #pulseFeed .video-container {
     width: 100%;
-    height: calc(100vh - 140px);
+    height: calc(100vh - 180px);
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .video-loading {
