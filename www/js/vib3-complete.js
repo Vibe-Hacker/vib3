@@ -18498,9 +18498,6 @@ function showLiveStreaming() {
         console.log('✅ Live streams populated dynamically');
     }, 100);
     
-    // Update sidebar active state
-    updateSidebarActiveState('live');
-    
     console.log('✅ Live Streaming page loaded');
 }
 
