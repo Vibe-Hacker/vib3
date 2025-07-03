@@ -18420,7 +18420,7 @@ function getRandomComment() {
         'Thanks for streaming!',
         'Awesome! 🎉',
         'So entertaining!',
-        'You're the best!',
+        'You\'re the best!',
         'More please! 💯'
     ];
     return comments[Math.floor(Math.random() * comments.length)];
