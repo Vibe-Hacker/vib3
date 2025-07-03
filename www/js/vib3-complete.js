@@ -18510,14 +18510,29 @@ function showLiveStreaming() {
             const height = window.innerHeight;
             const width = window.innerWidth;
             
+            // Calculate available space accounting for sidebar
+            const sidebarWidth = window.innerWidth > 1024 ? 280 : 0;
+            const availableWidth = width - sidebarWidth;
+            const availableHeight = height;
+            
+            // Update live page dimensions dynamically
+            livePage.style.width = `${availableWidth}px`;
+            livePage.style.height = `${availableHeight}px`;
+            livePage.style.left = `${sidebarWidth}px`;
+            
             // Detect if console/dev tools are likely open (reduced viewport)
-            if (height < 600 || width < 800) {
+            if (height < 600 || availableWidth < 600) {
                 livePage.classList.add('console-open');
             } else {
                 livePage.classList.remove('console-open');
             }
+            
+            console.log(`📱 Live page resized: ${availableWidth}x${availableHeight} (sidebar: ${sidebarWidth}px)`);
         }
     };
+    
+    // Store handler globally for cleanup
+    window.liveStreamingResizeHandler = handleViewportResize;
     
     // Listen for resize events
     window.addEventListener('resize', handleViewportResize);
@@ -18543,8 +18558,11 @@ function closeLiveStreaming() {
         mainApp.style.display = 'flex';
     }
     
-    // Remove resize listener
-    window.removeEventListener('resize', handleViewportResize);
+    // Remove resize listener if it exists
+    if (window.liveStreamingResizeHandler) {
+        window.removeEventListener('resize', window.liveStreamingResizeHandler);
+        window.liveStreamingResizeHandler = null;
+    }
     
     console.log('✅ Returned to main app');
 }
