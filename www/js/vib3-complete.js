@@ -11536,12 +11536,13 @@ window.filterMusic = filterMusic;
 window.closeMusicLibrary = closeMusicLibrary;
 
 // VIB3 Collaboration Features - Original Alternatives to Duet/Stitch
-window.startCollaboration = startCollaboration;
-window.closeCollabModal = closeCollabModal;
-window.publishCollab = publishCollab;
-window.saveCollabDraft = saveCollabDraft;
-window.startRemix = startRemix;
-window.closeRemixModal = closeRemixModal;
+// TODO: Implement collaboration functions
+// window.startCollaboration = startCollaboration;
+// window.closeCollabModal = closeCollabModal;
+// window.publishCollab = publishCollab;
+// window.saveCollabDraft = saveCollabDraft;
+// window.startRemix = startRemix;
+// window.closeRemixModal = closeRemixModal;
 window.publishRemix = publishRemix;
 window.previewRemix = previewRemix;
 
