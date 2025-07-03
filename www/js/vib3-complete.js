@@ -1417,7 +1417,7 @@ function createAdvancedVideoCard(video) {
     
     // TikTok-style card with scroll snap and proper spacing
     card.style.cssText = `
-        height: calc(100vh - 120px) !important;
+        height: calc(100vh - 160px) !important;
         width: 100% !important;
         max-width: 500px !important;
         display: block !important;
