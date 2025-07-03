@@ -667,7 +667,7 @@ function formatCount(count) {
 function mapFeedType(feedType) {
     const feedMapping = {
         'home': 'foryou',
-        'subscriptions': 'following', 
+        'vibing': 'following',
         'network': 'friends',
         'discover': 'explore',
         'pulse': 'pulse'
@@ -977,29 +977,29 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                 }
             }
             
-            // For Squad/following feed, show content from followed accounts
-            if (feedType === 'subscriptions' || internalFeedType === 'following') {
-                console.log('👥 Loading Squad feed with content from followed accounts');
+            // For Vibing feed, show content from accounts you vibe with
+            if (feedType === 'vibing' || internalFeedType === 'following') {
+                console.log('✨ Loading Vibing feed with content from accounts you vibe with');
                 
-                // Show sample video from followed account
-                const followedAccountVideo = {
-                    _id: 'followed_video_1',
-                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                // Show video from account you vibe with (working video URL)
+                const vibingVideo = {
+                    _id: 'vibing_video_1',
+                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
                     user: { 
-                        _id: 'followed_user_1',
-                        username: 'friend_creator', 
-                        displayName: 'Friend Creator',
-                        profilePicture: '👥',
-                        isFollowing: true
+                        _id: 'vibed_user_1',
+                        username: 'vibed_creator', 
+                        displayName: 'Vibed Creator',
+                        profilePicture: '✨',
+                        isVibing: true
                     },
-                    title: 'Latest update from your friend!',
-                    description: 'Check out what your followed creator has been up to #friends #update',
-                    likeCount: 45,
-                    commentCount: 12,
-                    shareCount: 8,
-                    uploadDate: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-                    duration: 60,
-                    views: 234
+                    title: 'New vibe from someone you vibe with!',
+                    description: 'Latest content from creators you vibe with #vibing #vib3',
+                    likeCount: 89,
+                    commentCount: 23,
+                    shareCount: 12,
+                    uploadDate: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
+                    duration: 55,
+                    views: 567
                 };
                 
                 feedElement.innerHTML = '';
@@ -1008,10 +1008,10 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                 feedElement.style.scrollSnapType = 'y mandatory';
                 feedElement.style.scrollBehavior = 'smooth';
                 
-                const videoCard = createAdvancedVideoCard(followedAccountVideo);
+                const videoCard = createAdvancedVideoCard(vibingVideo);
                 feedElement.appendChild(videoCard);
                 
-                console.log('✅ Added video from followed account to Squad feed');
+                console.log('✅ Added video from vibed account to Vibing feed');
                 
                 // Setup infinite scroll and video observer
                 setupInfiniteScroll(feedElement, feedType);
@@ -1428,32 +1428,8 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
             console.log('🎬 Using sample videos as fallback');
             let sampleVideos = [];
             
-            // Show different content based on feed type
-            if (feedType === 'subscriptions' || internalFeedType === 'following') {
-                // Squad feed - show content from followed accounts
-                sampleVideos = [
-                    {
-                        _id: 'squad_fallback_1',
-                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-                        user: { 
-                            _id: 'followed_creator_1',
-                            username: 'your_friend', 
-                            displayName: 'Your Friend',
-                            profilePicture: '👥',
-                            isFollowing: true
-                        },
-                        title: 'Update from someone you follow',
-                        description: 'This is content from accounts you follow #squad #friends',
-                        likeCount: 67,
-                        commentCount: 15,
-                        shareCount: 9,
-                        uploadDate: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
-                        duration: 45,
-                        views: 445
-                    }
-                ];
-            } else {
-                sampleVideos = [
+            // Use regular sample videos for all feeds
+            sampleVideos = [
                     {
                         _id: 'fallback1',
                         videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
@@ -6233,7 +6209,7 @@ function showPage(page) {
     }
 
     // Handle feed tabs - don't show "coming soon" for these
-    if (page === 'home' || page === 'subscriptions' || page === 'discover' || page === 'network' || page === 'pulse' ||
+    if (page === 'home' || page === 'discover' || page === 'network' || page === 'pulse' ||
         page === 'foryou' || page === 'following' || page === 'explore' || page === 'friends') {
         // CRITICAL: Force hide ALL activity and special pages when going to feeds
         document.querySelectorAll('.activity-page, .analytics-page, .messages-page, .profile-page').forEach(el => {
