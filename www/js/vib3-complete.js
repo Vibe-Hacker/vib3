@@ -998,34 +998,41 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
             let feedUrl;
             if (internalFeedType === 'friends') {
                 // Network feed uses default feed but will filter out current user's videos
-                feedUrl = `${window.API_BASE_URL}/feed?limit=20&_t=${timestamp}`;
+                feedUrl = `${window.API_BASE_URL}/api/videos?limit=20&_t=${timestamp}`;
             } else if (internalFeedType === 'following') {
                 // Subscriptions feed - try following endpoint, fallback to default feed
                 feedUrl = `${window.API_BASE_URL}/api/videos/following?limit=10&_t=${timestamp}`;
             } else {
-                // Default feed endpoint
-                feedUrl = `${window.API_BASE_URL}/feed?limit=10&_t=${timestamp}`;
+                // Default feed endpoint - use /api/videos instead of /feed
+                feedUrl = `${window.API_BASE_URL}/api/videos?limit=10&_t=${timestamp}`;
             }
+            
+            console.log('📡 Fetching from:', feedUrl);
             
             const response = await fetch(feedUrl, {
                 credentials: 'include',
                 headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
                     ...(window.authToken && window.authToken !== 'session-based' ? 
                         { 'Authorization': `Bearer ${window.authToken}` } : {})
                 }
             });
             
+            console.log('📡 Response status:', response.status, response.statusText);
+            console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+            
             // Check if response is ok and content type is JSON
             if (!response.ok) {
-                console.error(`API error: ${response.status} ${response.statusText}`);
+                console.warn(`API error: ${response.status} ${response.statusText}, falling back to sample data`);
                 throw new Error(`API returned ${response.status}`);
             }
             
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
-                console.error('Invalid response type:', contentType);
+                console.warn('Invalid response type:', contentType, 'falling back to sample data');
                 const text = await response.text();
-                console.error('Response preview:', text.substring(0, 200));
+                console.warn('Response preview:', text.substring(0, 200));
                 throw new Error('API returned non-JSON response');
             }
             
@@ -1370,46 +1377,51 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
         } catch (error) {
             console.error('Load feed error:', error);
             
-            // Use sample videos as fallback when API fails
+            // Use sample videos as fallback when API fails, but not for squad/following feed
             console.log('🎬 Using sample videos as fallback');
-            const sampleVideos = [
-                {
-                    _id: 'fallback1',
-                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-                    user: { 
-                        _id: 'sample1',
-                        username: 'vib3_demo', 
-                        displayName: 'VIB3 Demo',
-                        profilePicture: '🎬' 
+            let sampleVideos = [];
+            
+            // Don't show placeholder videos for squad/following feed - it should be empty if no API data
+            if (feedType !== 'subscriptions' && internalFeedType !== 'following') {
+                sampleVideos = [
+                    {
+                        _id: 'fallback1',
+                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                        user: { 
+                            _id: 'sample1',
+                            username: 'vib3_demo', 
+                            displayName: 'VIB3 Demo',
+                            profilePicture: '🎬' 
+                        },
+                        title: 'Welcome to VIB3!',
+                        description: 'Experience the next generation of video sharing',
+                        likeCount: 1234,
+                        commentCount: 56,
+                        shareCount: 23,
+                        uploadDate: new Date(),
+                        duration: 60,
+                        views: 15600
                     },
-                    title: 'Welcome to VIB3!',
-                    description: 'Experience the next generation of video sharing',
-                    likeCount: 1234,
-                    commentCount: 56,
-                    shareCount: 23,
-                    uploadDate: new Date(),
-                    duration: 60,
-                    views: 15600
-                },
-                {
-                    _id: 'fallback2',
-                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-                    user: { 
-                        _id: 'sample2',
-                        username: 'creator_demo', 
-                        displayName: 'Creative Studio',
-                        profilePicture: '🎨' 
-                    },
-                    title: 'Digital Art Showcase',
-                    description: 'Amazing digital creations #art #creative',
-                    likeCount: 890,
-                    commentCount: 45,
-                    shareCount: 12,
-                    uploadDate: new Date(),
-                    duration: 45,
-                    views: 8900
-                }
-            ];
+                    {
+                        _id: 'fallback2',
+                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+                        user: { 
+                            _id: 'sample2',
+                            username: 'creator_demo', 
+                            displayName: 'Creative Studio',
+                            profilePicture: '🎨' 
+                        },
+                        title: 'Digital Art Showcase',
+                        description: 'Amazing digital creations #art #creative',
+                        likeCount: 890,
+                        commentCount: 45,
+                        shareCount: 12,
+                        uploadDate: new Date(),
+                        duration: 45,
+                        views: 8900
+                    }
+                ];
+            }
             
             if (!append) {
                 feedElement.innerHTML = '';
@@ -1418,34 +1430,61 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                 feedElement.style.scrollSnapType = 'y mandatory';
                 feedElement.style.scrollBehavior = 'smooth';
                 
-                // Add sample videos
-                sampleVideos.forEach(video => {
-                    const videoCard = createAdvancedVideoCard(video);
-                    feedElement.appendChild(videoCard);
-                });
-                
-                // Add error message at bottom
-                const errorDiv = document.createElement('div');
-                errorDiv.style.cssText = `
-                    text-align: center;
-                    padding: 20px;
-                    color: #999;
-                    font-size: 14px;
-                    background: var(--bg-secondary);
-                    border-radius: 10px;
-                    margin: 20px;
-                `;
-                errorDiv.innerHTML = `
-                    <div style="font-size: 32px; margin-bottom: 10px;">⚠️</div>
-                    <div>Unable to load live feed</div>
-                    <div style="font-size: 12px; margin-top: 5px;">Showing demo content</div>
-                `;
-                feedElement.appendChild(errorDiv);
-                
-                // Setup infinite scroll even with sample videos
-                setupInfiniteScroll(feedElement, feedType);
-                setTimeout(() => initializeVideoObserver(), 200);
-                hasMoreVideos = true;
+                if (sampleVideos.length > 0) {
+                    // Add sample videos for non-squad feeds
+                    sampleVideos.forEach(video => {
+                        const videoCard = createAdvancedVideoCard(video);
+                        feedElement.appendChild(videoCard);
+                    });
+                    
+                    // Add error message at bottom
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.cssText = `
+                        text-align: center;
+                        padding: 20px;
+                        color: #999;
+                        font-size: 14px;
+                        background: var(--bg-secondary);
+                        border-radius: 10px;
+                        margin: 20px;
+                    `;
+                    errorDiv.innerHTML = `
+                        <div style="font-size: 32px; margin-bottom: 10px;">🎬</div>
+                        <div>Demo Mode Active</div>
+                        <div style="font-size: 12px; margin-top: 5px;">Server temporarily unavailable - enjoy sample content!</div>
+                    `;
+                    feedElement.appendChild(errorDiv);
+                    
+                    // Setup infinite scroll even with sample videos
+                    setupInfiniteScroll(feedElement, feedType);
+                    setTimeout(() => initializeVideoObserver(), 200);
+                    hasMoreVideos = true;
+                } else {
+                    // For squad feed, show empty state message
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.style.cssText = `
+                        text-align: center;
+                        padding: 60px 20px;
+                        color: #999;
+                        font-size: 16px;
+                    `;
+                    emptyDiv.innerHTML = `
+                        <div style="font-size: 64px; margin-bottom: 20px;">👥</div>
+                        <div style="font-size: 20px; margin-bottom: 10px; color: white;">No Squad Content Yet</div>
+                        <div style="margin-bottom: 20px;">Follow creators to see their videos here</div>
+                        <button onclick="showPage('discover')" style="
+                            padding: 12px 24px;
+                            background: var(--accent-primary);
+                            color: white;
+                            border: none;
+                            border-radius: 25px;
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">Discover Creators</button>
+                    `;
+                    feedElement.appendChild(emptyDiv);
+                    hasMoreVideos = false;
+                }
             } else {
                 console.log('Error in append mode, using existing videos');
                 hasMoreVideos = true; // Keep trying for infinite scroll
