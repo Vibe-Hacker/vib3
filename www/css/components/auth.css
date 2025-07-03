@@ -40,14 +40,17 @@
     0% {
         transform: scale(1);
         opacity: 1;
+        filter: drop-shadow(0 0 2px rgba(0, 206, 209, 0.3));
     }
     50% {
-        transform: scale(1.1);
-        opacity: 0.8;
+        transform: scale(1.05);
+        opacity: 0.95;
+        filter: drop-shadow(0 0 4px rgba(255, 20, 147, 0.3));
     }
     100% {
         transform: scale(1);
         opacity: 1;
+        filter: drop-shadow(0 0 2px rgba(0, 206, 209, 0.3));
     }
 }
 
