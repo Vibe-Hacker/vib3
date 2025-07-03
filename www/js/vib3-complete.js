@@ -1230,65 +1230,102 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                         }
                     }
                 } catch (err) {
-                    console.log('⚠️ Could not load from API, showing sample vibing content');
+                    console.log('⚠️ API error details:', err);
                 }
                 
-                // If no content or API failed, show sample vibing content for testing
-                console.log('📱 Showing sample vibing content since API is not available');
+                // If API failed, try alternative approach - check if we have any following data
+                console.log('📱 API failed, checking authentication and trying alternative approach');
+                console.log('🔑 Current authToken:', window.authToken ? 'exists' : 'missing');
+                console.log('👤 Current user:', window.currentUser ? window.currentUser.username : 'not set');
+                
+                // Try a different endpoint or approach
+                try {
+                    const response = await fetch(`${window.API_BASE_URL}/api/feed/following`, {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            ...(window.authToken && window.authToken !== 'session-based' ? 
+                                { 'Authorization': `Bearer ${window.authToken}` } : {})
+                        }
+                    });
+                    
+                    console.log('🔄 Alternative API response status:', response.status);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('✅ Alternative API data:', data);
+                        
+                        if (data.videos && data.videos.length > 0) {
+                            console.log('✅ Found videos from followed accounts:', data.videos.length);
+                            
+                            feedElement.innerHTML = '';
+                            feedElement.style.display = 'block';
+                            feedElement.style.overflow = 'auto';
+                            feedElement.style.scrollSnapType = 'y mandatory';
+                            feedElement.style.scrollBehavior = 'smooth';
+                            
+                            data.videos.forEach(video => {
+                                const videoCard = createAdvancedVideoCard(video);
+                                feedElement.appendChild(videoCard);
+                            });
+                            
+                            setupInfiniteScroll(feedElement, feedType);
+                            setTimeout(() => initializeVideoObserver(), 200);
+                            hasMoreVideos = true;
+                            
+                            if (tabElement) {
+                                tabElement.classList.add('active');
+                            }
+                            return;
+                        }
+                    }
+                } catch (altErr) {
+                    console.log('⚠️ Alternative API also failed:', altErr);
+                }
+                
+                // Show empty state with better debugging info
                 feedElement.innerHTML = '';
                 feedElement.style.display = 'block';
-                feedElement.style.overflow = 'auto';
-                feedElement.style.scrollSnapType = 'y mandatory';
-                feedElement.style.scrollBehavior = 'smooth';
+                feedElement.style.overflow = 'hidden';
                 
-                // Sample vibing content
-                const sampleVibingVideos = [
-                    {
-                        id: 'vibe_001',
-                        title: 'Morning Coffee Vibes ☕',
-                        description: 'Starting the day right with perfect coffee art',
-                        creator: {
-                            id: 'barista_jane',
-                            username: 'barista_jane',
-                            displayName: 'Jane the Barista',
-                            avatar: '☕'
-                        },
-                        thumbnailUrl: 'https://picsum.photos/400/700?random=301',
-                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-                        likes: 1247,
-                        comments: 89,
-                        shares: 34,
-                        isLiked: false,
-                        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-                    },
-                    {
-                        id: 'vibe_002', 
-                        title: 'Dance Challenge Accepted! 💃',
-                        description: 'Nailed the trending dance from @vibemaster_pro',
-                        creator: {
-                            id: 'dance_queen_23',
-                            username: 'dance_queen_23',
-                            displayName: 'Dance Queen',
-                            avatar: '💃'
-                        },
-                        thumbnailUrl: 'https://picsum.photos/400/700?random=302',
-                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-                        likes: 2156,
-                        comments: 156,
-                        shares: 78,
-                        isLiked: true,
-                        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
-                    }
-                ];
-                
-                sampleVibingVideos.forEach(video => {
-                    const videoCard = createAdvancedVideoCard(video);
-                    feedElement.appendChild(videoCard);
-                });
-                
-                setupInfiniteScroll(feedElement, feedType);
-                setTimeout(() => initializeVideoObserver(), 200);
-                hasMoreVideos = true;
+                const emptyState = document.createElement('div');
+                emptyState.style.cssText = `
+                    text-align: center;
+                    padding: 60px 20px;
+                    color: #999;
+                    font-size: 16px;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                `;
+                emptyState.innerHTML = `
+                    <div style="font-size: 64px; margin-bottom: 20px;">✨</div>
+                    <div style="font-size: 24px; margin-bottom: 10px; color: white;">Vibing Feed Debug</div>
+                    <div style="margin-bottom: 20px; max-width: 400px; font-size: 14px;">
+                        Auth: ${window.authToken ? '✅ Token exists' : '❌ No token'}<br>
+                        User: ${window.currentUser ? '✅ ' + window.currentUser.username : '❌ Not logged in'}<br>
+                        API Base: ${window.API_BASE_URL || 'Not set'}<br>
+                        <br>
+                        Follow some creators to see their videos here!
+                    </div>
+                    <button onclick="showPage('discover')" style="
+                        padding: 12px 32px;
+                        background: var(--accent-gradient);
+                        color: white;
+                        border: none;
+                        border-radius: 25px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        font-size: 16px;
+                        box-shadow: var(--vib3-glow);
+                    ">Discover Creators</button>
+                `;
+                feedElement.appendChild(emptyState);
+                hasMoreVideos = false;
                 
                 if (tabElement) {
                     tabElement.classList.add('active');
