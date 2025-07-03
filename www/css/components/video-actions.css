@@ -17,7 +17,7 @@
 /* Bottom actions for description and user info */
 .bottom-actions {
     position: absolute;
-    bottom: 20px;
+    bottom: 60px;
     left: 20px;
     right: 80px;
     display: flex;
