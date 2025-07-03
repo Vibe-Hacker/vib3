@@ -1417,7 +1417,7 @@ function createAdvancedVideoCard(video) {
     
     // TikTok-style card with scroll snap and proper spacing
     card.style.cssText = `
-        height: calc(100vh - 160px) !important;
+        height: calc(100vh - 100px) !important;
         width: 100% !important;
         max-width: 500px !important;
         display: block !important;
@@ -1425,12 +1425,13 @@ function createAdvancedVideoCard(video) {
         opacity: 1 !important;
         position: relative !important;
         background: #000 !important;
-        margin: 0 auto 40px auto !important;
-        padding: 0 !important;
+        margin: 0 auto 0 auto !important;
+        padding: 0 0 60px 0 !important;
         overflow: hidden !important;
-        scroll-snap-align: center !important;
+        scroll-snap-align: start !important;
         scroll-snap-stop: always !important;
         border-radius: 12px !important;
+        box-sizing: border-box !important;
     `;
     
     // Create video element directly
@@ -1740,7 +1741,23 @@ function createAdvancedVideoCard(video) {
         }, 300); // Delay to allow double-tap detection
     });
     
-    card.appendChild(video_elem);
+    // Create video container
+    const videoContainer = document.createElement('div');
+    videoContainer.className = 'video-container';
+    videoContainer.style.cssText = `
+        width: 100%;
+        height: calc(100% - 60px);
+        position: relative;
+        background: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        overflow: hidden;
+    `;
+    
+    videoContainer.appendChild(video_elem);
+    card.appendChild(videoContainer);
     card.appendChild(overlay);
     card.appendChild(actions);
     card.appendChild(pauseIndicator);
