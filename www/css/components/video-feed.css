@@ -16,7 +16,7 @@
     align-items: center;
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
-    padding: 0;
+    padding: 20px 0;
 }
 
 .video-feed::-webkit-scrollbar {

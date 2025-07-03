@@ -1,15 +1,15 @@
 /* Video Item Components - Flutter App Inspired Card Design */
 .video-item {
-    height: calc(100vh - 80px);
+    height: calc(100vh - 60px);
     width: 100%;
     max-width: 500px;
     position: relative;
     display: block !important;
     background: var(--bg-primary);
-    margin: 0 auto;
+    margin: 15px auto;
     padding: 8px;
     flex-shrink: 0;
-    min-height: calc(100vh - 80px);
+    min-height: calc(100vh - 60px);
     opacity: 1 !important;
     visibility: visible !important;
     scroll-snap-align: center;
