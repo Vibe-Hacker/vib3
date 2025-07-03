@@ -20,7 +20,7 @@
     height: calc(88vh - 60px) !important;
 }
 
-/* Ensure video items stay visible */
+/* Ensure video items stay visible and properly aligned */
 .video-item {
     display: block !important;
     visibility: visible !important;
@@ -28,7 +28,9 @@
     height: calc(88vh - 60px) !important;
     position: relative !important;
     background: #000 !important;
-    margin: 10px auto !important;
+    margin: 0 auto !important;
+    scroll-snap-align: start !important;
+    scroll-snap-stop: always !important;
 }
 
 /* Force feed content to stay visible */
@@ -48,10 +50,21 @@
     opacity: 1 !important;
 }
 
-/* Fix video feed container */
+/* Fix video feed container with scroll snap */
 .video-feed {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
     background: #000 !important;
+    scroll-snap-type: y mandatory !important;
+    scroll-behavior: smooth !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+/* Ensure feed content containers support scroll snap */
+.feed-content {
+    scroll-snap-type: y mandatory !important;
+    scroll-behavior: smooth !important;
+    overflow-y: auto !important;
+    height: 100vh !important;
 }
