@@ -15312,6 +15312,12 @@ function startRoomActivity(roomType, activityType) {
 function showCreatorStudio() {
     console.log('🎬 Opening VIB3 Creator Studio');
     
+    // Initialize creator studio files storage if not exists
+    if (!window.creatorStudioFiles) {
+        window.creatorStudioFiles = {};
+        console.log('🔧 Initialized window.creatorStudioFiles storage');
+    }
+    
     // Hide main app and other content
     const mainApp = document.getElementById('mainApp');
     if (mainApp) {
@@ -15575,6 +15581,12 @@ function populateSampleMedia() {
     const mediaLibrary = document.getElementById('mediaLibrary');
     if (!mediaLibrary) return;
     
+    // Initialize creator studio files storage if not exists
+    if (!window.creatorStudioFiles) {
+        window.creatorStudioFiles = {};
+        console.log('🔧 Initialized window.creatorStudioFiles in populateSampleMedia');
+    }
+    
     // Check if user has imported media files
     const userMedia = getUserImportedMedia();
     
@@ -15616,22 +15628,29 @@ function populateSampleMedia() {
             mediaItem.className = 'media-item';
             mediaItem.draggable = true;
             mediaItem.ondragstart = (e) => dragMedia(e, media);
+            
+            // Check if file exists in memory
+            const fileExists = window.creatorStudioFiles && window.creatorStudioFiles[media.id];
+            
             mediaItem.style.cssText = `
                 background: var(--bg-tertiary);
-                border: 1px solid var(--border-primary);
+                border: 1px solid ${fileExists ? 'var(--border-primary)' : 'var(--error-color, #ff4444)'};
                 border-radius: 8px;
                 padding: 10px;
                 cursor: grab;
                 transition: all 0.2s ease;
                 text-align: center;
+                opacity: ${fileExists ? '1' : '0.6'};
             `;
             
             const icon = getFileIcon(media.type);
+            const statusIcon = fileExists ? '' : ' ⚠️';
             
             mediaItem.innerHTML = `
-                <div style="font-size: 24px; margin-bottom: 5px;">${icon}</div>
+                <div style="font-size: 24px; margin-bottom: 5px;">${icon}${statusIcon}</div>
                 <div style="font-size: 10px; color: var(--text-primary); font-weight: 600; margin-bottom: 2px;">${media.name}</div>
                 <div style="font-size: 9px; color: var(--text-secondary);">${media.duration || media.size}</div>
+                ${!fileExists ? '<div style="font-size: 8px; color: var(--error-color, #ff4444); margin-top: 3px;">Needs re-import</div>' : ''}
             `;
             
             mediaItem.addEventListener('mouseenter', () => {
@@ -15664,7 +15683,44 @@ function populateSampleMedia() {
                         showStudioNotification(`Previewing: ${media.name}`);
                     } else {
                         console.warn('⚠️ DEBUG: Video file not found in storage for:', media.name, 'ID:', media.id);
-                        showStudioNotification('Video file not found - please re-import');
+                        showStudioNotification('File missing from memory - please re-import to preview');
+                        
+                        // Offer to re-import the specific file
+                        const reImportModal = document.createElement('div');
+                        reImportModal.style.cssText = `
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                            background: rgba(0,0,0,0.8);
+                            z-index: 10001;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        `;
+                        
+                        reImportModal.innerHTML = `
+                            <div style="background: var(--bg-secondary); border-radius: 15px; padding: 30px; max-width: 400px; width: 90%; border: 1px solid var(--border-primary); text-align: center;">
+                                <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+                                <h3 style="margin: 0 0 15px; color: var(--text-primary);">File Missing</h3>
+                                <p style="margin: 0 0 20px; color: var(--text-secondary);">
+                                    <strong>${media.name}</strong> needs to be re-imported for preview.
+                                    <br><br>
+                                    File objects are cleared when the page refreshes.
+                                </p>
+                                <div style="display: flex; gap: 10px; justify-content: center;">
+                                    <button onclick="this.closest('div').remove(); importCreatorMedia();" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                        Re-Import File
+                                    </button>
+                                    <button onclick="this.closest('div').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        document.body.appendChild(reImportModal);
                     }
                 } else {
                     console.log('🔍 DEBUG: Non-video file clicked:', media.type);
