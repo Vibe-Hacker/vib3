@@ -409,17 +409,25 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                             color: Colors.black.withOpacity(0.6),
                             borderRadius: BorderRadius.circular(15),
                             boxShadow: [
+                              // Dark glow effect
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.9),
-                                blurRadius: 15,
-                                spreadRadius: 5,
+                                blurRadius: 20,
+                                spreadRadius: 8,
                                 offset: const Offset(0, 0),
                               ),
+                              // Secondary glow
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.6),
-                                blurRadius: 8,
-                                spreadRadius: 3,
+                                color: Colors.black.withOpacity(0.7),
+                                blurRadius: 15,
+                                spreadRadius: 5,
                                 offset: const Offset(0, 2),
+                              ),
+                              // Subtle colored glow
+                              BoxShadow(
+                                color: const Color(0xFF00CED1).withOpacity(0.1),
+                                blurRadius: 25,
+                                spreadRadius: 2,
                               ),
                             ],
                           ),
