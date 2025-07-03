@@ -1732,11 +1732,18 @@ function createAdvancedVideoCard(video) {
         await handleFollowClick(userId, followBtn);
     });
     
-    // Check if user is already following
-    checkFollowStatus(video.userId || video.user?._id, followBtn);
+    // Check if user is already following only if authenticated
+    if (window.authToken && window.currentUser) {
+        checkFollowStatus(video.userId || video.user?._id, followBtn);
+    } else {
+        // Hide follow button for unauthenticated users
+        followBtn.style.display = 'none';
+    }
     
-    // Load and set initial like status
-    loadVideoLikeStatus(video._id || 'unknown', likeBtn);
+    // Load and set initial like status only if authenticated
+    if (window.authToken && window.currentUser) {
+        loadVideoLikeStatus(video._id || 'unknown', likeBtn);
+    }
     
     // Create pause indicator overlay
     const pauseIndicator = document.createElement('div');
@@ -12801,7 +12808,7 @@ async function loadVideoLikeStatus(videoId, likeBtn) {
         }
         
         // Then get authoritative data from server if authenticated
-        if (window.authToken) {
+        if (window.authToken && window.currentUser) {
             const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like-status`, {
                 headers: { 'Authorization': `Bearer ${window.authToken}` }
             });
@@ -13131,10 +13138,14 @@ async function handleFollowClick(userId, followBtn) {
 }
 
 async function checkFollowStatus(userId, followBtn) {
-    if (!currentUser || !userId || userId === 'unknown') return;
+    if (!window.currentUser || !window.authToken || !userId || userId === 'unknown') {
+        // Hide follow button if not authenticated or invalid user
+        followBtn.style.display = 'none';
+        return;
+    }
     
     // Hide follow button for own videos
-    if (userId === currentUser._id) {
+    if (userId === window.currentUser._id) {
         followBtn.style.display = 'none';
         return;
     }
@@ -13160,7 +13171,8 @@ async function checkFollowStatus(userId, followBtn) {
         }
     } catch (error) {
         console.error('Check follow status error:', error);
-        // On error, just show the follow button in default state
+        // On error, hide follow button to avoid repeated failed requests
+        followBtn.style.display = 'none';
     }
 }
 
