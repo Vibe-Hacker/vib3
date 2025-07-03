@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VIB3 - Video Social App</title>
-    <link rel="stylesheet" href="css/main.css?v=20250703041">
+    <link rel="stylesheet" href="css/main.css?v=20250703042">
 </head>
 <body>
     <div class="auth-container" id="authContainer">
@@ -252,6 +252,9 @@
                     <span class="pulse-icon">⚡</span> Pulse Feed
                 </button>
                 <button class="feed-tab" onclick="switchFeedTab('discover')" id="discoverTab" aria-label="Discover Feed">Discover</button>
+                <button class="feed-tab" onclick="switchFeedTab('vibing')" id="vibingTab" aria-label="Vibing Feed">
+                    <span style="margin-right: 4px;">✨</span> Vibing
+                </button>
             </div>
             <div class="feed-content active" id="homeFeed">
             </div>
@@ -260,6 +263,8 @@
             <div class="feed-content" id="networkFeed">
             </div>
             <div class="feed-content" id="pulseFeed">
+            </div>
+            <div class="feed-content" id="vibingFeed">
             </div>
             <div class="feed-content" id="discoverFeed">
                 <!-- Explore Top Navigation -->
