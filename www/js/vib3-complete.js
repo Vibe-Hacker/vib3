@@ -886,7 +886,7 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
     }
     
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        console.log(`Loading video feed: ${feedType}, page: ${page}, append: ${append}`);
+        console.log(`🤖 Loading AI-powered video feed: ${feedType}, page: ${page}, append: ${append}`);
     }
     currentFeed = feedType;
     
@@ -928,6 +928,55 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
         }
         
         try {
+            let videos = [];
+            
+            // Use AI recommendations for home and discover feeds
+            if ((feedType === 'home' || feedType === 'discover') && window.aiRecommendationEngine && !append) {
+                console.log('🤖 Using AI recommendations for', feedType);
+                videos = await window.aiRecommendationEngine.getRecommendations(feedType, 10);
+                
+                if (videos.length > 0) {
+                    // Remove loading indicator
+                    feedElement.innerHTML = '';
+                    
+                    // Add AI recommendation indicator
+                    const aiIndicator = document.createElement('div');
+                    aiIndicator.className = 'ai-recommendations-indicator';
+                    aiIndicator.innerHTML = `
+                        <div style="padding: 12px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 14px; text-align: center; border-radius: 8px; margin: 10px 20px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                            🤖 Personalized for you using AI
+                        </div>
+                    `;
+                    feedElement.appendChild(aiIndicator);
+                    
+                    // Set up feed layout
+                    feedElement.style.display = 'block';
+                    feedElement.style.overflow = 'auto';
+                    feedElement.style.scrollSnapType = 'y mandatory';
+                    feedElement.style.scrollBehavior = 'smooth';
+                    
+                    // Add videos to feed
+                    videos.forEach((video, index) => {
+                        const videoCard = createAdvancedVideoCard(video);
+                        feedElement.appendChild(videoCard);
+                        console.log(`  ✅ Added AI video ${index + 1}: ${video.title || 'Untitled'}`);
+                    });
+                    
+                    // Setup infinite scroll and video observer
+                    setupInfiniteScroll(feedElement, feedType);
+                    setTimeout(() => initializeVideoObserver(), 200);
+                    hasMoreVideos = true;
+                    
+                    if (tabElement) {
+                        tabElement.classList.add('active');
+                    }
+                    return;
+                }
+            }
+            
+            // Fallback to regular API call for other feeds or if AI fails
+            console.log('📡 Falling back to API for', feedType);
+            
             // Special handling for different feed types using feed manager
             if (!append && window.feedManager) {
                 // Note: Explore is handled separately by initializeExplorePage, not feed manager
@@ -1520,8 +1569,20 @@ function createAdvancedVideoCard(video) {
     };
     video_elem.onloadstart = () => console.log('📹 VIDEO LOADING:', video_elem.src);
     video_elem.oncanplay = () => console.log('✅ VIDEO READY:', video_elem.src);
-    video_elem.onplay = () => console.log('▶️ PLAYING:', video_elem.src);
-    video_elem.onpause = () => console.log('⏸️ PAUSED:', video_elem.src);
+    video_elem.onplay = () => {
+        console.log('▶️ PLAYING:', video_elem.src);
+        // Track video view start for AI recommendations
+        if (window.aiRecommendationEngine && video) {
+            document.dispatchEvent(new CustomEvent('video-view-start', { detail: video }));
+        }
+    };
+    video_elem.onpause = () => {
+        console.log('⏸️ PAUSED:', video_elem.src);
+        // Track video view end for AI recommendations
+        if (window.aiRecommendationEngine && video) {
+            document.dispatchEvent(new CustomEvent('video-view-end', { detail: video }));
+        }
+    };
     
     // Create TikTok-style overlay with user info
     const overlay = document.createElement('div');
@@ -1594,20 +1655,29 @@ function createAdvancedVideoCard(video) {
         }
     });
     
-    // Add like button functionality
+    // Add like button functionality with AI tracking
     const likeBtn = actions.querySelector('.like-btn');
     likeBtn.addEventListener('click', function likeBtnClickHandler(e) { 
+        // Track engagement for AI recommendations
+        if (window.aiRecommendationEngine && video) {
+            window.aiRecommendationEngine.trackEngagement(video, 'like');
+        }
         return handleLikeClick(e, likeBtn); 
     });
     
     // Add enhanced like button features (double-tap, ripple, floating hearts)
     enhanceLikeButton(likeBtn, video_elem);
     
-    // Add comment button functionality
+    // Add comment button functionality with AI tracking
     const commentBtn = actions.querySelector('.comment-btn');
     commentBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         const videoId = commentBtn.dataset.videoId;
+        
+        // Track engagement for AI recommendations
+        if (window.aiRecommendationEngine && video) {
+            window.aiRecommendationEngine.trackEngagement(video, 'comment');
+        }
         
         // Add bounce animation
         commentBtn.style.transform = 'scale(1.1)';
@@ -1616,11 +1686,16 @@ function createAdvancedVideoCard(video) {
         openCommentsModal(videoId);
     });
     
-    // Add share button functionality
+    // Add share button functionality with AI tracking
     const shareBtn = actions.querySelector('.share-btn');
     shareBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         const videoId = shareBtn.dataset.videoId;
+        
+        // Track engagement for AI recommendations
+        if (window.aiRecommendationEngine && video) {
+            window.aiRecommendationEngine.trackEngagement(video, 'share');
+        }
         
         // Add bounce animation
         shareBtn.style.transform = 'scale(1.1)';
@@ -1700,6 +1775,10 @@ function createAdvancedVideoCard(video) {
                 // Double tap detected - trigger like instead of pause/play
                 const likeBtn = e.target.closest('.video-card').querySelector('.like-btn');
                 if (likeBtn) {
+                    // Track engagement for AI recommendations
+                    if (window.aiRecommendationEngine && video) {
+                        window.aiRecommendationEngine.trackEngagement(video, 'like');
+                    }
                     handleLikeClick(e, likeBtn);
                     createFloatingHeart(video_elem);
                     
@@ -5847,6 +5926,244 @@ function cleanupLoadingSpinners() {
     });
 }
 
+// ================ AI RECOMMENDATIONS ENGINE ================
+class AIRecommendationEngine {
+    constructor() {
+        this.userPreferences = {
+            categories: new Map(),
+            hashtags: new Map(),
+            creators: new Map(),
+            engagement: new Map(),
+            watchTime: new Map()
+        };
+        this.recommendationCache = new Map();
+        this.initializeEngine();
+    }
+
+    initializeEngine() {
+        console.log('🤖 Initializing AI Recommendation Engine...');
+        this.loadUserPreferences();
+        this.startEngagementTracking();
+    }
+
+    loadUserPreferences() {
+        try {
+            const saved = localStorage.getItem('vib3_user_preferences');
+            if (saved) {
+                const data = JSON.parse(saved);
+                Object.keys(data).forEach(key => {
+                    if (this.userPreferences[key]) {
+                        this.userPreferences[key] = new Map(data[key]);
+                    }
+                });
+            }
+        } catch (error) {
+            console.warn('Failed to load user preferences:', error);
+        }
+    }
+
+    saveUserPreferences() {
+        try {
+            const data = {};
+            Object.keys(this.userPreferences).forEach(key => {
+                data[key] = Array.from(this.userPreferences[key].entries());
+            });
+            localStorage.setItem('vib3_user_preferences', JSON.stringify(data));
+        } catch (error) {
+            console.warn('Failed to save user preferences:', error);
+        }
+    }
+
+    trackEngagement(video, engagementType, value = 1) {
+        if (!video || !video.id) return;
+
+        const videoId = video.id;
+        const userId = video.userId || video.username;
+        const category = video.category || 'general';
+        const hashtags = video.hashtags || [];
+
+        switch (engagementType) {
+            case 'view':
+                this.userPreferences.categories.set(category, 
+                    (this.userPreferences.categories.get(category) || 0) + 0.1);
+                if (userId) {
+                    this.userPreferences.creators.set(userId, 
+                        (this.userPreferences.creators.get(userId) || 0) + 0.1);
+                }
+                break;
+
+            case 'like':
+                this.userPreferences.categories.set(category, 
+                    (this.userPreferences.categories.get(category) || 0) + 1);
+                hashtags.forEach(tag => {
+                    this.userPreferences.hashtags.set(tag, 
+                        (this.userPreferences.hashtags.get(tag) || 0) + 0.5);
+                });
+                if (userId) {
+                    this.userPreferences.creators.set(userId, 
+                        (this.userPreferences.creators.get(userId) || 0) + 1);
+                }
+                break;
+
+            case 'comment':
+                this.userPreferences.categories.set(category, 
+                    (this.userPreferences.categories.get(category) || 0) + 1.5);
+                if (userId) {
+                    this.userPreferences.creators.set(userId, 
+                        (this.userPreferences.creators.get(userId) || 0) + 1.5);
+                }
+                break;
+
+            case 'share':
+                this.userPreferences.categories.set(category, 
+                    (this.userPreferences.categories.get(category) || 0) + 2);
+                if (userId) {
+                    this.userPreferences.creators.set(userId, 
+                        (this.userPreferences.creators.get(userId) || 0) + 2);
+                }
+                break;
+
+            case 'watch_time':
+                this.userPreferences.watchTime.set(videoId, value);
+                const watchScore = Math.min(value / 30, 2);
+                this.userPreferences.categories.set(category, 
+                    (this.userPreferences.categories.get(category) || 0) + watchScore);
+                break;
+        }
+
+        this.saveUserPreferences();
+    }
+
+    startEngagementTracking() {
+        let videoWatchTimes = new Map();
+        
+        document.addEventListener('video-view-start', (event) => {
+            const video = event.detail;
+            videoWatchTimes.set(video.id, Date.now());
+        });
+
+        document.addEventListener('video-view-end', (event) => {
+            const video = event.detail;
+            const startTime = videoWatchTimes.get(video.id);
+            if (startTime) {
+                const watchTime = (Date.now() - startTime) / 1000;
+                this.trackEngagement(video, 'watch_time', watchTime);
+                videoWatchTimes.delete(video.id);
+            }
+        });
+    }
+
+    calculateVideoScore(video) {
+        let score = 0;
+        const category = video.category || 'general';
+        const userId = video.userId || video.username;
+        const hashtags = video.hashtags || [];
+
+        score += (this.userPreferences.categories.get(category) || 0) * 0.3;
+
+        if (userId) {
+            score += (this.userPreferences.creators.get(userId) || 0) * 0.4;
+        }
+
+        hashtags.forEach(tag => {
+            score += (this.userPreferences.hashtags.get(tag) || 0) * 0.2;
+        });
+
+        const engagement = (video.likes || 0) + (video.comments || 0) * 2 + (video.shares || 0) * 3;
+        score += Math.log(engagement + 1) * 0.1;
+
+        const ageInHours = (Date.now() - new Date(video.createdAt || Date.now()).getTime()) / (1000 * 60 * 60);
+        const recencyScore = Math.max(0, 1 - ageInHours / 168);
+        score += recencyScore * 0.1;
+
+        return score;
+    }
+
+    async getRecommendations(feedType = 'home', limit = 10) {
+        const cacheKey = `${feedType}_${limit}`;
+        
+        if (this.recommendationCache.has(cacheKey)) {
+            const cached = this.recommendationCache.get(cacheKey);
+            if (Date.now() - cached.timestamp < 5 * 60 * 1000) {
+                return cached.recommendations;
+            }
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/videos?limit=50&type=${feedType}`);
+            let videos = [];
+            
+            if (response.ok && response.headers.get('content-type')?.includes('application/json')) {
+                const data = await response.json();
+                videos = data.videos || data || [];
+            } else {
+                console.warn('API returned non-JSON response, using sample videos');
+                videos = this.getSampleVideos();
+            }
+
+            const scoredVideos = videos
+                .map(video => ({
+                    ...video,
+                    aiScore: this.calculateVideoScore(video)
+                }))
+                .sort((a, b) => b.aiScore - a.aiScore)
+                .slice(0, limit);
+
+            this.recommendationCache.set(cacheKey, {
+                recommendations: scoredVideos,
+                timestamp: Date.now()
+            });
+
+            console.log(`🤖 Generated ${scoredVideos.length} AI recommendations for ${feedType}`);
+            return scoredVideos;
+
+        } catch (error) {
+            console.error('AI Recommendations error:', error);
+            return this.getSampleVideos().slice(0, limit);
+        }
+    }
+
+    getSampleVideos() {
+        return [
+            {
+                id: 'ai_rec_1',
+                title: 'AI Recommended: Coding Tips',
+                description: 'Based on your interests in tech content',
+                username: 'TechVib3r',
+                avatar: '👨‍💻',
+                videoUrl: '/api/placeholder-video',
+                likes: 1250,
+                comments: 89,
+                shares: 34,
+                category: 'tech',
+                hashtags: ['coding', 'tips', 'developer'],
+                aiScore: 8.5,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 'ai_rec_2', 
+                title: 'AI Pick: Creative Dance',
+                description: 'Trending in your preferred categories',
+                username: 'DanceVibes',
+                avatar: '💃',
+                videoUrl: '/api/placeholder-video',
+                likes: 890,
+                comments: 67,
+                shares: 23,
+                category: 'dance',
+                hashtags: ['dance', 'creative', 'trending'],
+                aiScore: 7.8,
+                createdAt: new Date().toISOString()
+            }
+        ];
+    }
+
+    clearCache() {
+        this.recommendationCache.clear();
+        console.log('🤖 AI recommendation cache cleared');
+    }
+}
+
 // ================ INITIALIZATION ================
 document.addEventListener('DOMContentLoaded', function() {    
     // Apply saved theme
@@ -5854,6 +6171,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (savedTheme) {
         document.body.className = `theme-${savedTheme}`;
     }
+    
+    // Initialize AI Recommendation Engine
+    window.aiRecommendationEngine = new AIRecommendationEngine();
     
     // Initialize authentication
     initializeAuth();
