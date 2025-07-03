@@ -157,8 +157,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       // Like Bubble (bottom right, further from edge)
       AnimatedPositioned(
         duration: Duration(milliseconds: 300 + (index * 50)),
-        bottom: 80 + (isCurrentVideo ? 10 : 0),
-        right: 50 + (isCurrentVideo ? 5 : 0),
+        bottom: 60 + (isCurrentVideo ? 10 : 0),
+        right: 45 + (isCurrentVideo ? 5 : 0),
         child: _FloatingBubble(
           icon: Icons.favorite_border,
           activeIcon: Icons.favorite,
@@ -172,8 +172,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       // Comment Bubble (middle right, moving closer to edge)
       AnimatedPositioned(
         duration: Duration(milliseconds: 400 + (index * 50)),
-        bottom: 140 + (isCurrentVideo ? 8 : 0),
-        right: 35 + (isCurrentVideo ? 3 : 0),
+        bottom: 120 + (isCurrentVideo ? 8 : 0),
+        right: 30 + (isCurrentVideo ? 3 : 0),
         child: _FloatingBubble(
           icon: Icons.chat_bubble_outline,
           activeIcon: Icons.chat_bubble,
@@ -186,8 +186,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       // Share Bubble (top right, closest to edge)
       AnimatedPositioned(
         duration: Duration(milliseconds: 500 + (index * 50)),
-        bottom: 200 + (isCurrentVideo ? 6 : 0),
-        right: 20 + (isCurrentVideo ? 1 : 0),
+        bottom: 180 + (isCurrentVideo ? 6 : 0),
+        right: 15 + (isCurrentVideo ? 1 : 0),
         child: _FloatingBubble(
           icon: Icons.share,
           activeIcon: Icons.share,
@@ -201,8 +201,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       if (video.userId != Provider.of<AuthProvider>(context, listen: false).currentUser?.id)
         AnimatedPositioned(
           duration: Duration(milliseconds: 600 + (index * 50)),
-          bottom: 260 + (isCurrentVideo ? 4 : 0),
-          right: 15 + (isCurrentVideo ? -1 : 0),
+          bottom: 240 + (isCurrentVideo ? 4 : 0),
+          right: 10 + (isCurrentVideo ? -1 : 0),
           child: _FloatingBubble(
             icon: Icons.add_box_outlined,
             activeIcon: Icons.add_box,
@@ -296,7 +296,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             
             return Container(
               color: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
@@ -400,9 +400,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                       
                       // Video description overlay (between floating buttons and bottom)
                       Positioned(
-                        bottom: 60,
-                        left: 16,
-                        right: 90,
+                        bottom: 40,
+                        left: 12,
+                        right: 80,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
