@@ -924,7 +924,13 @@ function showEnergyMeter() {
 function showVibeRooms() {
     console.log('🏠 Opening VIB3 Vibe Rooms');
     
-    // Hide other content and show vibe rooms
+    // Hide main app and other content
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'none';
+    }
+    
+    // Hide other pages
     document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
         el.style.display = 'none';
     });
@@ -15147,7 +15153,13 @@ function startRoomActivity(roomType, activityType) {
 function showCreatorStudio() {
     console.log('🎬 Opening VIB3 Creator Studio');
     
-    // Hide other content and show creator studio
+    // Hide main app and other content
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'none';
+    }
+    
+    // Hide other pages
     document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page, .vibe-rooms-page').forEach(el => {
         el.style.display = 'none';
     });
@@ -15711,7 +15723,13 @@ function showStudioNotification(message) {
 function showChallenges() {
     console.log('🏆 Opening VIB3 Challenges');
     
-    // Hide other content and show challenges
+    // Hide main app and other content
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'none';
+    }
+    
+    // Hide other pages
     document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page, .vibe-rooms-page, .creator-studio-page').forEach(el => {
         el.style.display = 'none';
     });
@@ -17065,6 +17083,17 @@ function showLiveStreaming() {
     if (mainApp) {
         mainApp.style.display = 'none';
     }
+    
+    // Hide any other pages that might be visible
+    const vibeRoomsPage = document.getElementById('vibeRoomsPage');
+    if (vibeRoomsPage) {
+        vibeRoomsPage.style.display = 'none';
+    }
+    
+    // Hide other common pages
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
+        el.style.display = 'none';
+    });
     
     // Remove existing live page if it exists
     const existingLivePage = document.getElementById('liveStreamingPage');
