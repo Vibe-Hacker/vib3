@@ -15646,13 +15646,29 @@ function populateSampleMedia() {
             
             // Add click handler to preview video files
             mediaItem.addEventListener('click', () => {
-                if (media.type.startsWith('video/') && window.creatorStudioFiles && window.creatorStudioFiles[media.id]) {
-                    const file = window.creatorStudioFiles[media.id];
-                    updatePreviewVideo(file);
-                    console.log('🎬 User clicked on video:', media.name);
-                } else if (media.type.startsWith('video/')) {
-                    console.warn('⚠️ Video file not found for:', media.name);
-                    showStudioNotification('Video file not found - please re-import');
+                console.log('🔍 DEBUG Media item clicked:', {
+                    mediaName: media.name,
+                    mediaType: media.type,
+                    mediaId: media.id,
+                    isVideo: media.type.startsWith('video/'),
+                    creatorStudioFilesExists: !!window.creatorStudioFiles,
+                    fileExists: !!(window.creatorStudioFiles && window.creatorStudioFiles[media.id]),
+                    allFileIds: window.creatorStudioFiles ? Object.keys(window.creatorStudioFiles) : []
+                });
+                
+                if (media.type.startsWith('video/')) {
+                    if (window.creatorStudioFiles && window.creatorStudioFiles[media.id]) {
+                        const file = window.creatorStudioFiles[media.id];
+                        console.log('🎬 DEBUG: Found file for preview:', file);
+                        updatePreviewVideo(file);
+                        showStudioNotification(`Previewing: ${media.name}`);
+                    } else {
+                        console.warn('⚠️ DEBUG: Video file not found in storage for:', media.name, 'ID:', media.id);
+                        showStudioNotification('Video file not found - please re-import');
+                    }
+                } else {
+                    console.log('🔍 DEBUG: Non-video file clicked:', media.type);
+                    showStudioNotification(`${media.name} - Preview not available for this file type`);
                 }
             });
             
@@ -15924,22 +15940,51 @@ function dropMedia(event, trackType) {
 
 // Update preview video
 function updatePreviewVideo(file) {
+    console.log('🔍 DEBUG updatePreviewVideo called with:', file);
+    
     const previewVideo = document.getElementById('previewVideo');
     const previewPlaceholder = document.getElementById('previewPlaceholder');
     
-    if (previewVideo && file) {
+    console.log('🔍 DEBUG Elements found:', {
+        previewVideo: !!previewVideo,
+        previewPlaceholder: !!previewPlaceholder,
+        fileExists: !!file,
+        fileName: file?.name,
+        fileType: file?.type,
+        fileSize: file?.size
+    });
+    
+    if (!previewVideo) {
+        console.error('❌ DEBUG: previewVideo element not found!');
+        showStudioNotification('Error: Preview video element missing from DOM');
+        return;
+    }
+    
+    if (!file) {
+        console.error('❌ DEBUG: No file provided to updatePreviewVideo');
+        showStudioNotification('Error: No video file to preview');
+        return;
+    }
+    
+    try {
         const videoURL = URL.createObjectURL(file);
+        console.log('🔍 DEBUG: Created video URL:', videoURL);
+        
         previewVideo.src = videoURL;
         previewVideo.load();
         previewVideo.style.display = 'block';
         
+        console.log('🔍 DEBUG: Set video src and made visible');
+        
         // Hide placeholder when video is loaded
         if (previewPlaceholder) {
             previewPlaceholder.style.display = 'none';
+            console.log('🔍 DEBUG: Hidden placeholder');
         }
         
         // Revoke old URL to prevent memory leaks
         previewVideo.addEventListener('loadstart', () => {
+            console.log('🔍 DEBUG: Video loadstart event fired');
             if (previewVideo.previousSrc) {
                 URL.revokeObjectURL(previewVideo.previousSrc);
             }
@@ -15948,12 +15993,12 @@ function updatePreviewVideo(file) {
         
         // Handle video load events
         previewVideo.addEventListener('loadeddata', () => {
-            console.log('✅ Video loaded successfully in preview');
+            console.log('✅ DEBUG: Video loaded successfully in preview');
             showStudioNotification(`Preview updated: ${file.name}`);
         });
         
-        previewVideo.addEventListener('error', () => {
-            console.error('❌ Error loading video in preview');
+        previewVideo.addEventListener('error', (e) => {
+            console.error('❌ DEBUG: Error loading video in preview:', e);
             previewVideo.style.display = 'none';
             if (previewPlaceholder) {
                 previewPlaceholder.style.display = 'block';
@@ -15966,10 +16011,19 @@ function updatePreviewVideo(file) {
             showStudioNotification('Error loading video preview');
         });
         
-        console.log('🎬 Loading video in preview:', file.name);
-    } else {
-        console.warn('⚠️ Preview video element not found or no file provided');
-        showStudioNotification('Preview not available - video element missing');
+        console.log('🎬 DEBUG: Loading video in preview:', file.name);
+    } catch (error) {
+        console.error('❌ DEBUG: Exception in updatePreviewVideo:', error);
+        showStudioNotification('Error creating video preview: ' + error.message);
+        
+        if (previewPlaceholder) {
+            previewPlaceholder.style.display = 'block';
+            previewPlaceholder.innerHTML = `
+                <div style="font-size: 48px; margin-bottom: 10px;">❌</div>
+                <div style="font-size: 16px;">Preview Error</div>
+                <div style="font-size: 14px; color: #888; margin-top: 8px;">${error.message}</div>
+            `;
+        }
     }
 }
 
@@ -16271,6 +16325,34 @@ function showStudioNotification(message) {
         setTimeout(() => notification.remove(), 300);
     }, 3000);
 }
+
+// Debug function to inspect Creator Studio state
+window.debugCreatorStudio = function() {
+    console.log('🔍 CREATOR STUDIO DEBUG REPORT:');
+    console.log('1. Preview Video Element:', document.getElementById('previewVideo'));
+    console.log('2. Preview Placeholder:', document.getElementById('previewPlaceholder'));
+    console.log('3. Media Library:', document.getElementById('mediaLibrary'));
+    console.log('4. Creator Studio Files:', window.creatorStudioFiles);
+    console.log('5. LocalStorage Media:', JSON.parse(localStorage.getItem('vib3-creator-media') || '[]'));
+    
+    const previewVideo = document.getElementById('previewVideo');
+    if (previewVideo) {
+        console.log('6. Video Element Details:', {
+            src: previewVideo.src,
+            style: previewVideo.style.cssText,
+            videoWidth: previewVideo.videoWidth,
+            videoHeight: previewVideo.videoHeight,
+            readyState: previewVideo.readyState,
+            currentTime: previewVideo.currentTime,
+            duration: previewVideo.duration
+        });
+    }
+    
+    const creatorStudioPage = document.getElementById('creatorStudioPage');
+    console.log('7. Creator Studio Page Visible:', creatorStudioPage && creatorStudioPage.style.display !== 'none');
+    
+    return 'Debug info logged to console';
+};
 
 // ================ VIB3 CHALLENGES SYSTEM ================
 
