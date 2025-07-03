@@ -6151,6 +6151,11 @@ function showPage(page) {
         return;
     }
     
+    if (page === 'collaboration') {
+        showCollaborationHub();
+        return;
+    }
+    
     if (page === 'coins') {
         showCoins();
         return;
@@ -18888,4 +18893,2120 @@ window.shareViewerStream = shareViewerStream;
 window.toggleViewerVolume = toggleViewerVolume;
 window.toggleViewerFullscreen = toggleViewerFullscreen;
 window.showBuyCoins = showBuyCoins;
+
+// ================ COLLABORATION SYSTEM ================
+// VIB3 Collaborative Content Creation System - Phase 4 Feature
+
+// Sample collaboration data for offline mode
+const sampleCollaborationData = {
+    projects: [
+        {
+            id: 'proj_001',
+            title: 'Summer Vibes Dance Challenge',
+            description: 'Creating the ultimate summer dance video with trending moves',
+            status: 'active',
+            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            owner: { id: 'user_001', username: 'dance_creator', avatar: '👤' },
+            collaborators: [
+                { id: 'user_002', username: 'beat_master', avatar: '🎵', role: 'editor', status: 'active' },
+                { id: 'user_003', username: 'visual_fx', avatar: '🎨', role: 'editor', status: 'active' },
+                { id: 'user_004', username: 'music_mixer', avatar: '🎧', role: 'reviewer', status: 'pending' }
+            ],
+            assets: [
+                { id: 'asset_001', type: 'video', name: 'intro_dance.mp4', uploadedBy: 'dance_creator', size: '25MB' },
+                { id: 'asset_002', type: 'audio', name: 'beat_track.mp3', uploadedBy: 'beat_master', size: '8MB' },
+                { id: 'asset_003', type: 'effect', name: 'sparkle_transition.fx', uploadedBy: 'visual_fx', size: '2MB' }
+            ],
+            versions: [
+                { id: 'v_001', name: 'v1.0 - Initial Cut', createdBy: 'dance_creator', timestamp: '2024-01-01T10:00:00Z' },
+                { id: 'v_002', name: 'v1.1 - Added Beat', createdBy: 'beat_master', timestamp: '2024-01-01T14:00:00Z' },
+                { id: 'v_003', name: 'v1.2 - Visual Effects', createdBy: 'visual_fx', timestamp: '2024-01-01T18:00:00Z' }
+            ],
+            progress: 75,
+            deadline: '2024-01-15T23:59:59Z',
+            template: 'dance_challenge'
+        },
+        {
+            id: 'proj_002',
+            title: 'Cooking Collab: Fusion Recipes',
+            description: 'Collaborative cooking show featuring international fusion cuisine',
+            status: 'planning',
+            createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            owner: { id: 'user_005', username: 'chef_fusion', avatar: '👨‍🍳' },
+            collaborators: [
+                { id: 'user_006', username: 'food_stylist', avatar: '🍽️', role: 'editor', status: 'active' },
+                { id: 'user_007', username: 'recipe_writer', avatar: '📝', role: 'reviewer', status: 'active' }
+            ],
+            assets: [
+                { id: 'asset_004', type: 'video', name: 'ingredient_prep.mp4', uploadedBy: 'chef_fusion', size: '35MB' },
+                { id: 'asset_005', type: 'document', name: 'recipe_script.txt', uploadedBy: 'recipe_writer', size: '1MB' }
+            ],
+            versions: [
+                { id: 'v_004', name: 'v1.0 - Concept', createdBy: 'chef_fusion', timestamp: '2024-01-02T09:00:00Z' }
+            ],
+            progress: 20,
+            deadline: '2024-01-20T23:59:59Z',
+            template: 'tutorial'
+        },
+        {
+            id: 'proj_003',
+            title: 'Music Video Masterpiece',
+            description: 'Epic music video with cinematic visuals and synchronized choreography',
+            status: 'completed',
+            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+            owner: { id: 'user_008', username: 'music_director', avatar: '🎬' },
+            collaborators: [
+                { id: 'user_009', username: 'singer_star', avatar: '🎤', role: 'editor', status: 'active' },
+                { id: 'user_010', username: 'video_editor', avatar: '✂️', role: 'editor', status: 'active' },
+                { id: 'user_011', username: 'sound_engineer', avatar: '🎛️', role: 'editor', status: 'active' }
+            ],
+            assets: [
+                { id: 'asset_006', type: 'video', name: 'main_performance.mp4', uploadedBy: 'singer_star', size: '120MB' },
+                { id: 'asset_007', type: 'audio', name: 'master_track.wav', uploadedBy: 'sound_engineer', size: '45MB' },
+                { id: 'asset_008', type: 'video', name: 'b_roll_footage.mp4', uploadedBy: 'video_editor', size: '80MB' }
+            ],
+            versions: [
+                { id: 'v_005', name: 'v1.0 - Raw Footage', createdBy: 'music_director', timestamp: '2023-12-25T10:00:00Z' },
+                { id: 'v_006', name: 'v2.0 - Edited Cut', createdBy: 'video_editor', timestamp: '2023-12-28T15:00:00Z' },
+                { id: 'v_007', name: 'v3.0 - Final Master', createdBy: 'sound_engineer', timestamp: '2023-12-30T20:00:00Z' }
+            ],
+            progress: 100,
+            deadline: '2024-01-01T00:00:00Z',
+            template: 'music_video'
+        }
+    ],
+    templates: [
+        {
+            id: 'dance_challenge',
+            name: 'Dance Challenge',
+            description: 'Perfect for creating trending dance content with multiple creators',
+            roles: ['choreographer', 'dancer', 'editor', 'music_curator'],
+            timeline: '3-7 days',
+            assets: ['choreography_video', 'music_track', 'location_footage']
+        },
+        {
+            id: 'tutorial',
+            name: 'Tutorial Collaboration',
+            description: 'Educational content creation with expert knowledge sharing',
+            roles: ['subject_expert', 'presenter', 'editor', 'scriptwriter'],
+            timeline: '5-10 days',
+            assets: ['lesson_plan', 'demo_video', 'supporting_materials']
+        },
+        {
+            id: 'music_video',
+            name: 'Music Video Production',
+            description: 'Professional music video creation with full production team',
+            roles: ['director', 'performer', 'videographer', 'editor', 'sound_engineer'],
+            timeline: '10-21 days',
+            assets: ['raw_footage', 'audio_stems', 'treatment_doc', 'storyboard']
+        },
+        {
+            id: 'comedy_sketch',
+            name: 'Comedy Sketch',
+            description: 'Collaborative comedy content with multiple performers',
+            roles: ['writer', 'performer', 'director', 'editor'],
+            timeline: '2-5 days',
+            assets: ['script', 'performance_video', 'props_list']
+        }
+    ],
+    chatMessages: [
+        {
+            id: 'msg_001',
+            projectId: 'proj_001',
+            sender: { id: 'user_002', username: 'beat_master', avatar: '🎵' },
+            message: 'Just uploaded the new beat! Check out the latest version - it really makes the dance pop! 🎶',
+            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            type: 'message'
+        },
+        {
+            id: 'msg_002',
+            projectId: 'proj_001',
+            sender: { id: 'user_003', username: 'visual_fx', avatar: '🎨' },
+            message: 'Love the beat! I\'ve added some sparkle transitions that sync perfectly with the drops. Want me to render a preview? ✨',
+            timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+            type: 'message'
+        },
+        {
+            id: 'msg_003',
+            projectId: 'proj_001',
+            sender: { id: 'user_001', username: 'dance_creator', avatar: '👤' },
+            message: 'This is looking amazing! @visual_fx yes please render a preview. @beat_master the timing is perfect! 🔥',
+            timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+            type: 'message'
+        }
+    ]
+};
+
+// Collaboration Hub - Main entry point
+function showCollaborationHub() {
+    console.log('🤝 Showing Collaboration Hub');
+    
+    // Hide all other pages
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
+        el.style.display = 'none';
+    });
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) mainApp.style.display = 'none';
+    
+    // Remove existing collaboration page
+    const existingPage = document.getElementById('collaborationPage');
+    if (existingPage) existingPage.remove();
+    
+    // Create collaboration hub page
+    const collaborationPage = document.createElement('div');
+    collaborationPage.id = 'collaborationPage';
+    collaborationPage.className = 'collaboration-page';
+    collaborationPage.style.cssText = `
+        margin-left: 240px; 
+        width: calc(100vw - 240px); 
+        height: 100vh; 
+        overflow-y: auto; 
+        background: var(--bg-primary); 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    `;
+    
+    collaborationPage.innerHTML = `
+        <div class="collaboration-header" style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            color: white;
+            border-bottom: 1px solid var(--border-primary);
+        ">
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <h1 style="
+                    font-size: 36px;
+                    font-weight: 800;
+                    margin: 0 0 16px 0;
+                    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                ">🤝 Collaboration Hub</h1>
+                <p style="
+                    font-size: 18px;
+                    margin: 0 0 24px 0;
+                    opacity: 0.9;
+                ">Create amazing content together with fellow creators</p>
+                <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                    <button onclick="showCreateProjectModal()" style="
+                        background: rgba(255,255,255,0.2);
+                        color: white;
+                        border: 2px solid rgba(255,255,255,0.3);
+                        padding: 12px 24px;
+                        border-radius: 25px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        backdrop-filter: blur(10px);
+                    " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        ➕ Start New Project
+                    </button>
+                    <button onclick="showProjectTemplates()" style="
+                        background: rgba(255,255,255,0.2);
+                        color: white;
+                        border: 2px solid rgba(255,255,255,0.3);
+                        padding: 12px 24px;
+                        border-radius: 25px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        backdrop-filter: blur(10px);
+                    " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        📋 Browse Templates
+                    </button>
+                    <button onclick="showCollaborationStats()" style="
+                        background: rgba(255,255,255,0.2);
+                        color: white;
+                        border: 2px solid rgba(255,255,255,0.3);
+                        padding: 12px 24px;
+                        border-radius: 25px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        backdrop-filter: blur(10px);
+                    " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        📊 My Stats
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="collaboration-content" style="max-width: 1200px; margin: 0 auto; padding: 30px;">
+            <div class="collaboration-tabs" style="
+                display: flex;
+                gap: 20px;
+                margin-bottom: 30px;
+                border-bottom: 2px solid var(--border-primary);
+                padding-bottom: 20px;
+            ">
+                <button class="collab-tab-btn active" data-tab="active" style="
+                    background: var(--accent-color);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 25px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                ">Active Projects</button>
+                <button class="collab-tab-btn" data-tab="completed" style="
+                    background: var(--bg-tertiary);
+                    color: var(--text-secondary);
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 25px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                ">Completed</button>
+                <button class="collab-tab-btn" data-tab="invitations" style="
+                    background: var(--bg-tertiary);
+                    color: var(--text-secondary);
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 25px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                ">Invitations <span class="notification-badge" style="
+                    background: #ff4757;
+                    color: white;
+                    font-size: 12px;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    margin-left: 8px;
+                ">2</span></button>
+            </div>
+            
+            <div id="collaborationContent" class="collaboration-projects">
+                <div class="loading-projects" style="text-align: center; padding: 60px; color: var(--text-secondary);">
+                    ⏳ Loading your collaborative projects...
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(collaborationPage);
+    
+    // Add event listeners for tabs
+    collaborationPage.querySelectorAll('.collab-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabType = btn.dataset.tab;
+            switchCollaborationTab(tabType);
+            
+            // Update active tab styling
+            collaborationPage.querySelectorAll('.collab-tab-btn').forEach(b => {
+                b.classList.remove('active');
+                b.style.background = 'var(--bg-tertiary)';
+                b.style.color = 'var(--text-secondary)';
+            });
+            btn.classList.add('active');
+            btn.style.background = 'var(--accent-color)';
+            btn.style.color = 'white';
+        });
+    });
+    
+    // Load initial projects
+    setTimeout(() => loadCollaborationProjects('active'), 300);
+}
+
+// Switch collaboration tabs
+function switchCollaborationTab(tabType) {
+    console.log(`🔄 Switching to ${tabType} tab`);
+    loadCollaborationProjects(tabType);
+}
+
+// Load collaboration projects
+async function loadCollaborationProjects(filter = 'active') {
+    console.log(`📋 Loading ${filter} collaboration projects`);
+    const contentDiv = document.getElementById('collaborationContent');
+    if (!contentDiv) return;
+    
+    // Show loading
+    contentDiv.innerHTML = `
+        <div class="loading-projects" style="text-align: center; padding: 60px; color: var(--text-secondary);">
+            ⏳ Loading ${filter} projects...
+        </div>
+    `;
+    
+    try {
+        // Use sample data for offline mode
+        console.log('🔄 Using sample collaboration data for offline mode');
+        const projects = sampleCollaborationData.projects.filter(project => {
+            if (filter === 'active') return project.status === 'active' || project.status === 'planning';
+            if (filter === 'completed') return project.status === 'completed';
+            if (filter === 'invitations') return project.collaborators.some(c => c.status === 'pending');
+            return true;
+        });
+        
+        setTimeout(() => {
+            if (projects.length === 0) {
+                contentDiv.innerHTML = createEmptyProjectsView(filter);
+            } else {
+                contentDiv.innerHTML = createProjectsGrid(projects, filter);
+            }
+        }, 500);
+        
+    } catch (error) {
+        console.error('❌ Error loading collaboration projects:', error);
+        contentDiv.innerHTML = `
+            <div class="error-projects" style="text-align: center; padding: 60px; color: var(--text-secondary);">
+                ❌ Failed to load projects. Using offline mode.
+                <br><br>
+                <button onclick="loadCollaborationProjects('${filter}')" style="
+                    background: var(--accent-color);
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 20px;
+                    cursor: pointer;
+                    margin-top: 10px;
+                ">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// Create empty projects view
+function createEmptyProjectsView(filter) {
+    const messages = {
+        active: {
+            icon: '🚀',
+            title: 'No Active Projects',
+            description: 'Start your first collaboration project and create amazing content with fellow creators!',
+            action: 'Start New Project'
+        },
+        completed: {
+            icon: '✅',
+            title: 'No Completed Projects',
+            description: 'Complete your first collaboration project to see it here.',
+            action: 'View Active Projects'
+        },
+        invitations: {
+            icon: '📨',
+            title: 'No Pending Invitations',
+            description: 'When creators invite you to collaborate, you\'ll see the invitations here.',
+            action: 'Start New Project'
+        }
+    };
+    
+    const msg = messages[filter] || messages.active;
+    
+    return `
+        <div class="empty-projects" style="
+            text-align: center;
+            padding: 80px 40px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        ">
+            <div style="font-size: 64px; margin-bottom: 24px;">${msg.icon}</div>
+            <h3 style="
+                color: var(--text-primary);
+                font-size: 24px;
+                margin-bottom: 16px;
+                font-weight: 700;
+            ">${msg.title}</h3>
+            <p style="
+                font-size: 16px;
+                line-height: 1.5;
+                margin-bottom: 32px;
+            ">${msg.description}</p>
+            <button onclick="showCreateProjectModal()" style="
+                background: var(--accent-color);
+                color: white;
+                border: none;
+                padding: 16px 32px;
+                border-radius: 25px;
+                font-weight: 600;
+                cursor: pointer;
+                font-size: 16px;
+                transition: all 0.3s ease;
+            " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                ${msg.action}
+            </button>
+        </div>
+    `;
+}
+
+// Create projects grid
+function createProjectsGrid(projects, filter) {
+    const projectCards = projects.map(project => createProjectCard(project, filter)).join('');
+    
+    return `
+        <div class="projects-grid" style="
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        ">
+            ${projectCards}
+        </div>
+    `;
+}
+
+// Create individual project card
+function createProjectCard(project, filter) {
+    const statusColors = {
+        active: '#2ed573',
+        planning: '#ffa502',
+        completed: '#5352ed',
+        pending: '#ff4757'
+    };
+    
+    const statusColor = statusColors[project.status] || '#7f8c8d';
+    const timeAgo = getTimeAgo(project.createdAt);
+    const deadline = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline';
+    
+    return `
+        <div class="project-card" style="
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        " onclick="openProjectDetails('${project.id}')" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 32px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+            <div class="project-status" style="
+                position: absolute;
+                top: 16px;
+                right: 16px;
+                background: ${statusColor};
+                color: white;
+                padding: 4px 12px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: uppercase;
+            ">${project.status}</div>
+            
+            <div class="project-header" style="margin-bottom: 16px;">
+                <h3 style="
+                    color: var(--text-primary);
+                    font-size: 20px;
+                    font-weight: 700;
+                    margin: 0 0 8px 0;
+                    padding-right: 80px;
+                    line-height: 1.2;
+                ">${project.title}</h3>
+                <p style="
+                    color: var(--text-secondary);
+                    font-size: 14px;
+                    margin: 0;
+                    line-height: 1.4;
+                ">${project.description}</p>
+            </div>
+            
+            <div class="project-owner" style="
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 16px;
+            ">
+                <div style="
+                    width: 32px;
+                    height: 32px;
+                    background: var(--accent-color);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 16px;
+                ">${project.owner.avatar}</div>
+                <div>
+                    <div style="color: var(--text-primary); font-weight: 600; font-size: 14px;">@${project.owner.username}</div>
+                    <div style="color: var(--text-secondary); font-size: 12px;">Created ${timeAgo}</div>
+                </div>
+            </div>
+            
+            <div class="project-collaborators" style="margin-bottom: 16px;">
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-bottom: 8px;
+                ">
+                    <span style="
+                        color: var(--text-secondary);
+                        font-size: 14px;
+                        font-weight: 600;
+                    ">Collaborators:</span>
+                    <div style="display: flex; gap: 4px;">
+                        ${project.collaborators.slice(0, 3).map(collab => `
+                            <div style="
+                                width: 24px;
+                                height: 24px;
+                                background: var(--bg-tertiary);
+                                border-radius: 50%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 12px;
+                                border: 2px solid var(--bg-secondary);
+                            " title="${collab.username} (${collab.role})">${collab.avatar}</div>
+                        `).join('')}
+                        ${project.collaborators.length > 3 ? `
+                            <div style="
+                                width: 24px;
+                                height: 24px;
+                                background: var(--text-secondary);
+                                border-radius: 50%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-size: 10px;
+                                color: white;
+                                font-weight: 600;
+                            ">+${project.collaborators.length - 3}</div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="project-progress" style="margin-bottom: 16px;">
+                <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 8px;
+                ">
+                    <span style="
+                        color: var(--text-secondary);
+                        font-size: 14px;
+                        font-weight: 600;
+                    ">Progress</span>
+                    <span style="
+                        color: var(--text-primary);
+                        font-size: 14px;
+                        font-weight: 600;
+                    ">${project.progress}%</span>
+                </div>
+                <div style="
+                    width: 100%;
+                    height: 6px;
+                    background: var(--bg-tertiary);
+                    border-radius: 3px;
+                    overflow: hidden;
+                ">
+                    <div style="
+                        width: ${project.progress}%;
+                        height: 100%;
+                        background: linear-gradient(90deg, var(--accent-color), #667eea);
+                        transition: width 0.3s ease;
+                    "></div>
+                </div>
+            </div>
+            
+            <div class="project-meta" style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                color: var(--text-secondary);
+                font-size: 12px;
+            ">
+                <div>📅 Due: ${deadline}</div>
+                <div>📎 ${project.assets.length} assets</div>
+            </div>
+        </div>
+    `;
+}
+
+// Helper function to get time ago
+function getTimeAgo(timestamp) {
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffInSeconds = Math.floor((now - past) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return `${Math.floor(diffInSeconds / 2592000)}mo ago`;
+}
+
+// Show create project modal
+function showCreateProjectModal() {
+    console.log('➕ Showing create project modal');
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal collaboration-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100000;
+        backdrop-filter: blur(5px);
+    `;
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="
+            background: var(--bg-primary);
+            border-radius: 20px;
+            padding: 0;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        ">
+            <div class="modal-header" style="
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 24px;
+                border-radius: 20px 20px 0 0;
+                color: white;
+                position: relative;
+            ">
+                <button onclick="closeCreateProjectModal()" style="
+                    position: absolute;
+                    top: 16px;
+                    right: 16px;
+                    background: rgba(255,255,255,0.2);
+                    color: white;
+                    border: none;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    font-size: 18px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">&times;</button>
+                <h2 style="
+                    margin: 0 0 8px 0;
+                    font-size: 24px;
+                    font-weight: 700;
+                ">🚀 Start New Project</h2>
+                <p style="
+                    margin: 0;
+                    opacity: 0.9;
+                    font-size: 14px;
+                ">Create a collaborative project and invite fellow creators</p>
+            </div>
+            
+            <div class="modal-body" style="padding: 24px;">
+                <form id="createProjectForm" onsubmit="createNewProject(event)">
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="
+                            display: block;
+                            color: var(--text-primary);
+                            font-weight: 600;
+                            margin-bottom: 8px;
+                        ">Project Title *</label>
+                        <input type="text" id="projectTitle" required style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 1px solid var(--border-primary);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-primary);
+                            font-size: 16px;
+                        " placeholder="Enter your project title">
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="
+                            display: block;
+                            color: var(--text-primary);
+                            font-weight: 600;
+                            margin-bottom: 8px;
+                        ">Description *</label>
+                        <textarea id="projectDescription" required style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 1px solid var(--border-primary);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-primary);
+                            font-size: 16px;
+                            min-height: 100px;
+                            resize: vertical;
+                        " placeholder="Describe your project and what you want to create"></textarea>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="
+                            display: block;
+                            color: var(--text-primary);
+                            font-weight: 600;
+                            margin-bottom: 8px;
+                        ">Template</label>
+                        <select id="projectTemplate" style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 1px solid var(--border-primary);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-primary);
+                            font-size: 16px;
+                        ">
+                            <option value="">Choose a template (optional)</option>
+                            <option value="dance_challenge">🕺 Dance Challenge</option>
+                            <option value="tutorial">📚 Tutorial Collaboration</option>
+                            <option value="music_video">🎵 Music Video Production</option>
+                            <option value="comedy_sketch">😄 Comedy Sketch</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="
+                            display: block;
+                            color: var(--text-primary);
+                            font-weight: 600;
+                            margin-bottom: 8px;
+                        ">Deadline</label>
+                        <input type="date" id="projectDeadline" style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 1px solid var(--border-primary);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-primary);
+                            font-size: 16px;
+                        ">
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="
+                            display: block;
+                            color: var(--text-primary);
+                            font-weight: 600;
+                            margin-bottom: 8px;
+                        ">Invite Collaborators</label>
+                        <input type="text" id="collaboratorInvites" style="
+                            width: 100%;
+                            padding: 12px;
+                            border: 1px solid var(--border-primary);
+                            border-radius: 8px;
+                            background: var(--bg-secondary);
+                            color: var(--text-primary);
+                            font-size: 16px;
+                        " placeholder="Enter usernames separated by commas (@user1, @user2)">
+                        <small style="color: var(--text-secondary); font-size: 12px;">
+                            You can invite collaborators now or later from the project page
+                        </small>
+                    </div>
+                    
+                    <div class="form-actions" style="
+                        display: flex;
+                        gap: 12px;
+                        justify-content: flex-end;
+                        margin-top: 24px;
+                    ">
+                        <button type="button" onclick="closeCreateProjectModal()" style="
+                            background: var(--bg-tertiary);
+                            color: var(--text-secondary);
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">Cancel</button>
+                        <button type="submit" style="
+                            background: var(--accent-color);
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">Create Project</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Focus on title input
+    setTimeout(() => {
+        document.getElementById('projectTitle').focus();
+    }, 100);
+}
+
+// Close create project modal
+function closeCreateProjectModal() {
+    const modal = document.querySelector('.collaboration-modal');
+    if (modal) modal.remove();
+}
+
+// Create new project
+function createNewProject(event) {
+    event.preventDefault();
+    
+    const title = document.getElementById('projectTitle').value;
+    const description = document.getElementById('projectDescription').value;
+    const template = document.getElementById('projectTemplate').value;
+    const deadline = document.getElementById('projectDeadline').value;
+    const collaborators = document.getElementById('collaboratorInvites').value;
+    
+    console.log('🚀 Creating new project:', { title, description, template, deadline, collaborators });
+    
+    // Show success message
+    showNotification('Project created successfully! 🎉', 'success');
+    
+    // Close modal
+    closeCreateProjectModal();
+    
+    // Refresh projects list
+    setTimeout(() => {
+        loadCollaborationProjects('active');
+    }, 500);
+}
+
+// Open project details
+function openProjectDetails(projectId) {
+    console.log('📋 Opening project details:', projectId);
+    
+    const project = sampleCollaborationData.projects.find(p => p.id === projectId);
+    if (!project) {
+        showNotification('Project not found', 'error');
+        return;
+    }
+    
+    // Hide collaboration hub
+    const collaborationPage = document.getElementById('collaborationPage');
+    if (collaborationPage) collaborationPage.style.display = 'none';
+    
+    // Create project details page
+    const projectDetailsPage = document.createElement('div');
+    projectDetailsPage.id = 'projectDetailsPage';
+    projectDetailsPage.className = 'project-details-page';
+    projectDetailsPage.style.cssText = `
+        margin-left: 240px; 
+        width: calc(100vw - 240px); 
+        height: 100vh; 
+        overflow-y: auto; 
+        background: var(--bg-primary); 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    `;
+    
+    const statusColors = {
+        active: '#2ed573',
+        planning: '#ffa502',
+        completed: '#5352ed',
+        pending: '#ff4757'
+    };
+    
+    projectDetailsPage.innerHTML = `
+        <div class="project-header" style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            color: white;
+            border-bottom: 1px solid var(--border-primary);
+        ">
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                    <button onclick="closeProjectDetails()" style="
+                        background: rgba(255,255,255,0.2);
+                        color: white;
+                        border: none;
+                        padding: 8px 12px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 16px;
+                    ">← Back</button>
+                    <div style="
+                        background: ${statusColors[project.status]};
+                        color: white;
+                        padding: 6px 16px;
+                        border-radius: 12px;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                    ">${project.status}</div>
+                </div>
+                <h1 style="
+                    font-size: 32px;
+                    font-weight: 800;
+                    margin: 0 0 12px 0;
+                    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                ">${project.title}</h1>
+                <p style="
+                    font-size: 16px;
+                    margin: 0 0 20px 0;
+                    opacity: 0.9;
+                    line-height: 1.4;
+                ">${project.description}</p>
+                
+                <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="
+                            width: 40px;
+                            height: 40px;
+                            background: rgba(255,255,255,0.2);
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 20px;
+                        ">${project.owner.avatar}</div>
+                        <div>
+                            <div style="font-weight: 600;">@${project.owner.username}</div>
+                            <div style="font-size: 12px; opacity: 0.8;">Project Owner</div>
+                        </div>
+                    </div>
+                    
+                    <div style="width: 1px; height: 40px; background: rgba(255,255,255,0.2);"></div>
+                    
+                    <div>
+                        <div style="font-weight: 600;">${project.progress}% Complete</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Progress</div>
+                    </div>
+                    
+                    <div style="width: 1px; height: 40px; background: rgba(255,255,255,0.2);"></div>
+                    
+                    <div>
+                        <div style="font-weight: 600;">${project.collaborators.length} Collaborators</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Team Size</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="project-content" style="max-width: 1200px; margin: 0 auto; padding: 30px;">
+            <div style="display: grid; grid-template-columns: 1fr 350px; gap: 30px;">
+                <div class="project-main">
+                    <div class="project-tabs" style="
+                        display: flex;
+                        gap: 16px;
+                        margin-bottom: 24px;
+                        border-bottom: 2px solid var(--border-primary);
+                        padding-bottom: 16px;
+                    ">
+                        <button class="project-tab-btn active" data-tab="overview" style="
+                            background: var(--accent-color);
+                            color: white;
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 20px;
+                            font-weight: 600;
+                            cursor: pointer;
+                        ">Overview</button>
+                        <button class="project-tab-btn" data-tab="assets" style="
+                            background: var(--bg-tertiary);
+                            color: var(--text-secondary);
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 20px;
+                            font-weight: 600;
+                            cursor: pointer;
+                        ">Assets <span style="
+                            background: rgba(255,255,255,0.2);
+                            padding: 2px 8px;
+                            border-radius: 8px;
+                            font-size: 12px;
+                            margin-left: 4px;
+                        ">${project.assets.length}</span></button>
+                        <button class="project-tab-btn" data-tab="versions" style="
+                            background: var(--bg-tertiary);
+                            color: var(--text-secondary);
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 20px;
+                            font-weight: 600;
+                            cursor: pointer;
+                        ">Versions <span style="
+                            background: rgba(255,255,255,0.2);
+                            padding: 2px 8px;
+                            border-radius: 8px;
+                            font-size: 12px;
+                            margin-left: 4px;
+                        ">${project.versions.length}</span></button>
+                    </div>
+                    
+                    <div id="projectTabContent">
+                        ${createProjectOverview(project)}
+                    </div>
+                </div>
+                
+                <div class="project-sidebar">
+                    <!-- Collaborators Panel -->
+                    <div class="collaborators-panel" style="
+                        background: var(--bg-secondary);
+                        border-radius: 16px;
+                        padding: 20px;
+                        margin-bottom: 20px;
+                    ">
+                        <div style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 16px;
+                        ">
+                            <h3 style="
+                                color: var(--text-primary);
+                                font-size: 18px;
+                                font-weight: 700;
+                                margin: 0;
+                            ">👥 Team</h3>
+                            <button onclick="showInviteCollaboratorModal('${project.id}')" style="
+                                background: var(--accent-color);
+                                color: white;
+                                border: none;
+                                padding: 6px 12px;
+                                border-radius: 8px;
+                                font-size: 12px;
+                                cursor: pointer;
+                                font-weight: 600;
+                            ">+ Invite</button>
+                        </div>
+                        
+                        <div class="collaborator-list">
+                            ${createCollaboratorList(project)}
+                        </div>
+                    </div>
+                    
+                    <!-- Project Chat -->
+                    <div class="project-chat" style="
+                        background: var(--bg-secondary);
+                        border-radius: 16px;
+                        padding: 20px;
+                        height: 400px;
+                        display: flex;
+                        flex-direction: column;
+                    ">
+                        <h3 style="
+                            color: var(--text-primary);
+                            font-size: 18px;
+                            font-weight: 700;
+                            margin: 0 0 16px 0;
+                        ">💬 Project Chat</h3>
+                        
+                        <div id="projectChatMessages" style="
+                            flex: 1;
+                            overflow-y: auto;
+                            margin-bottom: 16px;
+                            padding-right: 8px;
+                        ">
+                            ${createProjectChatMessages(project.id)}
+                        </div>
+                        
+                        <div style="
+                            display: flex;
+                            gap: 8px;
+                            align-items: center;
+                        ">
+                            <input type="text" id="projectChatInput" placeholder="Type a message..." style="
+                                flex: 1;
+                                padding: 8px 12px;
+                                border: 1px solid var(--border-primary);
+                                border-radius: 20px;
+                                background: var(--bg-tertiary);
+                                color: var(--text-primary);
+                                font-size: 14px;
+                            " onkeypress="if(event.key==='Enter') sendProjectMessage('${project.id}')">
+                            <button onclick="sendProjectMessage('${project.id}')" style="
+                                background: var(--accent-color);
+                                color: white;
+                                border: none;
+                                padding: 8px 12px;
+                                border-radius: 20px;
+                                cursor: pointer;
+                                font-size: 14px;
+                            ">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(projectDetailsPage);
+    
+    // Add event listeners for project tabs
+    projectDetailsPage.querySelectorAll('.project-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabType = btn.dataset.tab;
+            switchProjectTab(tabType, project);
+            
+            // Update active tab styling
+            projectDetailsPage.querySelectorAll('.project-tab-btn').forEach(b => {
+                b.classList.remove('active');
+                b.style.background = 'var(--bg-tertiary)';
+                b.style.color = 'var(--text-secondary)';
+            });
+            btn.classList.add('active');
+            btn.style.background = 'var(--accent-color)';
+            btn.style.color = 'white';
+        });
+    });
+}
+
+// Switch project tabs
+function switchProjectTab(tabType, project) {
+    const contentDiv = document.getElementById('projectTabContent');
+    if (!contentDiv) return;
+    
+    switch (tabType) {
+        case 'overview':
+            contentDiv.innerHTML = createProjectOverview(project);
+            break;
+        case 'assets':
+            contentDiv.innerHTML = createProjectAssets(project);
+            break;
+        case 'versions':
+            contentDiv.innerHTML = createProjectVersions(project);
+            break;
+    }
+}
+
+// Create project overview
+function createProjectOverview(project) {
+    const deadline = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline set';
+    
+    return `
+        <div class="project-overview">
+            <div class="progress-section" style="
+                background: var(--bg-secondary);
+                border-radius: 16px;
+                padding: 24px;
+                margin-bottom: 24px;
+            ">
+                <h3 style="
+                    color: var(--text-primary);
+                    font-size: 20px;
+                    font-weight: 700;
+                    margin: 0 0 16px 0;
+                ">📊 Project Progress</h3>
+                
+                <div style="
+                    background: var(--bg-tertiary);
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin-bottom: 20px;
+                ">
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 12px;
+                    ">
+                        <span style="
+                            color: var(--text-primary);
+                            font-weight: 600;
+                        ">Overall Progress</span>
+                        <span style="
+                            color: var(--accent-color);
+                            font-weight: 700;
+                            font-size: 18px;
+                        ">${project.progress}%</span>
+                    </div>
+                    <div style="
+                        width: 100%;
+                        height: 12px;
+                        background: var(--bg-primary);
+                        border-radius: 6px;
+                        overflow: hidden;
+                    ">
+                        <div style="
+                            width: ${project.progress}%;
+                            height: 100%;
+                            background: linear-gradient(90deg, var(--accent-color), #667eea);
+                            transition: width 0.3s ease;
+                        "></div>
+                    </div>
+                </div>
+                
+                <div style="
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 16px;
+                ">
+                    <div style="
+                        background: var(--bg-tertiary);
+                        border-radius: 12px;
+                        padding: 16px;
+                        text-align: center;
+                    ">
+                        <div style="
+                            font-size: 24px;
+                            font-weight: 700;
+                            color: var(--accent-color);
+                            margin-bottom: 4px;
+                        ">${project.assets.length}</div>
+                        <div style="
+                            color: var(--text-secondary);
+                            font-size: 14px;
+                        ">Assets Shared</div>
+                    </div>
+                    <div style="
+                        background: var(--bg-tertiary);
+                        border-radius: 12px;
+                        padding: 16px;
+                        text-align: center;
+                    ">
+                        <div style="
+                            font-size: 24px;
+                            font-weight: 700;
+                            color: var(--accent-color);
+                            margin-bottom: 4px;
+                        ">${project.versions.length}</div>
+                        <div style="
+                            color: var(--text-secondary);
+                            font-size: 14px;
+                        ">Versions Created</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="timeline-section" style="
+                background: var(--bg-secondary);
+                border-radius: 16px;
+                padding: 24px;
+                margin-bottom: 24px;
+            ">
+                <h3 style="
+                    color: var(--text-primary);
+                    font-size: 20px;
+                    font-weight: 700;
+                    margin: 0 0 16px 0;
+                ">📅 Project Timeline</h3>
+                
+                <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 16px;
+                    background: var(--bg-tertiary);
+                    border-radius: 12px;
+                ">
+                    <div>
+                        <div style="
+                            color: var(--text-primary);
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                        ">Created</div>
+                        <div style="
+                            color: var(--text-secondary);
+                            font-size: 14px;
+                        ">${new Date(project.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    <div style="
+                        width: 40px;
+                        height: 2px;
+                        background: var(--accent-color);
+                        border-radius: 1px;
+                    "></div>
+                    <div>
+                        <div style="
+                            color: var(--text-primary);
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                        ">Deadline</div>
+                        <div style="
+                            color: var(--text-secondary);
+                            font-size: 14px;
+                        ">${deadline}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="actions-section" style="
+                background: var(--bg-secondary);
+                border-radius: 16px;
+                padding: 24px;
+            ">
+                <h3 style="
+                    color: var(--text-primary);
+                    font-size: 20px;
+                    font-weight: 700;
+                    margin: 0 0 16px 0;
+                ">🎬 Quick Actions</h3>
+                
+                <div style="
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 12px;
+                ">
+                    <button onclick="uploadAsset('${project.id}')" style="
+                        background: var(--accent-color);
+                        color: white;
+                        border: none;
+                        padding: 14px 20px;
+                        border-radius: 12px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        justify-content: center;
+                    ">
+                        📎 Upload Asset
+                    </button>
+                    <button onclick="createNewVersion('${project.id}')" style="
+                        background: #2ed573;
+                        color: white;
+                        border: none;
+                        padding: 14px 20px;
+                        border-radius: 12px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        justify-content: center;
+                    ">
+                        🔄 New Version
+                    </button>
+                    <button onclick="shareProject('${project.id}')" style="
+                        background: #5352ed;
+                        color: white;
+                        border: none;
+                        padding: 14px 20px;
+                        border-radius: 12px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        justify-content: center;
+                    ">
+                        🔗 Share Project
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Create project assets view
+function createProjectAssets(project) {
+    const assetIcons = {
+        video: '🎬',
+        audio: '🎵',
+        image: '🖼️',
+        document: '📄',
+        effect: '✨'
+    };
+    
+    const assetCards = project.assets.map(asset => `
+        <div class="asset-card" style="
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        " onclick="downloadAsset('${asset.id}')" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="
+                width: 48px;
+                height: 48px;
+                background: var(--accent-color);
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+            ">${assetIcons[asset.type] || '📁'}</div>
+            <div style="flex: 1;">
+                <div style="
+                    color: var(--text-primary);
+                    font-weight: 600;
+                    margin-bottom: 4px;
+                ">${asset.name}</div>
+                <div style="
+                    color: var(--text-secondary);
+                    font-size: 14px;
+                ">By @${asset.uploadedBy} • ${asset.size}</div>
+            </div>
+            <button onclick="event.stopPropagation(); showAssetOptions('${asset.id}')" style="
+                background: var(--bg-secondary);
+                color: var(--text-secondary);
+                border: none;
+                padding: 8px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+            ">⋮</button>
+        </div>
+    `).join('');
+    
+    return `
+        <div class="project-assets">
+            <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 24px;
+            ">
+                <h3 style="
+                    color: var(--text-primary);
+                    font-size: 20px;
+                    font-weight: 700;
+                    margin: 0;
+                ">📎 Project Assets</h3>
+                <button onclick="uploadAsset('${project.id}')" style="
+                    background: var(--accent-color);
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 20px;
+                    font-weight: 600;
+                    cursor: pointer;
+                ">+ Upload Asset</button>
+            </div>
+            
+            <div class="assets-list" style="
+                background: var(--bg-secondary);
+                border-radius: 16px;
+                padding: 20px;
+            ">
+                ${assetCards.length > 0 ? assetCards : `
+                    <div style="
+                        text-align: center;
+                        padding: 40px;
+                        color: var(--text-secondary);
+                    ">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+                        <h4 style="color: var(--text-primary); margin-bottom: 8px;">No assets yet</h4>
+                        <p style="margin-bottom: 20px;">Upload videos, audio, images, or documents to share with your team</p>
+                        <button onclick="uploadAsset('${project.id}')" style="
+                            background: var(--accent-color);
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 20px;
+                            font-weight: 600;
+                            cursor: pointer;
+                        ">Upload First Asset</button>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+// Create project versions view
+function createProjectVersions(project) {
+    const versionCards = project.versions.map((version, index) => `
+        <div class="version-card" style="
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            ${index === 0 ? 'border: 2px solid var(--accent-color);' : ''}
+        ">
+            <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            ">
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                ">
+                    <div style="
+                        width: 40px;
+                        height: 40px;
+                        background: ${index === 0 ? 'var(--accent-color)' : 'var(--bg-secondary)'};
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-weight: 700;
+                        color: ${index === 0 ? 'white' : 'var(--text-secondary)'};
+                    ">v${index + 1}</div>
+                    <div>
+                        <div style="
+                            color: var(--text-primary);
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                        ">${version.name}</div>
+                        <div style="
+                            color: var(--text-secondary);
+                            font-size: 14px;
+                        ">By @${version.createdBy} • ${new Date(version.timestamp).toLocaleDateString()}</div>
+                    </div>
+                </div>
+                ${index === 0 ? `
+                    <div style="
+                        background: var(--accent-color);
+                        color: white;
+                        padding: 4px 12px;
+                        border-radius: 12px;
+                        font-size: 12px;
+                        font-weight: 600;
+                    ">LATEST</div>
+                ` : ''}
+            </div>
+            
+            <div style="
+                display: flex;
+                gap: 12px;
+                margin-top: 16px;
+            ">
+                <button onclick="previewVersion('${version.id}')" style="
+                    background: var(--accent-color);
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    flex: 1;
+                ">👀 Preview</button>
+                <button onclick="downloadVersion('${version.id}')" style="
+                    background: var(--bg-secondary);
+                    color: var(--text-primary);
+                    border: 1px solid var(--border-primary);
+                    padding: 8px 16px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    flex: 1;
+                ">💾 Download</button>
+                <button onclick="showVersionOptions('${version.id}')" style="
+                    background: var(--bg-secondary);
+                    color: var(--text-secondary);
+                    border: none;
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 16px;
+                ">⋮</button>
+            </div>
+        </div>
+    `).join('');
+    
+    return `
+        <div class="project-versions">
+            <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 24px;
+            ">
+                <h3 style="
+                    color: var(--text-primary);
+                    font-size: 20px;
+                    font-weight: 700;
+                    margin: 0;
+                ">🔄 Version History</h3>
+                <button onclick="createNewVersion('${project.id}')" style="
+                    background: var(--accent-color);
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 20px;
+                    font-weight: 600;
+                    cursor: pointer;
+                ">+ New Version</button>
+            </div>
+            
+            <div class="versions-list" style="
+                background: var(--bg-secondary);
+                border-radius: 16px;
+                padding: 20px;
+            ">
+                ${versionCards}
+            </div>
+        </div>
+    `;
+}
+
+// Create collaborator list
+function createCollaboratorList(project) {
+    const owner = `
+        <div class="collaborator-item" style="
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+        ">
+            <div style="
+                width: 40px;
+                height: 40px;
+                background: var(--accent-color);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+            ">${project.owner.avatar}</div>
+            <div style="flex: 1;">
+                <div style="
+                    color: var(--text-primary);
+                    font-weight: 600;
+                    margin-bottom: 2px;
+                ">@${project.owner.username}</div>
+                <div style="
+                    color: var(--text-secondary);
+                    font-size: 12px;
+                ">Owner</div>
+            </div>
+            <div style="
+                background: var(--accent-color);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 8px;
+                font-size: 10px;
+                font-weight: 600;
+            ">OWNER</div>
+        </div>
+    `;
+    
+    const collaborators = project.collaborators.map(collab => `
+        <div class="collaborator-item" style="
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+        ">
+            <div style="
+                width: 40px;
+                height: 40px;
+                background: var(--bg-primary);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+            ">${collab.avatar}</div>
+            <div style="flex: 1;">
+                <div style="
+                    color: var(--text-primary);
+                    font-weight: 600;
+                    margin-bottom: 2px;
+                ">@${collab.username}</div>
+                <div style="
+                    color: var(--text-secondary);
+                    font-size: 12px;
+                ">${collab.role}</div>
+            </div>
+            <div style="
+                background: ${collab.status === 'active' ? '#2ed573' : '#ffa502'};
+                color: white;
+                padding: 4px 8px;
+                border-radius: 8px;
+                font-size: 10px;
+                font-weight: 600;
+            ">${collab.status.toUpperCase()}</div>
+        </div>
+    `).join('');
+    
+    return owner + collaborators;
+}
+
+// Create project chat messages
+function createProjectChatMessages(projectId) {
+    const messages = sampleCollaborationData.chatMessages.filter(msg => msg.projectId === projectId);
+    
+    if (messages.length === 0) {
+        return `
+            <div style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 200px;
+                color: var(--text-secondary);
+                text-align: center;
+            ">
+                <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+                <div style="font-weight: 600; margin-bottom: 8px;">No messages yet</div>
+                <div style="font-size: 14px;">Start the conversation with your team!</div>
+            </div>
+        `;
+    }
+    
+    return messages.map(msg => `
+        <div class="chat-message" style="
+            margin-bottom: 16px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+        ">
+            <div style="
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 8px;
+            ">
+                <div style="
+                    width: 24px;
+                    height: 24px;
+                    background: var(--accent-color);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 12px;
+                ">${msg.sender.avatar}</div>
+                <div style="
+                    color: var(--text-primary);
+                    font-weight: 600;
+                    font-size: 14px;
+                ">@${msg.sender.username}</div>
+                <div style="
+                    color: var(--text-secondary);
+                    font-size: 12px;
+                ">${getTimeAgo(msg.timestamp)}</div>
+            </div>
+            <div style="
+                color: var(--text-primary);
+                font-size: 14px;
+                line-height: 1.4;
+            ">${msg.message}</div>
+        </div>
+    `).join('');
+}
+
+// Close project details
+function closeProjectDetails() {
+    const projectDetailsPage = document.getElementById('projectDetailsPage');
+    if (projectDetailsPage) projectDetailsPage.remove();
+    
+    const collaborationPage = document.getElementById('collaborationPage');
+    if (collaborationPage) collaborationPage.style.display = 'block';
+}
+
+// Show project templates
+function showProjectTemplates() {
+    console.log('📋 Showing project templates');
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal templates-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100000;
+        backdrop-filter: blur(5px);
+    `;
+    
+    const templateCards = sampleCollaborationData.templates.map(template => `
+        <div class="template-card" style="
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-primary);
+        " onclick="selectTemplate('${template.id}')" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 32px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+            <div style="
+                font-size: 48px;
+                text-align: center;
+                margin-bottom: 16px;
+            ">${template.id === 'dance_challenge' ? '🕺' : template.id === 'tutorial' ? '📚' : template.id === 'music_video' ? '🎵' : '😄'}</div>
+            <h3 style="
+                color: var(--text-primary);
+                font-size: 18px;
+                font-weight: 700;
+                margin: 0 0 8px 0;
+                text-align: center;
+            ">${template.name}</h3>
+            <p style="
+                color: var(--text-secondary);
+                font-size: 14px;
+                margin: 0 0 16px 0;
+                text-align: center;
+                line-height: 1.4;
+            ">${template.description}</p>
+            <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            ">
+                <div style="
+                    color: var(--text-primary);
+                    font-size: 12px;
+                    font-weight: 600;
+                ">Timeline:</div>
+                <div style="
+                    color: var(--text-secondary);
+                    font-size: 12px;
+                ">${template.timeline}</div>
+            </div>
+            <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            ">
+                <div style="
+                    color: var(--text-primary);
+                    font-size: 12px;
+                    font-weight: 600;
+                ">Team Size:</div>
+                <div style="
+                    color: var(--text-secondary);
+                    font-size: 12px;
+                ">${template.roles.length} roles</div>
+            </div>
+        </div>
+    `).join('');
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="
+            background: var(--bg-primary);
+            border-radius: 20px;
+            padding: 0;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        ">
+            <div class="modal-header" style="
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 24px;
+                border-radius: 20px 20px 0 0;
+                color: white;
+                position: relative;
+            ">
+                <button onclick="closeTemplatesModal()" style="
+                    position: absolute;
+                    top: 16px;
+                    right: 16px;
+                    background: rgba(255,255,255,0.2);
+                    color: white;
+                    border: none;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    font-size: 18px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">&times;</button>
+                <h2 style="
+                    margin: 0 0 8px 0;
+                    font-size: 24px;
+                    font-weight: 700;
+                ">📋 Project Templates</h2>
+                <p style="
+                    margin: 0;
+                    opacity: 0.9;
+                    font-size: 14px;
+                ">Choose a template to get started quickly</p>
+            </div>
+            
+            <div class="modal-body" style="padding: 24px;">
+                <div style="
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 20px;
+                ">
+                    ${templateCards}
+                </div>
+                
+                <div style="
+                    margin-top: 24px;
+                    padding-top: 24px;
+                    border-top: 1px solid var(--border-primary);
+                    text-align: center;
+                ">
+                    <button onclick="showCreateProjectModal(); closeTemplatesModal();" style="
+                        background: var(--accent-color);
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        margin-right: 12px;
+                    ">Create Custom Project</button>
+                    <button onclick="closeTemplatesModal()" style="
+                        background: var(--bg-tertiary);
+                        color: var(--text-secondary);
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 600;
+                    ">Cancel</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Close templates modal
+function closeTemplatesModal() {
+    const modal = document.querySelector('.templates-modal');
+    if (modal) modal.remove();
+}
+
+// Select template
+function selectTemplate(templateId) {
+    console.log('📋 Selected template:', templateId);
+    closeTemplatesModal();
+    
+    // Pre-fill create project modal with template data
+    const template = sampleCollaborationData.templates.find(t => t.id === templateId);
+    if (template) {
+        showCreateProjectModal();
+        
+        // Wait for modal to appear, then fill it
+        setTimeout(() => {
+            const titleInput = document.getElementById('projectTitle');
+            const templateSelect = document.getElementById('projectTemplate');
+            
+            if (titleInput && templateSelect) {
+                titleInput.value = template.name + ' Project';
+                templateSelect.value = templateId;
+            }
+        }, 100);
+    }
+}
+
+// Collaboration interaction functions
+function uploadAsset(projectId) {
+    console.log('📎 Uploading asset for project:', projectId);
+    showNotification('Asset upload feature coming soon! 📎', 'info');
+}
+
+function createNewVersion(projectId) {
+    console.log('🔄 Creating new version for project:', projectId);
+    showNotification('New version created successfully! 🔄', 'success');
+}
+
+function shareProject(projectId) {
+    console.log('🔗 Sharing project:', projectId);
+    showNotification('Project link copied to clipboard! 🔗', 'success');
+}
+
+function downloadAsset(assetId) {
+    console.log('💾 Downloading asset:', assetId);
+    showNotification('Asset download started! 💾', 'success');
+}
+
+function showAssetOptions(assetId) {
+    console.log('⋮ Showing asset options:', assetId);
+    showNotification('Asset options coming soon! ⋮', 'info');
+}
+
+function previewVersion(versionId) {
+    console.log('👀 Previewing version:', versionId);
+    showNotification('Version preview coming soon! 👀', 'info');
+}
+
+function downloadVersion(versionId) {
+    console.log('💾 Downloading version:', versionId);
+    showNotification('Version download started! 💾', 'success');
+}
+
+function showVersionOptions(versionId) {
+    console.log('⋮ Showing version options:', versionId);
+    showNotification('Version options coming soon! ⋮', 'info');
+}
+
+function showInviteCollaboratorModal(projectId) {
+    console.log('👥 Inviting collaborator to project:', projectId);
+    showNotification('Invite collaborator feature coming soon! 👥', 'info');
+}
+
+function sendProjectMessage(projectId) {
+    const input = document.getElementById('projectChatInput');
+    if (!input || !input.value.trim()) return;
+    
+    const message = input.value.trim();
+    console.log('💬 Sending message:', message);
+    
+    // Add message to chat
+    const chatContainer = document.getElementById('projectChatMessages');
+    if (chatContainer) {
+        const messageHtml = `
+            <div class="chat-message" style="
+                margin-bottom: 16px;
+                padding: 12px;
+                background: var(--bg-tertiary);
+                border-radius: 12px;
+            ">
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-bottom: 8px;
+                ">
+                    <div style="
+                        width: 24px;
+                        height: 24px;
+                        background: var(--accent-color);
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                    ">👤</div>
+                    <div style="
+                        color: var(--text-primary);
+                        font-weight: 600;
+                        font-size: 14px;
+                    ">@${currentUser?.username || 'you'}</div>
+                    <div style="
+                        color: var(--text-secondary);
+                        font-size: 12px;
+                    ">Just now</div>
+                </div>
+                <div style="
+                    color: var(--text-primary);
+                    font-size: 14px;
+                    line-height: 1.4;
+                ">${message}</div>
+            </div>
+        `;
+        chatContainer.insertAdjacentHTML('beforeend', messageHtml);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    
+    input.value = '';
+}
+
+function showCollaborationStats() {
+    console.log('📊 Showing collaboration stats');
+    showNotification('Collaboration stats feature coming soon! 📊', 'info');
+}
+
+// Export collaboration functions to global scope
+window.showCollaborationHub = showCollaborationHub;
+window.switchCollaborationTab = switchCollaborationTab;
+window.loadCollaborationProjects = loadCollaborationProjects;
+window.showCreateProjectModal = showCreateProjectModal;
+window.closeCreateProjectModal = closeCreateProjectModal;
+window.createNewProject = createNewProject;
+window.openProjectDetails = openProjectDetails;
+window.closeProjectDetails = closeProjectDetails;
+window.switchProjectTab = switchProjectTab;
+window.showProjectTemplates = showProjectTemplates;
+window.closeTemplatesModal = closeTemplatesModal;
+window.selectTemplate = selectTemplate;
+window.uploadAsset = uploadAsset;
+window.createNewVersion = createNewVersion;
+window.shareProject = shareProject;
+window.downloadAsset = downloadAsset;
+window.showAssetOptions = showAssetOptions;
+window.previewVersion = previewVersion;
+window.downloadVersion = downloadVersion;
+window.showVersionOptions = showVersionOptions;
+window.showInviteCollaboratorModal = showInviteCollaboratorModal;
+window.sendProjectMessage = sendProjectMessage;
+window.showCollaborationStats = showCollaborationStats;
   
