@@ -977,46 +977,92 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                 }
             }
             
-            // For Vibing feed, show content from accounts you vibe with
+            // For Vibing feed, try to load real content from followed users
             if (feedType === 'vibing' || internalFeedType === 'following') {
-                console.log('✨ Loading Vibing feed with content from accounts you vibe with');
+                console.log('✨ Loading Vibing feed - attempting to get real followed content');
                 
-                // Show video from account you vibe with (working video URL)
-                const vibingVideo = {
-                    _id: 'vibing_video_1',
-                    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-                    user: { 
-                        _id: 'vibed_user_1',
-                        username: 'vibed_creator', 
-                        displayName: 'Vibed Creator',
-                        profilePicture: '✨',
-                        isVibing: true
-                    },
-                    title: 'New vibe from someone you vibe with!',
-                    description: 'Latest content from creators you vibe with #vibing #vib3',
-                    likeCount: 89,
-                    commentCount: 23,
-                    shareCount: 12,
-                    uploadDate: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-                    duration: 55,
-                    views: 567
-                };
+                try {
+                    // Try to load from API first
+                    const response = await fetch(`${window.API_BASE_URL}/api/videos/following?limit=10`, {
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            ...(window.authToken && window.authToken !== 'session-based' ? 
+                                { 'Authorization': `Bearer ${window.authToken}` } : {})
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = await response.json();
+                            if (data.videos && data.videos.length > 0) {
+                                console.log('✅ Got real content from followed users:', data.videos.length);
+                                
+                                feedElement.innerHTML = '';
+                                feedElement.style.display = 'block';
+                                feedElement.style.overflow = 'auto';
+                                feedElement.style.scrollSnapType = 'y mandatory';
+                                feedElement.style.scrollBehavior = 'smooth';
+                                
+                                data.videos.forEach(video => {
+                                    const videoCard = createAdvancedVideoCard(video);
+                                    feedElement.appendChild(videoCard);
+                                });
+                                
+                                setupInfiniteScroll(feedElement, feedType);
+                                setTimeout(() => initializeVideoObserver(), 200);
+                                hasMoreVideos = true;
+                                
+                                if (tabElement) {
+                                    tabElement.classList.add('active');
+                                }
+                                return;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.log('⚠️ Could not load from API, showing empty state');
+                }
                 
+                // If no content or API failed, show empty state
                 feedElement.innerHTML = '';
                 feedElement.style.display = 'block';
-                feedElement.style.overflow = 'auto';
-                feedElement.style.scrollSnapType = 'y mandatory';
-                feedElement.style.scrollBehavior = 'smooth';
+                feedElement.style.overflow = 'hidden';
                 
-                const videoCard = createAdvancedVideoCard(vibingVideo);
-                feedElement.appendChild(videoCard);
-                
-                console.log('✅ Added video from vibed account to Vibing feed');
-                
-                // Setup infinite scroll and video observer
-                setupInfiniteScroll(feedElement, feedType);
-                setTimeout(() => initializeVideoObserver(), 200);
-                hasMoreVideos = true;
+                const emptyState = document.createElement('div');
+                emptyState.style.cssText = `
+                    text-align: center;
+                    padding: 60px 20px;
+                    color: #999;
+                    font-size: 16px;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                `;
+                emptyState.innerHTML = `
+                    <div style="font-size: 64px; margin-bottom: 20px;">✨</div>
+                    <div style="font-size: 24px; margin-bottom: 10px; color: white;">Start Vibing!</div>
+                    <div style="margin-bottom: 20px; max-width: 300px;">
+                        Vibe with creators to see their content here
+                    </div>
+                    <button onclick="showPage('discover')" style="
+                        padding: 12px 32px;
+                        background: var(--accent-gradient);
+                        color: white;
+                        border: none;
+                        border-radius: 25px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        font-size: 16px;
+                        box-shadow: var(--vib3-glow);
+                    ">Discover Creators</button>
+                `;
+                feedElement.appendChild(emptyState);
+                hasMoreVideos = false;
                 
                 if (tabElement) {
                     tabElement.classList.add('active');
@@ -1707,8 +1753,8 @@ function createAdvancedVideoCard(video) {
         <div class="profile-btn" data-user-id="${video.userId || video.user?._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(45deg, #fe2c55, #8b2dbd); border: 2px solid white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 5px;">
             <div style="font-size: 20px;">${video.user?.profilePicture || '👤'}</div>
         </div>
-        <div class="follow-btn" data-user-id="${video.userId || video.user?._id || 'unknown'}" style="width: 28px; height: 28px; border-radius: 50%; background: #fe2c55; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 20px; position: relative; top: -15px;">
-            <div style="font-size: 16px; color: white;">+</div>
+        <div class="vibe-btn" data-user-id="${video.userId || video.user?._id || 'unknown'}" style="width: 28px; height: 28px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 20px; position: relative; top: -15px; box-shadow: var(--vib3-glow);">
+            <div style="font-size: 16px; color: white;">✨</div>
         </div>
         <div class="like-btn" data-video-id="${video._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
             <div style="font-size: 20px;" class="heart-icon">🤍</div>
@@ -1802,26 +1848,30 @@ function createAdvancedVideoCard(video) {
         viewUserProfile(userId);
     });
     
-    // Add follow button functionality
-    const followBtn = actions.querySelector('.follow-btn');
-    followBtn.addEventListener('click', async (e) => {
+    // Add vibe button functionality
+    const vibeBtn = actions.querySelector('.vibe-btn');
+    vibeBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        const userId = followBtn.dataset.userId;
+        const userId = vibeBtn.dataset.userId;
         
-        // Add bounce animation
-        followBtn.style.transform = 'scale(1.2)';
-        setTimeout(() => followBtn.style.transform = 'scale(1)', 200);
+        // Add sparkle animation
+        vibeBtn.style.transform = 'scale(1.2)';
+        vibeBtn.style.filter = 'brightness(1.5)';
+        setTimeout(() => {
+            vibeBtn.style.transform = 'scale(1)';
+            vibeBtn.style.filter = 'brightness(1)';
+        }, 200);
         
-        // Handle follow/unfollow
-        await handleFollowClick(userId, followBtn);
+        // Handle vibe/unvibe
+        await handleVibeClick(userId, vibeBtn);
     });
     
-    // Check if user is already following only if authenticated
+    // Check if user is already vibing only if authenticated
     if (window.authToken && window.currentUser) {
-        checkFollowStatus(video.userId || video.user?._id, followBtn);
+        checkVibeStatus(video.userId || video.user?._id, vibeBtn);
     } else {
-        // Hide follow button for unauthenticated users
-        followBtn.style.display = 'none';
+        // Hide vibe button for unauthenticated users
+        vibeBtn.style.display = 'none';
     }
     
     // Load and set initial like status only if authenticated
@@ -13267,6 +13317,145 @@ async function checkFollowStatus(userId, followBtn) {
         console.error('Check follow status error:', error);
         // On error, hide follow button to avoid repeated failed requests
         followBtn.style.display = 'none';
+    }
+}
+
+async function checkVibeStatus(userId, vibeBtn) {
+    if (!window.currentUser || !window.authToken || !userId || userId === 'unknown') {
+        // Hide vibe button if not authenticated or invalid user
+        vibeBtn.style.display = 'none';
+        return;
+    }
+    
+    // Hide vibe button for own videos
+    if (userId === window.currentUser._id) {
+        vibeBtn.style.display = 'none';
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/user/following`, {
+            headers: {
+                'Authorization': `Bearer ${window.authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const following = await response.json();
+            const isVibing = following.some(user => user._id === userId);
+            
+            if (isVibing) {
+                vibeBtn.innerHTML = '<div style="font-size: 14px; color: white;">💫</div>';
+                vibeBtn.style.background = 'var(--accent-gradient)';
+                vibeBtn.style.boxShadow = '0 0 15px rgba(255, 107, 107, 0.7)';
+            } else {
+                vibeBtn.innerHTML = '<div style="font-size: 16px; color: white;">✨</div>';
+                vibeBtn.style.background = 'var(--accent-gradient)';
+                vibeBtn.style.boxShadow = 'var(--vib3-glow)';
+            }
+        } else if (response.status === 401) {
+            // Not logged in - hide vibe button
+            vibeBtn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Check vibe status error:', error);
+        // On error, hide vibe button to avoid repeated failed requests
+        vibeBtn.style.display = 'none';
+    }
+}
+
+async function handleVibeClick(userId, vibeBtn) {
+    if (!window.currentUser || !window.authToken || !userId || userId === 'unknown') {
+        showNotification('Please log in to vibe with creators', 'error');
+        return;
+    }
+    
+    // Don't allow vibing with yourself
+    if (userId === window.currentUser._id) {
+        showNotification('You cannot vibe with yourself!', 'error');
+        return;
+    }
+    
+    try {
+        // Check current status first
+        const currentIcon = vibeBtn.querySelector('div').textContent;
+        const isCurrentlyVibing = currentIcon === '💫';
+        
+        if (isCurrentlyVibing) {
+            // Unvibe (unfollow)
+            const response = await fetch(`${API_BASE_URL}/api/users/${userId}/unfollow`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${window.authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                vibeBtn.innerHTML = '<div style="font-size: 16px; color: white;">✨</div>';
+                vibeBtn.style.background = 'var(--accent-gradient)';
+                vibeBtn.style.boxShadow = 'var(--vib3-glow)';
+                showNotification('No longer vibing ✨', 'info');
+            } else {
+                throw new Error('Failed to unvibe');
+            }
+        } else {
+            // Start vibing (follow)
+            const response = await fetch(`${API_BASE_URL}/api/users/${userId}/follow`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${window.authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                vibeBtn.innerHTML = '<div style="font-size: 14px; color: white;">💫</div>';
+                vibeBtn.style.background = 'var(--accent-gradient)';
+                vibeBtn.style.boxShadow = '0 0 15px rgba(255, 107, 107, 0.7)';
+                showNotification('Now vibing! ✨', 'success');
+                
+                // Add sparkle effect
+                createSparkleEffect(vibeBtn);
+            } else {
+                throw new Error('Failed to start vibing');
+            }
+        }
+    } catch (error) {
+        console.error('Vibe click error:', error);
+        showNotification('Something went wrong. Try again!', 'error');
+    }
+}
+
+function createSparkleEffect(element) {
+    // Create sparkle animation around the vibe button
+    for (let i = 0; i < 5; i++) {
+        const sparkle = document.createElement('div');
+        sparkle.style.cssText = `
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1000;
+        `;
+        sparkle.textContent = '✨';
+        
+        const rect = element.getBoundingClientRect();
+        sparkle.style.left = rect.left + Math.random() * rect.width + 'px';
+        sparkle.style.top = rect.top + Math.random() * rect.height + 'px';
+        
+        document.body.appendChild(sparkle);
+        
+        // Animate sparkle
+        sparkle.animate([
+            { transform: 'translateY(0) scale(1)', opacity: 1 },
+            { transform: 'translateY(-30px) scale(0)', opacity: 0 }
+        ], {
+            duration: 1000,
+            easing: 'ease-out'
+        }).onfinish = () => sparkle.remove();
     }
 }
 
