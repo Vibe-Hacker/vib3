@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VIB3 - Video Social App</title>
-    <link rel="stylesheet" href="css/main.css?v=20250703046">
+    <link rel="stylesheet" href="css/main.css?v=20250703047">
 </head>
 <body>
     <div class="auth-container" id="authContainer">
@@ -47,36 +47,7 @@
         </div>
         
         <!-- Main Navigation -->
-        <button class="sidebar-item" onclick="showPage('home')" id="sidebarHome">
-            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-            </svg>
-            <div class="sidebar-text">Home</div>
-        </button>
-        
-        <button class="sidebar-item" onclick="showPage('discover')" id="sidebarDiscover">
-            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-            </svg>
-            <div class="sidebar-text">Discover</div>
-        </button>
-        
-        <button class="sidebar-item" onclick="showPage('vibing')" id="sidebarVibing">
-            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-                <path d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4-4-1.79-4-4z" opacity="0.8"/>
-                <path d="M12 8l-2 4 2 4 2-4-2-4z" opacity="0.6"/>
-                <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
-            </svg>
-            <div class="sidebar-text">Vibing</div>
-        </button>
-        
-        <button class="sidebar-item" onclick="showPage('network')" id="sidebarNetwork">
-            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zM4 18v-6h3v-2.5c0-1.1.9-2 2-2s2 .9 2 2V10h3v8H4zm10-8v8h6v-8h-3v-2.5c0-1.1-.9-2-2-2s-2 .9-2 2V10h1zm6-4c1.11 0 2-.89 2-2s-.89-2-2-2-2 .89-2 2 .89 2 2 2zM6 6c1.11 0 2-.89 2-2s-.89-2-2-2-2 .89-2 2 .89 2 2 2z"/>
-            </svg>
-            <div class="sidebar-text">Squad</div>
-        </button>
+        <!-- Note: Home, Discover, Vibing, and Squad are now in the feed tabs above -->
 
         <button class="sidebar-item" onclick="showPage('viberooms')" id="sidebarVibeRooms">
             <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -247,7 +218,6 @@
             <div class="feed-tabs">
                 <button class="feed-tab active" onclick="switchFeedTab('home')" id="homeTab" aria-label="Home Feed">Home</button>
                 <button class="feed-tab" onclick="switchFeedTab('subscriptions')" id="subscriptionsTab" aria-label="Squad Feed">Squad</button>
-                <button class="feed-tab" onclick="switchFeedTab('network')" id="networkTab" aria-label="Network Feed">Network</button>
                 <button class="feed-tab vib3-pulse-tab" onclick="switchFeedTab('pulse')" id="pulseTab" aria-label="Pulse Feed">
                     <span class="pulse-icon">⚡</span> Pulse Feed
                 </button>
@@ -259,8 +229,6 @@
             <div class="feed-content active" id="homeFeed">
             </div>
             <div class="feed-content" id="subscriptionsFeed">
-            </div>
-            <div class="feed-content" id="networkFeed">
             </div>
             <div class="feed-content" id="pulseFeed">
             </div>
