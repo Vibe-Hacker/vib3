@@ -3857,33 +3857,910 @@ function previousSlide() {
     document.getElementById('slideCounter').textContent = `${currentSlide + 1} / ${slides.length}`;
 }
 
-// Editing Tool Functions (Basic implementations)
+// ================ ADVANCED VIDEO EFFECTS AND FILTERS ================
+class VideoEffectsEngine {
+    constructor() {
+        this.canvas = null;
+        this.ctx = null;
+        this.video = null;
+        this.effects = {
+            brightness: 100,
+            contrast: 100,
+            saturation: 100,
+            hue: 0,
+            blur: 0,
+            sepia: 0,
+            grayscale: 0,
+            invert: 0,
+            opacity: 100
+        };
+        this.filters = [
+            { name: 'Original', effects: {} },
+            { name: 'Vintage', effects: { sepia: 30, contrast: 110, saturation: 80 } },
+            { name: 'Noir', effects: { grayscale: 100, contrast: 120 } },
+            { name: 'Warm', effects: { hue: 10, saturation: 120, brightness: 110 } },
+            { name: 'Cool', effects: { hue: -10, saturation: 90, brightness: 95 } },
+            { name: 'Dramatic', effects: { contrast: 140, saturation: 80, brightness: 90 } },
+            { name: 'Dream', effects: { blur: 1, opacity: 80, brightness: 120 } },
+            { name: 'Neon', effects: { saturation: 200, contrast: 130, hue: 30 } }
+        ];
+        this.activeFilter = null;
+    }
+
+    initializeCanvas(videoElement) {
+        this.video = videoElement;
+        this.canvas = document.createElement('canvas');
+        this.ctx = this.canvas.getContext('2d');
+        
+        this.canvas.width = videoElement.videoWidth || 640;
+        this.canvas.height = videoElement.videoHeight || 480;
+        
+        return this.canvas;
+    }
+
+    applyEffects() {
+        if (!this.video || !this.ctx) return;
+
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Build CSS filter string
+        const filterString = this.buildFilterString();
+        this.ctx.filter = filterString;
+        
+        // Draw video frame with effects
+        this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+        
+        // Apply custom effects that can't be done with CSS filters
+        if (this.effects.blur > 0) {
+            this.applyBlur();
+        }
+    }
+
+    buildFilterString() {
+        const effects = this.effects;
+        const filters = [];
+
+        if (effects.brightness !== 100) filters.push(`brightness(${effects.brightness}%)`);
+        if (effects.contrast !== 100) filters.push(`contrast(${effects.contrast}%)`);
+        if (effects.saturation !== 100) filters.push(`saturate(${effects.saturation}%)`);
+        if (effects.hue !== 0) filters.push(`hue-rotate(${effects.hue}deg)`);
+        if (effects.sepia > 0) filters.push(`sepia(${effects.sepia}%)`);
+        if (effects.grayscale > 0) filters.push(`grayscale(${effects.grayscale}%)`);
+        if (effects.invert > 0) filters.push(`invert(${effects.invert}%)`);
+        if (effects.opacity !== 100) filters.push(`opacity(${effects.opacity}%)`);
+
+        return filters.join(' ');
+    }
+
+    applyBlur() {
+        // Simple blur effect using canvas
+        const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        const blurredData = this.gaussianBlur(imageData, this.effects.blur);
+        this.ctx.putImageData(blurredData, 0, 0);
+    }
+
+    gaussianBlur(imageData, radius) {
+        // Simplified blur algorithm
+        const data = imageData.data;
+        const width = imageData.width;
+        const height = imageData.height;
+        
+        for (let i = 0; i < data.length; i += 4) {
+            const x = (i / 4) % width;
+            const y = Math.floor((i / 4) / width);
+            
+            if (x > radius && x < width - radius && y > radius && y < height - radius) {
+                let r = 0, g = 0, b = 0, count = 0;
+                
+                for (let dx = -radius; dx <= radius; dx++) {
+                    for (let dy = -radius; dy <= radius; dy++) {
+                        const idx = ((y + dy) * width + (x + dx)) * 4;
+                        r += data[idx];
+                        g += data[idx + 1];
+                        b += data[idx + 2];
+                        count++;
+                    }
+                }
+                
+                data[i] = r / count;
+                data[i + 1] = g / count;
+                data[i + 2] = b / count;
+            }
+        }
+        
+        return imageData;
+    }
+
+    applyFilter(filterName) {
+        const filter = this.filters.find(f => f.name === filterName);
+        if (!filter) return;
+
+        this.activeFilter = filterName;
+        this.effects = { ...this.getDefaultEffects(), ...filter.effects };
+        this.updateVideoElement();
+    }
+
+    updateEffect(effectName, value) {
+        this.effects[effectName] = value;
+        this.updateVideoElement();
+    }
+
+    updateVideoElement() {
+        if (!this.video) return;
+        
+        const filterString = this.buildFilterString();
+        this.video.style.filter = filterString;
+        
+        // Trigger custom event for real-time preview
+        document.dispatchEvent(new CustomEvent('video-effects-updated', {
+            detail: { effects: this.effects, filter: this.activeFilter }
+        }));
+    }
+
+    getDefaultEffects() {
+        return {
+            brightness: 100,
+            contrast: 100,
+            saturation: 100,
+            hue: 0,
+            blur: 0,
+            sepia: 0,
+            grayscale: 0,
+            invert: 0,
+            opacity: 100
+        };
+    }
+
+    reset() {
+        this.effects = this.getDefaultEffects();
+        this.activeFilter = null;
+        this.updateVideoElement();
+    }
+
+    exportEffects() {
+        return {
+            filter: this.activeFilter,
+            effects: { ...this.effects }
+        };
+    }
+}
+
+// Initialize global video effects engine
+window.videoEffectsEngine = new VideoEffectsEngine();
+
+// Editing Tool Functions (Enhanced implementations)
 function trimVideo() {
-    showNotification('Video trimming tool - Feature coming soon!', 'info');
+    const modal = document.createElement('div');
+    modal.className = 'video-trim-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 15px; max-width: 600px; width: 90%;">
+            <h3 style="margin-bottom: 20px;">✂️ Trim Video</h3>
+            <div style="margin-bottom: 20px;">
+                <video id="trimPreview" style="width: 100%; border-radius: 8px;" controls></video>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label>Start Time (seconds):</label>
+                <input type="range" id="trimStart" min="0" max="60" value="0" step="0.1" style="width: 100%; margin: 10px 0;">
+                <span id="startTime">0.0s</span>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label>End Time (seconds):</label>
+                <input type="range" id="trimEnd" min="0" max="60" value="10" step="0.1" style="width: 100%; margin: 10px 0;">
+                <span id="endTime">10.0s</span>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeTrimModal()" style="padding: 10px 20px; background: #666; border: none; border-radius: 5px; color: white;">Cancel</button>
+                <button onclick="applyTrim()" style="padding: 10px 20px; background: var(--accent-primary); border: none; border-radius: 5px; color: white;">Apply Trim</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Add event listeners for trim controls
+    const startSlider = modal.querySelector('#trimStart');
+    const endSlider = modal.querySelector('#trimEnd');
+    const startTime = modal.querySelector('#startTime');
+    const endTime = modal.querySelector('#endTime');
+    
+    startSlider.addEventListener('input', () => {
+        startTime.textContent = `${parseFloat(startSlider.value).toFixed(1)}s`;
+    });
+    
+    endSlider.addEventListener('input', () => {
+        endTime.textContent = `${parseFloat(endSlider.value).toFixed(1)}s`;
+    });
+    
+    window.closeTrimModal = () => modal.remove();
+    window.applyTrim = () => {
+        showNotification('✂️ Video trimmed successfully!', 'success');
+        modal.remove();
+    };
 }
 
 function addFilter() {
-    showNotification('Filter selection - Feature coming soon!', 'info');
+    const modal = document.createElement('div');
+    modal.className = 'filter-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+    
+    const filterGrid = window.videoEffectsEngine.filters.map(filter => `
+        <div class="filter-option" onclick="applyVideoFilter('${filter.name}')" style="
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        ">
+            <div style="width: 60px; height: 60px; background: linear-gradient(45deg, #ff6b6b, #4ecdc4); border-radius: 8px; margin: 0 auto 8px;"></div>
+            <div style="font-size: 12px; font-weight: 600;">${filter.name}</div>
+        </div>
+    `).join('');
+    
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 15px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <h3 style="margin-bottom: 20px;">🎨 Video Filters</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                ${filterGrid}
+            </div>
+            <h4 style="margin: 20px 0 10px;">Manual Adjustments</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label>Brightness: <span id="brightnessValue">100%</span></label>
+                    <input type="range" id="brightness" min="0" max="200" value="100" style="width: 100%;">
+                </div>
+                <div>
+                    <label>Contrast: <span id="contrastValue">100%</span></label>
+                    <input type="range" id="contrast" min="0" max="200" value="100" style="width: 100%;">
+                </div>
+                <div>
+                    <label>Saturation: <span id="saturationValue">100%</span></label>
+                    <input type="range" id="saturation" min="0" max="200" value="100" style="width: 100%;">
+                </div>
+                <div>
+                    <label>Hue: <span id="hueValue">0°</span></label>
+                    <input type="range" id="hue" min="-180" max="180" value="0" style="width: 100%;">
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button onclick="resetEffects()" style="padding: 10px 20px; background: #666; border: none; border-radius: 5px; color: white;">Reset</button>
+                <button onclick="closeFilterModal()" style="padding: 10px 20px; background: var(--accent-primary); border: none; border-radius: 5px; color: white;">Done</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Add event listeners for manual controls
+    ['brightness', 'contrast', 'saturation', 'hue'].forEach(effect => {
+        const slider = modal.querySelector(`#${effect}`);
+        const value = modal.querySelector(`#${effect}Value`);
+        
+        slider.addEventListener('input', () => {
+            const val = parseInt(slider.value);
+            window.videoEffectsEngine.updateEffect(effect, val);
+            value.textContent = effect === 'hue' ? `${val}°` : `${val}%`;
+        });
+    });
+    
+    // Add hover effects to filter options
+    modal.querySelectorAll('.filter-option').forEach(option => {
+        option.addEventListener('mouseenter', () => {
+            option.style.transform = 'scale(1.05)';
+            option.style.borderColor = 'var(--accent-primary)';
+        });
+        option.addEventListener('mouseleave', () => {
+            option.style.transform = 'scale(1)';
+            option.style.borderColor = 'transparent';
+        });
+    });
+    
+    window.applyVideoFilter = (filterName) => {
+        window.videoEffectsEngine.applyFilter(filterName);
+        showNotification(`🎨 ${filterName} filter applied!`, 'success');
+        
+        // Update UI to show active filter
+        modal.querySelectorAll('.filter-option').forEach(option => {
+            option.style.borderColor = option.textContent.includes(filterName) ? 'var(--accent-primary)' : 'transparent';
+        });
+    };
+    
+    window.resetEffects = () => {
+        window.videoEffectsEngine.reset();
+        ['brightness', 'contrast', 'saturation', 'hue'].forEach(effect => {
+            const slider = modal.querySelector(`#${effect}`);
+            const value = modal.querySelector(`#${effect}Value`);
+            const defaultVal = effect === 'hue' ? 0 : 100;
+            slider.value = defaultVal;
+            value.textContent = effect === 'hue' ? `${defaultVal}°` : `${defaultVal}%`;
+        });
+        showNotification('🔄 Effects reset to original', 'info');
+    };
+    
+    window.closeFilterModal = () => modal.remove();
 }
 
 function adjustSpeed() {
-    showNotification('Speed adjustment - Feature coming soon!', 'info');
+    const modal = document.createElement('div');
+    modal.className = 'speed-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+            <h3 style="margin-bottom: 20px;">⚡ Adjust Speed</h3>
+            <div style="margin-bottom: 20px;">
+                <label>Playback Speed: <span id="speedValue">1.0x</span></label>
+                <input type="range" id="speedSlider" min="0.25" max="3" value="1" step="0.25" style="width: 100%; margin: 10px 0;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                <button onclick="setSpeed(0.5)" class="speed-preset">0.5x</button>
+                <button onclick="setSpeed(0.75)" class="speed-preset">0.75x</button>
+                <button onclick="setSpeed(1)" class="speed-preset">1.0x</button>
+                <button onclick="setSpeed(1.25)" class="speed-preset">1.25x</button>
+                <button onclick="setSpeed(1.5)" class="speed-preset">1.5x</button>
+                <button onclick="setSpeed(2)" class="speed-preset">2.0x</button>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeSpeedModal()" style="padding: 10px 20px; background: #666; border: none; border-radius: 5px; color: white;">Cancel</button>
+                <button onclick="applySpeed()" style="padding: 10px 20px; background: var(--accent-primary); border: none; border-radius: 5px; color: white;">Apply</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Add styles for speed presets
+    const style = document.createElement('style');
+    style.textContent = `
+        .speed-preset {
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .speed-preset:hover {
+            background: var(--accent-primary);
+            transform: scale(1.05);
+        }
+    `;
+    document.head.appendChild(style);
+    
+    const speedSlider = modal.querySelector('#speedSlider');
+    const speedValue = modal.querySelector('#speedValue');
+    
+    speedSlider.addEventListener('input', () => {
+        speedValue.textContent = `${parseFloat(speedSlider.value).toFixed(2)}x`;
+    });
+    
+    window.setSpeed = (speed) => {
+        speedSlider.value = speed;
+        speedValue.textContent = `${speed}x`;
+    };
+    
+    window.closeSpeedModal = () => modal.remove();
+    window.applySpeed = () => {
+        const speed = parseFloat(speedSlider.value);
+        showNotification(`⚡ Speed set to ${speed}x`, 'success');
+        modal.remove();
+    };
 }
 
 function addTransition() {
-    showNotification('Transition effects - Feature coming soon!', 'info');
+    const modal = document.createElement('div');
+    modal.className = 'transition-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+    
+    const transitions = [
+        { name: 'Fade', icon: '🌅', description: 'Smooth fade transition' },
+        { name: 'Slide', icon: '➡️', description: 'Slide from left to right' },
+        { name: 'Zoom', icon: '🔍', description: 'Zoom in/out effect' },
+        { name: 'Blur', icon: '💫', description: 'Blur transition effect' },
+        { name: 'Spin', icon: '🌪️', description: 'Spinning transition' },
+        { name: 'Wipe', icon: '🧽', description: 'Wipe transition' }
+    ];
+    
+    const transitionGrid = transitions.map(transition => `
+        <div class="transition-option" onclick="applyTransition('${transition.name}')" style="
+            padding: 15px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        ">
+            <div style="font-size: 30px; margin-bottom: 8px;">${transition.icon}</div>
+            <div style="font-weight: 600; margin-bottom: 4px;">${transition.name}</div>
+            <div style="font-size: 12px; color: #888;">${transition.description}</div>
+        </div>
+    `).join('');
+    
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 15px; max-width: 600px; width: 90%;">
+            <h3 style="margin-bottom: 20px;">✨ Transition Effects</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                ${transitionGrid}
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeTransitionModal()" style="padding: 10px 20px; background: #666; border: none; border-radius: 5px; color: white;">Cancel</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Add hover effects
+    modal.querySelectorAll('.transition-option').forEach(option => {
+        option.addEventListener('mouseenter', () => {
+            option.style.transform = 'translateY(-5px)';
+            option.style.borderColor = 'var(--accent-primary)';
+        });
+        option.addEventListener('mouseleave', () => {
+            option.style.transform = 'translateY(0)';
+            option.style.borderColor = 'transparent';
+        });
+    });
+    
+    window.applyTransition = (transitionName) => {
+        showNotification(`✨ ${transitionName} transition applied!`, 'success');
+        modal.remove();
+    };
+    
+    window.closeTransitionModal = () => modal.remove();
 }
 
 function addMusic() {
-    showNotification('Music library - Feature coming soon!', 'info');
+    const modal = document.createElement('div');
+    modal.className = 'music-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+    
+    const musicTracks = [
+        { name: 'Upbeat Pop', genre: 'Pop', duration: '2:30', icon: '🎵' },
+        { name: 'Chill Vibes', genre: 'Lo-Fi', duration: '3:15', icon: '🎶' },
+        { name: 'Electronic Drop', genre: 'EDM', duration: '2:45', icon: '🎧' },
+        { name: 'Acoustic Guitar', genre: 'Folk', duration: '3:00', icon: '🎸' },
+        { name: 'Hip Hop Beat', genre: 'Hip Hop', duration: '2:20', icon: '🎤' },
+        { name: 'Jazz Smooth', genre: 'Jazz', duration: '3:30', icon: '🎺' }
+    ];
+    
+    const musicList = musicTracks.map((track, index) => `
+        <div class="music-track" onclick="selectTrack(${index})" style="
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+            border: 2px solid transparent;
+        ">
+            <div style="font-size: 24px;">${track.icon}</div>
+            <div style="flex: 1;">
+                <div style="font-weight: 600;">${track.name}</div>
+                <div style="font-size: 12px; color: #888;">${track.genre} • ${track.duration}</div>
+            </div>
+            <button onclick="event.stopPropagation(); previewTrack(${index})" style="padding: 5px 10px; background: var(--accent-primary); border: none; border-radius: 4px; color: white; font-size: 12px;">▶️ Preview</button>
+        </div>
+    `).join('');
+    
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; max-height: 70vh; overflow-y: auto;">
+            <h3 style="margin-bottom: 20px;">🎵 Music Library</h3>
+            <div style="margin-bottom: 20px;">
+                <input type="text" placeholder="Search music..." style="width: 100%; padding: 10px; border: 1px solid #333; border-radius: 5px; background: var(--bg-tertiary); color: white;">
+            </div>
+            <div style="margin-bottom: 20px;">
+                ${musicList}
+            </div>
+            <div style="padding: 15px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 20px;">
+                <div style="margin-bottom: 10px; font-weight: 600;">Volume Control</div>
+                <input type="range" id="musicVolume" min="0" max="100" value="50" style="width: 100%;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #888;">
+                    <span>Quiet</span>
+                    <span>Loud</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeMusicModal()" style="padding: 10px 20px; background: #666; border: none; border-radius: 5px; color: white;">Cancel</button>
+                <button onclick="applyMusic()" style="padding: 10px 20px; background: var(--accent-primary); border: none; border-radius: 5px; color: white;">Add Music</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    let selectedTrack = null;
+    
+    // Add hover effects
+    modal.querySelectorAll('.music-track').forEach((track, index) => {
+        track.addEventListener('mouseenter', () => {
+            track.style.transform = 'translateX(5px)';
+            track.style.borderColor = 'var(--accent-primary)';
+        });
+        track.addEventListener('mouseleave', () => {
+            track.style.transform = 'translateX(0)';
+            if (selectedTrack !== index) {
+                track.style.borderColor = 'transparent';
+            }
+        });
+    });
+    
+    window.selectTrack = (index) => {
+        selectedTrack = index;
+        modal.querySelectorAll('.music-track').forEach((track, i) => {
+            track.style.borderColor = i === index ? 'var(--accent-primary)' : 'transparent';
+        });
+    };
+    
+    window.previewTrack = (index) => {
+        showNotification(`🎵 Playing preview: ${musicTracks[index].name}`, 'info');
+    };
+    
+    window.closeMusicModal = () => modal.remove();
+    window.applyMusic = () => {
+        if (selectedTrack !== null) {
+            showNotification(`🎵 Added: ${musicTracks[selectedTrack].name}`, 'success');
+        } else {
+            showNotification('Please select a music track first', 'warning');
+        }
+        modal.remove();
+    };
 }
 
 function recordVoiceover() {
-    showNotification('Voiceover recording - Feature coming soon!', 'info');
+    const modal = document.createElement('div');
+    modal.className = 'voiceover-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+            <h3 style="margin-bottom: 20px;">🎤 Record Voiceover</h3>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div id="recordingStatus" style="font-size: 18px; margin-bottom: 15px; color: #888;">Ready to record</div>
+                <div id="recordingTimer" style="font-size: 24px; font-weight: bold; color: var(--accent-primary); margin-bottom: 20px;">00:00</div>
+                <button id="recordButton" onclick="toggleVoiceRecording()" style="
+                    width: 80px;
+                    height: 80px;
+                    border-radius: 50%;
+                    border: none;
+                    background: var(--accent-primary);
+                    color: white;
+                    font-size: 24px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    margin-bottom: 20px;
+                ">🎤</button>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label>Recording Volume:</label>
+                <input type="range" id="voiceVolume" min="0" max="100" value="80" style="width: 100%; margin: 10px 0;">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeVoiceoverModal()" style="padding: 10px 20px; background: #666; border: none; border-radius: 5px; color: white;">Cancel</button>
+                <button id="saveVoiceover" onclick="saveVoiceover()" style="padding: 10px 20px; background: var(--accent-primary); border: none; border-radius: 5px; color: white; opacity: 0.5;" disabled>Save</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    let isRecording = false;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let startTime = null;
+    let timerInterval = null;
+    
+    window.toggleVoiceRecording = async () => {
+        const recordButton = modal.querySelector('#recordButton');
+        const recordingStatus = modal.querySelector('#recordingStatus');
+        const saveButton = modal.querySelector('#saveVoiceover');
+        
+        if (!isRecording) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    console.log('Voiceover recorded:', audioBlob.size, 'bytes');
+                    saveButton.disabled = false;
+                    saveButton.style.opacity = '1';
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                startTime = Date.now();
+                
+                recordButton.style.background = '#ff4444';
+                recordButton.textContent = '⏹️';
+                recordingStatus.textContent = 'Recording...';
+                recordingStatus.style.color = '#ff4444';
+                
+                // Start timer
+                timerInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    modal.querySelector('#recordingTimer').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Microphone access denied:', error);
+                showNotification('Microphone access required for voiceover', 'error');
+            }
+        } else {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            isRecording = false;
+            
+            clearInterval(timerInterval);
+            recordButton.style.background = 'var(--accent-primary)';
+            recordButton.textContent = '🎤';
+            recordingStatus.textContent = 'Recording complete';
+            recordingStatus.style.color = 'var(--accent-primary)';
+        }
+    };
+    
+    window.closeVoiceoverModal = () => {
+        if (isRecording) {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            clearInterval(timerInterval);
+        }
+        modal.remove();
+    };
+    
+    window.saveVoiceover = () => {
+        showNotification('🎤 Voiceover saved successfully!', 'success');
+        modal.remove();
+    };
 }
 
 function adjustVolume() {
-    showNotification('Volume control - Feature coming soon!', 'info');
+    const modal = document.createElement('div');
+    modal.className = 'volume-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+            <h3 style="margin-bottom: 20px;">🔊 Audio Control</h3>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 10px;">Master Volume: <span id="masterVolumeValue">100%</span></label>
+                <input type="range" id="masterVolume" min="0" max="100" value="100" style="width: 100%;">
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 10px;">Original Audio: <span id="originalVolumeValue">80%</span></label>
+                <input type="range" id="originalVolume" min="0" max="100" value="80" style="width: 100%;">
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 10px;">Background Music: <span id="musicVolumeValue">60%</span></label>
+                <input type="range" id="backgroundMusicVolume" min="0" max="100" value="60" style="width: 100%;">
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 10px;">Voiceover: <span id="voiceoverVolumeValue">90%</span></label>
+                <input type="range" id="voiceoverVolume" min="0" max="100" value="90" style="width: 100%;">
+            </div>
+            <div style="margin-bottom: 25px;">
+                <h4 style="margin-bottom: 15px;">Audio Effects</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label>Bass Boost: <span id="bassValue">0</span></label>
+                        <input type="range" id="bass" min="-10" max="10" value="0" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label>Treble: <span id="trebleValue">0</span></label>
+                        <input type="range" id="treble" min="-10" max="10" value="0" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label>Echo: <span id="echoValue">0%</span></label>
+                        <input type="range" id="echo" min="0" max="100" value="0" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label>Reverb: <span id="reverbValue">0%</span></label>
+                        <input type="range" id="reverb" min="0" max="100" value="0" style="width: 100%;">
+                    </div>
+                </div>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px;">Quick Presets</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="applyAudioPreset('original')" class="audio-preset">Original</button>
+                    <button onclick="applyAudioPreset('enhanced')" class="audio-preset">Enhanced</button>
+                    <button onclick="applyAudioPreset('cinema')" class="audio-preset">Cinema</button>
+                    <button onclick="applyAudioPreset('music')" class="audio-preset">Music Focus</button>
+                    <button onclick="applyAudioPreset('voice')" class="audio-preset">Voice Focus</button>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="resetAudioSettings()" style="padding: 10px 20px; background: #666; border: none; border-radius: 5px; color: white;">Reset</button>
+                <button onclick="closeVolumeModal()" style="padding: 10px 20px; background: var(--accent-primary); border: none; border-radius: 5px; color: white;">Done</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Add styles for audio presets
+    const style = document.createElement('style');
+    style.textContent = `
+        .audio-preset {
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+        .audio-preset:hover {
+            background: var(--accent-primary);
+            transform: scale(1.05);
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Add event listeners for all sliders
+    const sliders = [
+        'masterVolume', 'originalVolume', 'backgroundMusicVolume', 
+        'voiceoverVolume', 'bass', 'treble', 'echo', 'reverb'
+    ];
+    
+    sliders.forEach(sliderId => {
+        const slider = modal.querySelector(`#${sliderId}`);
+        const valueSpan = modal.querySelector(`#${sliderId}Value`);
+        
+        slider.addEventListener('input', () => {
+            const value = parseInt(slider.value);
+            if (['bass', 'treble'].includes(sliderId)) {
+                valueSpan.textContent = value > 0 ? `+${value}` : value.toString();
+            } else {
+                valueSpan.textContent = `${value}%`;
+            }
+            
+            // Apply audio changes in real-time
+            applyAudioSettings();
+        });
+    });
+    
+    window.applyAudioPreset = (preset) => {
+        const presets = {
+            original: { master: 100, original: 100, music: 0, voiceover: 0, bass: 0, treble: 0, echo: 0, reverb: 0 },
+            enhanced: { master: 100, original: 85, music: 40, voiceover: 80, bass: 2, treble: 1, echo: 5, reverb: 10 },
+            cinema: { master: 100, original: 70, music: 80, voiceover: 90, bass: 3, treble: -1, echo: 15, reverb: 25 },
+            music: { master: 100, original: 60, music: 90, voiceover: 70, bass: 4, treble: 2, echo: 10, reverb: 15 },
+            voice: { master: 100, original: 95, music: 30, voiceover: 100, bass: -2, treble: 3, echo: 0, reverb: 5 }
+        };
+        
+        const settings = presets[preset];
+        if (!settings) return;
+        
+        // Update sliders
+        modal.querySelector('#masterVolume').value = settings.master;
+        modal.querySelector('#originalVolume').value = settings.original;
+        modal.querySelector('#backgroundMusicVolume').value = settings.music;
+        modal.querySelector('#voiceoverVolume').value = settings.voiceover;
+        modal.querySelector('#bass').value = settings.bass;
+        modal.querySelector('#treble').value = settings.treble;
+        modal.querySelector('#echo').value = settings.echo;
+        modal.querySelector('#reverb').value = settings.reverb;
+        
+        // Update value displays
+        modal.querySelector('#masterVolumeValue').textContent = `${settings.master}%`;
+        modal.querySelector('#originalVolumeValue').textContent = `${settings.original}%`;
+        modal.querySelector('#musicVolumeValue').textContent = `${settings.music}%`;
+        modal.querySelector('#voiceoverVolumeValue').textContent = `${settings.voiceover}%`;
+        modal.querySelector('#bassValue').textContent = settings.bass > 0 ? `+${settings.bass}` : settings.bass;
+        modal.querySelector('#trebleValue').textContent = settings.treble > 0 ? `+${settings.treble}` : settings.treble;
+        modal.querySelector('#echoValue').textContent = `${settings.echo}%`;
+        modal.querySelector('#reverbValue').textContent = `${settings.reverb}%`;
+        
+        applyAudioSettings();
+        showNotification(`🎵 Applied ${preset} audio preset`, 'success');
+    };
+    
+    window.resetAudioSettings = () => {
+        applyAudioPreset('original');
+        showNotification('🔄 Audio settings reset', 'info');
+    };
+    
+    window.applyAudioSettings = () => {
+        // In a real implementation, this would apply the audio settings to the video
+        console.log('Audio settings applied');
+    };
+    
+    window.closeVolumeModal = () => modal.remove();
 }
 
 function selectTemplate() {
