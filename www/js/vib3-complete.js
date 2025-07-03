@@ -2103,7 +2103,7 @@ function createAdvancedVideoCard(video) {
     overlay.innerHTML = `
         <div class="video-description">
             <div class="username">@${video.user?.username || video.user?.displayName || video.username || 'user'}</div>
-            <div class="description-text">${video.description || video.title || 'Check out this video!'}${video.position ? ` • Video #${video.position}` : ''}</div>
+            <div class="description-text">${video.description || video.caption || video.title || 'Check out this video!'}${video.position ? ` • Video #${video.position}` : ''}</div>
         </div>
     `;
     
