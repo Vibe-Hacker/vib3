@@ -408,25 +408,31 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                           decoration: BoxDecoration(
                             // Dark bubble background
                             color: Colors.black.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(25),
                             // Border for definition
                             border: Border.all(
                               color: Colors.white.withOpacity(0.2),
                               width: 1.5,
                             ),
-                            // Strong glow effect like floating buttons
+                            // Cyan/blue gradient glow effect
                             boxShadow: [
-                              // Primary white glow
+                              // Primary cyan glow
                               BoxShadow(
-                                color: Colors.white.withOpacity(0.4),
+                                color: const Color(0xFF00CED1).withOpacity(0.5),
                                 blurRadius: 25,
                                 spreadRadius: 5,
                               ),
-                              // Secondary glow
+                              // Secondary blue glow
                               BoxShadow(
-                                color: Colors.white.withOpacity(0.2),
+                                color: const Color(0xFF1E90FF).withOpacity(0.3),
                                 blurRadius: 35,
                                 spreadRadius: 8,
+                              ),
+                              // Subtle white glow for brightness
+                              BoxShadow(
+                                color: Colors.white.withOpacity(0.1),
+                                blurRadius: 15,
+                                spreadRadius: 2,
                               ),
                               // Inner shadow for depth
                               BoxShadow(
