@@ -17071,7 +17071,12 @@ function showLiveStreaming() {
     liveStreamingPage.innerHTML = `
         <div class="live-streaming-container">
             <div class="live-header">
-                <h1>🔴 Live Streaming</h1>
+                <div class="live-header-left">
+                    <button class="close-live-btn" onclick="closeLiveStreaming()" title="Close Live Streaming">
+                        ←
+                    </button>
+                    <h1>🔴 Live Streaming</h1>
+                </div>
                 <div class="live-actions">
                     <button class="go-live-btn" onclick="openLiveSetup()">
                         <span class="live-indicator">●</span>
@@ -18521,6 +18526,27 @@ function showLiveStreaming() {
     handleViewportResize();
     
     console.log('✅ Live Streaming page loaded with responsive viewport detection');
+}
+
+function closeLiveStreaming() {
+    console.log('🔴 Closing Live Streaming page');
+    
+    // Remove the live streaming page
+    const liveStreamingPage = document.getElementById('liveStreamingPage');
+    if (liveStreamingPage) {
+        liveStreamingPage.remove();
+    }
+    
+    // Show main app content
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'flex';
+    }
+    
+    // Remove resize listener
+    window.removeEventListener('resize', handleViewportResize);
+    
+    console.log('✅ Returned to main app');
 }
 
 function generateLiveStreamsHTML(streams) {
