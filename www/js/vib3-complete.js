@@ -40,6 +40,60 @@ const liveStreamGiftTypes = [
 ];
 let currentStep = 1;
 
+// Sample collaboration data - moved to top to avoid temporal dead zone
+const sampleCollaborationData = {
+    projects: [
+        {
+            id: 'proj_001',
+            title: 'Summer Vibes Dance Challenge',
+            description: 'Creating the ultimate summer dance video with trending moves',
+            status: 'active',
+            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            owner: { id: 'user_001', username: 'dance_creator', avatar: '👤' },
+            collaborators: [
+                { id: 'user_002', username: 'beat_master', avatar: '🎵', role: 'editor', status: 'active' },
+                { id: 'user_003', username: 'visual_fx', avatar: '🎨', role: 'editor', status: 'active' },
+                { id: 'user_004', username: 'music_mixer', avatar: '🎧', role: 'reviewer', status: 'pending' }
+            ],
+            assets: [
+                { id: 'asset_001', type: 'video', name: 'intro_dance.mp4', uploadedBy: 'dance_creator', size: '25MB' },
+                { id: 'asset_002', type: 'audio', name: 'beat_track.mp3', uploadedBy: 'beat_master', size: '8MB' },
+                { id: 'asset_003', type: 'effect', name: 'sparkle_transition.fx', uploadedBy: 'visual_fx', size: '2MB' }
+            ],
+            versions: [
+                { id: 'v_001', name: 'v1.0 - Initial Cut', createdBy: 'dance_creator', timestamp: '2024-01-01T10:00:00Z' },
+                { id: 'v_002', name: 'v1.1 - Added Beat', createdBy: 'beat_master', timestamp: '2024-01-01T14:00:00Z' },
+                { id: 'v_003', name: 'v1.2 - Visual Effects', createdBy: 'visual_fx', timestamp: '2024-01-01T18:00:00Z' }
+            ],
+            progress: 75,
+            deadline: '2024-01-15T23:59:59Z',
+            template: 'dance_challenge'
+        }
+    ],
+    templates: [
+        {
+            id: 'dance_challenge',
+            name: 'Dance Challenge Template',
+            category: 'entertainment',
+            description: 'Perfect for creating viral dance content',
+            thumbnail: '💃',
+            features: ['Multi-angle editing', 'Beat sync tools', 'Transition effects']
+        }
+    ],
+    chatMessages: [
+        {
+            id: 'msg_001',
+            projectId: 'proj_001',
+            userId: 'user_002',
+            username: 'beat_master',
+            avatar: '🎵',
+            message: 'Just uploaded the new beat track! Check it out 🎵',
+            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            type: 'message'
+        }
+    ]
+};
+
 // Sample live streams for offline mode - moved to top to avoid temporal dead zone
 const sampleLiveStreams = [
     {
