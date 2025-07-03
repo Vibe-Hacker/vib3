@@ -31,16 +31,7 @@ class AuthProvider extends ChangeNotifier {
       
       if (token != null) {
         _authToken = token;
-        // Try to load user data from backend
-        try {
-          final user = await _authService.getProfile(token);
-          _currentUser = user;
-        } catch (e) {
-          print('Error loading user profile: $e');
-          // Clear invalid token
-          await prefs.remove('auth_token');
-          _authToken = null;
-        }
+        // We'll implement profile loading later if needed
       }
     } catch (e) {
       print('Error loading user: $e');
@@ -129,10 +120,6 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       print('Error during logout: $e');
     }
-  }
-
-  Future<bool> checkAuthStatus() async {
-    return isAuthenticated;
   }
 
   void clearError() {

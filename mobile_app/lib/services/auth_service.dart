@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
-import '../models/user_model.dart';
 
 class AuthService {
   Future<Map<String, dynamic>> login(String email, String password) async {
@@ -28,7 +27,7 @@ class AuthService {
       } else {
         return {
           'success': false,
-          'message': data['message'] ?? data['error'] ?? 'Login failed',
+          'message': data['message'] ?? 'Login failed',
         };
       }
     } catch (e) {
@@ -73,33 +72,5 @@ class AuthService {
         'message': 'Network error: $e',
       };
     }
-  }
-
-  Future<User> getProfile(String token) async {
-    final response = await http.get(
-      Uri.parse('${AppConfig.baseUrl}${AppConfig.profileEndpoint}'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return User.fromJson(data['user']);
-    } else {
-      throw Exception('Failed to load profile');
-    }
-  }
-
-  Future<void> updateProfile(String token, Map<String, dynamic> updates) async {
-    await http.put(
-      Uri.parse('${AppConfig.baseUrl}${AppConfig.profileEndpoint}'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(updates),
-    );
   }
 }

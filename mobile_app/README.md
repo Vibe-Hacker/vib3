@@ -1,10 +1,10 @@
-# mobile_app
+# VIB3 Mobile App
 
-A new Flutter project.
+VIB3 short-form video sharing social media app built with Flutter.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+This project is a Flutter application for VIB3.
 
 A few resources to get you started if this is your first Flutter project:
 
