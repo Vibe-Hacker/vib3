@@ -1,15 +1,15 @@
 /* Video Item Components - Flutter App Inspired Card Design */
 .video-item {
-    height: calc(92vh - 40px);
+    height: calc(86vh - 50px);
     width: 100%;
     max-width: 500px;
     position: relative;
     display: block !important;
     background: var(--bg-primary);
-    margin: 0 auto;
+    margin: 10px auto;
     padding: 8px;
     flex-shrink: 0;
-    min-height: calc(92vh - 40px);
+    min-height: calc(86vh - 50px);
     opacity: 1 !important;
     visibility: visible !important;
     scroll-snap-align: center;
@@ -139,36 +139,36 @@
 /* Responsive video sizing for better viewport fit */
 @media (max-width: 768px) {
     .video-item {
-        height: calc(95vh - 30px) !important;
-        min-height: calc(95vh - 30px) !important;
-        margin: 0 auto !important;
+        height: calc(90vh - 35px) !important;
+        min-height: calc(90vh - 35px) !important;
+        margin: 8px auto !important;
         max-width: 100% !important;
     }
     
     .video-feed {
         margin-left: 0 !important;
         width: 100vw !important;
-        padding: 0 !important;
+        padding: 10px 0 !important;
     }
 }
 
 @media (max-height: 600px) {
     .video-item {
-        height: calc(90vh - 20px) !important;
-        min-height: calc(90vh - 20px) !important;
-        margin: 0 auto !important;
+        height: calc(85vh - 25px) !important;
+        min-height: calc(85vh - 25px) !important;
+        margin: 5px auto !important;
     }
     
     .video-feed {
-        padding: 0 !important;
+        padding: 8px 0 !important;
     }
 }
 
 /* Extra large screens - keep videos more reasonably sized */
 @media (min-height: 1200px) {
     .video-item {
-        height: calc(88vh - 40px) !important;
-        min-height: calc(88vh - 40px) !important;
-        margin: 0 auto !important;
+        height: calc(82vh - 50px) !important;
+        min-height: calc(82vh - 50px) !important;
+        margin: 12px auto !important;
     }
 }

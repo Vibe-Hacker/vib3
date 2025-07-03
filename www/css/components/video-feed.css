@@ -1,6 +1,6 @@
 /* VIB3 Video Feed Styles */
 .video-feed {
-    height: 100vh;
+    height: calc(100vh - 60px);
     margin-top: 60px;
     margin-left: 240px;
     width: calc(100vw - 240px);
@@ -12,11 +12,11 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
-    padding: 0;
+    padding: 20px 0;
 }
 
 .video-feed::-webkit-scrollbar {
@@ -109,7 +109,7 @@
 
 .feed-content {
     display: none;
-    height: 100vh;
+    height: calc(100vh - 120px);
     width: 100%;
     max-width: 500px;
     overflow-y: auto;
@@ -119,7 +119,7 @@
     scroll-behavior: smooth;
     margin: 0 auto;
     position: relative;
-    padding: 0;
+    padding: 10px 20px 20px 20px;
 }
 
 .feed-content::-webkit-scrollbar {
