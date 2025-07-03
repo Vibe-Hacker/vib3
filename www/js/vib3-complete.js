@@ -15808,8 +15808,15 @@ function showChallenges() {
     }
     
     // Hide other pages
-    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page, .vibe-rooms-page, .creator-studio-page').forEach(el => {
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page, .vibe-rooms-page, .creator-studio-page, .challenges-page, .coins-page, .collaboration-page').forEach(el => {
         el.style.display = 'none';
+    });
+    
+    // Remove existing dynamic pages
+    const existingPages = ['collaborationPage', 'coinsPage', 'vibeRoomsPage', 'creatorStudioPage'];
+    existingPages.forEach(pageId => {
+        const page = document.getElementById(pageId);
+        if (page) page.remove();
     });
     
     let challengesPage = document.getElementById('challengesPage');
@@ -16494,8 +16501,15 @@ function showCoins() {
     }
     
     // Hide other pages
-    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page, .vibe-rooms-page, .creator-studio-page, .challenges-page').forEach(el => {
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page, .vibe-rooms-page, .creator-studio-page, .challenges-page, .collaboration-page').forEach(el => {
         el.style.display = 'none';
+    });
+    
+    // Remove existing dynamic pages
+    const existingPages = ['collaborationPage', 'challengesPage', 'vibeRoomsPage', 'creatorStudioPage'];
+    existingPages.forEach(pageId => {
+        const page = document.getElementById(pageId);
+        if (page) page.remove();
     });
     
     let coinsPage = document.getElementById('coinsPage');
@@ -19367,6 +19381,12 @@ window.createNewChallenge = createNewChallenge;
 window.showMyParticipations = showMyParticipations;
 window.startChallengeParticipation = startChallengeParticipation;
 
+// Navigation functions exports
+window.showCollaborationHub = showCollaborationHub;
+window.showCoins = showCoins;
+window.showCreatorFundPage = showCreatorFundPage;
+window.showShopPage = showShopPage;
+
 // Live Streaming exports
 window.showLiveStreaming = showLiveStreaming;
 window.switchLiveTab = switchLiveTab;
@@ -19401,15 +19421,18 @@ function showCollaborationHub() {
     console.log('🤝 Showing Collaboration Hub');
     
     // Hide all other pages
-    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page').forEach(el => {
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page, .challenges-page, .coins-page, .vibe-rooms-page, .creator-studio-page').forEach(el => {
         el.style.display = 'none';
     });
     const mainApp = document.getElementById('mainApp');
     if (mainApp) mainApp.style.display = 'none';
     
-    // Remove existing collaboration page
-    const existingPage = document.getElementById('collaborationPage');
-    if (existingPage) existingPage.remove();
+    // Remove existing dynamic pages
+    const existingPages = ['collaborationPage', 'challengesPage', 'coinsPage', 'vibeRoomsPage', 'creatorStudioPage'];
+    existingPages.forEach(pageId => {
+        const page = document.getElementById(pageId);
+        if (page) page.remove();
+    });
     
     // Create collaboration hub page
     const collaborationPage = document.createElement('div');
