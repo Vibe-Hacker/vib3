@@ -87,7 +87,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           mixWithOthers: false,
           webOptions: const VideoPlayerWebOptions(
             allowRemotePlayback: false,
-            allowPictureInPicture: false,
           ),
         ),
       );
@@ -104,11 +103,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           });
           
           _controller!.setLooping(true);
+          // Always seek to start to load first frame immediately
+          _controller!.seekTo(Duration.zero);
+          
           if (widget.isPlaying) {
+            // Start playing immediately without delay
             _controller!.play();
-          } else if (widget.preload) {
-            // Preload first frame
-            _controller!.seekTo(Duration.zero);
           }
         }
       }).catchError((e) {
@@ -204,10 +204,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   Widget build(BuildContext context) {
     if (_hasError) {
-      return Container(
-        color: Colors.grey[900],
-        child: const Center(
-          child: Column(
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          color: Colors.grey[900],
+          child: const Center(
+            child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.error_outline, size: 64, color: Colors.white54),
@@ -217,19 +219,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 style: TextStyle(color: Colors.white54),
               ),
             ],
+            ),
           ),
         ),
       );
     }
 
-    // Show loading indicator while initializing
+    // Show black screen while initializing - no loading spinner
     if (!_isInitialized) {
-      return Container(
-        color: Colors.black,
-        child: const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFFF0080),
-            strokeWidth: 2,
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          color: Colors.black,
+          child: const Center(
+            child: Icon(
+            Icons.play_circle_outline,
+            size: 80,
+            color: Colors.white30,
+            ),
           ),
         ),
       );
@@ -240,16 +247,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       child: Container(
         width: double.infinity,
         height: double.infinity,
-        child: Stack(
-          children: [
-            FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: _controller!.value.size.width,
-                height: _controller!.value.size.height,
-                child: VideoPlayer(_controller!),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _controller!.value.size.width,
+                  height: _controller!.value.size.height,
+                  child: VideoPlayer(_controller!),
+                ),
               ),
-            ),
             // Play/Pause icon overlay
             if (_showPlayIcon)
               Center(
@@ -271,7 +280,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
