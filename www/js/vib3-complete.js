@@ -16463,7 +16463,13 @@ function showChallengeNotification(message) {
 function showCoins() {
     console.log('💰 Opening VIB3 Coins');
     
-    // Hide other content
+    // Hide main app and other content
+    const mainApp = document.getElementById('mainApp');
+    if (mainApp) {
+        mainApp.style.display = 'none';
+    }
+    
+    // Hide other pages
     document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page, .vibe-rooms-page, .creator-studio-page, .challenges-page').forEach(el => {
         el.style.display = 'none';
     });
