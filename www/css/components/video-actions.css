@@ -55,16 +55,15 @@
 
 /* Flutter-style floating action bubbles */
 .action-btn {
-    width: 56px;
-    height: 56px;
-    border-radius: var(--bubble-border-radius);
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 48px;
+    height: 48px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+    border: 1px solid rgba(255, 255, 255, 0.3);
     color: white;
     cursor: pointer;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(15px);
     transition: all 0.3s ease;
-    animation: vib3Float 4s ease-in-out infinite;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -74,12 +73,17 @@
     font-family: inherit;
     position: relative;
     overflow: hidden;
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.3),
+        0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .action-btn:hover {
     transform: translateY(-2px) scale(1.05);
-    background: rgba(255, 255, 255, 0.25);
-    box-shadow: var(--vib3-multi-glow);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2));
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.4),
+        0 3px 12px rgba(0, 0, 0, 0.3);
 }
 
 .action-btn:active {
@@ -88,36 +92,42 @@
 
 /* Action button variants */
 .action-btn.liked {
-    background: var(--vibers-gradient);
-    box-shadow: var(--vib3-pink-glow);
-    animation: vib3ActivePulse 1s ease-in-out infinite;
+    background: linear-gradient(135deg, #FF1493, #FF6B9D);
+    box-shadow: 
+        0 0 15px rgba(255, 20, 147, 0.4),
+        0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .action-btn.bookmarked {
-    background: var(--vibes-gradient);
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    box-shadow: 
+        0 0 15px rgba(255, 215, 0, 0.4),
+        0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .action-btn.shared {
-    background: var(--vibing-gradient);
-    box-shadow: var(--vib3-glow);
+    background: linear-gradient(135deg, #00CED1, #40E0D0);
+    box-shadow: 
+        0 0 15px rgba(0, 206, 209, 0.4),
+        0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* Action button icons */
 .action-btn .icon {
-    font-size: 24px;
-    margin-bottom: 2px;
-    text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
-    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.3));
+    font-size: 20px;
+    margin-bottom: 3px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
 }
 
 /* Action button counts */
 .action-btn .count {
-    font-size: 11px;
-    font-weight: 600;
-    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+    font-size: 10px;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
     white-space: nowrap;
-    margin-top: 2px;
+    margin-top: 1px;
+    line-height: 1;
 }
 
 /* Creator panel bubble - now clickable with profile and vibe functionality */
