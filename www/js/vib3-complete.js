@@ -6309,6 +6309,15 @@ window.resetToHome = resetToHome;
 function showPage(page) {
     console.log('📱 Showing page:', page);
     
+    // CRITICAL: Close Live streaming page if it's open when navigating elsewhere
+    if (page !== 'live') {
+        const liveStreamingPage = document.getElementById('liveStreamingPage');
+        if (liveStreamingPage) {
+            console.log('🔴 Auto-closing Live streaming page to navigate to:', page);
+            closeLiveStreaming();
+        }
+    }
+    
     // Simple mobile handling - just remove unwanted pages
     if (window.innerWidth <= 767) {
         // Remove all dynamic pages first
