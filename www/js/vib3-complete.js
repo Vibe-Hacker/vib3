@@ -1959,7 +1959,8 @@ function createAdvancedVideoCard(video) {
     
     const card = document.createElement('div');
     
-    // TikTok-style card with scroll snap and proper spacing
+    // Flutter-inspired card with modern design
+    card.className = 'video-item';
     card.style.cssText = `
         height: calc(100vh - 100px) !important;
         width: 100% !important;
@@ -1968,14 +1969,28 @@ function createAdvancedVideoCard(video) {
         visibility: visible !important;
         opacity: 1 !important;
         position: relative !important;
-        background: #000 !important;
-        margin: 0 auto 0 auto !important;
-        padding: 0 0 60px 0 !important;
-        overflow: hidden !important;
+        background: var(--bg-primary) !important;
+        margin: 0 auto 8px auto !important;
+        padding: 8px !important;
+        overflow: visible !important;
         scroll-snap-align: start !important;
         scroll-snap-stop: always !important;
-        border-radius: 12px !important;
+        border-radius: var(--card-border-radius) !important;
         box-sizing: border-box !important;
+        box-shadow: var(--shadow-depth) !important;
+    `;
+    
+    // Create video card inner container
+    const videoCard = document.createElement('div');
+    videoCard.className = 'video-card';
+    videoCard.style.cssText = `
+        width: 100% !important;
+        height: 100% !important;
+        background: var(--bg-secondary) !important;
+        border-radius: var(--card-border-radius) !important;
+        overflow: hidden !important;
+        position: relative !important;
+        box-shadow: var(--vib3-multi-glow) !important;
     `;
     
     // Create video element directly
@@ -2013,9 +2028,9 @@ function createAdvancedVideoCard(video) {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
-        background: #000 !important;
+        background: var(--bg-primary) !important;
         z-index: 1 !important;
-        border-radius: 12px !important;
+        border-radius: var(--card-border-radius) !important;
     `;
     
     // Add comprehensive error handling
@@ -2079,63 +2094,57 @@ function createAdvancedVideoCard(video) {
         }
     };
     
-    // Create TikTok-style overlay with user info
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-        position: absolute !important;
-        bottom: 60px !important;
-        left: 20px !important;
-        right: 80px !important;
-        color: white !important;
-        z-index: 10 !important;
-        pointer-events: none !important;
+    // Create creator panel (top-right)
+    const creatorPanel = document.createElement('div');
+    creatorPanel.className = 'creator-panel';
+    creatorPanel.innerHTML = `
+        <div class="creator-info">
+            <div class="creator-avatar">${(video.user?.username || video.username || 'U')[0].toUpperCase()}</div>
+            <div class="creator-name">@${video.user?.username || video.user?.displayName || video.username || 'user'}</div>
+        </div>
     `;
+    
+    // Create bottom overlay with description
+    const overlay = document.createElement('div');
+    overlay.className = 'bottom-actions';
     
     overlay.innerHTML = `
-        <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-            @${video.user?.username || video.user?.displayName || video.username || 'user'}
-        </div>
-        <div style="font-size: 14px; line-height: 1.3; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-            ${video.description || video.title || 'Check out this video!'}
-            ${video.position ? `<span style="opacity: 0.7; font-size: 12px;"> • Video #${video.position}</span>` : ''}
+        <div class="video-description">
+            <div class="username">@${video.user?.username || video.user?.displayName || video.username || 'user'}</div>
+            <div class="description-text">${video.description || video.title || 'Check out this video!'}${video.position ? ` • Video #${video.position}` : ''}</div>
         </div>
     `;
     
-    // Create TikTok-style action buttons on the right
+    // Create Flutter-inspired floating action buttons
     const actions = document.createElement('div');
-    actions.style.cssText = `
-        position: absolute !important;
-        right: 15px !important;
-        bottom: 60px !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        gap: 20px !important;
-        z-index: 10 !important;
-    `;
+    actions.className = 'side-actions';
     
     actions.innerHTML = `
-        <div class="profile-btn" data-user-id="${video.userId || video.user?._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(45deg, #fe2c55, #8b2dbd); border: 2px solid white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 5px;">
-            <div style="font-size: 20px;">${video.user?.profilePicture || '👤'}</div>
+        <div class="profile-btn floating-bubble" data-user-id="${video.userId || video.user?._id || 'unknown'}" style="width: 56px; height: 56px; background: var(--vib3-brand-gradient); border: 3px solid white; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; margin-bottom: 8px;">
+            <div style="font-size: 24px; text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);">${video.user?.profilePicture || '👤'}</div>
         </div>
-        <div class="vibe-btn" data-user-id="${video.userId || video.user?._id || 'unknown'}" style="width: 28px; height: 28px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 20px; position: relative; top: -15px; box-shadow: var(--vib3-glow);">
-            <div style="font-size: 16px; color: white;">✨</div>
+        <div class="vibe-btn floating-bubble" data-user-id="${video.userId || video.user?._id || 'unknown'}" style="width: 32px; height: 32px; background: var(--vib3-brand-gradient); display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; top: -20px; margin-bottom: 8px;">
+            <div style="font-size: 18px; color: white; text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);">✨</div>
         </div>
-        <div class="like-btn" data-video-id="${video._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
-            <div style="font-size: 20px;" class="heart-icon">🤍</div>
-            <div style="font-size: 10px; color: white; margin-top: 2px;" class="like-count">${formatCount(video.likeCount || 0)}</div>
-        </div>
-        <div class="comment-btn" data-video-id="${video._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
-            <div style="font-size: 20px;">💬</div>
-            <div style="font-size: 10px; color: white; margin-top: 2px;">${formatCount(video.commentCount || 0)}</div>
-        </div>
-        <div class="share-btn" data-video-id="${video._id || 'unknown'}" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
-            <div style="font-size: 20px;">📤</div>
-            <div style="font-size: 10px; color: white; margin-top: 2px;" class="share-count">${formatCount(video.shareCount || 0)}</div>
-        </div>
-        <div class="volume-btn" style="width: 48px; height: 48px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; cursor: pointer;">
-            🔊
-        </div>
+        <button class="like-btn action-btn video-action-bubble" data-video-id="${video._id || 'unknown'}">
+            <div class="icon heart-icon">🤍</div>
+            <div class="count like-count">${formatCount(video.likeCount || 0)}</div>
+        </button>
+        <button class="comment-btn action-btn video-action-bubble" data-video-id="${video._id || 'unknown'}">
+            <div class="icon">💬</div>
+            <div class="count">${formatCount(video.commentCount || 0)}</div>
+        </button>
+        <button class="share-btn action-btn video-action-bubble" data-video-id="${video._id || 'unknown'}">
+            <div class="icon">📤</div>
+            <div class="count share-count">${formatCount(video.shareCount || 0)}</div>
+        </button>
+        <button class="bookmark-btn action-btn video-action-bubble" data-video-id="${video._id || 'unknown'}">
+            <div class="icon">🔖</div>
+            <div class="count">Save</div>
+        </button>
+        <button class="volume-btn action-btn video-action-bubble">
+            <div class="icon">🔊</div>
+        </button>
     `;
     
     // Add volume control functionality
@@ -2328,26 +2337,31 @@ function createAdvancedVideoCard(video) {
     
     // Create video container
     const videoContainer = document.createElement('div');
+    // Update video container for Flutter-inspired design
     videoContainer.className = 'video-container';
     videoContainer.style.cssText = `
         width: 100%;
-        height: calc(100% - 60px);
+        height: 100%;
         position: relative;
-        background: #000;
+        background: var(--bg-primary);
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 12px;
+        border-radius: var(--card-border-radius);
         overflow: hidden;
     `;
     
+    // Assemble Flutter-inspired video card
     videoContainer.appendChild(video_elem);
-    card.appendChild(videoContainer);
-    card.appendChild(overlay);
-    card.appendChild(actions);
-    card.appendChild(pauseIndicator);
+    videoContainer.appendChild(creatorPanel);
+    videoContainer.appendChild(overlay);
+    videoContainer.appendChild(actions);
+    videoContainer.appendChild(pauseIndicator);
     
-    console.log('✅ TikTok-style card created with scroll snap');
+    videoCard.appendChild(videoContainer);
+    card.appendChild(videoCard);
+    
+    console.log('✅ Flutter-inspired video card created with modern design');
     return card;
 }
 

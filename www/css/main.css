@@ -12,6 +12,7 @@
 @import 'components/auth.css';
 @import 'components/sidebar.css';
 @import 'components/navigation.css';
+@import 'components/floating-bubbles.css';
 @import 'components/video-feed.css';
 @import 'components/video-item.css';
 @import 'components/video-actions.css';

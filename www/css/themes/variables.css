@@ -1,37 +1,69 @@
-/* VIB3 Brand Theme Variables */
+/* VIB3 Brand Theme Variables - Flutter App Inspired */
 :root {
-    /* VIB3 Dark Theme with Purple/Blue Gradient Accents */
+    /* VIB3 Core Brand Colors (Cyan-Pink Gradient) */
     --bg-primary: #000000;
-    --bg-secondary: #0a0a0f;
-    --bg-tertiary: rgba(255, 255, 255, 0.06);
+    --bg-secondary: #1a1a1a;
+    --bg-tertiary: #2a2a2a;
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.75);
     --text-tertiary: #a8a8b3;
-    --accent-primary: #8b5cf6;  /* VIB3 Purple */
-    --accent-secondary: #3b82f6; /* VIB3 Blue */
-    --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+    
+    /* VIB3 Brand Gradient Colors */
+    --vib3-cyan: #00CED1;        /* Primary cyan */
+    --vib3-pink: #FF1493;        /* Primary deep pink */
+    --vib3-blue: #1E90FF;        /* Dodger blue */
+    --vib3-accent-pink: #FF0080; /* Bright pink */
+    --vib3-light-cyan: #40E0D0;  /* Light turquoise */
+    --vib3-light-pink: #FF6B9D;  /* Light pink */
+    --vib3-gold: #FFD700;        /* Gold */
+    --vib3-orange: #FFA500;      /* Orange */
+    
+    /* Primary VIB3 Gradients */
+    --accent-primary: var(--vib3-cyan);
+    --accent-secondary: var(--vib3-pink);
+    --accent-gradient: linear-gradient(135deg, var(--vib3-cyan) 0%, var(--vib3-pink) 100%);
+    --vib3-brand-gradient: linear-gradient(135deg, #00CED1 0%, #FF1493 100%);
+    
+    /* Stat Bubble Gradients */
+    --vibing-gradient: linear-gradient(135deg, #00CED1 0%, #40E0D0 100%);
+    --vibers-gradient: linear-gradient(135deg, #FF1493 0%, #FF6B9D 100%);
+    --vibes-gradient: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    
+    /* Glow Effects */
+    --vib3-glow: 0 0 20px rgba(0, 206, 209, 0.4);
+    --vib3-pink-glow: 0 0 20px rgba(255, 20, 147, 0.4);
+    --vib3-multi-glow: 
+        0 0 15px rgba(0, 206, 209, 0.4),
+        0 0 25px rgba(255, 20, 147, 0.3),
+        0 3px 6px rgba(0, 0, 0, 0.5);
+    
+    /* Other Colors */
     --text-danger: #ef4444;
     --border-primary: rgba(255, 255, 255, 0.12);
     --border-secondary: rgba(255, 255, 255, 0.2);
     --overlay: rgba(0, 0, 0, 0.7);
-    --vib3-glow: 0 0 20px rgba(139, 92, 246, 0.3);
+    
+    /* Card and Component Styling */
+    --card-border-radius: 20px;
+    --bubble-border-radius: 20px;
+    --shadow-depth: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-/* VIB3 Dark Theme */
+/* VIB3 Dark Theme - Same as root since it's our primary theme */
 [data-theme="dark"] {
     --bg-primary: #000000;
-    --bg-secondary: #0a0a0f;
-    --bg-tertiary: rgba(255, 255, 255, 0.06);
+    --bg-secondary: #1a1a1a;
+    --bg-tertiary: #2a2a2a;
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.75);
     --text-tertiary: #a8a8b3;
-    --accent-primary: #8b5cf6;
-    --accent-secondary: #3b82f6;
-    --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+    --accent-primary: var(--vib3-cyan);
+    --accent-secondary: var(--vib3-pink);
+    --accent-gradient: var(--vib3-brand-gradient);
     --text-danger: #ef4444;
     --border-primary: rgba(255, 255, 255, 0.12);
     --border-secondary: rgba(255, 255, 255, 0.2);
-    --vib3-glow: 0 0 20px rgba(139, 92, 246, 0.3);
+    --vib3-glow: 0 0 20px rgba(0, 206, 209, 0.4);
     --overlay: rgba(0, 0, 0, 0.7);
 }
 

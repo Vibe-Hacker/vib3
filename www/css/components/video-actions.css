@@ -1,19 +1,33 @@
-/* Video Action Buttons - Bottom Overlay Layout */
+/* Video Action Buttons - Flutter-Inspired Floating Bubbles */
 .side-actions {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    z-index: 10;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+}
+
+/* Bottom actions for description and user info */
+.bottom-actions {
     position: absolute;
     bottom: 20px;
     left: 20px;
-    right: 20px;
+    right: 80px;
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 12px;
     z-index: 10;
-    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.8) 100%);
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.6) 100%);
     padding: 20px 16px 16px;
-    border-radius: 12px;
-    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    backdrop-filter: blur(8px);
 }
 
 .mute-btn {
@@ -39,19 +53,165 @@
     background: rgba(0,0,0,0.7);
 }
 
-/* horizontal video action buttons */
+/* Flutter-style floating action bubbles */
 .action-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--bubble-border-radius);
     background: rgba(255, 255, 255, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: white;
     cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    animation: vib3Float 4s ease-in-out infinite;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    text-decoration: none;
+    border: none;
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: var(--vib3-multi-glow);
+}
+
+.action-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Action button variants */
+.action-btn.liked {
+    background: var(--vibers-gradient);
+    box-shadow: var(--vib3-pink-glow);
+    animation: vib3ActivePulse 1s ease-in-out infinite;
+}
+
+.action-btn.bookmarked {
+    background: var(--vibes-gradient);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+}
+
+.action-btn.shared {
+    background: var(--vibing-gradient);
+    box-shadow: var(--vib3-glow);
+}
+
+/* Action button icons */
+.action-btn .icon {
+    font-size: 24px;
+    margin-bottom: 2px;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.3));
+}
+
+/* Action button counts */
+.action-btn .count {
+    font-size: 11px;
+    font-weight: 600;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+    margin-top: 2px;
+}
+
+/* Creator panel bubble */
+.creator-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: var(--vib3-brand-gradient);
+    border-radius: var(--bubble-border-radius);
+    padding: 12px 16px;
+    z-index: 15;
+    box-shadow: var(--vib3-multi-glow);
+    animation: vib3Float 3s ease-in-out infinite;
+}
+
+.creator-panel .creator-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    text-decoration: none;
+}
+
+.creator-panel .creator-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+.creator-panel .creator-name {
+    font-weight: 600;
+    font-size: 14px;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Video description bubble */
+.video-description {
+    background: rgba(0, 206, 209, 0.1);
+    border: 1px solid rgba(0, 206, 209, 0.3);
+    border-radius: 16px;
+    padding: 12px 16px;
+    color: white;
+    backdrop-filter: blur(8px);
+    font-size: 14px;
+    line-height: 1.4;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 15px rgba(0, 206, 209, 0.2);
+}
+
+.video-description .username {
+    font-weight: 700;
+    background: var(--vib3-brand-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.video-description .description-text {
+    opacity: 0.9;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .action-btn {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .action-btn .icon {
+        font-size: 20px;
+    }
+    
+    .action-btn .count {
+        font-size: 10px;
+    }
+    
+    .side-actions {
+        right: 16px;
+        gap: 12px;
+    }
+    
+    .bottom-actions {
+        left: 16px;
+        right: 70px;
+    }
+}
     transition: all 0.2s ease;
     backdrop-filter: blur(15px);
 }

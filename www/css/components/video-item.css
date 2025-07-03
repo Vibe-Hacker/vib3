@@ -1,32 +1,46 @@
-/* Video Item Components - VIB3 Style with Header Space */
+/* Video Item Components - Flutter App Inspired Card Design */
 .video-item {
     height: calc(100vh - 100px);
     width: 100%;
     max-width: 500px;
     position: relative;
     display: block !important;
-    background: #000;
-    margin: 0 auto 0 auto;
-    padding: 0 0 60px 0;
+    background: var(--bg-primary);
+    margin: 0 auto 8px auto;
+    padding: 8px;
     flex-shrink: 0;
     min-height: calc(100vh - 100px);
     opacity: 1 !important;
     visibility: visible !important;
     scroll-snap-align: start;
     scroll-snap-stop: always;
-    border-radius: 12px;
-    overflow: hidden;
+    border-radius: var(--card-border-radius);
+    overflow: visible;
     box-sizing: border-box;
+    box-shadow: var(--shadow-depth);
+}
+
+/* Video Card Inner Container */
+.video-card {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-secondary);
+    border-radius: var(--card-border-radius);
+    overflow: hidden;
+    position: relative;
+    box-shadow: var(--vib3-multi-glow);
 }
 
 .video-container {
     width: 100%;
-    height: calc(100% - 60px);
+    height: 100%;
     position: relative;
-    background: #000;
+    background: var(--bg-primary);
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: var(--card-border-radius);
+    overflow: hidden;
 }
 
 .video-element {
@@ -34,11 +48,11 @@
     height: 100%;
     max-width: 100vw;
     object-fit: cover;
-    background: #000;
+    background: var(--bg-primary);
     display: block !important;
     opacity: 1 !important;
     visibility: visible !important;
-    border-radius: 12px;
+    border-radius: var(--card-border-radius);
 }
 
 /* Consistent video sizing across all feeds - VIB3 Style with Header Space */
