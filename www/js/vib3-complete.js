@@ -15568,50 +15568,78 @@ function populateSampleMedia() {
     const mediaLibrary = document.getElementById('mediaLibrary');
     if (!mediaLibrary) return;
     
-    const sampleMedia = [
-        { type: 'video', name: 'Sample Video 1', duration: '0:45' },
-        { type: 'video', name: 'Sample Video 2', duration: '1:20' },
-        { type: 'audio', name: 'Background Music', duration: '2:30' },
-        { type: 'image', name: 'Logo.png', size: '1920x1080' }
-    ];
+    // Check if user has imported media files
+    const userMedia = getUserImportedMedia();
     
     mediaLibrary.innerHTML = '';
     
-    sampleMedia.forEach((media, index) => {
-        const mediaItem = document.createElement('div');
-        mediaItem.className = 'media-item';
-        mediaItem.draggable = true;
-        mediaItem.ondragstart = (e) => dragMedia(e, media);
-        mediaItem.style.cssText = `
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-primary);
-            border-radius: 8px;
-            padding: 10px;
-            cursor: grab;
-            transition: all 0.2s ease;
+    if (userMedia.length === 0) {
+        // Show empty state when no media is imported
+        const emptyState = document.createElement('div');
+        emptyState.style.cssText = `
             text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+            border: 2px dashed var(--border-primary);
+            border-radius: 12px;
+            margin: 20px 0;
         `;
-        
-        const icon = media.type === 'video' ? '🎥' : media.type === 'audio' ? '🎵' : '🖼️';
-        
-        mediaItem.innerHTML = `
-            <div style="font-size: 24px; margin-bottom: 5px;">${icon}</div>
-            <div style="font-size: 10px; color: var(--text-primary); font-weight: 600; margin-bottom: 2px;">${media.name}</div>
-            <div style="font-size: 9px; color: var(--text-secondary);">${media.duration || media.size}</div>
+        emptyState.innerHTML = `
+            <div style="font-size: 48px; margin-bottom: 15px;">📁</div>
+            <div style="color: var(--text-primary); font-weight: 600; margin-bottom: 8px;">No Media Files</div>
+            <div style="margin-bottom: 15px; font-size: 14px;">Import videos, images, or audio to get started</div>
+            <button onclick="importCreatorMedia()" style="
+                background: var(--accent-gradient);
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 14px;
+            ">
+                📁 Import Media Files
+            </button>
         `;
-        
-        mediaItem.addEventListener('mouseenter', () => {
-            mediaItem.style.transform = 'scale(1.05)';
-            mediaItem.style.borderColor = 'var(--accent-primary)';
+        mediaLibrary.appendChild(emptyState);
+    } else {
+        // Display user's imported media
+        userMedia.forEach((media, index) => {
+            const mediaItem = document.createElement('div');
+            mediaItem.className = 'media-item';
+            mediaItem.draggable = true;
+            mediaItem.ondragstart = (e) => dragMedia(e, media);
+            mediaItem.style.cssText = `
+                background: var(--bg-tertiary);
+                border: 1px solid var(--border-primary);
+                border-radius: 8px;
+                padding: 10px;
+                cursor: grab;
+                transition: all 0.2s ease;
+                text-align: center;
+            `;
+            
+            const icon = getFileIcon(media.type);
+            
+            mediaItem.innerHTML = `
+                <div style="font-size: 24px; margin-bottom: 5px;">${icon}</div>
+                <div style="font-size: 10px; color: var(--text-primary); font-weight: 600; margin-bottom: 2px;">${media.name}</div>
+                <div style="font-size: 9px; color: var(--text-secondary);">${media.duration || media.size}</div>
+            `;
+            
+            mediaItem.addEventListener('mouseenter', () => {
+                mediaItem.style.transform = 'scale(1.05)';
+                mediaItem.style.borderColor = 'var(--accent-primary)';
+            });
+            
+            mediaItem.addEventListener('mouseleave', () => {
+                mediaItem.style.transform = 'scale(1)';
+                mediaItem.style.borderColor = 'var(--border-primary)';
+            });
+            
+            mediaLibrary.appendChild(mediaItem);
         });
-        
-        mediaItem.addEventListener('mouseleave', () => {
-            mediaItem.style.transform = 'scale(1)';
-            mediaItem.style.borderColor = 'var(--border-primary)';
-        });
-        
-        mediaLibrary.appendChild(mediaItem);
-    });
+    }
 }
 
 // Import media function
@@ -15727,6 +15755,9 @@ function handleFileImport(files, modal) {
                     processed++;
                     
                     if (processed === files.length) {
+                        // Save imported files to storage
+                        saveImportedMedia(files);
+                        
                         // All files processed
                         setTimeout(() => {
                             modal.innerHTML = `
@@ -15766,8 +15797,42 @@ function formatFileSize(bytes) {
 
 function refreshCreatorStudioMedia() {
     console.log('📁 Refreshing media library with imported files');
-    // This would integrate with the media library display
+    // Refresh the media library display
+    populateSampleMedia();
     showChallengeNotification('🎬 Files imported to Creator Studio library!');
+}
+
+// Get user's imported media files
+function getUserImportedMedia() {
+    const savedMedia = localStorage.getItem('vib3-creator-media');
+    return savedMedia ? JSON.parse(savedMedia) : [];
+}
+
+// Save imported media file
+function saveImportedMedia(files) {
+    const existingMedia = getUserImportedMedia();
+    const newMedia = Array.from(files).map((file, index) => ({
+        id: Date.now() + index,
+        name: file.name,
+        type: file.type,
+        size: formatFileSize(file.size),
+        duration: file.type.startsWith('video/') ? '0:00' : null,
+        file: file, // Store file object for later use
+        dateAdded: new Date().toISOString()
+    }));
+    
+    const allMedia = [...existingMedia, ...newMedia];
+    localStorage.setItem('vib3-creator-media', JSON.stringify(allMedia));
+    return newMedia;
+}
+
+// Remove media file
+function removeMediaFile(id) {
+    const media = getUserImportedMedia();
+    const filtered = media.filter(m => m.id !== parseInt(id));
+    localStorage.setItem('vib3-creator-media', JSON.stringify(filtered));
+    populateSampleMedia(); // Refresh display
+    showStudioNotification('Media file removed');
 }
 
 // Drag media functions
@@ -15783,8 +15848,8 @@ function dropMedia(event, trackType) {
     event.preventDefault();
     const mediaData = JSON.parse(event.dataTransfer.getData('text/plain'));
     
-    if ((trackType === 'video' && mediaData.type === 'video') || 
-        (trackType === 'audio' && mediaData.type === 'audio')) {
+    if ((trackType === 'video' && mediaData.type.startsWith('video/')) || 
+        (trackType === 'audio' && mediaData.type.startsWith('audio/'))) {
         
         // Add media clip to timeline
         const track = event.currentTarget;
@@ -15806,10 +15871,39 @@ function dropMedia(event, trackType) {
             border: 1px solid rgba(255,255,255,0.3);
         `;
         clip.textContent = mediaData.name;
+        clip.dataset.mediaId = mediaData.id;
         track.appendChild(clip);
+        
+        // Update preview if it's a video
+        if (trackType === 'video' && mediaData.file) {
+            updatePreviewVideo(mediaData.file);
+        }
         
         // Make clip draggable within timeline
         clip.addEventListener('mousedown', startDragClip);
+        
+        showStudioNotification(`${mediaData.name} added to ${trackType} track`);
+    }
+}
+
+// Update preview video
+function updatePreviewVideo(file) {
+    const previewVideo = document.getElementById('previewVideo');
+    if (previewVideo && file) {
+        const videoURL = URL.createObjectURL(file);
+        previewVideo.src = videoURL;
+        previewVideo.load();
+        previewVideo.style.display = 'block';
+        
+        // Revoke old URL to prevent memory leaks
+        previewVideo.addEventListener('loadstart', () => {
+            if (previewVideo.previousSrc) {
+                URL.revokeObjectURL(previewVideo.previousSrc);
+            }
+            previewVideo.previousSrc = videoURL;
+        });
+        
+        showStudioNotification('Preview updated with video');
     }
 }
 
