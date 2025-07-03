@@ -111,6 +111,21 @@
             <div class="sidebar-text">Challenges</div>
         </button>
         
+        <button class="sidebar-item" onclick="showPage('coins')" id="sidebarCoins">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10" fill="url(#coinGradient)"/>
+                <path d="M12 6C8.69 6 6 8.69 6 12s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
+                <text x="12" y="16" text-anchor="middle" font-size="8" font-weight="bold" fill="white">V3</text>
+                <defs>
+                    <linearGradient id="coinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+            </svg>
+            <div class="sidebar-text">VIB3 Coins</div>
+        </button>
+        
         <button class="sidebar-item" onclick="showPage('activity')">
             <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
@@ -1154,7 +1169,7 @@
     <script src="js/comments-simple.js"></script>
     <script src="js/search-simple.js"></script>
     <script src="js/components/upload-manager.js?v=20250702001"></script>
-    <script src="js/vib3-complete.js?v=20250702016"></script>
+    <script src="js/vib3-complete.js?v=20250702017"></script>
     
     <!-- Auto-testing and fixing scripts for development -->
     <script>

@@ -5045,6 +5045,11 @@ function showPage(page) {
         showChallenges();
         return;
     }
+    
+    if (page === 'coins') {
+        showCoins();
+        return;
+    }
 
     // Handle feed tabs - don't show "coming soon" for these
     if (page === 'home' || page === 'subscriptions' || page === 'discover' || page === 'network' || page === 'pulse' ||
@@ -14644,6 +14649,654 @@ function showChallengeNotification(message) {
         notification.style.transform = 'translateX(300px)';
         setTimeout(() => notification.remove(), 300);
     }, 4000);
+}
+
+// ================ VIB3 COINS SYSTEM ================
+
+// Show VIB3 Coins page
+function showCoins() {
+    console.log('💰 Opening VIB3 Coins');
+    
+    // Hide other content
+    document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page, .activity-page, .friends-page, .vibe-rooms-page, .creator-studio-page, .challenges-page').forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    let coinsPage = document.getElementById('coinsPage');
+    if (!coinsPage) {
+        coinsPage = document.createElement('div');
+        coinsPage.id = 'coinsPage';
+        coinsPage.className = 'coins-page';
+        coinsPage.style.cssText = 'margin-left: 240px; margin-top: 60px; width: calc(100vw - 240px); height: calc(100vh - 60px); overflow-y: auto; background: var(--bg-primary);';
+        
+        coinsPage.innerHTML = `
+            <!-- Coins Header -->
+            <div class="coins-header" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 40px; color: white; text-align: center; position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"20\" cy=\"20\" r=\"2\" fill=\"%23ffffff20\"/><circle cx=\"80\" cy=\"40\" r=\"1\" fill=\"%23ffffff30\"/><circle cx=\"60\" cy=\"80\" r=\"1.5\" fill=\"%23ffffff25\"/><circle cx=\"30\" cy=\"70\" r=\"1\" fill=\"%23ffffff20\"/><circle cx=\"90\" cy=\"15\" r=\"1\" fill=\"%23ffffff35\"/></svg>'); animation: float 6s ease-in-out infinite;"></div>
+                <div style="position: relative; z-index: 2;">
+                    <h1 style="margin: 0 0 15px; font-size: 48px; font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">💰 VIB3 Coins</h1>
+                    <p style="margin: 0 0 30px; font-size: 20px; opacity: 0.95;">Your virtual currency for the VIB3 ecosystem</p>
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 30px;">
+                        <div style="background: rgba(255,255,255,0.2); padding: 20px 30px; border-radius: 20px; backdrop-filter: blur(10px);">
+                            <div style="font-size: 36px; font-weight: 800; margin-bottom: 5px;" id="userCoinsBalance">3,247</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Your VIB3 Coins</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.2); padding: 20px 30px; border-radius: 20px; backdrop-filter: blur(10px);">
+                            <div style="font-size: 36px; font-weight: 800; margin-bottom: 5px;">$32.47</div>
+                            <div style="font-size: 14px; opacity: 0.9;">USD Value</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: 15px;">
+                        <button onclick="openCoinsStore()" style="background: rgba(255,255,255,0.9); color: #FF8C00; border: none; padding: 15px 30px; border-radius: 25px; cursor: pointer; font-weight: 700; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                            🛒 Buy Coins
+                        </button>
+                        <button onclick="openCoinsSend()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 15px 30px; border-radius: 25px; cursor: pointer; font-weight: 700; font-size: 16px; backdrop-filter: blur(10px);">
+                            💸 Send Coins
+                        </button>
+                        <button onclick="openCoinsEarn()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 15px 30px; border-radius: 25px; cursor: pointer; font-weight: 700; font-size: 16px; backdrop-filter: blur(10px);">
+                            🎯 Earn Coins
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Coins Navigation -->
+            <div class="coins-nav" style="display: flex; justify-content: center; gap: 8px; padding: 20px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-primary);">
+                <button class="coins-tab active" onclick="switchCoinsTab('overview')" id="overviewTab" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    📊 Overview
+                </button>
+                <button class="coins-tab" onclick="switchCoinsTab('transactions')" id="transactionsTab" style="background: none; border: 1px solid var(--border-primary); color: var(--text-secondary); padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    💳 Transactions
+                </button>
+                <button class="coins-tab" onclick="switchCoinsTab('rewards')" id="rewardsTab" style="background: none; border: 1px solid var(--border-primary); color: var(--text-secondary); padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    🎁 Rewards
+                </button>
+                <button class="coins-tab" onclick="switchCoinsTab('creators')" id="creatorsTab" style="background: none; border: 1px solid var(--border-primary); color: var(--text-secondary); padding: 12px 24px; border-radius: 25px; cursor: pointer; font-weight: 600;">
+                    👑 Creator Tools
+                </button>
+            </div>
+            
+            <!-- Coins Content Area -->
+            <div class="coins-content-area" style="padding: 30px; max-width: 1200px; margin: 0 auto;">
+                <div id="coinsOverviewContent">
+                    ${getCoinsOverviewContent()}
+                </div>
+                <div id="coinsTransactionsContent" style="display: none;">
+                    ${getCoinsTransactionsContent()}
+                </div>
+                <div id="coinsRewardsContent" style="display: none;">
+                    ${getCoinsRewardsContent()}
+                </div>
+                <div id="coinsCreatorsContent" style="display: none;">
+                    ${getCoinsCreatorsContent()}
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(coinsPage);
+    }
+    
+    coinsPage.style.display = 'block';
+    
+    // Update active sidebar
+    document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+    const coinsButton = document.getElementById('sidebarCoins');
+    if (coinsButton) coinsButton.classList.add('active');
+}
+
+// Get coins overview content
+function getCoinsOverviewContent() {
+    return `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-bottom: 30px;">
+            <!-- Balance Card -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 20px; color: white; position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+                <div style="position: relative;">
+                    <h3 style="margin: 0 0 15px; font-size: 18px; opacity: 0.9;">💰 Current Balance</h3>
+                    <div style="font-size: 36px; font-weight: 800; margin-bottom: 5px;">3,247 VIB3</div>
+                    <div style="font-size: 14px; opacity: 0.8;">≈ $32.47 USD</div>
+                </div>
+            </div>
+            
+            <!-- Earnings Card -->
+            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 25px; border-radius: 20px; color: white; position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+                <div style="position: relative;">
+                    <h3 style="margin: 0 0 15px; font-size: 18px; opacity: 0.9;">📈 Total Earned</h3>
+                    <div style="font-size: 36px; font-weight: 800; margin-bottom: 5px;">18,932 VIB3</div>
+                    <div style="font-size: 14px; opacity: 0.8;">+1,247 this month</div>
+                </div>
+            </div>
+            
+            <!-- Rank Card -->
+            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 25px; border-radius: 20px; color: white; position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -50px; right: -50px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+                <div style="position: relative;">
+                    <h3 style="margin: 0 0 15px; font-size: 18px; opacity: 0.9;">🏆 Creator Rank</h3>
+                    <div style="font-size: 36px; font-weight: 800; margin-bottom: 5px;">Gold</div>
+                    <div style="font-size: 14px; opacity: 0.8;">Top 15% of creators</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div style="background: var(--bg-secondary); padding: 25px; border-radius: 15px; margin-bottom: 25px;">
+            <h3 style="margin: 0 0 20px; color: var(--text-primary);">💎 Recent Coin Activity</h3>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-tertiary); border-radius: 10px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #4facfe, #00f2fe); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <span style="font-size: 18px;">🎯</span>
+                        </div>
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">Challenge Reward</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">2 hours ago</div>
+                        </div>
+                    </div>
+                    <div style="color: #4caf50; font-weight: 700;">+500 VIB3</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-tertiary); border-radius: 10px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb, #f5576c); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <span style="font-size: 18px;">❤️</span>
+                        </div>
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">Video Likes Bonus</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">5 hours ago</div>
+                        </div>
+                    </div>
+                    <div style="color: #4caf50; font-weight: 700;">+125 VIB3</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-tertiary); border-radius: 10px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <span style="font-size: 18px;">💸</span>
+                        </div>
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">Sent to @musiclover</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">1 day ago</div>
+                        </div>
+                    </div>
+                    <div style="color: #f44336; font-weight: 700;">-200 VIB3</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Earning Opportunities -->
+        <div style="background: var(--bg-secondary); padding: 25px; border-radius: 15px;">
+            <h3 style="margin: 0 0 20px; color: var(--text-primary);">🌟 Earn More Coins</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; text-align: center; cursor: pointer; transition: transform 0.2s;" onclick="openDailyQuests()">
+                    <div style="font-size: 36px; margin-bottom: 10px;">🎯</div>
+                    <h4 style="margin: 0 0 8px; color: var(--text-primary);">Daily Quests</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">Complete daily tasks for coins</p>
+                    <div style="margin-top: 10px; color: #4caf50; font-weight: 600;">+50-300 VIB3</div>
+                </div>
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; text-align: center; cursor: pointer; transition: transform 0.2s;" onclick="openCreatorBonus()">
+                    <div style="font-size: 36px; margin-bottom: 10px;">🎬</div>
+                    <h4 style="margin: 0 0 8px; color: var(--text-primary);">Creator Bonus</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">Earn from video performance</p>
+                    <div style="margin-top: 10px; color: #4caf50; font-weight: 600;">+100-1000 VIB3</div>
+                </div>
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; text-align: center; cursor: pointer; transition: transform 0.2s;" onclick="openReferralProgram()">
+                    <div style="font-size: 36px; margin-bottom: 10px;">👥</div>
+                    <h4 style="margin: 0 0 8px; color: var(--text-primary);">Referral Program</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">Invite friends to VIB3</p>
+                    <div style="margin-top: 10px; color: #4caf50; font-weight: 600;">+500 VIB3</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Get coins transactions content
+function getCoinsTransactionsContent() {
+    return `
+        <div style="background: var(--bg-secondary); padding: 25px; border-radius: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: var(--text-primary);">💳 Transaction History</h3>
+                <select style="padding: 8px 12px; border: 1px solid var(--border-primary); border-radius: 6px; background: var(--bg-tertiary); color: var(--text-primary);">
+                    <option>All Transactions</option>
+                    <option>Earnings</option>
+                    <option>Purchases</option>
+                    <option>Transfers</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                ${generateTransactionHistory()}
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="loadMoreTransactions()" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    Load More
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Get coins rewards content
+function getCoinsRewardsContent() {
+    return `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px;">
+            <!-- Daily Quests -->
+            <div style="background: var(--bg-secondary); padding: 25px; border-radius: 15px;">
+                <h3 style="margin: 0 0 20px; color: var(--text-primary);">🎯 Daily Quests</h3>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-tertiary); border-radius: 10px; border-left: 4px solid #4caf50;">
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">Watch 10 videos</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">7/10 completed</div>
+                        </div>
+                        <div style="color: #4caf50; font-weight: 700;">+50 VIB3</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-tertiary); border-radius: 10px; border-left: 4px solid #ff9800;">
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">Like 5 videos</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">3/5 completed</div>
+                        </div>
+                        <div style="color: #ff9800; font-weight: 700;">+25 VIB3</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-tertiary); border-radius: 10px; border-left: 4px solid #2196f3;">
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">Share 1 video</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">0/1 completed</div>
+                        </div>
+                        <div style="color: #2196f3; font-weight: 700;">+75 VIB3</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Achievements -->
+            <div style="background: var(--bg-secondary); padding: 25px; border-radius: 15px;">
+                <h3 style="margin: 0 0 20px; color: var(--text-primary);">🏆 Achievements</h3>
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-tertiary); border-radius: 10px; border: 2px solid #ffd700;">
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">🌟 First Upload</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">Completed • 2 days ago</div>
+                        </div>
+                        <div style="color: #ffd700; font-weight: 700;">+500 VIB3</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-tertiary); border-radius: 10px; opacity: 0.6;">
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">🔥 Viral Video</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">Get 10K views • 1,247/10,000</div>
+                        </div>
+                        <div style="color: #ff6b6b; font-weight: 700;">+1,000 VIB3</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-tertiary); border-radius: 10px; opacity: 0.6;">
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600;">👥 Social Butterfly</div>
+                            <div style="color: var(--text-secondary); font-size: 12px;">Follow 50 creators • 23/50</div>
+                        </div>
+                        <div style="color: #9c27b0; font-weight: 700;">+250 VIB3</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Get coins creators content
+function getCoinsCreatorsContent() {
+    return `
+        <div style="background: var(--bg-secondary); padding: 25px; border-radius: 15px; margin-bottom: 25px;">
+            <h3 style="margin: 0 0 20px; color: var(--text-primary);">👑 Creator Monetization</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px;">
+                    <h4 style="margin: 0 0 15px; color: var(--text-primary);">💰 Creator Fund</h4>
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: var(--text-secondary); font-size: 14px;">Monthly Earnings</div>
+                        <div style="color: var(--text-primary); font-size: 24px; font-weight: 700;">2,347 VIB3</div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: var(--text-secondary); font-size: 14px;">Performance Bonus</div>
+                        <div style="color: #4caf50; font-size: 18px; font-weight: 600;">+15% this month</div>
+                    </div>
+                    <button onclick="openCreatorFund()" style="width: 100%; background: var(--accent-gradient); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        View Details
+                    </button>
+                </div>
+                
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px;">
+                    <h4 style="margin: 0 0 15px; color: var(--text-primary);">🎁 Tip Jar</h4>
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: var(--text-secondary); font-size: 14px;">Tips Received</div>
+                        <div style="color: var(--text-primary); font-size: 24px; font-weight: 700;">1,589 VIB3</div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: var(--text-secondary); font-size: 14px;">From 47 supporters</div>
+                        <div style="color: #ff9800; font-size: 18px; font-weight: 600;">+23 new this week</div>
+                    </div>
+                    <button onclick="openTipJar()" style="width: 100%; background: var(--accent-gradient); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        Manage Tips
+                    </button>
+                </div>
+                
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px;">
+                    <h4 style="margin: 0 0 15px; color: var(--text-primary);">🏪 Creator Store</h4>
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: var(--text-secondary); font-size: 14px;">Items Sold</div>
+                        <div style="color: var(--text-primary); font-size: 24px; font-weight: 700;">23 items</div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: var(--text-secondary); font-size: 14px;">Store Revenue</div>
+                        <div style="color: #9c27b0; font-size: 18px; font-weight: 600;">892 VIB3</div>
+                    </div>
+                    <button onclick="openCreatorStore()" style="width: 100%; background: var(--accent-gradient); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        Setup Store
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Withdrawal Options -->
+        <div style="background: var(--bg-secondary); padding: 25px; border-radius: 15px;">
+            <h3 style="margin: 0 0 20px; color: var(--text-primary);">💳 Withdraw Earnings</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 36px; margin-bottom: 10px;">💰</div>
+                    <h4 style="margin: 0 0 8px; color: var(--text-primary);">PayPal</h4>
+                    <p style="margin: 0 0 15px; color: var(--text-secondary); font-size: 14px;">Min: 1,000 VIB3</p>
+                    <button onclick="withdrawPayPal()" style="width: 100%; background: #0070ba; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer;">
+                        Withdraw
+                    </button>
+                </div>
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 36px; margin-bottom: 10px;">🏦</div>
+                    <h4 style="margin: 0 0 8px; color: var(--text-primary);">Bank Transfer</h4>
+                    <p style="margin: 0 0 15px; color: var(--text-secondary); font-size: 14px;">Min: 2,500 VIB3</p>
+                    <button onclick="withdrawBank()" style="width: 100%; background: #4caf50; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer;">
+                        Withdraw
+                    </button>
+                </div>
+                <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 36px; margin-bottom: 10px;">🎁</div>
+                    <h4 style="margin: 0 0 8px; color: var(--text-primary);">Gift Cards</h4>
+                    <p style="margin: 0 0 15px; color: var(--text-secondary); font-size: 14px;">Min: 500 VIB3</p>
+                    <button onclick="withdrawGiftCard()" style="width: 100%; background: #ff9800; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer;">
+                        Redeem
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Switch coins tabs
+function switchCoinsTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('.coins-tab').forEach(btn => {
+        btn.style.background = 'none';
+        btn.style.border = '1px solid var(--border-primary)';
+        btn.style.color = 'var(--text-secondary)';
+    });
+    
+    const activeTab = document.getElementById(tab + 'Tab');
+    if (activeTab) {
+        activeTab.style.background = 'var(--accent-gradient)';
+        activeTab.style.border = 'none';
+        activeTab.style.color = 'white';
+    }
+    
+    // Update content
+    document.querySelectorAll('[id^="coins"][id$="Content"]').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    const activeContent = document.getElementById('coins' + tab.charAt(0).toUpperCase() + tab.slice(1) + 'Content');
+    if (activeContent) {
+        activeContent.style.display = 'block';
+    }
+}
+
+// Generate transaction history
+function generateTransactionHistory() {
+    const transactions = [
+        { type: 'earn', desc: 'Daily Quest Completed', amount: '+150', time: '2 hours ago', icon: '🎯' },
+        { type: 'earn', desc: 'Video Performance Bonus', amount: '+300', time: '5 hours ago', icon: '📈' },
+        { type: 'send', desc: 'Sent to @dancequeen', amount: '-100', time: '1 day ago', icon: '💸' },
+        { type: 'earn', desc: 'Challenge Winner', amount: '+500', time: '2 days ago', icon: '🏆' },
+        { type: 'purchase', desc: 'Coin Pack Purchase', amount: '+1,000', time: '3 days ago', icon: '🛒' },
+        { type: 'earn', desc: 'Tip from @musicfan', amount: '+50', time: '4 days ago', icon: '🎁' },
+        { type: 'earn', desc: 'Referral Bonus', amount: '+500', time: '5 days ago', icon: '👥' },
+        { type: 'send', desc: 'Sent to @artist_pro', amount: '-250', time: '6 days ago', icon: '💸' }
+    ];
+    
+    return transactions.map(tx => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-tertiary); border-radius: 10px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; background: ${tx.type === 'earn' ? 'linear-gradient(135deg, #4caf50, #8bc34a)' : tx.type === 'send' ? 'linear-gradient(135deg, #f44336, #e91e63)' : 'linear-gradient(135deg, #2196f3, #03a9f4)'}; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 18px;">${tx.icon}</span>
+                </div>
+                <div>
+                    <div style="color: var(--text-primary); font-weight: 600;">${tx.desc}</div>
+                    <div style="color: var(--text-secondary); font-size: 12px;">${tx.time}</div>
+                </div>
+            </div>
+            <div style="color: ${tx.type === 'earn' || tx.type === 'purchase' ? '#4caf50' : '#f44336'}; font-weight: 700;">${tx.amount} VIB3</div>
+        </div>
+    `).join('');
+}
+
+// Coins modal functions
+function openCoinsStore() {
+    showCoinsModal('store', 'Buy VIB3 Coins', `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
+            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: border 0.3s;" onclick="selectCoinPack(this, 500, 4.99)">
+                <div style="font-size: 36px; margin-bottom: 10px;">💰</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--text-primary);">500 VIB3</div>
+                <div style="color: var(--text-secondary); margin: 5px 0;">$4.99</div>
+                <div style="background: var(--accent-gradient); color: white; padding: 8px 16px; border-radius: 6px; font-weight: 600; margin-top: 10px;">Popular</div>
+            </div>
+            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: border 0.3s;" onclick="selectCoinPack(this, 1200, 9.99)">
+                <div style="font-size: 36px; margin-bottom: 10px;">💎</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--text-primary);">1,200 VIB3</div>
+                <div style="color: var(--text-secondary); margin: 5px 0;">$9.99</div>
+                <div style="background: #4caf50; color: white; padding: 8px 16px; border-radius: 6px; font-weight: 600; margin-top: 10px;">+20% Bonus</div>
+            </div>
+            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: border 0.3s;" onclick="selectCoinPack(this, 2500, 19.99)">
+                <div style="font-size: 36px; margin-bottom: 10px;">🏆</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--text-primary);">2,500 VIB3</div>
+                <div style="color: var(--text-secondary); margin: 5px 0;">$19.99</div>
+                <div style="background: #ff9800; color: white; padding: 8px 16px; border-radius: 6px; font-weight: 600; margin-top: 10px;">Best Value</div>
+            </div>
+        </div>
+        <div style="text-align: center;">
+            <button onclick="purchaseCoins()" style="background: var(--accent-gradient); color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 16px;">Purchase Coins</button>
+        </div>
+    `);
+}
+
+function openCoinsSend() {
+    showCoinsModal('send', 'Send VIB3 Coins', `
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">To:</label>
+            <input type="text" placeholder="@username" style="width: 100%; padding: 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary);" id="sendCoinsUsername">
+        </div>
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Amount:</label>
+            <input type="number" placeholder="100" style="width: 100%; padding: 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary);" id="sendCoinsAmount">
+        </div>
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">Message (optional):</label>
+            <textarea placeholder="Great content!" style="width: 100%; padding: 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); resize: vertical; height: 80px;" id="sendCoinsMessage"></textarea>
+        </div>
+        <div style="text-align: center;">
+            <button onclick="sendCoins()" style="background: var(--accent-gradient); color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 16px;">Send Coins</button>
+        </div>
+    `);
+}
+
+function openCoinsEarn() {
+    showCoinsModal('earn', 'Earn VIB3 Coins', `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 10px;">🎯</div>
+                <h4 style="margin: 0 0 8px; color: var(--text-primary);">Daily Quests</h4>
+                <p style="margin: 0 0 15px; color: var(--text-secondary); font-size: 14px;">Complete simple tasks</p>
+                <div style="color: #4caf50; font-weight: 700; margin-bottom: 15px;">+50-300 VIB3/day</div>
+                <button onclick="openDailyQuests()" style="background: var(--accent-gradient); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Start Quests</button>
+            </div>
+            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 10px;">🎬</div>
+                <h4 style="margin: 0 0 8px; color: var(--text-primary);">Upload Videos</h4>
+                <p style="margin: 0 0 15px; color: var(--text-secondary); font-size: 14px;">Earn from views & likes</p>
+                <div style="color: #4caf50; font-weight: 700; margin-bottom: 15px;">+100-1000 VIB3</div>
+                <button onclick="showUploadModal()" style="background: var(--accent-gradient); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Upload Now</button>
+            </div>
+            <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 10px;">👥</div>
+                <h4 style="margin: 0 0 8px; color: var(--text-primary);">Referrals</h4>
+                <p style="margin: 0 0 15px; color: var(--text-secondary); font-size: 14px;">Invite friends</p>
+                <div style="color: #4caf50; font-weight: 700; margin-bottom: 15px;">+500 VIB3/friend</div>
+                <button onclick="openReferralProgram()" style="background: var(--accent-gradient); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Invite Friends</button>
+            </div>
+        </div>
+    `);
+}
+
+function showCoinsModal(type, title, content) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 20px; padding: 30px; max-width: 600px; width: 90%; border: 1px solid var(--border-primary); max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: var(--text-primary);">${title}</h3>
+                <button onclick="this.closest('div').remove()" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            ${content}
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Coins interaction functions
+function selectCoinPack(element, amount, price) {
+    document.querySelectorAll('[onclick*="selectCoinPack"]').forEach(pack => {
+        pack.style.border = '2px solid transparent';
+    });
+    element.style.border = '2px solid var(--accent-color)';
+    
+    window.selectedCoinPack = { amount, price };
+}
+
+function purchaseCoins() {
+    if (!window.selectedCoinPack) {
+        showCoinsNotification('Please select a coin pack first!');
+        return;
+    }
+    
+    showCoinsNotification(`💰 Purchased ${window.selectedCoinPack.amount} VIB3 Coins for $${window.selectedCoinPack.price}!`);
+    
+    // Update user balance
+    const balanceElement = document.getElementById('userCoinsBalance');
+    if (balanceElement) {
+        const currentBalance = parseInt(balanceElement.textContent.replace(',', ''));
+        const newBalance = currentBalance + window.selectedCoinPack.amount;
+        balanceElement.textContent = newBalance.toLocaleString();
+    }
+    
+    document.querySelectorAll('[style*="position: fixed"]').forEach(modal => modal.remove());
+}
+
+function sendCoins() {
+    const username = document.getElementById('sendCoinsUsername').value;
+    const amount = document.getElementById('sendCoinsAmount').value;
+    const message = document.getElementById('sendCoinsMessage').value;
+    
+    if (!username || !amount) {
+        showCoinsNotification('Please fill in username and amount!');
+        return;
+    }
+    
+    showCoinsNotification(`💸 Sent ${amount} VIB3 Coins to ${username}!`);
+    document.querySelectorAll('[style*="position: fixed"]').forEach(modal => modal.remove());
+}
+
+function showCoinsNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 10px;
+        z-index: 10000;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+        transform: translateX(300px);
+        transition: transform 0.3s ease;
+        max-width: 300px;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => notification.style.transform = 'translateX(0)', 100);
+    setTimeout(() => {
+        notification.style.transform = 'translateX(300px)';
+        setTimeout(() => notification.remove(), 300);
+    }, 4000);
+}
+
+// Placeholder functions for coins features
+function openDailyQuests() {
+    showCoinsNotification('🎯 Daily Quests feature coming soon!');
+}
+
+function openCreatorBonus() {
+    showCoinsNotification('🎬 Creator Bonus details coming soon!');
+}
+
+function openReferralProgram() {
+    showCoinsNotification('👥 Referral Program launching soon!');
+}
+
+function openCreatorFund() {
+    showCoinsNotification('💰 Creator Fund details coming soon!');
+}
+
+function openTipJar() {
+    showCoinsNotification('🎁 Tip Jar management coming soon!');
+}
+
+function openCreatorStore() {
+    showCoinsNotification('🏪 Creator Store setup coming soon!');
+}
+
+function withdrawPayPal() {
+    showCoinsNotification('💰 PayPal withdrawal coming soon!');
+}
+
+function withdrawBank() {
+    showCoinsNotification('🏦 Bank withdrawal coming soon!');
+}
+
+function withdrawGiftCard() {
+    showCoinsNotification('🎁 Gift card redemption coming soon!');
+}
+
+function loadMoreTransactions() {
+    showCoinsNotification('📜 Loading more transactions...');
 }
 
 // Export VIB3 unique functions to window

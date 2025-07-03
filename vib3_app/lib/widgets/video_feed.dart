@@ -302,15 +302,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF00CED1).withOpacity(0.3),
-                      blurRadius: 15,
-                      spreadRadius: 2,
-                    ),
-                    BoxShadow(
-                      color: const Color(0xFFFF1493).withOpacity(0.3),
-                      blurRadius: 15,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 8),
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 10,
+                      spreadRadius: 1,
                     ),
                   ],
                 ),
@@ -318,24 +312,6 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                   borderRadius: BorderRadius.circular(20),
                   child: Stack(
                     children: [
-                      // Pulsing gradient background
-                      Positioned.fill(
-                        child: AnimatedContainer(
-                          duration: const Duration(seconds: 2),
-                          decoration: BoxDecoration(
-                            gradient: RadialGradient(
-                              center: Alignment.center,
-                              radius: isCurrentVideo ? 1.5 : 1.0,
-                              colors: [
-                                Colors.black,
-                                const Color(0xFF00CED1).withOpacity(0.1),
-                                const Color(0xFFFF1493).withOpacity(0.1),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      
                       // Video player
                       if (video.videoUrl != null && video.videoUrl!.isNotEmpty)
                         VideoPlayerWidget(
