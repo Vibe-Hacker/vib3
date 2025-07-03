@@ -1,6 +1,6 @@
 /* Video Item Components - Flutter App Inspired Card Design */
 .video-item {
-    height: 100vh;
+    height: calc(100vh - 80px);
     width: 100%;
     max-width: 500px;
     position: relative;
@@ -9,7 +9,7 @@
     margin: 0 auto;
     padding: 8px;
     flex-shrink: 0;
-    min-height: 100vh;
+    min-height: calc(100vh - 80px);
     opacity: 1 !important;
     visibility: visible !important;
     scroll-snap-align: center;
@@ -139,8 +139,8 @@
 /* Responsive video sizing for better viewport fit */
 @media (max-width: 768px) {
     .video-item {
-        height: 100vh !important;
-        min-height: 100vh !important;
+        height: calc(100vh - 60px) !important;
+        min-height: calc(100vh - 60px) !important;
         margin: 0 auto !important;
         max-width: 100% !important;
     }
@@ -154,8 +154,8 @@
 
 @media (max-height: 600px) {
     .video-item {
-        height: 100vh !important;
-        min-height: 100vh !important;
+        height: calc(100vh - 40px) !important;
+        min-height: calc(100vh - 40px) !important;
         margin: 0 auto !important;
     }
     
@@ -167,8 +167,8 @@
 /* Extra large screens - keep videos more reasonably sized */
 @media (min-height: 1200px) {
     .video-item {
-        height: 100vh !important;
-        min-height: 100vh !important;
+        height: calc(100vh - 100px) !important;
+        min-height: calc(100vh - 100px) !important;
         margin: 0 auto !important;
     }
 }
