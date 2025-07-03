@@ -1230,46 +1230,65 @@ async function loadVideoFeed(feedType = 'home', forceRefresh = false, page = 1, 
                         }
                     }
                 } catch (err) {
-                    console.log('⚠️ Could not load from API, showing empty state');
+                    console.log('⚠️ Could not load from API, showing sample vibing content');
                 }
                 
-                // If no content or API failed, show empty state
+                // If no content or API failed, show sample vibing content for testing
+                console.log('📱 Showing sample vibing content since API is not available');
                 feedElement.innerHTML = '';
                 feedElement.style.display = 'block';
-                feedElement.style.overflow = 'hidden';
+                feedElement.style.overflow = 'auto';
+                feedElement.style.scrollSnapType = 'y mandatory';
+                feedElement.style.scrollBehavior = 'smooth';
                 
-                const emptyState = document.createElement('div');
-                emptyState.style.cssText = `
-                    text-align: center;
-                    padding: 60px 20px;
-                    color: #999;
-                    font-size: 16px;
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                `;
-                emptyState.innerHTML = `
-                    <div style="font-size: 64px; margin-bottom: 20px;">✨</div>
-                    <div style="font-size: 24px; margin-bottom: 10px; color: white;">Start Vibing!</div>
-                    <div style="margin-bottom: 20px; max-width: 300px;">
-                        Vibe with creators to see their content here
-                    </div>
-                    <button onclick="showPage('discover')" style="
-                        padding: 12px 32px;
-                        background: var(--accent-gradient);
-                        color: white;
-                        border: none;
-                        border-radius: 25px;
-                        cursor: pointer;
-                        font-weight: 600;
-                        font-size: 16px;
-                        box-shadow: var(--vib3-glow);
-                    ">Discover Creators</button>
-                `;
-                feedElement.appendChild(emptyState);
-                hasMoreVideos = false;
+                // Sample vibing content
+                const sampleVibingVideos = [
+                    {
+                        id: 'vibe_001',
+                        title: 'Morning Coffee Vibes ☕',
+                        description: 'Starting the day right with perfect coffee art',
+                        creator: {
+                            id: 'barista_jane',
+                            username: 'barista_jane',
+                            displayName: 'Jane the Barista',
+                            avatar: '☕'
+                        },
+                        thumbnailUrl: 'https://picsum.photos/400/700?random=301',
+                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                        likes: 1247,
+                        comments: 89,
+                        shares: 34,
+                        isLiked: false,
+                        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+                    },
+                    {
+                        id: 'vibe_002', 
+                        title: 'Dance Challenge Accepted! 💃',
+                        description: 'Nailed the trending dance from @vibemaster_pro',
+                        creator: {
+                            id: 'dance_queen_23',
+                            username: 'dance_queen_23',
+                            displayName: 'Dance Queen',
+                            avatar: '💃'
+                        },
+                        thumbnailUrl: 'https://picsum.photos/400/700?random=302',
+                        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+                        likes: 2156,
+                        comments: 156,
+                        shares: 78,
+                        isLiked: true,
+                        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
+                    }
+                ];
+                
+                sampleVibingVideos.forEach(video => {
+                    const videoCard = createAdvancedVideoCard(video);
+                    feedElement.appendChild(videoCard);
+                });
+                
+                setupInfiniteScroll(feedElement, feedType);
+                setTimeout(() => initializeVideoObserver(), 200);
+                hasMoreVideos = true;
                 
                 if (tabElement) {
                     tabElement.classList.add('active');
