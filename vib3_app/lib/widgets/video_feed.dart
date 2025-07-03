@@ -296,7 +296,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             
             return Container(
               color: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
@@ -309,7 +309,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(20),
                   child: Stack(
                     children: [
                       // Video player
@@ -400,9 +400,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                       
                       // Video description overlay (between floating buttons and bottom)
                       Positioned(
-                        bottom: 40,
-                        left: 12,
-                        right: 80,
+                        bottom: 60,
+                        left: 16,
+                        right: 90,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
