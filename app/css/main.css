@@ -17,6 +17,8 @@
 @import 'components/video-actions.css';
 @import 'components/theme-selector.css';
 @import 'components/modals.css';
+@import 'components/notifications.css';
+@import 'components/empty-states.css';
 @import 'components/duetStitch.css';
 @import 'components/liveStream.css';
 @import 'components/musicLibrary.css';
@@ -32,6 +34,7 @@
 
 /* Utilities */
 @import 'utils/animations.css';
+@import 'utils/accessibility.css';
 @import 'utils/utilities.css';
 
 /* Fixes */

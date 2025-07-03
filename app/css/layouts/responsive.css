@@ -1,4 +1,50 @@
-/* Comprehensive Responsive Design */
+/* Enhanced Comprehensive Responsive Design */
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .action-btn,
+    .sidebar-item,
+    .feed-tab {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .tooltip-content {
+        display: none;
+    }
+    
+    .hover-lift:hover,
+    .hover-scale:hover,
+    .hover-glow:hover {
+        transform: none;
+        box-shadow: none;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .video-feed {
+        height: 100vh;
+        margin-top: 0;
+    }
+    
+    .video-header {
+        display: none;
+    }
+    
+    .bottom-nav {
+        display: none;
+    }
+    
+    .sidebar {
+        display: none;
+    }
+    
+    .video-item {
+        height: 100vh;
+        scroll-snap-align: start;
+    }
+}
 
 /* Large Desktop (1200px+) */
 @media (min-width: 1200px) {
@@ -179,4 +225,38 @@
     .theme-options {
         grid-template-columns: repeat(2, 1fr);
     }
+    
+    .empty-state {
+        padding: 20px 10px;
+        min-height: 250px;
+    }
+    
+    .error-state {
+        padding: 20px 10px;
+    }
+}
+
+/* Additional responsive enhancements */
+@media (min-width: 1440px) {
+    .sidebar { width: 280px; }
+    .video-feed { margin-left: 280px; width: calc(100vw - 280px); }
+    .feed-content { max-width: 600px; }
+}
+
+@media (min-width: 1920px) {
+    .sidebar { width: 320px; }
+    .video-feed { margin-left: 320px; width: calc(100vw - 320px); justify-content: center; }
+    .feed-content { max-width: 700px; }
+}
+
+@media (max-width: 768px) {
+    .action-btn { width: 52px; height: 52px; font-size: 22px; }
+    .modal-content { margin: 20px; width: calc(100vw - 40px); border-radius: 16px; }
+    .profile-page, .settings-page { margin-left: 0; width: 100vw; padding-bottom: 80px; }
+}
+
+@media (max-width: 480px) {
+    .action-btn { width: 48px; height: 48px; }
+    .theme-options { grid-template-columns: 1fr; }
+    .modal-content { margin: 10px; width: calc(100vw - 20px); }
 }

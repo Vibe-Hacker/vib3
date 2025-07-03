@@ -1,4 +1,4 @@
-/* Animations and Keyframes */
+/* Enhanced Animations and Keyframes */
 @keyframes shimmer {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
@@ -9,21 +9,191 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Loading States */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes skeletonLoad {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(200px + 100%) 0; }
+}
+
+@keyframes floatUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes ripple {
+    0% { transform: scale(0); opacity: 1; }
+    100% { transform: scale(4); opacity: 0; }
+}
+
+@keyframes smoothBounce {
+    0%, 20%, 60%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-8px); }
+    80% { transform: translateY(-4px); }
+}
+
+/* Enhanced Loading States */
 .loading-state {
     display: none;
     text-align: center;
     padding: 20px;
+    animation: floatUp 0.5s ease;
+}
+
+.loading-state.active {
+    display: block;
 }
 
 .spinner {
-    border: 3px solid #333;
-    border-top: 3px solid #ff006e;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top: 3px solid var(--accent-primary);
     border-radius: 50%;
     width: 40px;
     height: 40px;
     animation: spin 1s linear infinite;
     margin: 0 auto 15px;
+}
+
+.spinner-small {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+
+.spinner-large {
+    width: 60px;
+    height: 60px;
+    border-width: 4px;
+}
+
+/* Skeleton Screens */
+.skeleton {
+    background: linear-gradient(90deg, 
+        var(--bg-tertiary) 25%, 
+        rgba(255, 255, 255, 0.1) 37%, 
+        var(--bg-tertiary) 63%);
+    background-size: 400% 100%;
+    animation: skeletonLoad 1.5s ease-in-out infinite;
+    border-radius: 8px;
+}
+
+.skeleton-video {
+    width: 100%;
+    aspect-ratio: 9/16;
+    background: linear-gradient(90deg, 
+        #1a1a1a 25%, 
+        #2a2a2a 37%, 
+        #1a1a1a 63%);
+    background-size: 400% 100%;
+    animation: skeletonLoad 1.5s ease-in-out infinite;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.skeleton-profile {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, 
+        var(--bg-tertiary) 25%, 
+        rgba(255, 255, 255, 0.1) 37%, 
+        var(--bg-tertiary) 63%);
+    background-size: 400% 100%;
+    animation: skeletonLoad 1.5s ease-in-out infinite;
+}
+
+.skeleton-text {
+    height: 16px;
+    background: linear-gradient(90deg, 
+        var(--bg-tertiary) 25%, 
+        rgba(255, 255, 255, 0.1) 37%, 
+        var(--bg-tertiary) 63%);
+    background-size: 400% 100%;
+    animation: skeletonLoad 1.5s ease-in-out infinite;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.skeleton-text-short {
+    width: 60%;
+}
+
+.skeleton-text-medium {
+    width: 80%;
+}
+
+.skeleton-text-long {
+    width: 100%;
+}
+
+.skeleton-button {
+    width: 80px;
+    height: 32px;
+    border-radius: 16px;
+    background: linear-gradient(90deg, 
+        var(--bg-tertiary) 25%, 
+        rgba(255, 255, 255, 0.1) 37%, 
+        var(--bg-tertiary) 63%);
+    background-size: 400% 100%;
+    animation: skeletonLoad 1.5s ease-in-out infinite;
+}
+
+/* Video Feed Skeleton */
+.video-skeleton {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+    animation: floatUp 0.6s ease;
+}
+
+.video-skeleton-container {
+    position: relative;
+    width: 100%;
+    max-width: 350px;
+    margin: 0 auto;
+}
+
+.video-skeleton-actions {
+    position: absolute;
+    right: 12px;
+    bottom: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.video-skeleton-action {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.1) 25%, 
+        rgba(255, 255, 255, 0.2) 37%, 
+        rgba(255, 255, 255, 0.1) 63%);
+    background-size: 400% 100%;
+    animation: skeletonLoad 1.5s ease-in-out infinite;
+}
+
+.video-skeleton-info {
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.video-skeleton-info-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .compress-progress {
@@ -100,4 +270,188 @@
 
 .bounce {
     animation: bounce 0.6s ease;
+}
+
+/* Enhanced Interaction Animations */
+.smooth-bounce {
+    animation: smoothBounce 0.6s ease;
+}
+
+.float-up {
+    animation: floatUp 0.5s ease;
+}
+
+.scale-in {
+    animation: scaleIn 0.3s ease;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Ripple Effect */
+.ripple {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.ripple:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Smooth Transitions */
+.smooth-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.smooth-transition-fast {
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.smooth-transition-slow {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover Effects */
+.hover-lift {
+    transition: transform 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+}
+
+.hover-glow {
+    transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+    box-shadow: 0 0 20px rgba(var(--accent-primary), 0.5);
+}
+
+.hover-scale {
+    transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.loading-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loading-content {
+    text-align: center;
+    color: white;
+    animation: scaleIn 0.5s ease;
+}
+
+.loading-text {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.loading-subtext {
+    margin-top: 8px;
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+/* Progress Bar */
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 16px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.progress-fill.indeterminate {
+    width: 100%;
+    animation: shimmer 1.5s infinite;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        var(--accent-primary) 50%, 
+        transparent 100%);
+    background-size: 200% 100%;
+}
+
+/* Staggered Animation */
+.stagger-animation > * {
+    animation: floatUp 0.6s ease;
+}
+
+.stagger-animation > *:nth-child(1) { animation-delay: 0.1s; }
+.stagger-animation > *:nth-child(2) { animation-delay: 0.2s; }
+.stagger-animation > *:nth-child(3) { animation-delay: 0.3s; }
+.stagger-animation > *:nth-child(4) { animation-delay: 0.4s; }
+.stagger-animation > *:nth-child(5) { animation-delay: 0.5s; }
+.stagger-animation > *:nth-child(6) { animation-delay: 0.6s; }
+.stagger-animation > *:nth-child(7) { animation-delay: 0.7s; }
+.stagger-animation > *:nth-child(8) { animation-delay: 0.8s; }
+.stagger-animation > *:nth-child(9) { animation-delay: 0.9s; }
+.stagger-animation > *:nth-child(10) { animation-delay: 1.0s; }
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .skeleton {
+        animation: none;
+        background: var(--bg-tertiary);
+    }
+    
+    .spinner {
+        animation: none;
+        border-top-color: var(--accent-primary);
+    }
 }
