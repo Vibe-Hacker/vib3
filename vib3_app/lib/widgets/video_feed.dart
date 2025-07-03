@@ -410,7 +410,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                       
                       // Video description overlay (between floating buttons and bottom)
                       Positioned(
-                        bottom: 60,
+                        bottom: 80,
                         left: 16,
                         right: 90,
                         child: Container(
@@ -453,22 +453,32 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                               ),
                             ],
                           ),
-                          child: Text(
-                            video.description ?? 'No description',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black,
-                                  blurRadius: 2,
-                                ),
+                          child: ShaderMask(
+                            shaderCallback: (bounds) => const LinearGradient(
+                              colors: [
+                                Color(0xFF00CED1), // Cyan
+                                Color(0xFF1E90FF), // Blue
                               ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ).createShader(bounds),
+                            child: Text(
+                              video.description ?? 'No description',
+                              style: const TextStyle(
+                                color: Colors.white, // This will be masked by gradient
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black,
+                                    blurRadius: 3,
+                                  ),
+                                ],
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
