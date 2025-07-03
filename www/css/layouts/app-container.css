@@ -1,6 +1,6 @@
 /* App Container Layout - VIB3 with Header Space */
 .app-container {
-    height: calc(100vh - 60px);
+    height: 100vh;
     position: relative;
     overflow: hidden;
     max-width: 100%;
