@@ -2167,11 +2167,16 @@ app.post('/api/auth/login', async (req, res) => {
             status: { $ne: 'deleted' } 
         }).toArray();
         
+        console.log(`🔍 DEBUG: Found ${userVideos.length} videos for user ${user.username}`);
+        
         let totalLikes = 0;
         for (const video of userVideos) {
             const likes = await db.collection('likes').countDocuments({ videoId: video._id.toString() });
+            console.log(`🔍 DEBUG: Video ${video._id} has ${likes} likes`);
             totalLikes += likes;
         }
+        
+        console.log(`🔍 DEBUG: Total likes calculated: ${totalLikes}`);
         
         console.log('🔑 Login successful:', {
             userId: user._id.toString(),
