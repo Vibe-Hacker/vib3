@@ -15644,6 +15644,18 @@ function populateSampleMedia() {
                 mediaItem.style.borderColor = 'var(--border-primary)';
             });
             
+            // Add click handler to preview video files
+            mediaItem.addEventListener('click', () => {
+                if (media.type.startsWith('video/') && window.creatorStudioFiles && window.creatorStudioFiles[media.id]) {
+                    const file = window.creatorStudioFiles[media.id];
+                    updatePreviewVideo(file);
+                    console.log('🎬 User clicked on video:', media.name);
+                } else if (media.type.startsWith('video/')) {
+                    console.warn('⚠️ Video file not found for:', media.name);
+                    showStudioNotification('Video file not found - please re-import');
+                }
+            });
+            
             mediaLibrary.appendChild(mediaItem);
         });
     }
