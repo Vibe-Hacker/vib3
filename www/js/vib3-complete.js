@@ -15376,6 +15376,9 @@ function showCreatorStudio() {
                         <button onclick="importCreatorMedia()" style="width: 100%; margin-top: 15px; background: var(--accent-gradient); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                             + Add Media
                         </button>
+                        <button onclick="clearAllMedia()" style="width: 100%; margin-top: 10px; background: rgba(255, 68, 68, 0.8); color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">
+                            🗑️ Clear All
+                        </button>
                     </div>
                     
                     <!-- Effects Panel -->
@@ -15641,6 +15644,7 @@ function populateSampleMedia() {
                 transition: all 0.2s ease;
                 text-align: center;
                 opacity: ${fileExists ? '1' : '0.6'};
+                position: relative;
             `;
             
             const icon = getFileIcon(media.type);
@@ -15651,6 +15655,23 @@ function populateSampleMedia() {
                 <div style="font-size: 10px; color: var(--text-primary); font-weight: 600; margin-bottom: 2px;">${media.name}</div>
                 <div style="font-size: 9px; color: var(--text-secondary);">${media.duration || media.size}</div>
                 ${!fileExists ? '<div style="font-size: 8px; color: var(--error-color, #ff4444); margin-top: 3px;">Needs re-import</div>' : ''}
+                <button onclick="removeMediaFile('${media.id}')" style="
+                    position: absolute;
+                    top: 2px;
+                    right: 2px;
+                    background: rgba(255, 68, 68, 0.8);
+                    color: white;
+                    border: none;
+                    border-radius: 50%;
+                    width: 18px;
+                    height: 18px;
+                    font-size: 10px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                ">×</button>
             `;
             
             mediaItem.addEventListener('mouseenter', () => {
@@ -15890,7 +15911,7 @@ function refreshCreatorStudioMedia() {
     console.log('📁 Refreshing media library with imported files');
     // Refresh the media library display
     populateSampleMedia();
-    showChallengeNotification('🎬 Files imported to Creator Studio library!');
+    showStudioNotification('🎬 Files imported to Creator Studio library!');
 }
 
 // Get user's imported media files
@@ -15930,11 +15951,85 @@ function saveImportedMedia(files) {
 
 // Remove media file
 function removeMediaFile(id) {
+    console.log('🗑️ Removing media file with ID:', id);
+    
+    // Remove from localStorage
     const media = getUserImportedMedia();
+    const fileToRemove = media.find(m => m.id === parseInt(id));
     const filtered = media.filter(m => m.id !== parseInt(id));
     localStorage.setItem('vib3-creator-media', JSON.stringify(filtered));
+    
+    // Remove from global files storage
+    if (window.creatorStudioFiles && window.creatorStudioFiles[id]) {
+        delete window.creatorStudioFiles[id];
+        console.log('🗑️ Removed file from memory storage');
+    }
+    
     populateSampleMedia(); // Refresh display
-    showStudioNotification('Media file removed');
+    showStudioNotification(`Removed: ${fileToRemove?.name || 'Media file'}`);
+}
+
+// Clear all media files
+function clearAllMedia() {
+    const currentMedia = getUserImportedMedia();
+    if (currentMedia.length === 0) {
+        showStudioNotification('No media files to clear');
+        return;
+    }
+    
+    // Confirm deletion
+    const confirmModal = document.createElement('div');
+    confirmModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    confirmModal.innerHTML = `
+        <div style="background: var(--bg-secondary); border-radius: 15px; padding: 30px; max-width: 400px; width: 90%; border: 1px solid var(--border-primary); text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 15px;">🗑️</div>
+            <h3 style="margin: 0 0 15px; color: var(--text-primary);">Clear All Media</h3>
+            <p style="margin: 0 0 20px; color: var(--text-secondary);">
+                This will remove all ${currentMedia.length} media files from your Creator Studio library.
+                <br><br>
+                This action cannot be undone.
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="confirmClearAllMedia(); this.closest('div').remove();" style="background: rgba(255, 68, 68, 0.8); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    Clear All
+                </button>
+                <button onclick="this.closest('div').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(confirmModal);
+}
+
+// Confirm clear all media
+function confirmClearAllMedia() {
+    console.log('🗑️ Clearing all media files');
+    
+    // Clear localStorage
+    localStorage.removeItem('vib3-creator-media');
+    
+    // Clear global files storage
+    if (window.creatorStudioFiles) {
+        window.creatorStudioFiles = {};
+        console.log('🗑️ Cleared all files from memory storage');
+    }
+    
+    populateSampleMedia(); // Refresh display
+    showStudioNotification('🗑️ All media files cleared');
 }
 
 // Drag media functions
