@@ -115,8 +115,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         print('Video initialization error (attempt ${_retryCount + 1}): $e');
         if (_retryCount < _maxRetries && mounted) {
           _retryCount++;
-          print('Retrying video initialization in 1 second...');
-          Future.delayed(const Duration(seconds: 1), () {
+          print('Retrying video initialization in 300ms...');
+          Future.delayed(const Duration(milliseconds: 300), () {
             if (mounted) {
               _disposeController();
               _initializeVideo();
@@ -222,18 +222,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         );
     }
 
-    // Show black screen while initializing - no loading spinner
+    // Show black screen while initializing - no loading indicator
     if (!_isInitialized) {
       return Container(
         color: Colors.black,
-        child: const Center(
-            child: Icon(
-            Icons.play_circle_outline,
-            size: 80,
-            color: Colors.white30,
-            ),
-          ),
-        );
+      );
     }
 
     return GestureDetector(
