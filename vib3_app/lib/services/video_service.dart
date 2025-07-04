@@ -1262,47 +1262,31 @@ class VideoService {
   // Get user's liked videos for sync
   static Future<List<Video>> getUserLikedVideos(String token) async {
     try {
-      // First, test if our new endpoint exists
+      // First, get the current user ID from the auth endpoint
+      String? currentUserId;
       try {
-        final testResponse = await http.get(
-          Uri.parse('${AppConfig.baseUrl}/api/test-liked-videos'),
+        final userResponse = await http.get(
+          Uri.parse('${AppConfig.baseUrl}/api/auth/me'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
         ).timeout(const Duration(seconds: 5));
         
-        if (testResponse.statusCode == 200) {
-          final testData = jsonDecode(testResponse.body);
-          print('✅ Server test endpoint works: ${testData['serverVersion']} - DB: ${testData['database']}');
-        } else {
-          print('❌ Server test endpoint failed: ${testResponse.statusCode}');
+        if (userResponse.statusCode == 200) {
+          final userData = jsonDecode(userResponse.body);
+          currentUserId = userData['user']?['_id'] ?? userData['_id'];
+          print('✅ Got current user ID: $currentUserId');
         }
       } catch (e) {
-        print('❌ Server test endpoint error: $e');
+        print('❌ Failed to get current user ID: $e');
       }
 
-      // Test the simple route too
-      try {
-        final simpleTestResponse = await http.get(
-          Uri.parse('${AppConfig.baseUrl}/api/test-user-liked-videos-simple'),
-        ).timeout(const Duration(seconds: 5));
-        
-        if (simpleTestResponse.statusCode == 200) {
-          print('✅ Simple route test works');
-        } else {
-          print('❌ Simple route test failed: ${simpleTestResponse.statusCode}');
-        }
-      } catch (e) {
-        print('❌ Simple route test error: $e');
-      }
-
-      // Try multiple endpoints for liked videos
+      // Only use the working endpoint that we know returns JSON
       final endpoints = [
-        '/api/user/liked-videos',
-        '/api/videos/liked',
-        '/api/user/likes',
-        '/api/auth/me/likes',
-        '/api/profile/likes',
-        '/api/me/liked-videos',
-        '/api/user/favorites',
-        '/api/social/likes',
+        currentUserId != null 
+          ? '/api/user/videos?type=liked&userId=$currentUserId' 
+          : '/api/user/videos?type=liked', // Use existing working endpoint with type parameter
       ];
       
       for (String endpoint in endpoints) {
@@ -1320,6 +1304,12 @@ class VideoService {
             // Check if response is HTML (common error case)
             if (response.body.trim().startsWith('<') || response.body.contains('<!DOCTYPE')) {
               print('❌ Endpoint $endpoint returned HTML instead of JSON');
+              continue;
+            }
+            
+            // Handle the "User ID required" error by getting current user ID
+            if (response.body.contains('User ID required')) {
+              print('⚠️ Endpoint $endpoint needs user ID, will be handled by auth flow');
               continue;
             }
             

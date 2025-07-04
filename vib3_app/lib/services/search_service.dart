@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
-import '../models/video.dart';
-import '../models/user.dart';
+import '../models/video_model.dart';
+import '../models/user_model.dart';
 
 class SearchService {
   static Future<Map<String, dynamic>> search(String query, String token) async {
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/search?q=${Uri.encodeComponent(query)}'),
+        Uri.parse('${AppConfig.baseUrl}/search?q=${Uri.encodeComponent(query)}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ class SearchService {
   static Future<List<Video>> searchVideos(String query, String token) async {
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/search/videos?q=${Uri.encodeComponent(query)}'),
+        Uri.parse('${AppConfig.baseUrl}/search/videos?q=${Uri.encodeComponent(query)}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ class SearchService {
   static Future<List<User>> searchUsers(String query, String token) async {
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/search/users?q=${Uri.encodeComponent(query)}'),
+        Uri.parse('${AppConfig.baseUrl}/search/users?q=${Uri.encodeComponent(query)}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ class SearchService {
   static Future<Map<String, dynamic>> getTrendingContent(String token) async {
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/trending'),
+        Uri.parse('${AppConfig.baseUrl}/trending'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -145,6 +145,12 @@ class SearchService {
       );
 
       if (response.statusCode == 200) {
+        // Check if response is HTML (common error case)
+        if (response.body.trim().startsWith('<') || response.body.contains('<!DOCTYPE')) {
+          print('❌ Trending endpoint returned HTML instead of JSON');
+          throw FormatException('Trending endpoint returned HTML instead of JSON');
+        }
+        
         final data = jsonDecode(response.body);
         
         // Parse trending videos
@@ -207,7 +213,7 @@ class SearchService {
   static Future<List<String>> getSearchSuggestions(String query, String token) async {
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/search/suggestions?q=${Uri.encodeComponent(query)}'),
+        Uri.parse('${AppConfig.baseUrl}/search/suggestions?q=${Uri.encodeComponent(query)}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
