@@ -4280,6 +4280,77 @@ app.get('/api/videos/:videoId/like-status', requireAuth, async (req, res) => {
     }
 });
 
+// Get user's liked videos
+app.get('/api/user/liked-videos', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const userId = req.user.userId;
+    
+    try {
+        console.log(`🔍 Getting liked videos for user: ${userId}`);
+        
+        // Get all likes for this user
+        const likes = await db.collection('likes').find({ 
+            userId: userId.toString() 
+        }).toArray();
+        
+        console.log(`📝 Found ${likes.length} likes for user`);
+        
+        if (likes.length === 0) {
+            return res.json({ videos: [] });
+        }
+        
+        // Extract video IDs from likes
+        const videoIds = likes.map(like => like.videoId).filter(id => id);
+        
+        console.log(`🎬 Looking up ${videoIds.length} videos...`);
+        
+        // Get the actual videos that the user has liked
+        const likedVideos = await db.collection('videos').find({
+            _id: { $in: videoIds.map(id => {
+                try {
+                    return require('mongodb').ObjectId(id);
+                } catch (e) {
+                    return id; // If it's already a string ID
+                }
+            })},
+            status: { $ne: 'deleted' }
+        }).toArray();
+        
+        console.log(`✅ Found ${likedVideos.length} valid liked videos`);
+        
+        // Add user info and like counts to videos
+        for (let video of likedVideos) {
+            // Get user info
+            const user = await db.collection('users').findOne(
+                { _id: require('mongodb').ObjectId(video.userId) },
+                { projection: { password: 0 } }
+            );
+            video.user = user || { username: 'Unknown', displayName: 'Unknown' };
+            
+            // Add like count
+            video.likeCount = video.likes?.length || 0;
+            video.commentCount = 0;
+        }
+        
+        // Sort by like date (most recent first)
+        const likesMap = new Map(likes.map(like => [like.videoId, like.createdAt]));
+        likedVideos.sort((a, b) => {
+            const aDate = likesMap.get(a._id.toString()) || new Date(0);
+            const bDate = likesMap.get(b._id.toString()) || new Date(0);
+            return new Date(bDate) - new Date(aDate);
+        });
+        
+        res.json({ videos: likedVideos });
+        
+    } catch (error) {
+        console.error('❌ Get liked videos error:', error);
+        res.status(500).json({ error: 'Failed to get liked videos' });
+    }
+});
+
 // Share video
 app.post('/api/videos/:videoId/share', async (req, res) => {
     if (!db) {
@@ -4543,6 +4614,32 @@ app.get('/api/user/following', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Get following error:', error);
         res.status(500).json({ error: 'Failed to get following list' });
+    }
+});
+
+// Get user's followed user IDs (simplified for app sync)
+app.get('/api/user/followed-users', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    try {
+        console.log(`🔍 Getting followed users for user: ${req.user.userId}`);
+        
+        const follows = await db.collection('follows')
+            .find({ followerId: req.user.userId })
+            .toArray();
+        
+        // Just return the user IDs
+        const followedUserIds = follows.map(f => f.followingId);
+        
+        console.log(`✅ Found ${followedUserIds.length} followed users`);
+        
+        res.json(followedUserIds);
+        
+    } catch (error) {
+        console.error('❌ Get followed users error:', error);
+        res.status(500).json({ error: 'Failed to get followed users' });
     }
 });
 

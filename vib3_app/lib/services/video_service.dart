@@ -1446,6 +1446,7 @@ class VideoService {
     try {
       // Try multiple endpoints for followed users
       final endpoints = [
+        '/api/user/followed-users', // New simplified endpoint that returns just user IDs
         '/api/user/following',
         '/api/users/following', 
         '/api/user/follows',
