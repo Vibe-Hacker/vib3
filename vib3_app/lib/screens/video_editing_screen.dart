@@ -813,11 +813,15 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Color(0xFF00CED1),
+                  color: _thumbnailFile!.path.contains('oneplus_thumb') 
+                    ? Colors.orange 
+                    : Color(0xFF00CED1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  'THUMBNAIL',
+                  _thumbnailFile!.path.contains('oneplus_thumb') 
+                    ? 'ONEPLUS MODE'
+                    : 'THUMBNAIL',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 10,
@@ -837,7 +841,9 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  '👀 Your video preview',
+                  _thumbnailFile!.path.contains('oneplus_thumb')
+                    ? '🔧 OnePlus compatible preview'
+                    : '👀 Your video preview',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 11,
