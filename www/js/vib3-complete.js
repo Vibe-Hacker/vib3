@@ -15347,6 +15347,11 @@ function showCreatorStudio() {
                         <p style="margin: 0; opacity: 0.9; font-size: 14px;">Professional video editing tools for creators</p>
                     </div>
                 </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button onclick="emergencyCloseAllOverlays()" style="background: rgba(255, 68, 68, 0.9); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;" title="Clear all stuck overlays and modals">
+                        🧹 Clear Overlays
+                    </button>
+                </div>
                 <div style="display: flex; gap: 10px;">
                     <button onclick="importCreatorMedia()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                         📁 Import Media
@@ -22370,6 +22375,93 @@ function debugCreatorMediaIds() {
 
 // Make debug function available globally
 window.debugCreatorMediaIds = debugCreatorMediaIds;
+
+// Emergency function to close all overlays and modals
+function emergencyCloseAllOverlays() {
+    console.log('🚨 Emergency: Closing ALL overlays and modals');
+    
+    let removedCount = 0;
+    
+    // Remove upload modals and overlays
+    document.querySelectorAll('.upload-modal, .upload-overlay, .creator-import-overlay').forEach(el => {
+        el.remove();
+        removedCount++;
+    });
+    
+    // Remove high z-index elements (likely modals)
+    document.querySelectorAll('[style*="z-index"]').forEach(el => {
+        const zIndex = parseInt(el.style.zIndex || '0');
+        if (zIndex > 1000) {
+            el.remove();
+            removedCount++;
+        }
+    });
+    
+    // Remove position fixed overlays
+    document.querySelectorAll('[style*="position: fixed"], [style*="position:fixed"]').forEach(el => {
+        const rect = el.getBoundingClientRect();
+        if (rect.width > window.innerWidth * 0.5 && rect.height > window.innerHeight * 0.5) {
+            el.remove();
+            removedCount++;
+        }
+    });
+    
+    // Clear stored modal references
+    if (window.currentConfirmModal) {
+        window.currentConfirmModal.remove();
+        window.currentConfirmModal = null;
+        removedCount++;
+    }
+    
+    // Remove import modals specifically
+    document.querySelectorAll('div').forEach(el => {
+        const content = el.innerHTML || '';
+        if (content.includes('Import Complete') || 
+            content.includes('Processing') || 
+            content.includes('Clear All Media') ||
+            content.includes('cannot be undone')) {
+            el.remove();
+            removedCount++;
+        }
+    });
+    
+    // Restore main content visibility
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.style.display = 'block';
+        mainContent.style.visibility = 'visible';
+    }
+    
+    // Clear any camera streams
+    if (window.currentStream) {
+        window.currentStream.getTracks().forEach(track => track.stop());
+        window.currentStream = null;
+    }
+    
+    console.log(`✅ Emergency cleanup complete! Removed ${removedCount} overlay elements`);
+    
+    // Show success notification
+    showStudioNotification(`🧹 Cleared ${removedCount} overlay elements - You can now navigate freely!`);
+}
+
+// Enhanced keyboard shortcuts for emergency exit
+document.addEventListener('keydown', (e) => {
+    // Escape key - close current modal
+    if (e.key === 'Escape') {
+        if (window.currentConfirmModal) {
+            closeConfirmModal();
+        }
+    }
+    
+    // Ctrl+Escape (or Cmd+Escape on Mac) - emergency cleanup
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Escape') {
+        e.preventDefault();
+        emergencyCloseAllOverlays();
+    }
+});
+
+// Make emergency function globally available
+window.emergencyCloseAllOverlays = emergencyCloseAllOverlays;
 
 // Export modal cleanup functions
 window.closeAllModalsAndOverlays = closeAllModalsAndOverlays;
