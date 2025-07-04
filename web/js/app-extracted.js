@@ -15,6 +15,55 @@ initializeApp();
 // Set up authentication
 setupAuthStateListener();
 
+// Missing functions that were in vib3-complete.js but not in modular files
+function publishRemix(originalVideoId, remixData) {
+    console.log('🎬 Publishing remix for video:', originalVideoId);
+    console.log('📝 Remix data:', remixData);
+    
+    // Show notification for now
+    if (window.showToast) {
+        window.showToast('Remix feature coming soon! 🎵', 'info');
+    } else {
+        console.log('Remix feature coming soon! 🎵');
+    }
+    
+    // TODO: Implement actual remix publishing logic
+    // This would typically:
+    // 1. Upload the remix video
+    // 2. Link it to the original video
+    // 3. Add remix metadata
+    // 4. Update the feed
+}
+
+function startRemix(videoId) {
+    console.log('🎵 Starting remix for video:', videoId);
+    
+    if (window.showToast) {
+        window.showToast('Remix creation coming soon! 🎬', 'info');
+    } else {
+        console.log('Remix creation coming soon! 🎬');
+    }
+    
+    // TODO: Implement remix creation logic
+}
+
+function createDuet(videoId) {
+    console.log('👥 Creating duet for video:', videoId);
+    
+    if (window.showToast) {
+        window.showToast('Duet feature coming soon! 🎭', 'info');
+    } else {
+        console.log('Duet feature coming soon! 🎭');
+    }
+    
+    // TODO: Implement duet creation logic
+}
+
+// Make remix functions globally available
+window.publishRemix = publishRemix;
+window.startRemix = startRemix;
+window.createDuet = createDuet;
+
 // Initialize all existing components
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM loaded. Firebase functions available:', !!window.firebaseReady);

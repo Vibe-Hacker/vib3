@@ -576,7 +576,9 @@ Gifts Received: ${totalGifts}`);
         // Random position and safe CSS property assignment
         giftElement.style.left = Math.random() * 80 + 10 + '%';
         giftElement.style.animationDuration = '3s';
-        giftElement.style.animation = 'floatUp 3s ease-out forwards';
+        giftElement.style.animationName = 'floatUp';
+        giftElement.style.animationTimingFunction = 'ease-out';
+        giftElement.style.animationFillMode = 'forwards';
         
         giftsArea.appendChild(giftElement);
 
