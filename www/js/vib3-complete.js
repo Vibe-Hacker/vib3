@@ -2114,10 +2114,8 @@ function createAdvancedVideoCard(video) {
     
     // Creator panel functionality removed - using sidebar profile button instead
     
-    // Load and set initial like status only if authenticated
-    if (window.authToken && window.currentUser) {
-        loadVideoLikeStatus(video._id || 'unknown', likeBtn);
-    }
+    // Load and set initial like status (works for both authenticated and non-authenticated users)
+    loadVideoLikeStatus(video._id || 'unknown', likeBtn);
     
     // Create pause indicator overlay
     const pauseIndicator = document.createElement('div');
