@@ -4312,6 +4312,15 @@ if (db) {
     ensureLikesIndex();
 }
 
+// Test endpoint to verify deployment
+app.get('/api/test-liked-videos', (req, res) => {
+    res.json({ 
+        message: 'Liked videos endpoint exists', 
+        timestamp: new Date().toISOString(),
+        serverVersion: '2024-01-04-fixed'
+    });
+});
+
 // Get user's liked videos
 app.get('/api/user/liked-videos', requireAuth, async (req, res) => {
     if (!db) {

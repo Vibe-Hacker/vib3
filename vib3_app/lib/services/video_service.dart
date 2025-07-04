@@ -1262,6 +1262,22 @@ class VideoService {
   // Get user's liked videos for sync
   static Future<List<Video>> getUserLikedVideos(String token) async {
     try {
+      // First, test if our new endpoint exists
+      try {
+        final testResponse = await http.get(
+          Uri.parse('${AppConfig.baseUrl}/api/test-liked-videos'),
+        ).timeout(const Duration(seconds: 5));
+        
+        if (testResponse.statusCode == 200) {
+          final testData = jsonDecode(testResponse.body);
+          print('✅ Server test endpoint works: ${testData['serverVersion']}');
+        } else {
+          print('❌ Server test endpoint failed: ${testResponse.statusCode}');
+        }
+      } catch (e) {
+        print('❌ Server test endpoint error: $e');
+      }
+
       // Try multiple endpoints for liked videos
       final endpoints = [
         '/api/user/liked-videos',
