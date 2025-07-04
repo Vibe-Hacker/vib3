@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/video_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'config/app_config.dart';
@@ -25,26 +26,27 @@ class VIB3App extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => VideoProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: 'VIB3',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primaryColor: const Color(AppConfig.primaryColor),
-          scaffoldBackgroundColor: const Color(AppConfig.backgroundColor),
-          brightness: Brightness.dark,
-        ),
-        home: Consumer<AuthProvider>(
-          builder: (context, authProvider, _) {
-            if (authProvider.isAuthenticated) {
-              return const HomeScreen();
-            }
-            return const LoginScreen();
-          },
-        ),
-        routes: {
-          '/login': (context) => const LoginScreen(),
-          '/home': (context) => const HomeScreen(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            title: 'VIB3',
+            debugShowCheckedModeBanner: false,
+            theme: themeProvider.currentTheme.toThemeData(),
+            home: Consumer<AuthProvider>(
+              builder: (context, authProvider, _) {
+                if (authProvider.isAuthenticated) {
+                  return const HomeScreen();
+                }
+                return const LoginScreen();
+              },
+            ),
+            routes: {
+              '/login': (context) => const LoginScreen(),
+              '/home': (context) => const HomeScreen(),
+            },
+          );
         },
       ),
     );
