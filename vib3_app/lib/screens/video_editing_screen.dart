@@ -471,8 +471,8 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                 children: [
                 // Video preview
                 Container(
-                  height: 300,
-                  margin: const EdgeInsets.all(16),
+                  height: 250,
+                  margin: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.grey[900],
@@ -559,7 +559,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                       children: [
                         // Tab buttons
                         Container(
-                          height: 60,
+                          height: 50,
                           child: Row(
                             children: List.generate(_tabLabels.length, (index) {
                               final isSelected = index == _selectedTabIndex;
@@ -588,14 +588,14 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                                         Icon(
                                           _tabIcons[index],
                                           color: isSelected ? Colors.white : Colors.grey[400],
-                                          size: 18,
+                                          size: 16,
                                         ),
-                                        const SizedBox(height: 2),
+                                        const SizedBox(height: 1),
                                         Text(
                                           _tabLabels[index],
                                           style: TextStyle(
                                             color: isSelected ? Colors.white : Colors.grey[400],
-                                            fontSize: 9,
+                                            fontSize: 8,
                                             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                           ),
                                         ),
