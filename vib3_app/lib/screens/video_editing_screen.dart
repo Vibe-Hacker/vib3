@@ -139,6 +139,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
     setState(() {
       _useThumbnailMode = true;
       _isInitialized = true;
+      _hasError = false; // Ensure no error state
       _videoDuration = const Duration(seconds: 30);
       _endTrim = _videoDuration;
     });
@@ -238,11 +239,14 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       final actualDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
       print('⏱️ Detected video duration: ${actualDuration.inSeconds}s');
       
-      // Set thumbnail mode successfully
-      _useThumbnailMode = true;
-      _isInitialized = true;
-      _videoDuration = actualDuration;
-      _endTrim = actualDuration;
+      // Set thumbnail mode successfully with setState to trigger UI update
+      setState(() {
+        _useThumbnailMode = true;
+        _isInitialized = true;
+        _hasError = false; // Ensure no error state
+        _videoDuration = actualDuration;
+        _endTrim = actualDuration;
+      });
       
       print('✅ Thumbnail preview mode activated successfully');
       
@@ -261,10 +265,14 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       
     } catch (e) {
       print('❌ Error in thumbnail mode: $e');
-      _useThumbnailMode = true; // Still use thumbnail mode even if frames fail
-      _isInitialized = true;
-      _videoDuration = const Duration(seconds: 30);
-      _endTrim = _videoDuration;
+      // Still use thumbnail mode even if frames fail, but with setState
+      setState(() {
+        _useThumbnailMode = true;
+        _isInitialized = true;
+        _hasError = false; // Ensure no error state
+        _videoDuration = const Duration(seconds: 30);
+        _endTrim = _videoDuration;
+      });
     }
   }
   
@@ -567,6 +575,8 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
 
   @override
   Widget build(BuildContext context) {
+    print('🏗️ Building UI - hasError: $_hasError, isInitialized: $_isInitialized, useThumbnailMode: $_useThumbnailMode');
+    
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
