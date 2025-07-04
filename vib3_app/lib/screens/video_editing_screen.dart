@@ -4,10 +4,13 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 import '../widgets/video_filters_widget.dart';
 import '../widgets/audio_overlay_widget.dart';
 import '../widgets/text_overlay_widget.dart';
 import '../widgets/speed_control_widget.dart';
+import '../widgets/simple_video_preview.dart';
+import '../services/video_thumbnail_service.dart';
 import 'upload_screen.dart';
 
 class VideoEditingScreen extends StatefulWidget {
@@ -29,6 +32,9 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   late TabController _tabController;
   bool _hasError = false;
   String _errorMessage = '';
+  File? _thumbnailFile;
+  List<File> _videoFrames = [];
+  bool _useThumbnailMode = false;
   
   // Trim controls
   Duration _startTrim = Duration.zero;
@@ -83,6 +89,9 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   }
 
   Future<void> _tryVideoPlayerStrategies(File videoFile) async {
+    // First, try to generate a thumbnail as fallback
+    _thumbnailFile = await VideoThumbnailService.generateThumbnail(videoFile.path);
+    
     final strategies = [
       () => _initializeBasicPlayer(videoFile),
       () => _initializeWithLowerResolution(videoFile),
@@ -90,6 +99,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       () => _initializeWithNetworkUrl(videoFile),
       () => _initializeWithMinimalOptions(videoFile),
       () => _initializeWithCompatibilityMode(videoFile),
+      () => _initializeWithThumbnailPreview(videoFile),
     ];
 
     for (int i = 0; i < strategies.length; i++) {
@@ -115,8 +125,8 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       }
     }
     
-    print('❌ All video player strategies failed, using simple editor');
-    _showSimpleEditor();
+    print('❌ All video player strategies failed, using thumbnail editor');
+    _showThumbnailEditor();
   }
 
   Future<void> _initializeWithNetworkUrl(File videoFile) async {
@@ -193,6 +203,23 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
     
     await _controller!.initialize().timeout(const Duration(seconds: 2));
   }
+
+  Future<void> _initializeWithThumbnailPreview(File videoFile) async {
+    print('🖼️ Strategy 7: Thumbnail preview mode');
+    
+    // Generate video frames for timeline
+    _videoFrames = await VideoThumbnailService.generateVideoFrames(videoFile.path, 10);
+    
+    // Set thumbnail mode
+    setState(() {
+      _useThumbnailMode = true;
+      _isInitialized = true;
+      _videoDuration = const Duration(seconds: 30); // Default duration
+      _endTrim = _videoDuration;
+    });
+    
+    throw Exception('Using thumbnail mode instead of video player');
+  }
   
   void _showSimpleEditor() {
     setState(() {
@@ -206,6 +233,24 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       const SnackBar(
         content: Text('Video preview not available, but editing tools are ready'),
         backgroundColor: Color(0xFF00CED1),
+      ),
+    );
+  }
+  
+  void _showThumbnailEditor() {
+    setState(() {
+      _isInitialized = true;
+      _hasError = false;
+      _useThumbnailMode = true;
+      _videoDuration = const Duration(seconds: 30); // Default duration
+      _endTrim = _videoDuration;
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Using thumbnail preview mode - all editing tools available'),
+        backgroundColor: Color(0xFF00CED1),
+        duration: Duration(seconds: 3),
       ),
     );
   }
@@ -576,6 +621,18 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                               aspectRatio: _controller!.value.aspectRatio,
                               child: VideoPlayer(_controller!),
                             ),
+                          )
+                        : _useThumbnailMode
+                        ? SimpleVideoPreview(
+                            videoPath: widget.videoPath,
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Video playback not available on this device'),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                            },
                           )
                         : Container(
                             width: double.infinity,
