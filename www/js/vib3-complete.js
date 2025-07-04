@@ -15967,12 +15967,16 @@ function saveImportedMedia(files) {
     }
     
     const newMedia = Array.from(files).map((file, index) => {
+        // CRITICAL FIX: Generate ID once and use consistently
         const id = Date.now() + index;
-        // Store file in global object
+        
+        // Store file in global object with the SAME ID
         window.creatorStudioFiles[id] = file;
         
+        console.log(`💾 Storing file with ID: ${id}, name: ${file.name}`);
+        
         return {
-            id: id,
+            id: id,  // Same ID used for storage and lookup
             name: file.name,
             type: file.type,
             size: formatFileSize(file.size),
@@ -15983,6 +15987,10 @@ function saveImportedMedia(files) {
     
     const allMedia = [...existingMedia, ...newMedia];
     localStorage.setItem('vib3-creator-media', JSON.stringify(allMedia));
+    
+    console.log('📁 Saved media to localStorage:', newMedia.map(m => `${m.name} (ID: ${m.id})`));
+    console.log('🧠 Available file IDs in memory:', Object.keys(window.creatorStudioFiles));
+    
     return newMedia;
 }
 
@@ -22162,4 +22170,32 @@ window.showVersionOptions = showVersionOptions;
 window.showInviteCollaboratorModal = showInviteCollaboratorModal;
 window.sendProjectMessage = sendProjectMessage;
 window.showCollaborationStats = showCollaborationStats;
+
+// Debug function to check ID consistency
+function debugCreatorMediaIds() {
+    console.log('=== VIB3 Creations Debug Info ===');
+    
+    const userMedia = getUserImportedMedia();
+    const memoryFiles = window.creatorStudioFiles || {};
+    
+    console.log('📋 Media in localStorage:', userMedia.map(m => `${m.name} (ID: ${m.id})`));
+    console.log('🧠 File IDs in memory:', Object.keys(memoryFiles));
+    
+    // Check for mismatches
+    userMedia.forEach(media => {
+        const inMemory = !!memoryFiles[media.id];
+        console.log(`📁 ${media.name} (ID: ${media.id}): ${inMemory ? '✅ Found' : '❌ Missing'} in memory`);
+    });
+    
+    // Check for orphaned memory files
+    Object.keys(memoryFiles).forEach(memoryId => {
+        const inStorage = userMedia.some(m => m.id == memoryId);
+        if (!inStorage) {
+            console.log(`🚨 Orphaned memory file: ${memoryId}`);
+        }
+    });
+}
+
+// Make debug function available globally
+window.debugCreatorMediaIds = debugCreatorMediaIds;
   
