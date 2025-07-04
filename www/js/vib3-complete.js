@@ -15380,6 +15380,14 @@ function showCreatorStudio() {
                         <button onclick="clearAllMedia()" style="width: 100%; margin-top: 10px; background: rgba(255, 68, 68, 0.8); color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">
                             🗑️ Clear All
                         </button>
+                        ${checkIfFilesNeedReimport() ? `
+                        <div style="margin-top: 10px; padding: 10px; background: rgba(255, 165, 0, 0.1); border: 1px solid rgba(255, 165, 0, 0.3); border-radius: 6px; text-align: center;">
+                            <div style="font-size: 10px; color: #ff9500; margin-bottom: 5px;">⚠️ Some files need re-import</div>
+                            <button onclick="importCreatorMedia()" style="width: 100%; background: #ff9500; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 10px;">
+                                📁 Re-import Files
+                            </button>
+                        </div>
+                        ` : ''}
                     </div>
                     
                     <!-- Effects Panel -->
@@ -15636,6 +15644,16 @@ function populateSampleMedia() {
             // Check if file exists in memory
             const fileExists = window.creatorStudioFiles && window.creatorStudioFiles[media.id];
             
+            // Log debug info for file existence check
+            if (!fileExists) {
+                console.log('🔍 DEBUG: File missing from memory:', {
+                    mediaName: media.name,
+                    mediaId: media.id,
+                    hasCreatorStudioFiles: !!window.creatorStudioFiles,
+                    availableFileIds: window.creatorStudioFiles ? Object.keys(window.creatorStudioFiles) : []
+                });
+            }
+            
             mediaItem.style.cssText = `
                 background: var(--bg-tertiary);
                 border: 1px solid ${fileExists ? 'var(--border-primary)' : 'var(--error-color, #ff4444)'};
@@ -15655,8 +15673,8 @@ function populateSampleMedia() {
                 <div style="font-size: 24px; margin-bottom: 5px;">${icon}${statusIcon}</div>
                 <div style="font-size: 10px; color: var(--text-primary); font-weight: 600; margin-bottom: 2px;">${media.name}</div>
                 <div style="font-size: 9px; color: var(--text-secondary);">${media.duration || media.size}</div>
-                ${!fileExists ? '<div style="font-size: 8px; color: var(--error-color, #ff4444); margin-top: 3px;">Needs re-import</div>' : ''}
-                <button onclick="removeMediaFile('${media.id}')" style="
+                ${!fileExists ? '<div style="font-size: 8px; color: var(--error-color, #ff4444); margin-top: 3px;">⚠️ Re-import needed</div>' : ''}
+                <button onclick="removeMediaFile(${media.id})" style="
                     position: absolute;
                     top: 2px;
                     right: 2px;
@@ -15691,10 +15709,13 @@ function populateSampleMedia() {
                     mediaName: media.name,
                     mediaType: media.type,
                     mediaId: media.id,
+                    mediaIdType: typeof media.id,
                     isVideo: media.type.startsWith('video/'),
                     creatorStudioFilesExists: !!window.creatorStudioFiles,
                     fileExists: !!(window.creatorStudioFiles && window.creatorStudioFiles[media.id]),
-                    allFileIds: window.creatorStudioFiles ? Object.keys(window.creatorStudioFiles) : []
+                    allFileIds: window.creatorStudioFiles ? Object.keys(window.creatorStudioFiles) : [],
+                    allFileIdsWithTypes: window.creatorStudioFiles ? Object.keys(window.creatorStudioFiles).map(k => `${k}(${typeof k})`) : [],
+                    exactMatchCheck: window.creatorStudioFiles ? (media.id in window.creatorStudioFiles) : false
                 });
                 
                 if (media.type.startsWith('video/')) {
@@ -15704,8 +15725,9 @@ function populateSampleMedia() {
                         updatePreviewVideo(file);
                         showStudioNotification(`Previewing: ${media.name}`);
                     } else {
-                        console.warn('⚠️ DEBUG: Video file not found in storage for:', media.name, 'ID:', media.id);
-                        showStudioNotification('File missing from memory - please re-import to preview');
+                        console.info('📁 INFO: Video file needs to be re-imported for preview:', media.name, 'ID:', media.id);
+                        console.log('🔍 DEBUG: Available file IDs in storage:', window.creatorStudioFiles ? Object.keys(window.creatorStudioFiles) : 'No storage');
+                        showStudioNotification('File needs to be re-imported for preview - files are cleared when page refreshes');
                         
                         // Offer to re-import the specific file
                         const reImportModal = document.createElement('div');
@@ -15916,6 +15938,19 @@ function refreshCreatorStudioMedia() {
     showStudioNotification('🎬 Files imported to VIB3 Creations library!');
 }
 
+// Check if imported files need to be re-imported (after page refresh)
+function checkIfFilesNeedReimport() {
+    const userMedia = getUserImportedMedia();
+    if (userMedia.length === 0) return false;
+    
+    // Check if any media files are missing from memory
+    const missingFiles = userMedia.filter(media => {
+        return !window.creatorStudioFiles || !window.creatorStudioFiles[media.id];
+    });
+    
+    return missingFiles.length > 0;
+}
+
 // Get user's imported media files
 function getUserImportedMedia() {
     const savedMedia = localStorage.getItem('vib3-creator-media');
@@ -15955,15 +15990,18 @@ function saveImportedMedia(files) {
 function removeMediaFile(id) {
     console.log('🗑️ Removing media file with ID:', id);
     
+    // Ensure ID is treated as a number consistently
+    const numericId = parseInt(id);
+    
     // Remove from localStorage
     const media = getUserImportedMedia();
-    const fileToRemove = media.find(m => m.id === parseInt(id));
-    const filtered = media.filter(m => m.id !== parseInt(id));
+    const fileToRemove = media.find(m => m.id === numericId);
+    const filtered = media.filter(m => m.id !== numericId);
     localStorage.setItem('vib3-creator-media', JSON.stringify(filtered));
     
-    // Remove from global files storage
-    if (window.creatorStudioFiles && window.creatorStudioFiles[id]) {
-        delete window.creatorStudioFiles[id];
+    // Remove from global files storage - use numeric ID as key
+    if (window.creatorStudioFiles && window.creatorStudioFiles[numericId]) {
+        delete window.creatorStudioFiles[numericId];
         console.log('🗑️ Removed file from memory storage');
     }
     
@@ -20096,6 +20134,7 @@ window.showCreatorStudio = showCreatorStudio;
 window.switchStudioTab = switchStudioTab;
 window.importCreatorMedia = importCreatorMedia;
 window.exportCreatorProject = exportCreatorProject;
+window.checkIfFilesNeedReimport = checkIfFilesNeedReimport;
 window.applyEffect = applyEffect;
 window.adjustAudioVolume = adjustAudioVolume;
 window.addAudioFade = addAudioFade;
