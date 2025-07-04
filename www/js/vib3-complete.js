@@ -16028,10 +16028,10 @@ function removeMediaFile(id) {
     populateSampleMedia(); // Refresh display
     showStudioNotification(`Removed: ${fileToRemove?.name || 'Media file'}`);
     
-    // CRITICAL: Force cleanup any overlays after single file delete
+    // CRITICAL: Light cleanup after single file delete
     setTimeout(() => {
-        clearDarkOverlaysOnStartup();
-        console.log('🧹 Auto-cleanup after single file delete');
+        lightOverlayCleanup();
+        console.log('🧹 Light cleanup after single file delete');
     }, 50);
 }
 
@@ -16135,10 +16135,10 @@ function confirmClearAllMedia() {
     populateSampleMedia(); // Refresh display
     showStudioNotification('🗑️ All media files cleared');
     
-    // CRITICAL: Force cleanup any overlays after delete operation
+    // CRITICAL: Light cleanup after delete operation (not aggressive)
     setTimeout(() => {
-        emergencyCloseAllOverlays();
-        console.log('🧹 Auto-cleanup after delete operation');
+        lightOverlayCleanup();
+        console.log('🧹 Light cleanup after delete operation');
     }, 100);
 }
 
@@ -22523,6 +22523,41 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// Light cleanup function that only targets specific problem overlays
+function lightOverlayCleanup() {
+    console.log('🧹 Light cleanup: Removing only problematic overlays');
+    
+    let removedCount = 0;
+    
+    // Only remove elements that are clearly problematic modal overlays
+    document.querySelectorAll('div').forEach(el => {
+        const content = el.innerHTML || '';
+        const style = window.getComputedStyle(el);
+        const zIndex = parseInt(style.zIndex || '0');
+        
+        // Only remove if it's clearly a modal overlay (not VIB3 Creations content)
+        const isProblemOverlay = (
+            // Modal content indicators
+            (content.includes('Import Complete') || 
+             content.includes('Processing') || 
+             content.includes('Clear All Media') ||
+             content.includes('cannot be undone')) ||
+            // Very high z-index overlay elements
+            (zIndex > 10000 && !el.id.includes('creator') && !el.classList.contains('studio-header'))
+        );
+        
+        if (isProblemOverlay) {
+            el.remove();
+            removedCount++;
+            console.log('🗑️ Removed problem overlay:', el.className || 'unnamed');
+        }
+    });
+    
+    if (removedCount > 0) {
+        console.log(`✅ Light cleanup: Removed ${removedCount} problem overlay elements`);
+    }
+}
+
 // Startup cleanup to prevent dark overlays when opening VIB3 Creations
 function clearDarkOverlaysOnStartup() {
     console.log('🧹 Startup: Clearing any existing dark overlays');
@@ -22574,15 +22609,16 @@ function closeImportModalAndRefresh() {
     // Refresh the creator studio media
     refreshCreatorStudioMedia();
     
-    // CRITICAL: Force cleanup any remaining overlays
+    // CRITICAL: Light cleanup after upload completion
     setTimeout(() => {
-        emergencyCloseAllOverlays();
-        console.log('🧹 Auto-cleanup after upload completion');
+        lightOverlayCleanup();
+        console.log('🧹 Light cleanup after upload completion');
     }, 100);
 }
 
 // Make emergency function globally available
 window.emergencyCloseAllOverlays = emergencyCloseAllOverlays;
+window.lightOverlayCleanup = lightOverlayCleanup;
 window.clearDarkOverlaysOnStartup = clearDarkOverlaysOnStartup;
 window.closeImportModalAndRefresh = closeImportModalAndRefresh;
 
