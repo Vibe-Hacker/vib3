@@ -941,7 +941,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       );
     }
     
-    return [
+    final List<Widget> buttons = [
       // Profile Button - Draggable
       _buildDraggableButton(
         buttonId: 'profile',
@@ -956,34 +956,35 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             customChild: Container(
               width: 32,
               height: 32,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.black,
-            ),
-            child: Center(
-              child: Text(
-                (video.user?['username'] ?? 'U')[0].toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black,
-                      blurRadius: 4,
-                    ),
-                  ],
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.black,
+              ),
+              child: Center(
+                child: Text(
+                  (video.user?['username'] ?? 'U')[0].toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black,
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-          ),
-        ),
       ),
-      
-      // Follow Button - Tied to Profile Button Position (only show if not user's own video)
-      if (!isOwnVideo)
+    ];
+
+    // Add follow button conditionally (only if not user's own video)
+    if (!isOwnVideo) {
+      buttons.add(
         Positioned(
           left: _getFollowButtonPosition().dx,
           top: _getFollowButtonPosition().dy,
@@ -991,7 +992,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             duration: Duration(seconds: 3 + ('follow'.hashCode % 2)),
             tween: Tween(begin: 0.0, end: 1.0),
             builder: (context, animationValue, child) {
-              final isBeingDragged = _isDragMode && _draggingButton == 'profile'; // Follow visual feedback when profile is being dragged
+              final isBeingDragged = _isDragMode && _draggingButton == 'profile';
               return Transform.translate(
                 offset: Offset(
                   !isBeingDragged ? (sin(animationValue * 2 * pi) * 3) : 0,
@@ -1006,7 +1007,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               transform: (_isDragMode && _draggingButton == 'profile') 
-                  ? (Matrix4.identity()..scale(1.1)) // Scale up when profile is being dragged
+                  ? (Matrix4.identity()..scale(1.1))
                   : Matrix4.identity(),
               decoration: BoxDecoration(
                 border: (_isDragMode && _draggingButton == 'profile')
@@ -1023,6 +1024,10 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             ),
           ),
         ),
+      );
+    }
+
+    buttons.addAll([
       
       // Like Button - Draggable
       _buildDraggableButton(
@@ -1072,7 +1077,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           ),
         ),
       ),
-    ];
+    ]);
+    
+    return buttons;
   }
 
   @override

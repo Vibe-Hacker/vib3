@@ -10,6 +10,7 @@ import 'edit_profile_screen.dart';
 import 'qr_code_screen.dart';
 import 'analytics_screen.dart';
 import 'add_friends_screen.dart';
+import 'messages_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId; // Optional userId to view other users' profiles
@@ -22,7 +23,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
   List<Video> userVideos = [];
-  List<Video> likedVideos = [];
+  List<Video> starredVideos = [];
   List<Video> privateVideos = [];
   bool isLoadingVideos = false;
   late TabController _tabController;
@@ -56,7 +57,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       final targetUserId = widget.userId ?? user.id;
       
       final videos = await VideoService.getUserVideos(targetUserId, token);
-      final liked = await VideoService.getLikedVideos(targetUserId, token);
+      final starred = await VideoService.getLikedVideos(targetUserId, token);
       
       print('ProfileScreen: Loaded ${videos.length} videos for user $targetUserId');
       for (final video in videos) {
@@ -65,7 +66,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       
       setState(() {
         userVideos = videos;
-        likedVideos = liked;
+        starredVideos = starred;
         privateVideos = videos.where((video) => video.isPrivate).toList();
         isLoadingVideos = false;
       });
@@ -111,7 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     setState(() {
       userVideos.removeWhere((v) => v.id == video.id);
       privateVideos.removeWhere((v) => v.id == video.id);
-      likedVideos.removeWhere((v) => v.id == video.id);
+      starredVideos.removeWhere((v) => v.id == video.id);
     });
 
     // Also remove from global video provider immediately
@@ -208,6 +209,15 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.message_outlined, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MessagesScreen()),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.person_add_outlined, color: Colors.white),
             onPressed: () {
               Navigator.push(
@@ -232,52 +242,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // Profile Picture with VIB3 gradient border
-                  GestureDetector(
+                  // Floating Profile Picture
+                  _FloatingProfilePicture(
+                    user: user,
                     onTap: () {
                       // TODO: Add profile picture change functionality
                     },
-                    child: Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFF00CED1), // Cyan
-                            Color(0xFFFF1493), // Deep Pink
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.black,
-                        backgroundImage: user.profilePicture != null
-                            ? NetworkImage(user.profilePicture!)
-                            : null,
-                        child: user.profilePicture == null
-                            ? ShaderMask(
-                                shaderCallback: (bounds) => const LinearGradient(
-                                  colors: [
-                                    Color(0xFF00CED1), // Cyan
-                                    Color(0xFFFF1493), // Deep Pink
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ).createShader(bounds),
-                                child: Text(
-                                  user.username[0].toUpperCase(),
-                                  style: const TextStyle(
-                                    fontSize: 40,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              )
-                            : null,
-                      ),
-                    ),
                   ),
                   const SizedBox(height: 16),
                   
@@ -314,14 +284,29 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     ),
                   const SizedBox(height: 16),
                   
-                  // Stats
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildStatColumn('Following', user.following),
-                      _buildStatColumn('Followers', user.followers),
-                      _buildStatColumn('Likes', user.totalLikes),
-                    ],
+                  // Floating Stats Row
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildFloatingStat('Vibing', user.following, 
+                          gradientColors: const [Color(0xFF00CED1), Color(0xFF40E0D0)],
+                          onTap: () {
+                            // TODO: Implement following screen
+                          },
+                        ),
+                        _buildFloatingStat('VIB3RS', user.followers,
+                          gradientColors: const [Color(0xFFFF1493), Color(0xFFFF6B9D)],
+                          onTap: () {
+                            // TODO: Implement followers screen
+                          },
+                        ),
+                        _buildFloatingStat('VIB3S', user.totalLikes,
+                          gradientColors: const [Color(0xFFFFD700), Color(0xFFFFA500)],
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
                   
@@ -344,7 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                             padding: const EdgeInsets.symmetric(vertical: 8),
                           ),
                           child: const Text(
-                            'Edit profile',
+                            'Edit VIB3',
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
@@ -392,7 +377,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         );
                       },
                       child: const Text(
-                        '+ Add bio',
+                        'Add your vibe',
                         style: TextStyle(color: Color(0xFFFF0080)),
                       ),
                     ),
@@ -407,9 +392,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   controller: _tabController,
                   indicatorColor: Colors.white,
                   tabs: const [
-                    Tab(icon: Icon(Icons.grid_on)),
-                    Tab(icon: Icon(Icons.favorite_border)),
-                    Tab(icon: Icon(Icons.lock_outline)),
+                    Tab(icon: Icon(Icons.video_library), text: 'Videos'),
+                    Tab(icon: Icon(Icons.star_border), text: 'Starred'),
+                    Tab(icon: Icon(Icons.visibility_off), text: 'Private'),
                   ],
                 ),
                 // Tab Content
@@ -419,7 +404,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     controller: _tabController,
                     children: [
                       _buildVideoGrid(userVideos, showDeleteButton: true),
-                      _buildVideoGrid(likedVideos, showDeleteButton: false),
+                      _buildVideoGrid(starredVideos, showDeleteButton: false),
                       _buildVideoGrid(privateVideos, showDeleteButton: true),
                     ],
                   ),
@@ -432,8 +417,21 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildStatColumn(String label, int count) {
-    return Column(
+  Widget _buildFloatingStat(String label, int count, {
+    required List<Color> gradientColors,
+    VoidCallback? onTap,
+  }) {
+    return _FloatingStatBubble(
+      label: label,
+      count: count,
+      gradientColors: gradientColors,
+      onTap: onTap,
+      shouldAnimate: true, // Always animate on profile page when it's visible
+    );
+  }
+
+  Widget _buildStatColumn(String label, int count, {VoidCallback? onTap}) {
+    Widget column = Column(
       children: [
         ShaderMask(
           shaderCallback: (bounds) => const LinearGradient(
@@ -462,6 +460,24 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         ),
       ],
     );
+
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: const Color(0xFF00CED1).withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: column,
+        ),
+      );
+    }
+    return column;
   }
 
   Widget _buildVideoGrid(List<Video> videos, {required bool showDeleteButton}) {
@@ -560,8 +576,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     return GridView.builder(
       padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 9 / 16, // TikTok video aspect ratio
+        crossAxisCount: 4, // Unique 4-column layout
+        childAspectRatio: 3 / 4, // Good for 4 columns
         crossAxisSpacing: 4,
         mainAxisSpacing: 4,
       ),
@@ -596,10 +612,14 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.6,
+        ),
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             // Handle bar
             Container(
               width: 40,
@@ -617,9 +637,20 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               title: 'Settings and privacy',
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                Navigator.of(context).push(
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) => const SettingsScreen(),
+                    transitionDuration: const Duration(milliseconds: 300),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(1.0, 0.0),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      );
+                    },
+                  ),
                 );
               },
             ),
@@ -644,7 +675,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             ),
             _buildMenuItem(
               icon: Icons.favorite_outline,
-              title: 'Your favorites',
+              title: 'Your VIB3 favorites',
               onTap: () {
                 Navigator.pop(context);
                 // Navigate to favorite effects/sounds
@@ -652,7 +683,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             ),
             _buildMenuItem(
               icon: Icons.timer,
-              title: 'Digital Wellbeing',
+              title: 'Screen Time',
               onTap: () {
                 Navigator.pop(context);
                 // Navigate to digital wellbeing
@@ -676,6 +707,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               },
             ),
           ],
+          ),
         ),
       ),
     );
@@ -739,6 +771,339 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     // Implement share profile functionality
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Profile link copied!')),
+    );
+  }
+}
+
+class _FloatingStatBubble extends StatefulWidget {
+  final String label;
+  final int count;
+  final List<Color> gradientColors;
+  final VoidCallback? onTap;
+  final bool shouldAnimate;
+
+  const _FloatingStatBubble({
+    required this.label,
+    required this.count,
+    required this.gradientColors,
+    this.onTap,
+    this.shouldAnimate = true,
+  });
+
+  @override
+  State<_FloatingStatBubble> createState() => _FloatingStatBubbleState();
+}
+
+class _FloatingStatBubbleState extends State<_FloatingStatBubble>
+    with TickerProviderStateMixin {
+  late AnimationController _floatController;
+  late AnimationController _pulseController;
+  late Animation<double> _floatAnimation;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Floating animation
+    _floatController = AnimationController(
+      duration: Duration(seconds: 3 + (widget.label.hashCode % 2)), // Varied timing
+      vsync: this,
+    );
+    
+    // Pulse animation
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    
+    _floatAnimation = Tween<double>(
+      begin: -8.0,
+      end: 8.0,
+    ).animate(CurvedAnimation(
+      parent: _floatController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.1,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Start animations conditionally  
+    if (widget.shouldAnimate) {
+      _floatController.repeat(reverse: true);
+      _pulseController.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _floatController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([_floatAnimation, _pulseAnimation]),
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _floatAnimation.value),
+          child: Transform.scale(
+            scale: _pulseAnimation.value,
+            child: GestureDetector(
+              onTap: widget.onTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: widget.gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.gradientColors.first.withOpacity(0.4),
+                      blurRadius: 15,
+                      spreadRadius: 2,
+                    ),
+                    BoxShadow(
+                      color: widget.gradientColors.last.withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 4,
+                      offset: const Offset(3, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Colors.white, Colors.black],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(bounds),
+                      child: Text(
+                        widget.count.toString(),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Colors.white, Colors.black],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(bounds),
+                      child: Text(
+                        widget.label,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FloatingProfilePicture extends StatefulWidget {
+  final dynamic user; // User object
+  final VoidCallback? onTap;
+  final bool shouldAnimate;
+
+  const _FloatingProfilePicture({
+    required this.user,
+    this.onTap,
+    this.shouldAnimate = true,
+  });
+
+  @override
+  State<_FloatingProfilePicture> createState() => _FloatingProfilePictureState();
+}
+
+class _FloatingProfilePictureState extends State<_FloatingProfilePicture>
+    with TickerProviderStateMixin {
+  late AnimationController _floatController;
+  late AnimationController _pulseController;
+  late Animation<double> _floatAnimation;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Floating animation
+    _floatController = AnimationController(
+      duration: const Duration(seconds: 4), // Slower for profile picture
+      vsync: this,
+    );
+    
+    // Pulse animation
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 3), // Slower pulse
+      vsync: this,
+    );
+    
+    _floatAnimation = Tween<double>(
+      begin: -10.0,
+      end: 10.0,
+    ).animate(CurvedAnimation(
+      parent: _floatController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05, // Subtle pulse
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Start animations conditionally  
+    if (widget.shouldAnimate) {
+      _floatController.repeat(reverse: true);
+      _pulseController.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _floatController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([_floatAnimation, _pulseAnimation]),
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _floatAnimation.value),
+          child: Transform.scale(
+            scale: _pulseAnimation.value,
+            child: GestureDetector(
+              onTap: widget.onTap,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30), // Rounded rectangle like stats
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF00CED1), // Cyan
+                      Color(0xFFFF1493), // Deep Pink
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00CED1).withOpacity(0.4),
+                      blurRadius: 20,
+                      spreadRadius: 3,
+                    ),
+                    BoxShadow(
+                      color: const Color(0xFFFF1493).withOpacity(0.3),
+                      blurRadius: 25,
+                      spreadRadius: 5,
+                      offset: const Offset(3, 3),
+                    ),
+                  ],
+                ),
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(25),
+                    color: Colors.black,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(25),
+                    child: widget.user.profilePicture != null
+                        ? Image.network(
+                            widget.user.profilePicture!,
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildInitialAvatar();
+                            },
+                          )
+                        : _buildInitialAvatar(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInitialAvatar() {
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(25),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF00CED1), // Cyan
+            Color(0xFFFF1493), // Deep Pink
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          widget.user.username[0].toUpperCase(),
+          style: const TextStyle(
+            fontSize: 48,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            shadows: [
+              Shadow(
+                color: Colors.black,
+                blurRadius: 4,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
