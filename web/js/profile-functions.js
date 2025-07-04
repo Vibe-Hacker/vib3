@@ -36,7 +36,7 @@ function editProfile() {
                 </div>
                 <div>
                     <label style="color: white; display: block; margin-bottom: 5px;">Bio</label>
-                    <textarea id="editBio" style="width: 100%; padding: 12px; border: 1px solid #666; border-radius: 6px; background: #333; color: white; min-height: 80px; resize: vertical;">Creator | Dancer | Music Lover ✨ Living my best life through dance 💃 Follow for daily vibes!</textarea>
+                    <textarea id="editBio" style="width: 100%; padding: 12px; border: 1px solid #666; border-radius: 6px; background: #333; color: white; min-height: 80px; resize: vertical;">VIB3 Creator | Dancer | Music Lover ✨ Living my best life through dance 💃 Follow for daily vibes!</textarea>
                 </div>
                 <div>
                     <label style="color: white; display: block; margin-bottom: 5px;">Website</label>
@@ -400,7 +400,7 @@ function openCreatorTools() {
     modal.innerHTML = `
         <div style="background: #222; padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="color: white; margin: 0;">Creator Tools</h2>
+                <h2 style="color: white; margin: 0;">VIB3 Studio</h2>
                 <button onclick="closeModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
             </div>
             
@@ -463,7 +463,7 @@ function openCreatorTools() {
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
                     <button onclick="creatorFund()" style="background: #444; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer;">
-                        🏆 Creator Fund
+                        🏆 VIB3 Studio
                     </button>
                     <button onclick="brandPartnerships()" style="background: #444; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer;">
                         🤝 Brand Deals
@@ -498,7 +498,7 @@ function openCreatorTools() {
     
     document.body.appendChild(modal);
     
-    // Creator Tools Functions
+    // VIB3 Studio Functions
     window.closeModal = () => modal.remove();
     window.showDetailedAnalytics = () => showNotification('Detailed analytics coming soon!', 'info');
     window.scheduleContent = () => showNotification('Content scheduling coming soon!', 'info');
@@ -506,7 +506,7 @@ function openCreatorTools() {
     window.editDrafts = () => showNotification('Draft management coming soon!', 'info');
     window.videoEditor = () => showNotification('Video editor coming soon!', 'info');
     window.viewEarnings = () => showNotification('Earnings details coming soon!', 'info');
-    window.creatorFund = () => showNotification('Creator fund application coming soon!', 'info');
+    window.creatorFund = () => showNotification('VIB3 Studio application coming soon!', 'info');
     window.brandPartnerships = () => showNotification('Brand partnerships coming soon!', 'info');
     window.liveGifts = () => showNotification('Live gifts management coming soon!', 'info');
     window.manageComments = () => showNotification('Comment management coming soon!', 'info');

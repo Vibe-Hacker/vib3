@@ -521,7 +521,7 @@ function setupProfileActions(profileUser) {
                 Share Profile
             </button>
             <button onclick="openCreatorTools()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
-                Creator Tools
+                VIB3 Studio
             </button>
         `;
     } else {
@@ -1472,7 +1472,7 @@ function openProfileSettings() {
                     Account Settings
                 </button>
                 <button onclick="openCreatorTools(); closeModal()" style="background: #333; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer;">
-                    Creator Tools
+                    VIB3 Studio
                 </button>
                 <button onclick="switchAccount(); closeModal()" style="background: #333; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer;">
                     Switch Account
