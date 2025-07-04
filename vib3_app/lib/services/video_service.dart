@@ -1082,6 +1082,9 @@ class VideoService {
   }
 
   static Future<bool> likeVideo(String videoId, String token) async {
+    print('💖 Attempting to like video: $videoId');
+    print('🔑 Using token: ${token.substring(0, 10)}...');
+    
     // Try multiple endpoints for like
     final endpoints = [
       '/api/videos/$videoId/like',
@@ -1099,7 +1102,7 @@ class VideoService {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
           },
-          body: jsonEncode({'videoId': videoId}),
+          // Don't send body - server gets videoId from URL params
         ).timeout(const Duration(seconds: 10));
 
         print('📡 Like response: ${response.statusCode} - ${response.body}');
