@@ -13202,6 +13202,19 @@ async function handleLikeClick(e, likeBtn) {
             showNotification(liked ? 'Liked! ❤️' : 'Unliked', liked ? 'success' : 'info');
             
             console.log(`✅ ${liked ? 'Liked' : 'Unliked'} video ${videoId}, count: ${likeCount}`);
+        } else if (response.status === 401) {
+            // Handle unauthorized - clear invalid token and redirect to login
+            console.warn('🔐 Auth token expired during like, clearing auth state');
+            window.authToken = null;
+            window.currentUser = null;
+            
+            // Revert optimistic update
+            await handleOptimisticLikeUpdate(videoId, likeBtn, isCurrentlyLiked);
+            
+            // Show auth container to re-authenticate
+            showAuthContainer();
+            hideMainApp();
+            showNotification('Please log in to like videos', 'error');
         } else {
             // Revert optimistic update on error
             await handleOptimisticLikeUpdate(videoId, likeBtn, isCurrentlyLiked);
