@@ -683,19 +683,38 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                             ),
                           )
                         : _useThumbnailMode
-                        ? SimpleVideoPreview(
-                            videoPath: widget.videoPath,
-                            videoDuration: _videoDuration,
-                            onTap: () {
-                              // No error message - just a gentle feedback that it's ready to edit
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Video ready for editing! Use the tools below'),
-                                  backgroundColor: Color(0xFF00CED1),
-                                  duration: Duration(seconds: 2),
+                        ? Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            color: Colors.red, // Bright red so you can definitely see it
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.play_circle_fill, size: 64, color: Colors.white),
+                                SizedBox(height: 16),
+                                Text(
+                                  'THUMBNAIL MODE ACTIVE',
+                                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                                 ),
-                              );
-                            },
+                                SizedBox(height: 8),
+                                Text(
+                                  'Tap to test interaction',
+                                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                                ),
+                                SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('🎬 THUMBNAIL MODE IS WORKING!'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  },
+                                  child: Text('TEST BUTTON'),
+                                ),
+                              ],
+                            ),
                           )
                         : Container(
                             width: double.infinity,
