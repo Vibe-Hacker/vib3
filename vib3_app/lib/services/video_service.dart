@@ -4,15 +4,31 @@ import '../config/app_config.dart';
 import '../models/video.dart';
 
 class VideoService {
+  // Simple cache to avoid repeated API calls
+  static final Map<String, Map<String, dynamic>> _cache = {};
+  static const Duration _cacheExpiry = Duration(minutes: 5);
+  
+  static bool _isCacheValid(String key) {
+    if (!_cache.containsKey(key)) return false;
+    final cachedTime = _cache[key]!['timestamp'] as DateTime;
+    return DateTime.now().difference(cachedTime) < _cacheExpiry;
+  }
   static Future<List<Video>> getAllVideos(String token) async {
+    // Check cache first
+    const cacheKey = 'getAllVideos';
+    if (_isCacheValid(cacheKey)) {
+      print('📦 Using cached videos');
+      return (_cache[cacheKey]!['data'] as List<Video>);
+    }
+    
     // First, let's test with a simple direct approach
     try {
       final testResponse = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=50'),
+        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=20&page=0'),
         headers: {
           'Accept': 'application/json',
         },
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (testResponse.statusCode == 200) {
         final data = jsonDecode(testResponse.body);
@@ -22,7 +38,7 @@ class VideoService {
           // Create a simple list without complex parsing to see if we get all videos
           final videos = <Video>[];
           
-          for (var i = 0; i < videosJson.length && i < 50; i++) {
+          for (var i = 0; i < videosJson.length && i < 20; i++) {
             try {
               final json = videosJson[i];
               
@@ -84,6 +100,13 @@ class VideoService {
             }
           }
           
+          // Cache the successful result
+          _cache[cacheKey] = {
+            'data': videos,
+            'timestamp': DateTime.now(),
+          };
+          print('💾 Cached ${videos.length} videos');
+          
           return videos;
         }
       }
@@ -97,13 +120,13 @@ class VideoService {
     try {
       // Try the main endpoint with high limit first
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=50'),
+        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=20'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           if (token != 'no-token') 'Authorization': 'Bearer $token',
         },
-      );
+      ).timeout(const Duration(seconds: 10));
 
       print('🌐 Main endpoint response: ${response.statusCode}');
       
@@ -1059,71 +1082,532 @@ class VideoService {
   }
 
   static Future<bool> likeVideo(String videoId, String token) async {
-    try {
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/api/videos/$videoId/like'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+    // Try multiple endpoints for like
+    final endpoints = [
+      '/api/videos/$videoId/like',
+      '/api/video/$videoId/like',
+      '/api/like/$videoId',
+      '/api/videos/like/$videoId',
+    ];
+    
+    for (String endpoint in endpoints) {
+      try {
+        print('🔄 Trying like endpoint: $endpoint');
+        final response = await http.post(
+          Uri.parse('${AppConfig.baseUrl}$endpoint'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({'videoId': videoId}),
+        ).timeout(const Duration(seconds: 10));
 
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Error liking video: $e');
-      return false;
+        print('📡 Like response: ${response.statusCode} - ${response.body}');
+        
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          print('✅ Like successful with endpoint: $endpoint');
+          return true;
+        }
+      } catch (e) {
+        print('❌ Like endpoint $endpoint failed: $e');
+        continue;
+      }
     }
+    
+    print('❌ All like endpoints failed');
+    return false;
   }
 
   static Future<bool> unlikeVideo(String videoId, String token) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('${AppConfig.baseUrl}/api/videos/$videoId/like'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+    // Try multiple endpoints for unlike
+    final endpoints = [
+      '/api/videos/$videoId/like',
+      '/api/video/$videoId/like',
+      '/api/like/$videoId',
+      '/api/videos/like/$videoId',
+    ];
+    
+    for (String endpoint in endpoints) {
+      try {
+        print('🔄 Trying unlike endpoint: $endpoint');
+        final response = await http.delete(
+          Uri.parse('${AppConfig.baseUrl}$endpoint'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ).timeout(const Duration(seconds: 10));
 
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Error unliking video: $e');
-      return false;
+        print('📡 Unlike response: ${response.statusCode} - ${response.body}');
+        
+        if (response.statusCode == 200 || response.statusCode == 204) {
+          print('✅ Unlike successful with endpoint: $endpoint');
+          return true;
+        }
+      } catch (e) {
+        print('❌ Unlike endpoint $endpoint failed: $e');
+        continue;
+      }
     }
+    
+    print('❌ All unlike endpoints failed');
+    return false;
   }
 
   static Future<bool> followUser(String userId, String token) async {
-    try {
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/api/users/$userId/follow'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+    // Try multiple endpoints for follow
+    final endpoints = [
+      '/api/users/$userId/follow',
+      '/api/user/follow/$userId', 
+      '/api/follow/$userId',
+      '/api/users/$userId/follow',
+      '/api/user/$userId/follow',
+      '/api/social/follow',
+      '/api/relationships/follow',
+      '/api/auth/follow',
+    ];
+    
+    for (String endpoint in endpoints) {
+      try {
+        print('🔄 Trying follow endpoint: $endpoint');
+        
+        // Try different request bodies
+        final requestBodies = [
+          jsonEncode({'userId': userId}),
+          jsonEncode({'targetUserId': userId}),
+          jsonEncode({'followUserId': userId}),
+          jsonEncode({'user_id': userId}),
+          jsonEncode({'id': userId}),
+        ];
+        
+        for (final body in requestBodies) {
+          try {
+            final response = await http.post(
+              Uri.parse('${AppConfig.baseUrl}$endpoint'),
+              headers: {
+                'Authorization': 'Bearer $token',
+                'Content-Type': 'application/json',
+              },
+              body: body,
+            ).timeout(const Duration(seconds: 10));
 
-      return response.statusCode == 200;
+            print('📡 Follow response: ${response.statusCode} - ${response.body}');
+            
+            if (response.statusCode == 200 || response.statusCode == 201) {
+              print('✅ Follow successful with endpoint: $endpoint');
+              return true;
+            }
+          } catch (e) {
+            // Try next body format
+            continue;
+          }
+        }
+      } catch (e) {
+        print('❌ Follow endpoint $endpoint failed: $e');
+        continue;
+      }
+    }
+    
+    print('❌ All follow endpoints failed - backend may not have follow API implemented yet');
+    return false;
+  }
+
+  static Future<bool> unfollowUser(String userId, String token) async {
+    // Try multiple endpoints for unfollow
+    final endpoints = [
+      '/api/users/$userId/follow',
+      '/api/user/follow/$userId',
+      '/api/follow/$userId',
+      '/api/users/$userId/unfollow',
+      '/api/user/unfollow/$userId',
+      '/api/unfollow/$userId',
+      '/api/social/unfollow',
+      '/api/relationships/unfollow',
+      '/api/auth/unfollow',
+    ];
+    
+    for (String endpoint in endpoints) {
+      try {
+        print('🔄 Trying unfollow endpoint: $endpoint');
+        
+        // Try DELETE method first
+        var response = await http.delete(
+          Uri.parse('${AppConfig.baseUrl}$endpoint'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ).timeout(const Duration(seconds: 10));
+
+        print('📡 Unfollow DELETE response: ${response.statusCode} - ${response.body}');
+        
+        if (response.statusCode == 200 || response.statusCode == 204) {
+          print('✅ Unfollow successful with DELETE: $endpoint');
+          return true;
+        }
+        
+        // If DELETE fails, try POST with unfollow action
+        if (endpoint.contains('unfollow')) {
+          final requestBodies = [
+            jsonEncode({'userId': userId}),
+            jsonEncode({'targetUserId': userId}),
+            jsonEncode({'unfollowUserId': userId}),
+            jsonEncode({'user_id': userId}),
+            jsonEncode({'id': userId}),
+          ];
+          
+          for (final body in requestBodies) {
+            try {
+              response = await http.post(
+                Uri.parse('${AppConfig.baseUrl}$endpoint'),
+                headers: {
+                  'Authorization': 'Bearer $token',
+                  'Content-Type': 'application/json',
+                },
+                body: body,
+              ).timeout(const Duration(seconds: 10));
+
+              print('📡 Unfollow POST response: ${response.statusCode} - ${response.body}');
+              
+              if (response.statusCode == 200 || response.statusCode == 201) {
+                print('✅ Unfollow successful with POST: $endpoint');
+                return true;
+              }
+            } catch (e) {
+              // Try next body format
+              continue;
+            }
+          }
+        }
+      } catch (e) {
+        print('❌ Unfollow endpoint $endpoint failed: $e');
+        continue;
+      }
+    }
+    
+    print('❌ All unfollow endpoints failed - backend may not have unfollow API implemented yet');
+    return false;
+  }
+
+  // Get user's liked videos for sync
+  static Future<List<Video>> getUserLikedVideos(String token) async {
+    try {
+      // Try multiple endpoints for liked videos
+      final endpoints = [
+        '/api/user/liked-videos',
+        '/api/videos/liked',
+        '/api/user/likes',
+        '/api/auth/me/likes',
+        '/api/profile/likes',
+        '/api/me/liked-videos',
+        '/api/user/favorites',
+        '/api/social/likes',
+      ];
+      
+      for (String endpoint in endpoints) {
+        try {
+          final response = await http.get(
+            Uri.parse('${AppConfig.baseUrl}$endpoint'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ).timeout(const Duration(seconds: 10));
+
+          if (response.statusCode == 200) {
+            // Check if response is HTML (common error case)
+            if (response.body.trim().startsWith('<') || response.body.contains('<!DOCTYPE')) {
+              print('❌ Endpoint $endpoint returned HTML instead of JSON');
+              continue;
+            }
+            
+            final data = jsonDecode(response.body);
+            print('✅ Liked videos endpoint $endpoint returned: ${response.statusCode}');
+            
+            List<Video> videos = [];
+            
+            // Handle different response formats
+            if (data is List) {
+              for (var item in data) {
+                if (item is Map<String, dynamic>) {
+                  videos.add(_parseVideoFromJson(item));
+                } else if (item is Map) {
+                  videos.add(_parseVideoFromJson(Map<String, dynamic>.from(item)));
+                }
+              }
+            } else if (data is Map) {
+              if (data['videos'] is List) {
+                for (var item in data['videos']) {
+                  if (item is Map<String, dynamic>) {
+                    videos.add(_parseVideoFromJson(item));
+                  } else if (item is Map) {
+                    videos.add(_parseVideoFromJson(Map<String, dynamic>.from(item)));
+                  }
+                }
+              } else if (data['likes'] is List) {
+                for (var item in data['likes']) {
+                  if (item is Map && item['video'] != null) {
+                    final videoData = item['video'];
+                    if (videoData is Map<String, dynamic>) {
+                      videos.add(_parseVideoFromJson(videoData));
+                    } else if (videoData is Map) {
+                      videos.add(_parseVideoFromJson(Map<String, dynamic>.from(videoData)));
+                    }
+                  }
+                }
+              }
+            }
+            
+            return videos;
+          }
+        } on FormatException catch (e) {
+          print('❌ Endpoint $endpoint failed with FormatException: $e');
+          if (response != null) {
+            print('Response status: ${response.statusCode}');
+            print('Response headers: ${response.headers}');
+            print('Response preview: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
+          }
+          continue;
+        } catch (e) {
+          print('❌ Endpoint $endpoint failed: $e');
+          continue;
+        }
+      }
+      
+      print('❌ All liked videos endpoints failed - this might be normal if user has no likes');
+      return [];
     } catch (e) {
-      print('Error following user: $e');
+      print('❌ Error getting liked videos: $e');
+      return [];
+    }
+  }
+
+  // Check if current user has liked a specific video
+  static Future<bool> isVideoLiked(String videoId, String token) async {
+    try {
+      // Try multiple endpoints for like status
+      final endpoints = [
+        '/api/videos/$videoId/like-status',
+        '/api/videos/$videoId/liked',
+        '/api/video/$videoId/like-status', 
+        '/api/like/status/$videoId',
+        '/api/user/likes/$videoId',
+        '/api/social/likes/$videoId',
+      ];
+      
+      for (String endpoint in endpoints) {
+        try {
+          final response = await http.get(
+            Uri.parse('${AppConfig.baseUrl}$endpoint'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ).timeout(const Duration(seconds: 10));
+
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            print('✅ Like status endpoint $endpoint returned: ${response.body}');
+            
+            // Handle different response formats
+            if (data is Map) {
+              if (data['isLiked'] is bool) {
+                return data['isLiked'];
+              } else if (data['liked'] is bool) {
+                return data['liked'];
+              } else if (data['hasLiked'] is bool) {
+                return data['hasLiked'];
+              } else if (data['status'] == 'liked') {
+                return true;
+              } else if (data['status'] == 'not_liked') {
+                return false;
+              }
+            } else if (data is bool) {
+              return data;
+            }
+          }
+        } catch (e) {
+          print('❌ Like status endpoint $endpoint failed: $e');
+          continue;
+        }
+      }
+      
+      print('❌ All like status endpoints failed - assuming not liked');
+      return false;
+    } catch (e) {
+      print('❌ Error checking like status: $e');
       return false;
     }
   }
 
-  static Future<bool> unfollowUser(String userId, String token) async {
+  // Get user's followed users for sync
+  static Future<List<String>> getUserFollowedUsers(String token) async {
     try {
-      final response = await http.delete(
-        Uri.parse('${AppConfig.baseUrl}/api/users/$userId/follow'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+      // Try multiple endpoints for followed users
+      final endpoints = [
+        '/api/user/following',
+        '/api/users/following', 
+        '/api/user/follows',
+        '/api/auth/me/following',
+        '/api/profile/following',
+        '/api/social/following',
+        '/api/relationships/following',
+        '/api/me/following',
+      ];
+      
+      for (String endpoint in endpoints) {
+        try {
+          final response = await http.get(
+            Uri.parse('${AppConfig.baseUrl}$endpoint'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ).timeout(const Duration(seconds: 10));
 
-      return response.statusCode == 200;
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            print('✅ Following endpoint $endpoint returned: ${response.statusCode}');
+            
+            List<String> userIds = [];
+            
+            // Handle different response formats
+            if (data is List) {
+              for (var item in data) {
+                if (item is Map && item['_id'] != null) {
+                  userIds.add(item['_id'].toString());
+                } else if (item is String) {
+                  userIds.add(item);
+                }
+              }
+            } else if (data is Map) {
+              if (data['following'] is List) {
+                for (var item in data['following']) {
+                  if (item is Map && item['_id'] != null) {
+                    userIds.add(item['_id'].toString());
+                  } else if (item is String) {
+                    userIds.add(item);
+                  }
+                }
+              } else if (data['users'] is List) {
+                for (var item in data['users']) {
+                  if (item is Map && item['_id'] != null) {
+                    userIds.add(item['_id'].toString());
+                  } else if (item is String) {
+                    userIds.add(item);
+                  }
+                }
+              }
+            }
+            
+            return userIds;
+          }
+        } catch (e) {
+          print('❌ Endpoint $endpoint failed: $e');
+          continue;
+        }
+      }
+      
+      print('❌ All following endpoints failed');
+      return [];
     } catch (e) {
-      print('Error unfollowing user: $e');
+      print('❌ Error getting followed users: $e');
+      return [];
+    }
+  }
+
+  // Check if current user is following a specific user
+  static Future<bool> isFollowingUser(String userId, String token) async {
+    try {
+      // Try multiple endpoints for follow status
+      final endpoints = [
+        '/api/user/follow-status/$userId',
+        '/api/users/$userId/follow-status',
+        '/api/follow/status/$userId',
+        '/api/social/status/$userId',
+        '/api/relationships/status/$userId',
+      ];
+      
+      for (String endpoint in endpoints) {
+        try {
+          final response = await http.get(
+            Uri.parse('${AppConfig.baseUrl}$endpoint'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          ).timeout(const Duration(seconds: 10));
+
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            print('✅ Follow status endpoint $endpoint returned: ${response.body}');
+            
+            // Handle different response formats
+            if (data is Map) {
+              if (data['isFollowing'] is bool) {
+                return data['isFollowing'];
+              } else if (data['following'] is bool) {
+                return data['following'];
+              } else if (data['status'] == 'following') {
+                return true;
+              } else if (data['status'] == 'not_following') {
+                return false;
+              }
+            }
+          }
+        } catch (e) {
+          print('❌ Follow status endpoint $endpoint failed: $e');
+          continue;
+        }
+      }
+      
+      print('❌ All follow status endpoints failed - assuming not following');
+      return false;
+    } catch (e) {
+      print('❌ Error checking follow status: $e');
       return false;
     }
+  }
+
+  // Helper to parse video from JSON (reused from getAllVideos)
+  static Video _parseVideoFromJson(Map<String, dynamic> json) {
+    String? videoUrl = json['videoUrl']?.toString();
+    if (videoUrl != null && !videoUrl.startsWith('http')) {
+      videoUrl = 'https://vib3-videos.nyc3.digitaloceanspaces.com/$videoUrl';
+    }
+    
+    int videoDuration = 30; // default
+    final processingInfo = json['processingInfo'];
+    if (processingInfo != null && processingInfo['videoInfo'] != null) {
+      final videoInfo = processingInfo['videoInfo'];
+      if (videoInfo['duration'] != null && videoInfo['duration'] != 'N/A') {
+        try {
+          videoDuration = (double.parse(videoInfo['duration'].toString())).round();
+        } catch (e) {
+          // Keep default
+        }
+      }
+    }
+    
+    return Video(
+      id: json['_id']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? json['userid']?.toString() ?? '',
+      videoUrl: videoUrl,
+      description: json['title']?.toString() ?? json['description']?.toString() ?? '',
+      likesCount: _parseIntSafely(json['likeCount'] ?? json['likecount'] ?? json['likes'] ?? 0),
+      commentsCount: _parseIntSafely(json['commentCount'] ?? json['commentcount'] ?? json['comments'] ?? 0),
+      sharesCount: _parseIntSafely(json['shareCount'] ?? json['sharecount'] ?? 0),
+      viewsCount: _parseIntSafely(json['views'] ?? 0),
+      duration: videoDuration,
+      isPrivate: false,
+      createdAt: _parseDateTime(json['createdAt'] ?? json['createdat']),
+      updatedAt: _parseDateTime(json['updatedAt'] ?? json['updatedat']),
+      user: json['user'] ?? {
+        'username': json['username'] ?? 'user',
+        'displayName': json['username'] ?? 'User',
+        '_id': json['userId'] ?? '',
+      },
+    );
   }
 
   // Helper function to safely parse integers
