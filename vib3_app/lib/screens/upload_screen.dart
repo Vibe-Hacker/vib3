@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import '../providers/auth_provider.dart';
 import '../services/upload_service.dart';
+import 'video_recording_screen.dart';
+import 'video_editing_screen.dart';
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
@@ -56,21 +58,43 @@ class _UploadScreenState extends State<UploadScreen> {
 
   Future<void> _recordVideo() async {
     try {
+      // Navigate to the advanced recording screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const VideoRecordingScreen(),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error opening camera: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _editVideo() async {
+    try {
       final XFile? video = await _picker.pickVideo(
-        source: ImageSource.camera,
+        source: ImageSource.gallery,
         maxDuration: const Duration(minutes: 10),
       );
       
       if (video != null) {
-        setState(() {
-          _selectedVideo = video;
-        });
-        _initializeVideoPlayer();
+        // Navigate directly to editing screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VideoEditingScreen(videoPath: video.path),
+          ),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error recording video: $e'),
+          content: Text('Error selecting video: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -128,7 +152,7 @@ class _UploadScreenState extends State<UploadScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Video uploaded successfully!'),
-            backgroundColor: Color(0xFFFF0080),
+            backgroundColor: Color(0xFF00CED1),
           ),
         );
         Navigator.pop(context);
@@ -155,27 +179,60 @@ class _UploadScreenState extends State<UploadScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text(
-          'Upload',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [
+              Color(0xFF00CED1), // Cyan
+              Color(0xFF1E90FF), // Blue
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(bounds),
+          child: const Text(
+            'Upload',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          if (_selectedVideo != null && !_isUploading)
+          if (_selectedVideo != null && !_isUploading) ...[
             TextButton(
-              onPressed: _uploadVideo,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VideoEditingScreen(videoPath: _selectedVideo!.path),
+                  ),
+                );
+              },
               child: const Text(
-                'Post',
+                'Edit',
                 style: TextStyle(
-                  color: Color(0xFFFF0080),
+                  color: Colors.grey,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
               ),
             ),
+            TextButton(
+              onPressed: _uploadVideo,
+              child: const Text(
+                'Post',
+                style: TextStyle(
+                  color: Color(0xFF00CED1),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
       body: _selectedVideo == null
@@ -189,10 +246,20 @@ class _UploadScreenState extends State<UploadScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.video_collection_outlined,
-            size: 80,
-            color: Colors.grey,
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [
+                Color(0xFF00CED1), // Cyan
+                Color(0xFF1E90FF), // Blue
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ).createShader(bounds),
+            child: const Icon(
+              Icons.video_collection_outlined,
+              size: 80,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 24),
           const Text(
@@ -216,6 +283,17 @@ class _UploadScreenState extends State<UploadScreen> {
                 icon: Icons.videocam,
                 label: 'Record',
                 onTap: _recordVideo,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _UploadButton(
+                icon: Icons.edit,
+                label: 'Edit Video',
+                onTap: _editVideo,
               ),
             ],
           ),
@@ -247,7 +325,7 @@ class _UploadScreenState extends State<UploadScreen> {
                     ),
                   )
                 : const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFFF0080)),
+                    child: CircularProgressIndicator(color: Color(0xFF00CED1)),
                   ),
           ),
           const SizedBox(height: 24),
@@ -280,7 +358,7 @@ class _UploadScreenState extends State<UploadScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFFF0080)),
+                borderSide: const BorderSide(color: Color(0xFF00CED1)),
               ),
               filled: true,
               fillColor: Colors.grey[900],
@@ -391,18 +469,38 @@ class _UploadScreenState extends State<UploadScreen> {
             ElevatedButton(
               onPressed: _uploadVideo,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF0080),
+                backgroundColor: Colors.transparent,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
+                elevation: 0,
+              ).copyWith(
+                backgroundColor: MaterialStateProperty.all(Colors.transparent),
               ),
-              child: const Text(
-                'Upload Video',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF00CED1), // Cyan
+                      Color(0xFF1E90FF), // Blue
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: const Center(
+                  child: Text(
+                    'Upload Video',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -431,8 +529,22 @@ class _UploadButton extends StatelessWidget {
         width: 120,
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFFFF0080),
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF00CED1), // Cyan
+              Color(0xFF1E90FF), // Blue
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF00CED1).withOpacity(0.3),
+              blurRadius: 15,
+              spreadRadius: 2,
+            ),
+          ],
         ),
         child: Column(
           children: [
@@ -479,7 +591,7 @@ class _SettingTile extends StatelessWidget {
         ),
         value: value,
         onChanged: onChanged,
-        activeColor: const Color(0xFFFF0080),
+        activeColor: const Color(0xFF00CED1),
         inactiveThumbColor: Colors.grey[600],
         inactiveTrackColor: Colors.grey[800],
       ),

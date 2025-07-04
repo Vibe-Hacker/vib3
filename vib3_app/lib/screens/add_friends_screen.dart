@@ -39,7 +39,24 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Find friends'),
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [
+              Color(0xFF00CED1), // Cyan
+              Color(0xFF1E90FF), // Blue
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(bounds),
+          child: const Text(
+            'Find friends',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_scanner),
@@ -174,13 +191,30 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
       ),
       child: Row(
         children: [
-          // Profile picture
-          CircleAvatar(
-            radius: 25,
-            backgroundColor: const Color(0xFF2A2A2A),
-            child: Text(
-              user['username'][0].toUpperCase(),
-              style: const TextStyle(fontSize: 20),
+          // Profile picture with VIB3 gradient
+          Container(
+            width: 50,
+            height: 50,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF00CED1), // Cyan
+                  Color(0xFF1E90FF), // Blue
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                user['username'][0].toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -234,9 +268,9 @@ class _AddFriendsScreenState extends State<AddFriendsScreen> {
             style: OutlinedButton.styleFrom(
               backgroundColor: user['isFollowing']
                   ? const Color(0xFF1A1A1A)
-                  : const Color(0xFFFF0080),
+                  : const Color(0xFF00CED1),
               side: BorderSide(
-                color: user['isFollowing'] ? Colors.grey : const Color(0xFFFF0080),
+                color: user['isFollowing'] ? Colors.grey : const Color(0xFF00CED1),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             ),

@@ -109,11 +109,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> with TickerPr
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text(
-          'Notifications',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [
+              Color(0xFF00CED1), // Cyan
+              Color(0xFF1E90FF), // Blue
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(bounds),
+          child: const Text(
+            'Notifications',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
         ),
         actions: [
@@ -125,15 +136,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> with TickerPr
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFFF0080)),
+              child: CircularProgressIndicator(color: Color(0xFF00CED1)),
             )
           : Column(
               children: [
                 // Tabs
                 TabBar(
                   controller: _tabController,
-                  indicatorColor: const Color(0xFFFF0080),
-                  labelColor: const Color(0xFFFF0080),
+                  indicatorColor: const Color(0xFF00CED1),
+                  labelColor: const Color(0xFF00CED1),
                   unselectedLabelColor: Colors.grey,
                   isScrollable: true,
                   tabs: [
@@ -180,7 +191,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with TickerPr
 
     return RefreshIndicator(
       onRefresh: _loadNotifications,
-      color: const Color(0xFFFF0080),
+      color: const Color(0xFF00CED1),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: notifications.length,
@@ -255,7 +266,7 @@ class _NotificationTile extends StatelessWidget {
                 width: 8,
                 height: 8,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFFF0080),
+                  color: Color(0xFF00CED1),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -277,7 +288,7 @@ class _NotificationTile extends StatelessWidget {
       case 'video_upload':
         return Colors.purple;
       default:
-        return const Color(0xFFFF0080);
+        return const Color(0xFF00CED1);
     }
   }
 

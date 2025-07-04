@@ -1,38 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-// Global video controller manager to prevent resource exhaustion
-class VideoControllerManager {
-  static final List<VideoPlayerController> _activeControllers = [];
-  static const int maxControllers = 3; // Limit active controllers
-  
-  static void addController(VideoPlayerController controller) {
-    // Dispose oldest controllers if we have too many
-    while (_activeControllers.length >= maxControllers) {
-      final oldController = _activeControllers.removeAt(0);
-      oldController.dispose();
-    }
-    _activeControllers.add(controller);
-  }
-  
-  static void removeController(VideoPlayerController controller) {
-    _activeControllers.remove(controller);
-  }
-  
-  static int get activeCount => _activeControllers.length;
-}
+// Simplified - no global controller management
 
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
   final bool isPlaying;
-  final bool preload;
   final VoidCallback? onTap;
 
   const VideoPlayerWidget({
     super.key,
     required this.videoUrl,
     this.isPlaying = false,
-    this.preload = false,
     this.onTap,
   });
 
@@ -52,6 +31,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
+    print('🎬 VideoPlayerWidget created for URL: ${widget.videoUrl}');
+    print('🎬 Initial isPlaying: ${widget.isPlaying}');
     // Only initialize when playing - no preloading at all
     if (widget.isPlaying) {
       _initializeVideo();
@@ -61,40 +42,35 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void didUpdateWidget(VideoPlayerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    
+    // Always dispose and recreate when URL changes
     if (oldWidget.videoUrl != widget.videoUrl) {
       _disposeController();
-      _retryCount = 0; // Reset retry count for new video
-      _initializeVideo();
-    }
-    if (oldWidget.isPlaying != widget.isPlaying) {
-      if (widget.isPlaying && !_isInitialized) {
-        // Initialize video when it becomes current
+      _hasError = false;
+      _isInitialized = false;
+      if (widget.isPlaying) {
         _initializeVideo();
-      } else if (_isInitialized) {
-        _handlePlayPause();
       }
     }
-    // Remove preloading logic entirely
+    
+    // Handle play state changes
+    if (oldWidget.isPlaying != widget.isPlaying) {
+      if (widget.isPlaying && !_isInitialized && !_hasError) {
+        _initializeVideo();
+      } else if (!widget.isPlaying && _isInitialized) {
+        _controller?.pause();
+      } else if (widget.isPlaying && _isInitialized) {
+        _controller?.play();
+      }
+    }
   }
 
   Future<void> _initializeVideo() async {
     try {
-      // No delays - initialize immediately for best performance
-      _controller = VideoPlayerController.networkUrl(
-        Uri.parse(widget.videoUrl),
-        videoPlayerOptions: VideoPlayerOptions(
-          allowBackgroundPlayback: false,
-          mixWithOthers: false,
-          webOptions: const VideoPlayerWebOptions(
-            allowRemotePlayback: false,
-          ),
-        ),
-      );
+      print('🎬 VideoPlayer: Initializing video: ${widget.videoUrl}');
       
-      // Add to global controller manager
-      VideoControllerManager.addController(_controller!);
+      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
       
-      // Start initialization immediately
       _controller!.initialize().then((_) {
         if (mounted) {
           setState(() {
@@ -102,27 +78,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             _hasError = false;
           });
           
+          print('✅ VideoPlayer: Successfully initialized ${widget.videoUrl}');
+          
           _controller!.setLooping(true);
-          // Always seek to start to load first frame immediately
           _controller!.seekTo(Duration.zero);
           
           if (widget.isPlaying) {
-            // Start playing immediately without delay
             _controller!.play();
+            print('▶️ VideoPlayer: Started playing');
           }
         }
       }).catchError((e) {
-        print('Video initialization error (attempt ${_retryCount + 1}): $e');
-        if (_retryCount < _maxRetries && mounted) {
-          _retryCount++;
-          print('Retrying video initialization in 300ms...');
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (mounted) {
-              _disposeController();
-              _initializeVideo();
-            }
-          });
-        } else if (mounted) {
+        print('❌ VideoPlayer: Error initializing ${widget.videoUrl}: $e');
+        if (mounted) {
           setState(() {
             _hasError = true;
             _isInitialized = false;
@@ -131,7 +99,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       });
       
     } catch (e) {
-      print('Video controller creation error: $e');
+      print('❌ VideoPlayer: Controller creation error: $e');
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -188,7 +156,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   void _disposeController() {
     if (_controller != null) {
-      VideoControllerManager.removeController(_controller!);
       _controller!.dispose();
       _controller = null;
     }

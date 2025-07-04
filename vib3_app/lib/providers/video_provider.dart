@@ -10,7 +10,7 @@ class VideoProvider extends ChangeNotifier {
   String? _error;
   String _debugInfo = 'Not loaded yet';
   int _currentPage = 0;
-  final int _pageSize = 50;
+  final int _pageSize = 20;
 
   List<Video> get videos => _videos;
   bool get isLoading => _isLoading;

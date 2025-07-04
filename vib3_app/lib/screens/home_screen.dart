@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/video_provider.dart';
 import '../widgets/video_feed.dart';
 import '../config/app_config.dart';
+import '../services/backend_health_service.dart';
 import 'profile_screen.dart';
 import 'search_screen.dart';
 import 'upload_screen.dart';
@@ -25,8 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Test API connection immediately
-    _testApiConnection();
+    // Check backend health and test API connection
+    _initializeApp();
     
     // Load videos when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -45,6 +46,14 @@ class _HomeScreenState extends State<HomeScreen> {
         Provider.of<VideoProvider>(context, listen: false).loadAllVideos('no-token');
       }
     });
+  }
+
+  Future<void> _initializeApp() async {
+    // Check backend health first
+    await BackendHealthService.checkBackendHealth();
+    
+    // Then test API connection
+    _testApiConnection();
   }
 
   Future<void> _testApiConnection() async {
@@ -159,11 +168,27 @@ $analysis
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Icon(
-          icon,
-          color: isSelected ? const Color(0xFFFF0080) : Colors.grey,
-          size: 28,
-        ),
+        child: isSelected
+            ? ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [
+                    Color(0xFF00CED1), // Cyan
+                    Color(0xFF1E90FF), // Blue
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              )
+            : Icon(
+                icon,
+                color: Colors.grey,
+                size: 28,
+              ),
       ),
     );
   }

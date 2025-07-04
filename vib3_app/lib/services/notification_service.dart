@@ -7,7 +7,7 @@ class NotificationService {
   static Future<List<AppNotification>> getNotifications(String token) async {
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/notifications'),
+        Uri.parse('${AppConfig.baseUrl}/notifications'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -15,6 +15,12 @@ class NotificationService {
       );
 
       if (response.statusCode == 200) {
+        // Check if response is HTML instead of JSON
+        if (response.body.trim().startsWith('<') || response.body.contains('<!DOCTYPE')) {
+          print('❌ Notifications endpoint returned HTML instead of JSON');
+          return _getMockNotifications();
+        }
+        
         final data = jsonDecode(response.body);
         final List<AppNotification> notifications = [];
         
@@ -43,7 +49,7 @@ class NotificationService {
   static Future<bool> markAsRead(String notificationId, String token) async {
     try {
       final response = await http.patch(
-        Uri.parse('${AppConfig.baseUrl}/api/notifications/$notificationId/read'),
+        Uri.parse('${AppConfig.baseUrl}/notifications/$notificationId/read'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -60,7 +66,7 @@ class NotificationService {
   static Future<bool> markAllAsRead(String token) async {
     try {
       final response = await http.patch(
-        Uri.parse('${AppConfig.baseUrl}/api/notifications/read-all'),
+        Uri.parse('${AppConfig.baseUrl}/notifications/read-all'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -77,7 +83,7 @@ class NotificationService {
   static Future<bool> deleteNotification(String notificationId, String token) async {
     try {
       final response = await http.delete(
-        Uri.parse('${AppConfig.baseUrl}/api/notifications/$notificationId'),
+        Uri.parse('${AppConfig.baseUrl}/notifications/$notificationId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -94,7 +100,7 @@ class NotificationService {
   static Future<Map<String, dynamic>> getNotificationSettings(String token) async {
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/notifications/settings'),
+        Uri.parse('${AppConfig.baseUrl}/notifications/settings'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -118,7 +124,7 @@ class NotificationService {
   ) async {
     try {
       final response = await http.put(
-        Uri.parse('${AppConfig.baseUrl}/api/notifications/settings'),
+        Uri.parse('${AppConfig.baseUrl}/notifications/settings'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

@@ -9,6 +9,7 @@ class User {
   final int following;
   final int totalLikes;
   final DateTime createdAt;
+  final bool isFollowing;
 
   User({
     required this.id,
@@ -21,6 +22,7 @@ class User {
     this.following = 0,
     this.totalLikes = 0,
     required this.createdAt,
+    this.isFollowing = false,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -37,6 +39,7 @@ class User {
       createdAt: json['createdAt'] != null 
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
+      isFollowing: json['isFollowing'] ?? false,
     );
   }
 
@@ -52,6 +55,35 @@ class User {
       'following': following,
       'totalLikes': totalLikes,
       'createdAt': createdAt.toIso8601String(),
+      'isFollowing': isFollowing,
     };
+  }
+
+  User copyWith({
+    String? id,
+    String? username,
+    String? email,
+    String? displayName,
+    String? profilePicture,
+    String? bio,
+    int? followers,
+    int? following,
+    int? totalLikes,
+    DateTime? createdAt,
+    bool? isFollowing,
+  }) {
+    return User(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      displayName: displayName ?? this.displayName,
+      profilePicture: profilePicture ?? this.profilePicture,
+      bio: bio ?? this.bio,
+      followers: followers ?? this.followers,
+      following: following ?? this.following,
+      totalLikes: totalLikes ?? this.totalLikes,
+      createdAt: createdAt ?? this.createdAt,
+      isFollowing: isFollowing ?? this.isFollowing,
+    );
   }
 }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/video_service.dart';
 import '../services/search_service.dart';
-import '../models/video.dart';
-import '../models/user.dart';
-import '../widgets/video_grid_item.dart';
+import '../models/video_model.dart';
+import '../models/user_model.dart';
 import 'profile_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   List<Video> _searchVideos = [];
   List<User> _searchUsers = [];
   List<String> _searchHashtags = [];
-  List<String> _trendingHashtags = [];
+  List<String> _trendingHashtags = ['dance', 'funny', 'viral', 'cooking', 'pets', 'music'];
   List<Video> _trendingVideos = [];
   
   bool _isSearching = false;
@@ -47,11 +47,15 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     final token = authProvider.authToken;
     
     if (token != null) {
-      final trending = await SearchService.getTrendingContent(token);
-      setState(() {
-        _trendingHashtags = trending['hashtags'] ?? [];
-        _trendingVideos = trending['videos'] ?? [];
-      });
+      try {
+        final trendingData = await SearchService.getTrendingContent(token);
+        setState(() {
+          _trendingVideos = (trendingData['videos'] as List<Video>).take(12).toList();
+          _trendingHashtags = trendingData['hashtags'] as List<String>;
+        });
+      } catch (e) {
+        print('Error loading trending content: $e');
+      }
     }
   }
 
@@ -67,13 +71,19 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     final token = authProvider.authToken;
     
     if (token != null) {
-      final results = await SearchService.search(query, token);
-      setState(() {
-        _searchVideos = results['videos'] ?? [];
-        _searchUsers = results['users'] ?? [];
-        _searchHashtags = results['hashtags'] ?? [];
-        _hasSearched = true;
-      });
+      try {
+        // Search using SearchService
+        final searchResults = await SearchService.search(query, token);
+        
+        setState(() {
+          _searchVideos = searchResults['videos'] as List<Video>;
+          _searchUsers = searchResults['users'] as List<User>;
+          _searchHashtags = searchResults['hashtags'] as List<String>;
+          _hasSearched = true;
+        });
+      } catch (e) {
+        print('Search error: $e');
+      }
     }
 
     setState(() {
@@ -85,45 +95,105 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        title: Container(
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.grey[900],
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: TextField(
-            controller: _searchController,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'Search videos, users, hashtags...',
-              hintStyle: TextStyle(color: Colors.grey[500]),
-              prefixIcon: const Icon(Icons.search, color: Colors.grey),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, color: Colors.grey),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() {
-                          _hasSearched = false;
-                          _currentQuery = '';
-                        });
-                      },
-                    )
-                  : null,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildSearchHeader(),
+            Expanded(
+              child: _hasSearched ? _buildSearchResults() : _buildDiscoverContent(),
             ),
-            onSubmitted: _performSearch,
-            onChanged: (value) {
-              setState(() {});
-            },
-          ),
+          ],
         ),
       ),
-      body: _hasSearched ? _buildSearchResults() : _buildDiscoverContent(),
+    );
+  }
+
+  Widget _buildSearchHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF00CED1).withOpacity(0.1),
+            const Color(0xFF1E90FF).withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Back button with VIB3 styling
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF00CED1).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: const Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Search input with VIB3 gradient styling
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(
+                  color: const Color(0xFF00CED1).withOpacity(0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00CED1).withOpacity(0.2),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                decoration: InputDecoration(
+                  hintText: 'Search users, videos, sounds...',
+                  hintStyle: const TextStyle(color: Colors.white54),
+                  border: InputBorder.none,
+                  prefixIcon: const Icon(Icons.search, color: Color(0xFF00CED1)),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, color: Colors.white54),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _hasSearched = false;
+                              _currentQuery = '';
+                            });
+                          },
+                        )
+                      : null,
+                ),
+                onSubmitted: _performSearch,
+                onChanged: (value) {
+                  setState(() {});
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -156,17 +226,34 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF0080).withOpacity(0.2),
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF00CED1).withOpacity(0.2),
+                          const Color(0xFF1E90FF).withOpacity(0.2),
+                        ],
+                      ),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: const Color(0xFFFF0080).withOpacity(0.5),
+                        color: const Color(0xFF00CED1).withOpacity(0.5),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00CED1).withOpacity(0.1),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      '#$hashtag',
-                      style: const TextStyle(
-                        color: Color(0xFFFF0080),
-                        fontWeight: FontWeight.w600,
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Color(0xFF00CED1), Color(0xFF1E90FF)],
+                      ).createShader(bounds),
+                      child: Text(
+                        '#$hashtag',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -198,7 +285,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
               ),
               itemCount: _trendingVideos.length > 6 ? 6 : _trendingVideos.length,
               itemBuilder: (context, index) {
-                return VideoGridItem(video: _trendingVideos[index]);
+                return _buildVideoGridItem(_trendingVideos[index]);
               },
             ),
           ],
@@ -260,7 +347,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
-                    color: Color(0xFFFF0080),
+                    color: Color(0xFF00CED1),
                     strokeWidth: 2,
                   ),
                 ),
@@ -268,12 +355,13 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           ),
         ),
 
-        // Tabs
+        // Tabs with VIB3 styling
         TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFFFF0080),
-          labelColor: const Color(0xFFFF0080),
+          indicatorColor: const Color(0xFF00CED1),
+          labelColor: const Color(0xFF00CED1),
           unselectedLabelColor: Colors.grey,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w600),
           tabs: [
             Tab(text: 'Videos (${_searchVideos.length})'),
             Tab(text: 'Users (${_searchUsers.length})'),
@@ -323,7 +411,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
       ),
       itemCount: _searchVideos.length,
       itemBuilder: (context, index) {
-        return VideoGridItem(video: _searchVideos[index]);
+        return _buildVideoGridItem(_searchVideos[index]);
       },
     );
   }
@@ -352,11 +440,11 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         final user = _searchUsers[index];
         return ListTile(
           leading: CircleAvatar(
-            backgroundColor: const Color(0xFFFF0080),
-            child: user.profileImageUrl != null
+            backgroundColor: const Color(0xFF00CED1),
+            child: user.profilePicture != null
                 ? ClipOval(
                     child: Image.network(
-                      user.profileImageUrl!,
+                      user.profilePicture!,
                       width: 40,
                       height: 40,
                       fit: BoxFit.cover,
@@ -393,7 +481,7 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             overflow: TextOverflow.ellipsis,
           ),
           trailing: Text(
-            '${user.followersCount} followers',
+            '${user.followers} followers',
             style: TextStyle(color: Colors.grey[400], fontSize: 12),
           ),
           onTap: () {
@@ -436,12 +524,17 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFFFF0080).withOpacity(0.2),
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF00CED1).withOpacity(0.2),
+                  const Color(0xFF1E90FF).withOpacity(0.2),
+                ],
+              ),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.tag,
-              color: Color(0xFFFF0080),
+              color: Color(0xFF00CED1),
             ),
           ),
           title: Text(
@@ -458,6 +551,127 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
           onTap: () => _performSearch('#$hashtag'),
         );
       },
+    );
+  }
+
+  Widget _buildVideoGridItem(Video video) {
+    return GestureDetector(
+      onTap: () {
+        // Navigate to video player
+        // TODO: Implement video player navigation
+        print('Playing video: ${video.id}');
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.grey[900],
+          border: Border.all(
+            color: const Color(0xFF00CED1).withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Video thumbnail
+              video.thumbnailUrl != null
+                  ? Image.network(
+                      video.thumbnailUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[800],
+                          child: const Icon(
+                            Icons.video_library,
+                            color: Colors.grey,
+                            size: 32,
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: Colors.grey[800],
+                      child: const Icon(
+                        Icons.video_library,
+                        color: Colors.grey,
+                        size: 32,
+                      ),
+                    ),
+              
+              // Play button overlay
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+              
+              // Video info overlay
+              Positioned(
+                bottom: 8,
+                left: 8,
+                right: 8,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (video.description != null && video.description!.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          video.description!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.favorite,
+                          color: Colors.red,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${video.likes}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
