@@ -9,6 +9,34 @@ if (typeof API_BASE_URL === 'undefined') {
         : 'https://vib3-production.up.railway.app';
 }
 
+// API call rate limiter to prevent excessive requests
+const apiCallLimiter = {
+    calls: new Map(),
+    limit: 10, // calls per minute
+    window: 60000, // 1 minute
+    
+    canMakeCall(key) {
+        const now = Date.now();
+        if (!this.calls.has(key)) {
+            this.calls.set(key, []);
+        }
+        
+        const calls = this.calls.get(key);
+        // Remove calls older than the window
+        const recentCalls = calls.filter(time => now - time < this.window);
+        this.calls.set(key, recentCalls);
+        
+        return recentCalls.length < this.limit;
+    },
+    
+    recordCall(key) {
+        if (!this.calls.has(key)) {
+            this.calls.set(key, []);
+        }
+        this.calls.get(key).push(Date.now());
+    }
+};
+
 const appConfig = {
     name: 'VIB3',
     version: '1.0.0',
