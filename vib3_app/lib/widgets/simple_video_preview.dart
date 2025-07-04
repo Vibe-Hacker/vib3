@@ -101,11 +101,19 @@ class _SimpleVideoPreviewState extends State<SimpleVideoPreview>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Video Ready',
+                    '🎬 Ready to Edit',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Tap to confirm video is ready',
+                    style: TextStyle(
+                      color: Colors.grey[300],
+                      fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -113,7 +121,7 @@ class _SimpleVideoPreviewState extends State<SimpleVideoPreview>
                     widget.videoPath.split('/').last,
                     style: TextStyle(
                       color: Colors.grey[400],
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
