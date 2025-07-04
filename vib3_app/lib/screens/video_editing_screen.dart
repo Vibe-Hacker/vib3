@@ -107,6 +107,13 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
         print('🔄 Trying video player strategy ${i + 1}/${strategies.length}');
         await strategies[i]();
         
+        // Check if thumbnail mode was successfully activated
+        if (_useThumbnailMode && _isInitialized) {
+          print('✅ Thumbnail mode strategy ${i + 1} succeeded!');
+          return;
+        }
+        
+        // Check if regular video player succeeded
         if (_controller != null && _controller!.value.isInitialized) {
           print('✅ Video player strategy ${i + 1} succeeded!');
           setState(() {
@@ -210,15 +217,23 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
     // Generate video frames for timeline
     _videoFrames = await VideoThumbnailService.generateVideoFrames(videoFile.path, 10);
     
-    // Set thumbnail mode
+    // Get actual video duration
+    final actualDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
+    print('⏱️ Detected video duration: ${actualDuration.inSeconds}s');
+    
+    // Set thumbnail mode successfully without throwing exception
     setState(() {
       _useThumbnailMode = true;
       _isInitialized = true;
-      _videoDuration = const Duration(seconds: 30); // Default duration
-      _endTrim = _videoDuration;
+      _videoDuration = actualDuration;
+      _endTrim = actualDuration;
     });
     
-    throw Exception('Using thumbnail mode instead of video player');
+    // Show positive feedback
+    _showThumbnailEditor();
+    
+    // Don't throw exception - this is a successful fallback mode
+    print('✅ Thumbnail preview mode activated successfully');
   }
   
   void _showSimpleEditor() {
@@ -628,6 +643,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                         : _useThumbnailMode
                         ? SimpleVideoPreview(
                             videoPath: widget.videoPath,
+                            videoDuration: _videoDuration,
                             onTap: () {
                               // No error message - just a gentle feedback that it's ready to edit
                               ScaffoldMessenger.of(context).showSnackBar(

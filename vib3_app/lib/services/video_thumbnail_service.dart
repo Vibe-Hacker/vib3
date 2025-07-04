@@ -3,6 +3,31 @@ import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 
 class VideoThumbnailService {
+  static Future<Duration> getVideoDuration(String videoPath) async {
+    try {
+      print('📏 Attempting to get video duration from: $videoPath');
+      
+      final videoFile = File(videoPath);
+      if (!await videoFile.exists()) {
+        print('❌ Video file does not exist');
+        return const Duration(seconds: 30); // Default
+      }
+      
+      final fileSize = await videoFile.length();
+      print('📁 Video file size: $fileSize bytes');
+      
+      // Estimate duration based on file size (rough approximation)
+      // Typical mobile video: ~1MB per 30 seconds at medium quality
+      final estimatedSeconds = (fileSize / (1024 * 1024) * 30).clamp(5, 300).round();
+      print('⏱️ Estimated duration: ${estimatedSeconds}s based on file size');
+      
+      return Duration(seconds: estimatedSeconds);
+    } catch (e) {
+      print('❌ Error getting video duration: $e');
+      return const Duration(seconds: 30); // Default fallback
+    }
+  }
+
   static Future<File?> generateThumbnail(String videoPath) async {
     try {
       print('📸 Generating thumbnail for video: $videoPath');

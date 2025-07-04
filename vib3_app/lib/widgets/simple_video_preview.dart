@@ -4,11 +4,13 @@ import 'dart:io';
 class SimpleVideoPreview extends StatefulWidget {
   final String videoPath;
   final VoidCallback? onTap;
+  final Duration? videoDuration;
 
   const SimpleVideoPreview({
     Key? key,
     required this.videoPath,
     this.onTap,
+    this.videoDuration,
   }) : super(key: key);
 
   @override
@@ -41,6 +43,12 @@ class _SimpleVideoPreviewState extends State<SimpleVideoPreview>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -149,7 +157,7 @@ class _SimpleVideoPreviewState extends State<SimpleVideoPreview>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '00:30',
+                      _formatDuration(widget.videoDuration ?? const Duration(seconds: 30)),
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 12,
