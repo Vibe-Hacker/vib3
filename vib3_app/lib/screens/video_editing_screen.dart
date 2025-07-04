@@ -686,32 +686,72 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                         ? Container(
                             width: double.infinity,
                             height: double.infinity,
-                            color: Colors.red, // Bright red so you can definitely see it
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Color(0xFF1a1a2e),
+                                  Color(0xFF16213e),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              border: Border.all(color: Color(0xFF00CED1), width: 2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Stack(
                               children: [
-                                Icon(Icons.play_circle_fill, size: 64, color: Colors.white),
-                                SizedBox(height: 16),
-                                Text(
-                                  'THUMBNAIL MODE ACTIVE',
-                                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Tap to test interaction',
-                                  style: TextStyle(color: Colors.white70, fontSize: 14),
-                                ),
-                                SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('🎬 THUMBNAIL MODE IS WORKING!'),
-                                        backgroundColor: Colors.green,
+                                // Video info overlay
+                                Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: EdgeInsets.all(20),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.7),
+                                          borderRadius: BorderRadius.circular(15),
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Icon(Icons.movie_creation, size: 48, color: Color(0xFF00CED1)),
+                                            SizedBox(height: 12),
+                                            Text(
+                                              '🎬 Your Video',
+                                              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                                            ),
+                                            SizedBox(height: 8),
+                                            Text(
+                                              'Duration: ${_formatDuration(_videoDuration)}',
+                                              style: TextStyle(color: Color(0xFF00CED1), fontSize: 16),
+                                            ),
+                                            SizedBox(height: 4),
+                                            Text(
+                                              '1280x720 • ${(File(widget.videoPath).lengthSync() / (1024*1024)).toStringAsFixed(1)}MB',
+                                              style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                                            ),
+                                            SizedBox(height: 12),
+                                            Text(
+                                              'Ready to edit!',
+                                              style: TextStyle(color: Colors.white70, fontSize: 14),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    );
-                                  },
-                                  child: Text('TEST BUTTON'),
+                                    ],
+                                  ),
+                                ),
+                                // Corner indicators
+                                Positioned(
+                                  top: 12,
+                                  right: 12,
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFF00CED1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text('HD', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
                                 ),
                               ],
                             ),
@@ -796,9 +836,11 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                               return Expanded(
                                 child: GestureDetector(
                                   onTap: () {
+                                    print('🎯 Tab ${index} (${_tabLabels[index]}) tapped!');
                                     setState(() {
                                       _selectedTabIndex = index;
                                     });
+                                    print('📝 Selected tab index is now: $_selectedTabIndex');
                                   },
                                   child: Container(
                                     decoration: BoxDecoration(
