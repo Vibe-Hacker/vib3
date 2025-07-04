@@ -189,24 +189,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [
-              Color(0xFF00CED1), // Cyan
-              Color(0xFFFF1493), // Deep Pink
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ).createShader(bounds),
-          child: Text(
-            user.username,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.message_outlined, color: Colors.white),
@@ -234,9 +216,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
+      body: NestedScrollView(
+        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+          return [
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
             // Profile Header
             Container(
               padding: const EdgeInsets.all(16),
@@ -384,32 +369,36 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 ],
               ),
             ),
-            
-            // Tab Bar
-            Column(
-              children: [
-                TabBar(
-                  controller: _tabController,
-                  indicatorColor: Colors.white,
-                  tabs: const [
-                    Tab(icon: Icon(Icons.video_library), text: 'Videos'),
-                    Tab(icon: Icon(Icons.star_border), text: 'Starred'),
-                    Tab(icon: Icon(Icons.visibility_off), text: 'Private'),
-                  ],
-                ),
-                // Tab Content
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.5,
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildVideoGrid(userVideos, showDeleteButton: true),
-                      _buildVideoGrid(starredVideos, showDeleteButton: false),
-                      _buildVideoGrid(privateVideos, showDeleteButton: true),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
+            ),
+          ];
+        },
+        body: Column(
+          children: [
+            // Sticky Tab Bar
+            Container(
+              color: Colors.black,
+              child: TabBar(
+                controller: _tabController,
+                indicatorColor: Colors.white,
+                tabs: const [
+                  Tab(icon: Icon(Icons.video_library), text: 'Videos'),
+                  Tab(icon: Icon(Icons.star_border), text: 'Starred'),
+                  Tab(icon: Icon(Icons.visibility_off), text: 'Private'),
+                ],
+              ),
+            ),
+            // Tab Content
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildVideoGrid(userVideos, showDeleteButton: true),
+                  _buildVideoGrid(starredVideos, showDeleteButton: false),
+                  _buildVideoGrid(privateVideos, showDeleteButton: true),
+                ],
+              ),
             ),
           ],
         ),
