@@ -15709,6 +15709,7 @@ function populateSampleMedia() {
                         
                         // Offer to re-import the specific file
                         const reImportModal = document.createElement('div');
+                        reImportModal.id = 'reImportModal';
                         reImportModal.style.cssText = `
                             position: fixed;
                             top: 0;
@@ -15732,10 +15733,10 @@ function populateSampleMedia() {
                                     File objects are cleared when the page refreshes.
                                 </p>
                                 <div style="display: flex; gap: 10px; justify-content: center;">
-                                    <button onclick="this.closest('div').remove(); importCreatorMedia();" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    <button onclick="document.getElementById('reImportModal').remove(); importCreatorMedia();" style="background: var(--accent-gradient); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                                         Re-Import File
                                     </button>
-                                    <button onclick="this.closest('div').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                                    <button onclick="document.getElementById('reImportModal').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 24px; border-radius: 8px; cursor: pointer;">
                                         Cancel
                                     </button>
                                 </div>
