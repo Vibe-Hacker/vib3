@@ -4312,12 +4312,24 @@ if (db) {
     ensureLikesIndex();
 }
 
-// Test endpoint to verify deployment
+// Test endpoint to verify deployment (no auth required)
 app.get('/api/test-liked-videos', (req, res) => {
+    console.log('🧪 Test endpoint hit!');
     res.json({ 
         message: 'Liked videos endpoint exists', 
         timestamp: new Date().toISOString(),
-        serverVersion: '2024-01-04-fixed'
+        serverVersion: '2024-01-04-fixed',
+        database: db ? 'connected' : 'disconnected'
+    });
+});
+
+// Simple test for the actual endpoint (no auth to test route)
+app.get('/api/test-user-liked-videos-simple', (req, res) => {
+    console.log('🧪 Simple liked videos test endpoint hit!');
+    res.json({ 
+        message: 'User liked videos route exists', 
+        timestamp: new Date().toISOString(),
+        note: 'This is a test without authentication'
     });
 });
 

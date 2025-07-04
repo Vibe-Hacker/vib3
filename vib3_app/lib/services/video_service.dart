@@ -1270,12 +1270,27 @@ class VideoService {
         
         if (testResponse.statusCode == 200) {
           final testData = jsonDecode(testResponse.body);
-          print('✅ Server test endpoint works: ${testData['serverVersion']}');
+          print('✅ Server test endpoint works: ${testData['serverVersion']} - DB: ${testData['database']}');
         } else {
           print('❌ Server test endpoint failed: ${testResponse.statusCode}');
         }
       } catch (e) {
         print('❌ Server test endpoint error: $e');
+      }
+
+      // Test the simple route too
+      try {
+        final simpleTestResponse = await http.get(
+          Uri.parse('${AppConfig.baseUrl}/api/test-user-liked-videos-simple'),
+        ).timeout(const Duration(seconds: 5));
+        
+        if (simpleTestResponse.statusCode == 200) {
+          print('✅ Simple route test works');
+        } else {
+          print('❌ Simple route test failed: ${simpleTestResponse.statusCode}');
+        }
+      } catch (e) {
+        print('❌ Simple route test error: $e');
       }
 
       // Try multiple endpoints for liked videos
