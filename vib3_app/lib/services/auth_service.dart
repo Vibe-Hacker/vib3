@@ -51,17 +51,9 @@ class AuthService {
         if (i == AppConfig.backendUrls.length - 1) {
           if (e.toString().contains('Failed host lookup') || 
               e.toString().contains('No address associated with hostname')) {
-            print('🔄 DNS issues detected - enabling offline demo mode');
             return {
-              'success': true,
-              'token': 'offline_demo_token',
-              'user': {
-                'id': 'demo_user',
-                'username': 'Demo User',
-                'email': email,
-                'avatar': null,
-              },
-              'offline': true,
+              'success': false,
+              'message': 'Network connection failed.\nAll servers unreachable.\n\nTry switching to mobile data or a different WiFi network.',
             };
           }
           
@@ -131,17 +123,9 @@ class AuthService {
         if (i == AppConfig.backendUrls.length - 1) {
           if (e.toString().contains('Failed host lookup') || 
               e.toString().contains('No address associated with hostname')) {
-            print('🔄 DNS issues detected - enabling offline demo mode');
             return {
-              'success': true,
-              'token': 'offline_demo_token',
-              'user': {
-                'id': 'demo_user',
-                'username': 'Demo User',
-                'email': email,
-                'avatar': null,
-              },
-              'offline': true,
+              'success': false,
+              'message': 'Network connection failed.\nAll servers unreachable.\n\nTry switching to mobile data or a different WiFi network.',
             };
           }
           
