@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/video_model.dart';
 import '../models/user_model.dart';
+import 'backend_health_service.dart';
 
 class SearchService {
   static Future<Map<String, dynamic>> search(String query, String token) async {
@@ -148,6 +149,7 @@ class SearchService {
         // Check if response is HTML (common error case)
         if (response.body.trim().startsWith('<') || response.body.contains('<!DOCTYPE')) {
           print('❌ Trending endpoint returned HTML instead of JSON');
+          BackendHealthService.reportHtmlResponse('/trending');
           throw FormatException('Trending endpoint returned HTML instead of JSON');
         }
         

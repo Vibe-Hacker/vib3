@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/notification.dart';
+import 'backend_health_service.dart';
 
 class NotificationService {
   static Future<List<AppNotification>> getNotifications(String token) async {
@@ -18,6 +19,7 @@ class NotificationService {
         // Check if response is HTML instead of JSON
         if (response.body.trim().startsWith('<') || response.body.contains('<!DOCTYPE')) {
           print('❌ Notifications endpoint returned HTML instead of JSON');
+          BackendHealthService.reportHtmlResponse('/notifications');
           return _getMockNotifications();
         }
         

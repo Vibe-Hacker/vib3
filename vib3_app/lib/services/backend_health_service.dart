@@ -100,6 +100,13 @@ class BackendHealthService {
     print('🚨 Backend manually marked as unhealthy');
   }
 
+  // Automatically mark backend as unhealthy when HTML responses detected
+  static void reportHtmlResponse(String endpoint) {
+    _backendHealthy = false;
+    _lastHealthCheck = DateTime.now();
+    print('🚨 Backend marked unhealthy due to HTML response from $endpoint');
+  }
+
   // Reset health status (for retry scenarios)
   static void resetHealthStatus() {
     _lastHealthCheck = null;

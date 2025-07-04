@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/video.dart';
+import 'backend_health_service.dart';
 
 class VideoService {
   // Simple cache to avoid repeated API calls
@@ -35,7 +36,9 @@ class VideoService {
         if (testResponse.body.trim().startsWith('<') || testResponse.body.contains('<!DOCTYPE')) {
           print('❌ Video endpoint returned HTML instead of JSON');
           print('📄 HTML Response: ${testResponse.body.substring(0, 200)}...');
-          throw Exception('Server returned HTML instead of JSON - backend may be down');
+          print('🔧 Backend appears to be down or misconfigured - using mock data');
+          BackendHealthService.reportHtmlResponse('/api/videos');
+          return _getMockVideos();
         }
         
         final data = jsonDecode(testResponse.body);
@@ -142,7 +145,9 @@ class VideoService {
         if (response.body.trim().startsWith('<') || response.body.contains('<!DOCTYPE')) {
           print('❌ Main video endpoint returned HTML instead of JSON');
           print('📄 HTML Response: ${response.body.substring(0, 200)}...');
-          // Fall through to fallback methods
+          print('🔧 Backend appears to be down - returning mock data');
+          BackendHealthService.reportHtmlResponse('/api/videos');
+          return _getMockVideos();
         } else {
           final data = jsonDecode(response.body);
           print('📊 Raw response data keys: ${data.keys}');
@@ -172,16 +177,13 @@ class VideoService {
         }
       }
       
-      print('❌ Main endpoint failed, falling back to debug methods');
-      // If main endpoint fails, try the debug approach
-      await _debugDatabaseContent(token);
-      return await _fetchAllVideosByMakingMultipleRequests(token);
+      print('❌ Main endpoint failed, falling back to mock data');
+      return _getMockVideos();
       
     } catch (e) {
       print('❌ Error in getAllVideos: $e');
-      // Fallback to old method
-      await _debugDatabaseContent(token);
-      return await _fetchAllVideosByMakingMultipleRequests(token);
+      print('🔧 Using mock data due to server error');
+      return _getMockVideos();
     }
   }
   
@@ -1653,5 +1655,107 @@ class VideoService {
       }
     }
     return DateTime.now();
+  }
+
+  // Mock videos when backend is down
+  static List<Video> _getMockVideos() {
+    final now = DateTime.now();
+    return [
+      Video(
+        id: 'mock_1',
+        userId: 'user_1',
+        videoUrl: 'https://example.com/mock_video_1.mp4',
+        description: 'Welcome to VIB3! 🎉 Create amazing short videos with our editing tools',
+        likesCount: 1250,
+        commentsCount: 89,
+        sharesCount: 45,
+        viewsCount: 15600,
+        duration: 15,
+        isPrivate: false,
+        createdAt: now.subtract(const Duration(hours: 2)),
+        updatedAt: now.subtract(const Duration(hours: 2)),
+        user: {
+          'username': 'vib3_official',
+          'displayName': 'VIB3 Official',
+          '_id': 'user_1',
+        },
+      ),
+      Video(
+        id: 'mock_2',
+        userId: 'user_2',
+        videoUrl: 'https://example.com/mock_video_2.mp4',
+        description: 'Dance moves that will blow your mind! 💃 #trending #dance',
+        likesCount: 892,
+        commentsCount: 156,
+        sharesCount: 78,
+        viewsCount: 8900,
+        duration: 23,
+        isPrivate: false,
+        createdAt: now.subtract(const Duration(hours: 5)),
+        updatedAt: now.subtract(const Duration(hours: 5)),
+        user: {
+          'username': 'dancer_pro',
+          'displayName': 'Dance Pro',
+          '_id': 'user_2',
+        },
+      ),
+      Video(
+        id: 'mock_3',
+        userId: 'user_3',
+        videoUrl: 'https://example.com/mock_video_3.mp4',
+        description: 'Amazing cooking hack you need to try! 🍳 #cooking #lifehack',
+        likesCount: 2340,
+        commentsCount: 234,
+        sharesCount: 156,
+        viewsCount: 23400,
+        duration: 30,
+        isPrivate: false,
+        createdAt: now.subtract(const Duration(hours: 8)),
+        updatedAt: now.subtract(const Duration(hours: 8)),
+        user: {
+          'username': 'chef_master',
+          'displayName': 'Chef Master',
+          '_id': 'user_3',
+        },
+      ),
+      Video(
+        id: 'mock_4',
+        userId: 'user_4',
+        videoUrl: 'https://example.com/mock_video_4.mp4',
+        description: 'Cute puppy learns new tricks! 🐶 So adorable #pets #cute',
+        likesCount: 3456,
+        commentsCount: 567,
+        sharesCount: 234,
+        viewsCount: 45600,
+        duration: 18,
+        isPrivate: false,
+        createdAt: now.subtract(const Duration(days: 1)),
+        updatedAt: now.subtract(const Duration(days: 1)),
+        user: {
+          'username': 'pet_lover',
+          'displayName': 'Pet Lover',
+          '_id': 'user_4',
+        },
+      ),
+      Video(
+        id: 'mock_5',
+        userId: 'user_5',
+        videoUrl: 'https://example.com/mock_video_5.mp4',
+        description: 'Street art masterpiece creation! 🎨 #art #creative #street',
+        likesCount: 1876,
+        commentsCount: 289,
+        sharesCount: 145,
+        viewsCount: 18760,
+        duration: 27,
+        isPrivate: false,
+        createdAt: now.subtract(const Duration(days: 2)),
+        updatedAt: now.subtract(const Duration(days: 2)),
+        user: {
+          'username': 'street_artist',
+          'displayName': 'Street Artist',
+          '_id': 'user_5',
+        },
+      ),
+    ];
   }
 }
