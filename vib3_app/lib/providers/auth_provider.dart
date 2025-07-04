@@ -8,17 +8,50 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String? _authToken;
+  DateTime? _tokenExpiry;
 
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  bool get isAuthenticated => _currentUser != null && _authToken != null;
-  String? get authToken => _authToken;
+  bool get isAuthenticated => _currentUser != null && _authToken != null && !_isTokenExpired();
+  String? get authToken {
+    if (_isTokenExpired()) {
+      print('🔑 Token expired, attempting refresh...');
+      _attemptTokenRefresh();
+      return null;
+    }
+    return _authToken;
+  }
+
+  bool _isTokenExpired() {
+    if (_tokenExpiry == null || _authToken == null) return true;
+    return DateTime.now().isAfter(_tokenExpiry!);
+  }
 
   final AuthService _authService = AuthService();
 
   AuthProvider() {
     _loadUserFromStorage();
+  }
+
+  Future<void> _attemptTokenRefresh() async {
+    try {
+      // Try to refresh using stored credentials or use fallback session
+      print('🔄 Attempting token refresh...');
+      
+      // For now, extend the current token's life since server uses session-based auth
+      if (_authToken != null) {
+        _tokenExpiry = DateTime.now().add(const Duration(hours: 24));
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token_expiry', _tokenExpiry!.toIso8601String());
+        print('✅ Token refreshed - valid until ${_tokenExpiry!}');
+        notifyListeners();
+      }
+    } catch (e) {
+      print('❌ Token refresh failed: $e');
+      // Token refresh failed, user needs to login again
+      await logout();
+    }
   }
 
   Future<void> _loadUserFromStorage() async {
@@ -40,6 +73,16 @@ class AuthProvider extends ChangeNotifier {
         }
         
         _authToken = token;
+        
+        // Load token expiry
+        final tokenExpiryString = prefs.getString('token_expiry');
+        if (tokenExpiryString != null) {
+          _tokenExpiry = DateTime.parse(tokenExpiryString);
+        } else {
+          // If no expiry stored, set a reasonable default (24 hours from now)
+          _tokenExpiry = DateTime.now().add(const Duration(hours: 24));
+        }
+        
         // Parse and restore user data
         try {
           final userData = User.fromJson({
@@ -89,6 +132,11 @@ class AuthProvider extends ChangeNotifier {
       await prefs.setInt('user_totalLikes', user.totalLikes);
       await prefs.setString('user_createdAt', user.createdAt.toIso8601String());
       
+      // Save token expiry
+      if (_tokenExpiry != null) {
+        await prefs.setString('token_expiry', _tokenExpiry!.toIso8601String());
+      }
+      
       print('AuthProvider: User data saved to storage - ${user.username} (source: $source)');
     } catch (e) {
       print('AuthProvider: Error saving user to storage: $e');
@@ -130,6 +178,9 @@ class AuthProvider extends ChangeNotifier {
         _authToken = response['token'];
         _currentUser = User.fromJson(response['user']);
         
+        // Set token expiry (24 hours from now)
+        _tokenExpiry = DateTime.now().add(const Duration(hours: 24));
+        
         // Save to persistent storage with secure source tracking
         await _saveUserToStorage(_authToken!, _currentUser!, source: 'app_login');
         
@@ -161,6 +212,9 @@ class AuthProvider extends ChangeNotifier {
       if (response['success']) {
         _authToken = response['token'];
         _currentUser = User.fromJson(response['user']);
+        
+        // Set token expiry (24 hours from now)
+        _tokenExpiry = DateTime.now().add(const Duration(hours: 24));
         
         // Save to persistent storage with secure source tracking
         await _saveUserToStorage(_authToken!, _currentUser!, source: 'app_signup');

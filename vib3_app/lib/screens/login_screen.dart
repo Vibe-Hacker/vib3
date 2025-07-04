@@ -199,18 +199,42 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       const SizedBox(height: 24),
                       
-                      // Submit button
+                      // Submit button with VIB3 gradient
                       SizedBox(
                         width: double.infinity,
                         height: 48,
-                        child: ElevatedButton(
-                          onPressed: authProvider.isLoading ? null : _submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF0080),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF00CED1), // Cyan
+                                Color(0xFFFF0080), // Pink
+                              ],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          child: authProvider.isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : Text(_isLogin ? 'Sign In' : 'Sign Up'),
+                          child: ElevatedButton(
+                            onPressed: authProvider.isLoading ? null : _submit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: authProvider.isLoading
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : Text(
+                                    _isLogin ? 'Sign In' : 'Sign Up',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
