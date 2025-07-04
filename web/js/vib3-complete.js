@@ -5921,8 +5921,74 @@ function sendGift() {
 }
 
 function sendSpecificGift(giftType, cost) {
+    // Create floating gift animation
+    createFloatingGift(giftType, cost);
     showNotification(`Sent ${giftType} gift! (${cost} coins)`, 'success');
-    document.getElementById('giftSelection').style.display = 'none';
+    const giftSelection = document.getElementById('giftSelection');
+    if (giftSelection) {
+        giftSelection.style.display = 'none';
+    }
+}
+
+// Safe floating gift animation function  
+function createFloatingGift(giftType, cost) {
+    const gift = document.createElement('div');
+    gift.className = 'floating-gift';
+    gift.textContent = getGiftEmoji(giftType);
+    
+    // Use safe individual property assignments
+    gift.style.position = 'fixed';
+    gift.style.fontSize = '32px';
+    gift.style.pointerEvents = 'none';
+    gift.style.zIndex = '9999';
+    gift.style.left = '50%';
+    gift.style.top = '50%';
+    gift.style.transform = 'translate(-50%, -50%)';
+    gift.style.animation = 'floatGiftUp 3s ease-out forwards';
+    
+    // Add safe CSS animation if not exists
+    if (!document.querySelector('#floating-gift-styles')) {
+        const style = document.createElement('style');
+        style.id = 'floating-gift-styles';
+        style.textContent = `
+            @keyframes floatGiftUp {
+                0% {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) scale(1);
+                }
+                50% {
+                    opacity: 0.8;
+                    transform: translate(-50%, -80px) scale(1.2);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(-50%, -120px) scale(0.8);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(gift);
+    
+    // Remove after animation
+    setTimeout(() => {
+        if (gift.parentNode) {
+            gift.parentNode.removeChild(gift);
+        }
+    }, 3000);
+}
+
+function getGiftEmoji(giftType) {
+    const giftEmojis = {
+        'heart': '❤️',
+        'star': '⭐',
+        'diamond': '💎', 
+        'crown': '👑',
+        'rocket': '🚀',
+        'unicorn': '🦄'
+    };
+    return giftEmojis[giftType] || '🎁';
 }
 
 // ================ PAGE CREATORS FOR MISSING PAGES ================
