@@ -947,7 +947,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                     ),
                   ),
                 ),
-                // Follow indicator at bottom (TikTok style)
+                // Follow indicator at bottom (unique VIB3 style)
                 if (!isOwnVideo)
                   Positioned(
                     bottom: -8,
@@ -959,22 +959,35 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                         height: 24,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _followedUsers[video.userId] ?? false 
-                              ? Colors.transparent 
-                              : Colors.red,
+                          gradient: _followedUsers[video.userId] ?? false 
+                              ? const LinearGradient(
+                                  colors: [Color(0xFF00CED1), Color(0xFF1E90FF)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : const LinearGradient(
+                                  colors: [Color(0xFFFF0080), Color(0xFFFF4081)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
                           border: Border.all(
                             color: Colors.white, 
                             width: 2
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (_followedUsers[video.userId] ?? false ? const Color(0xFF00CED1) : const Color(0xFFFF0080)).withOpacity(0.3),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            ),
+                          ],
                         ),
                         child: Icon(
                           _followedUsers[video.userId] ?? false 
-                              ? Icons.check 
-                              : Icons.add,
-                          color: _followedUsers[video.userId] ?? false 
-                              ? Colors.white 
-                              : Colors.white,
-                          size: 16,
+                              ? Icons.person_add_alt_1 // Following icon
+                              : Icons.person_add, // Not following icon
+                          color: Colors.white,
+                          size: 12,
                         ),
                       ),
                     ),

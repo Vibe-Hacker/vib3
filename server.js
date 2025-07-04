@@ -2874,7 +2874,7 @@ app.get('/api/user/videos', async (req, res) => {
     }
     
     try {
-        const { userId, limit = 20, skip = 0, page = 1 } = req.query;
+        const { userId, limit = 20, skip = 0, page = 1, type } = req.query;
         const actualSkip = page > 1 ? (parseInt(page) - 1) * parseInt(limit) : parseInt(skip);
         
         // Get current user from auth token if no userId provided
@@ -2889,6 +2889,49 @@ app.get('/api/user/videos', async (req, res) => {
         
         if (!targetUserId) {
             return res.status(400).json({ error: 'User ID required' });
+        }
+        
+        // Handle liked videos type
+        if (type === 'liked') {
+            console.log(`🔍 Getting liked videos for user: ${targetUserId}`);
+            
+            // Get all likes for this user
+            const likes = await db.collection('likes').find({ 
+                userId: targetUserId.toString() 
+            }).toArray();
+            
+            if (likes.length === 0) {
+                return res.json({ videos: [] });
+            }
+            
+            // Extract video IDs from likes
+            const videoIds = likes.map(like => like.videoId).filter(id => id);
+            
+            // Get the actual videos that the user has liked
+            const likedVideos = await db.collection('videos').find({
+                _id: { $in: videoIds.map(id => {
+                    try {
+                        return require('mongodb').ObjectId(id);
+                    } catch (e) {
+                        return id; // If it's already a string ID
+                    }
+                })},
+                status: { $ne: 'deleted' }
+            }).toArray();
+            
+            console.log(`✅ Found ${likedVideos.length} valid liked videos`);
+            
+            // Add user info to videos
+            for (let video of likedVideos) {
+                const user = await db.collection('users').findOne(
+                    { _id: require('mongodb').ObjectId(video.userId) },
+                    { projection: { password: 0 } }
+                );
+                video.user = user || { username: 'Unknown', displayName: 'Unknown' };
+                video.likeCount = video.likes?.length || 0;
+            }
+            
+            return res.json({ videos: likedVideos });
         }
         
         console.log('🔍 User videos query debug:', {
@@ -4314,12 +4357,13 @@ if (db) {
 
 // Test endpoint to verify deployment (no auth required)
 app.get('/api/test-liked-videos', (req, res) => {
-    console.log('🧪 Test endpoint hit!');
+    console.log('🧪 Test endpoint hit at:', new Date().toISOString());
     res.json({ 
-        message: 'Liked videos endpoint exists', 
+        message: 'Liked videos endpoint exists and working', 
         timestamp: new Date().toISOString(),
-        serverVersion: '2024-01-04-fixed',
-        database: db ? 'connected' : 'disconnected'
+        serverVersion: '2024-01-04-v2-rebuild',
+        database: db ? 'connected' : 'disconnected',
+        uptime: process.uptime()
     });
 });
 
