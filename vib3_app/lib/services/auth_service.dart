@@ -4,91 +4,145 @@ import '../config/app_config.dart';
 
 class AuthService {
   Future<Map<String, dynamic>> login(String email, String password) async {
-    try {
-      print('🔐 Login attempt for: $email');
-      print('🌐 Connecting to: ${AppConfig.baseUrl}${AppConfig.loginEndpoint}');
+    print('🔐 Login attempt for: $email');
+    
+    // Try each backend URL until one works
+    for (int i = 0; i < AppConfig.backendUrls.length; i++) {
+      final baseUrl = AppConfig.backendUrls[i];
+      final url = '$baseUrl${AppConfig.loginEndpoint}';
       
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}${AppConfig.loginEndpoint}'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
-      );
+      try {
+        print('🌐 Trying backend ${i + 1}/${AppConfig.backendUrls.length}: $url');
+        
+        final response = await http.post(
+          Uri.parse(url),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'email': email,
+            'password': password,
+          }),
+        ).timeout(AppConfig.timeout);
 
-      print('📡 Response status: ${response.statusCode}');
-      print('📄 Response body: ${response.body}');
+        print('📡 Response status: ${response.statusCode}');
+        print('📄 Response body: ${response.body}');
 
-      final data = jsonDecode(response.body);
-      
-      if (response.statusCode == 200) {
-        print('✅ Login successful');
-        return {
-          'success': true,
-          'token': data['token'],
-          'user': data['user'],
-        };
-      } else {
-        print('❌ Login failed: ${data['message'] ?? data['error'] ?? 'Unknown error'}');
-        return {
-          'success': false,
-          'message': data['message'] ?? data['error'] ?? 'Login failed',
-        };
+        final data = jsonDecode(response.body);
+        
+        if (response.statusCode == 200) {
+          print('✅ Login successful with backend ${i + 1}');
+          return {
+            'success': true,
+            'token': data['token'],
+            'user': data['user'],
+          };
+        } else {
+          print('❌ Login failed: ${data['message'] ?? data['error'] ?? 'Unknown error'}');
+          return {
+            'success': false,
+            'message': data['message'] ?? data['error'] ?? 'Login failed',
+          };
+        }
+      } catch (e) {
+        print('💥 Backend ${i + 1} failed: $e');
+        
+        // If this was the last backend, return error
+        if (i == AppConfig.backendUrls.length - 1) {
+          if (e.toString().contains('Failed host lookup') || 
+              e.toString().contains('No address associated with hostname')) {
+            return {
+              'success': false,
+              'message': 'Network connection failed.\nPlease check your internet connection and try again.\n\nOnePlus devices sometimes have DNS issues.\nTry switching to mobile data or a different WiFi network.',
+            };
+          }
+          
+          return {
+            'success': false,
+            'message': 'All servers unavailable. Please try again later.',
+          };
+        }
+        
+        // Continue to next backend
+        continue;
       }
-    } catch (e) {
-      print('💥 Login error: $e');
-      return {
-        'success': false,
-        'message': 'Network error: $e',
-      };
     }
+    
+    return {
+      'success': false,
+      'message': 'Network error: Unable to connect to any server',
+    };
   }
 
   Future<Map<String, dynamic>> signup(String username, String email, String password) async {
-    try {
-      print('📝 Signup attempt for: $username ($email)');
-      print('🌐 Connecting to: ${AppConfig.baseUrl}${AppConfig.signupEndpoint}');
+    print('📝 Signup attempt for: $username ($email)');
+    
+    // Try each backend URL until one works
+    for (int i = 0; i < AppConfig.backendUrls.length; i++) {
+      final baseUrl = AppConfig.backendUrls[i];
+      final url = '$baseUrl${AppConfig.signupEndpoint}';
       
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}${AppConfig.signupEndpoint}'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'username': username,
-          'email': email,
-          'password': password,
-        }),
-      );
+      try {
+        print('🌐 Trying backend ${i + 1}/${AppConfig.backendUrls.length}: $url');
+        
+        final response = await http.post(
+          Uri.parse(url),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'username': username,
+            'email': email,
+            'password': password,
+          }),
+        ).timeout(AppConfig.timeout);
 
-      print('📡 Response status: ${response.statusCode}');
-      print('📄 Response body: ${response.body}');
+        print('📡 Response status: ${response.statusCode}');
+        print('📄 Response body: ${response.body}');
 
-      final data = jsonDecode(response.body);
-      
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        print('✅ Signup successful');
-        return {
-          'success': true,
-          'token': data['token'],
-          'user': data['user'],
-        };
-      } else {
-        print('❌ Signup failed: ${data['message'] ?? data['error'] ?? 'Unknown error'}');
-        return {
-          'success': false,
-          'message': data['message'] ?? data['error'] ?? 'Signup failed',
-        };
+        final data = jsonDecode(response.body);
+        
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          print('✅ Signup successful with backend ${i + 1}');
+          return {
+            'success': true,
+            'token': data['token'],
+            'user': data['user'],
+          };
+        } else {
+          print('❌ Signup failed: ${data['message'] ?? data['error'] ?? 'Unknown error'}');
+          return {
+            'success': false,
+            'message': data['message'] ?? data['error'] ?? 'Signup failed',
+          };
+        }
+      } catch (e) {
+        print('💥 Backend ${i + 1} failed: $e');
+        
+        // If this was the last backend, return error
+        if (i == AppConfig.backendUrls.length - 1) {
+          if (e.toString().contains('Failed host lookup') || 
+              e.toString().contains('No address associated with hostname')) {
+            return {
+              'success': false,
+              'message': 'Network connection failed.\nPlease check your internet connection and try again.\n\nOnePlus devices sometimes have DNS issues.\nTry switching to mobile data or a different WiFi network.',
+            };
+          }
+          
+          return {
+            'success': false,
+            'message': 'All servers unavailable. Please try again later.',
+          };
+        }
+        
+        // Continue to next backend
+        continue;
       }
-    } catch (e) {
-      print('💥 Signup error: $e');
-      return {
-        'success': false,
-        'message': 'Network error: $e',
-      };
     }
+    
+    return {
+      'success': false,
+      'message': 'Network error: Unable to connect to any server',
+    };
   }
 }
