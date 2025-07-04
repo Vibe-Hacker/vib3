@@ -1305,8 +1305,9 @@ class VideoService {
       ];
       
       for (String endpoint in endpoints) {
+        http.Response? response;
         try {
-          final response = await http.get(
+          response = await http.get(
             Uri.parse('${AppConfig.baseUrl}$endpoint'),
             headers: {
               'Authorization': 'Bearer $token',
