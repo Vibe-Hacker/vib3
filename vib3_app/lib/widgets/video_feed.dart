@@ -70,9 +70,10 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       });
     });
     
-    // Set up periodic sync every 5 minutes
-    _syncTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+    // Set up periodic sync every 2 minutes for better cross-platform sync
+    _syncTimer = Timer.periodic(const Duration(minutes: 2), (_) {
       if (_isAppInForeground && _isScreenVisible && mounted) {
+        print('⏰ Periodic sync: Checking for updates from web version...');
         _syncUserData(force: true);
         // Also periodically sync button positions from server (safely)
         _syncButtonPositionsFromServerSafely();
@@ -103,6 +104,16 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     setState(() {
       _isAppInForeground = state == AppLifecycleState.resumed;
     });
+    
+    // When app comes back to foreground, sync immediately to get any changes from web
+    if (state == AppLifecycleState.resumed && mounted) {
+      print('📱 App resumed - syncing likes/follows from web version...');
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _syncUserData(force: true);
+        }
+      });
+    }
   }
 
   // Load button positions from storage and sync from server
@@ -549,8 +560,12 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       }
     } else {
       // Sync after successful toggle to get updated counts and confirm state
-      Future.delayed(const Duration(seconds: 1), () {
-        _syncUserData(force: true);
+      // This ensures the like is properly saved and synced across platforms
+      print('✅ Like successful - syncing state across platforms...');
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _syncUserData(force: true);
+        }
       });
     }
   }
@@ -867,8 +882,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               children: [
                 // Main profile avatar
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(25),
                     color: Colors.black,
@@ -1390,7 +1405,7 @@ class _FloatingBubbleState extends State<_FloatingBubble>
                 widget.onTap();
               },
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: widget.gradientColors,
@@ -1421,7 +1436,7 @@ class _FloatingBubbleState extends State<_FloatingBubble>
                         ? widget.activeIcon! 
                         : widget.icon,
                       color: Colors.white,
-                      size: 24,
+                      size: 20,
                       shadows: const [
                         Shadow(
                           color: Colors.black,
@@ -1441,7 +1456,7 @@ class _FloatingBubbleState extends State<_FloatingBubble>
                           _formatCount(widget.count!),
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                             shadows: [
                               Shadow(
