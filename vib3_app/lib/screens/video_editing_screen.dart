@@ -25,6 +25,7 @@ class VideoEditingScreen extends StatefulWidget {
 class _VideoEditingScreenState extends State<VideoEditingScreen>
     with TickerProviderStateMixin {
   VideoPlayerController? _controller;
+  VideoPlayerController? _thumbnailController;
   bool _isInitialized = false;
   bool _isExporting = false;
   double _exportProgress = 0.0;
@@ -376,18 +377,26 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   }
 
   Widget _buildEditingTools() {
+    print('🛠️ Building editing tools for tab index: $_selectedTabIndex (${_tabLabels[_selectedTabIndex]})');
+    
     switch (_selectedTabIndex) {
       case 0:
+        print('🎬 Rendering Trim controls');
         return _buildTrimControls();
       case 1:
+        print('🎨 Rendering Filters widget');
         return VideoFiltersWidget(videoPath: widget.videoPath);
       case 2:
+        print('🎵 Rendering Audio widget');
         return AudioOverlayWidget(videoPath: widget.videoPath);
       case 3:
+        print('📝 Rendering Text widget');
         return TextOverlayWidget(videoPath: widget.videoPath);
       case 4:
+        print('⚡ Rendering Speed widget');
         return SpeedControlWidget(videoPath: widget.videoPath);
       default:
+        print('🔄 Fallback to Trim controls');
         return _buildTrimControls();
     }
   }
@@ -569,8 +578,79 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   @override
   void dispose() {
     _controller?.dispose();
+    _thumbnailController?.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  Widget _buildLocalVideoThumbnail() {
+    return FutureBuilder<VideoPlayerController>(
+      future: _createThumbnailController(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data!.value.isInitialized) {
+          return AspectRatio(
+            aspectRatio: snapshot.data!.value.aspectRatio,
+            child: VideoPlayer(snapshot.data!),
+          );
+        }
+        
+        // Show placeholder while loading thumbnail
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: Colors.grey[800],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.movie_outlined,
+                size: 48,
+                color: Colors.grey[600],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Video Thumbnail',
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Loading preview...',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<VideoPlayerController> _createThumbnailController() async {
+    try {
+      final videoFile = File(widget.videoPath);
+      print('🖼️ Creating thumbnail controller for: ${widget.videoPath}');
+      
+      final controller = VideoPlayerController.file(videoFile);
+      await controller.initialize();
+      await controller.seekTo(const Duration(seconds: 1)); // Get frame at 1 second
+      await controller.pause();
+      
+      // Store reference for disposal
+      _thumbnailController = controller;
+      
+      print('✅ Thumbnail controller created successfully');
+      return controller;
+    } catch (e) {
+      print('❌ Error creating thumbnail controller: $e');
+      // Return a dummy controller that will show fallback
+      final controller = VideoPlayerController.file(File(''));
+      return controller;
+    }
   }
 
   @override
@@ -683,79 +763,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                             ),
                           )
                         : _useThumbnailMode
-                        ? Container(
-                            width: double.infinity,
-                            height: double.infinity,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Color(0xFF1a1a2e),
-                                  Color(0xFF16213e),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              border: Border.all(color: Color(0xFF00CED1), width: 2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Stack(
-                              children: [
-                                // Video info overlay
-                                Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        padding: EdgeInsets.all(20),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.7),
-                                          borderRadius: BorderRadius.circular(15),
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            Icon(Icons.movie_creation, size: 48, color: Color(0xFF00CED1)),
-                                            SizedBox(height: 12),
-                                            Text(
-                                              '🎬 Your Video',
-                                              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                                            ),
-                                            SizedBox(height: 8),
-                                            Text(
-                                              'Duration: ${_formatDuration(_videoDuration)}',
-                                              style: TextStyle(color: Color(0xFF00CED1), fontSize: 16),
-                                            ),
-                                            SizedBox(height: 4),
-                                            Text(
-                                              '1280x720 • ${(File(widget.videoPath).lengthSync() / (1024*1024)).toStringAsFixed(1)}MB',
-                                              style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                                            ),
-                                            SizedBox(height: 12),
-                                            Text(
-                                              'Ready to edit!',
-                                              style: TextStyle(color: Colors.white70, fontSize: 14),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Corner indicators
-                                Positioned(
-                                  top: 12,
-                                  right: 12,
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Color(0xFF00CED1),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text('HD', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
+                        ? _buildLocalVideoThumbnail()
                         : Container(
                             width: double.infinity,
                             height: double.infinity,
