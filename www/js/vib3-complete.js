@@ -15354,6 +15354,9 @@ function showCreatorStudio() {
                     <button onclick="exportCreatorProject()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                         💾 Export
                     </button>
+                    <button onclick="closeAllModalsAndOverlays()" style="background: rgba(255,68,68,0.8); border: none; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;" title="Clear all stuck overlays">
+                        🧹 Clear Overlays
+                    </button>
                 </div>
             </div>
             
@@ -16050,10 +16053,10 @@ function clearAllMedia() {
                 This action cannot be undone.
             </p>
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="confirmClearAllMedia(); this.closest('div').remove();" style="background: rgba(255, 68, 68, 0.8); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                <button onclick="confirmClearAllMedia(); closeConfirmModal();" style="background: rgba(255, 68, 68, 0.8); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">
                     Clear All
                 </button>
-                <button onclick="this.closest('div').remove()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                <button onclick="closeConfirmModal()" style="background: none; border: 1px solid var(--border-primary); color: var(--text-primary); padding: 12px 24px; border-radius: 8px; cursor: pointer;">
                     Cancel
                 </button>
             </div>
@@ -16061,6 +16064,44 @@ function clearAllMedia() {
     `;
     
     document.body.appendChild(confirmModal);
+    
+    // Store modal reference for proper cleanup
+    window.currentConfirmModal = confirmModal;
+    
+    // Add escape key handler
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            closeConfirmModal();
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    // Add click outside to close
+    confirmModal.addEventListener('click', (e) => {
+        if (e.target === confirmModal) {
+            closeConfirmModal();
+            document.removeEventListener('keydown', handleEscape);
+        }
+    });
+}
+
+// Close confirm modal properly
+function closeConfirmModal() {
+    console.log('🚪 Closing confirmation modal');
+    if (window.currentConfirmModal) {
+        window.currentConfirmModal.remove();
+        window.currentConfirmModal = null;
+        console.log('✅ Confirmation modal closed and cleaned up');
+    }
+    
+    // Also remove any orphaned confirmation modals
+    document.querySelectorAll('[style*="z-index: 10001"]').forEach(modal => {
+        if (modal.innerHTML.includes('Clear All Media') || modal.innerHTML.includes('This action cannot be undone')) {
+            modal.remove();
+            console.log('🧹 Removed orphaned confirmation modal');
+        }
+    });
 }
 
 // Confirm clear all media
@@ -16079,6 +16120,137 @@ function confirmClearAllMedia() {
     populateSampleMedia(); // Refresh display
     showStudioNotification('🗑️ All media files cleared');
 }
+
+// ================ MODAL CLEANUP UTILITIES ================
+
+// Comprehensive function to close all stuck modals and overlays
+function closeAllModalsAndOverlays() {
+    console.log('🧹 Emergency cleanup: Closing all modals and overlays');
+    
+    // Remove all modal elements by common IDs
+    const modalIds = [
+        'fullscreenUploadPage',
+        'fullscreenUploadOverlay',
+        'uploadModal',
+        'cameraModal',
+        'deleteModal',
+        'profilePictureModal',
+        'editProfileModal',
+        'settingsModal',
+        'shareModal',
+        'commentsModal',
+        'videoOptionsModal',
+        'soundModal',
+        'creatorToolsModal'
+    ];
+    
+    modalIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.remove();
+            console.log(`🗑️ Removed modal: ${id}`);
+        }
+    });
+    
+    // Remove all elements with modal classes
+    const modalClasses = [
+        '.modal',
+        '.video-review-modal', 
+        '.camera-modal',
+        '.upload-modal',
+        '.initial-camera-selector-modal',
+        '.camera-selector-modal',
+        '.filter-modal',
+        '.speed-modal',
+        '.transition-modal',
+        '.music-modal',
+        '.voiceover-modal',
+        '.video-editor-modal',
+        '.live-stream-modal',
+        '.comments-modal',
+        '.video-options-modal',
+        '.sound-modal',
+        '.create-room-modal'
+    ];
+    
+    modalClasses.forEach(className => {
+        document.querySelectorAll(className).forEach(modal => {
+            modal.remove();
+            console.log(`🗑️ Removed modal by class: ${className}`);
+        });
+    });
+    
+    // Remove any high z-index overlays (common pattern for blocking overlays)
+    document.querySelectorAll('[style*="z-index"]').forEach(overlay => {
+        const zIndex = parseInt(overlay.style.zIndex);
+        if (zIndex > 1000 && overlay.id !== 'toastNotification' && !overlay.classList.contains('debug-panel')) {
+            console.log(`🗑️ Removing high z-index overlay (${zIndex}):`, overlay.id || overlay.className);
+            overlay.remove();
+        }
+    });
+    
+    // Remove any position fixed elements that might be blocking
+    document.querySelectorAll('[style*="position: fixed"]').forEach(overlay => {
+        if (overlay.id !== 'toastNotification' && 
+            !overlay.classList.contains('debug-panel') &&
+            !overlay.classList.contains('sidebar') &&
+            !overlay.classList.contains('header')) {
+            console.log('🗑️ Removing position fixed overlay:', overlay.id || overlay.className);
+            overlay.remove();
+        }
+    });
+    
+    // Ensure main content is visible
+    const mainContent = document.querySelector('.app-container');
+    const videoFeed = document.querySelector('.video-feed');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (mainContent) {
+        mainContent.style.display = '';
+        mainContent.style.visibility = 'visible';
+        console.log('✅ Restored main content visibility');
+    }
+    
+    if (videoFeed) {
+        videoFeed.style.display = '';
+        videoFeed.style.visibility = 'visible';
+        console.log('✅ Restored video feed visibility');
+    }
+    
+    if (sidebar) {
+        sidebar.style.display = '';
+        sidebar.style.visibility = 'visible';
+        console.log('✅ Restored sidebar visibility');
+    }
+    
+    // Clear any upload/modal state flags
+    if (window.stateManager) {
+        window.stateManager.actions.setUploadPageActive(false);
+        window.stateManager.actions.setUploadInProgress(false);
+    } else {
+        window.uploadPageActive = false;
+        window.uploadInProgress = false;
+    }
+    
+    // Clear any stored modal references
+    window.currentConfirmModal = null;
+    
+    console.log('✅ Emergency cleanup complete - all modals and overlays removed');
+    
+    // Show confirmation to user
+    if (window.showToast) {
+        window.showToast('All overlays cleared - you can now navigate normally! 🎉');
+    }
+}
+
+// Add global escape key handler for emergency cleanup
+document.addEventListener('keydown', (e) => {
+    // Allow Ctrl/Cmd + Escape for emergency cleanup
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Escape') {
+        console.log('🚨 Emergency cleanup triggered by Ctrl+Escape');
+        closeAllModalsAndOverlays();
+    }
+});
 
 // Drag media functions
 function dragMedia(event, media) {
@@ -22198,4 +22370,8 @@ function debugCreatorMediaIds() {
 
 // Make debug function available globally
 window.debugCreatorMediaIds = debugCreatorMediaIds;
+
+// Export modal cleanup functions
+window.closeAllModalsAndOverlays = closeAllModalsAndOverlays;
+window.closeConfirmModal = closeConfirmModal;
   

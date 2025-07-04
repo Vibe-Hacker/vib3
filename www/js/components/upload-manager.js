@@ -157,30 +157,52 @@ class UploadManager {
         }
         console.log('Cleared uploadPageActive flag');
         
-        // Remove the fullscreen upload page
-        const uploadPage = document.getElementById('fullscreenUploadPage');
-        if (uploadPage) {
-            uploadPage.remove();
-            console.log('Removed fullscreen upload page');
-        }
+        // COMPREHENSIVE MODAL CLEANUP - Remove ALL upload-related elements
+        const elementsToRemove = [
+            'fullscreenUploadPage',
+            'fullscreenUploadOverlay', 
+            'uploadModal',
+            'cameraModal',
+            'video-review-modal'
+        ];
+        
+        elementsToRemove.forEach(elementId => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.remove();
+                console.log(`Removed ${elementId}`);
+            }
+        });
+        
+        // Remove any modals by class as well
+        const modalClassesToRemove = [
+            '.modal.video-review-modal',
+            '.modal.camera-modal', 
+            '.modal.upload-modal',
+            '.initial-camera-selector-modal',
+            '.camera-selector-modal'
+        ];
+        
+        modalClassesToRemove.forEach(className => {
+            document.querySelectorAll(className).forEach(modal => {
+                modal.remove();
+                console.log(`Removed modal by class: ${className}`);
+            });
+        });
+        
+        // Remove any high z-index overlay that might be blocking the screen
+        document.querySelectorAll('[style*="z-index: 999"]').forEach(overlay => {
+            if (overlay.id !== 'toastNotification' && !overlay.classList.contains('debug-panel')) {
+                console.log('Removing high z-index overlay:', overlay.id || overlay.className);
+                overlay.remove();
+            }
+        });
         
         // IMMEDIATE FALLBACK RESTORATION - ensure basic content is visible
         this.emergencyContentRestore();
         
         // Then do the full restoration
         this.restoreMainContent();
-        
-        // Also clean up the original modal if it exists
-        const uploadModal = document.getElementById('uploadModal');
-        if (uploadModal) {
-            uploadModal.classList.remove('active');
-            uploadModal.style.cssText = '';
-            
-            const modalContent = uploadModal.querySelector('.modal-content');
-            if (modalContent) {
-                modalContent.style.cssText = '';
-            }
-        }
         
         // Clean up video file via state
         if (window.stateManager) {
@@ -191,6 +213,18 @@ class UploadManager {
         
         // Clean up camera stream if active
         this.cleanupCameraStream();
+        
+        // Clean up escape key handler
+        if (this.currentEscapeHandler) {
+            document.removeEventListener('keydown', this.currentEscapeHandler);
+            this.currentEscapeHandler = null;
+            console.log('Cleaned up escape key handler');
+        }
+        
+        // Final verification that user can see the main content
+        setTimeout(() => {
+            this.verifyContentRestoration();
+        }, 100);
         
         console.log('=== UPLOAD MODAL CLOSED ===');
     }
@@ -670,6 +704,14 @@ class UploadManager {
             e.preventDefault();
             console.log('Upload page clicked - preventing background interaction');
         });
+        
+        // Add double-click handler for emergency exit (fallback)
+        uploadPage.addEventListener('dblclick', (e) => {
+            if (e.target === uploadPage) {
+                console.log('Double-click detected on upload background - emergency close');
+                this.closeUploadModal();
+            }
+        });
 
         uploadPage.innerHTML = `
             <div style="width: 90%; max-width: 500px; text-align: center; padding: 40px; background: #1a1a1a; border-radius: 15px; position: relative;">
@@ -692,11 +734,25 @@ class UploadManager {
                 </div>
                 
                 <p style="color: #888; font-size: 14px; margin-top: 20px;">Select an option to get started</p>
+                <p style="color: #666; font-size: 12px; margin-top: 10px;">Press Esc to close • Ctrl+Esc for emergency cleanup</p>
             </div>
         `;
 
         // Add to document
         document.body.appendChild(uploadPage);
+        
+        // Add escape key handler for emergency exit
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                console.log('Escape key pressed - closing upload modal');
+                this.closeUploadModal();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+        
+        // Store escape handler for cleanup
+        this.currentEscapeHandler = handleEscape;
 
         // Add event listeners
         document.getElementById('closeUploadPage').addEventListener('click', () => {
