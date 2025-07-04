@@ -230,6 +230,33 @@
 
 .filter-preview:hover {
     background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.filter-preview.trending {
+    border: 2px solid #ff2d55;
+    box-shadow: 0 4px 12px rgba(255, 45, 85, 0.3);
+}
+
+/* Trending Badge */
+.trending-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: linear-gradient(45deg, #ff2d55, #ff6b8a);
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(255, 45, 85, 0.4);
+    animation: pulse-trending 2s infinite;
+}
+
+@keyframes pulse-trending {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
 .filter-thumb {
@@ -248,23 +275,30 @@
 /* Effects Panel */
 .effects-categories {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     margin-bottom: 20px;
+    overflow-x: auto;
+    padding: 5px 0;
+    -webkit-overflow-scrolling: touch;
 }
 
 .effect-cat {
-    padding: 8px 16px;
+    padding: 8px 12px;
     background: rgba(255, 255, 255, 0.1);
     border: none;
     border-radius: 20px;
     color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12px;
+    white-space: nowrap;
+    min-width: fit-content;
+    transition: all 0.3s ease;
 }
 
 .effect-cat.active {
-    background: #ff2d55;
+    background: linear-gradient(45deg, #ff2d55, #ff6b8a);
     color: white;
+    transform: scale(1.05);
 }
 
 .effects-grid {
@@ -279,10 +313,16 @@
     padding: 10px;
     border-radius: 8px;
     transition: all 0.3s ease;
+    position: relative;
 }
 
 .effect-preview:hover {
     background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.effect-preview.trending {
+    border: 2px solid #ff2d55;
 }
 
 .effect-thumb {
@@ -309,23 +349,74 @@
     margin-bottom: 20px;
 }
 
-.text-styles,
-.text-animations {
-    display: flex;
-    gap: 10px;
+/* Text Panel Enhancements */
+.template-grid,
+.style-grid,
+.animation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 8px;
     margin-bottom: 15px;
-    flex-wrap: wrap;
 }
 
+.text-template,
 .text-style,
 .text-anim {
-    padding: 10px 20px;
+    padding: 8px 12px;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
+    border-radius: 15px;
     color: white;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.text-template:hover,
+.text-style:hover,
+.text-anim:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.text-template.active,
+.text-style.active,
+.text-anim.active {
+    background: #ff2d55;
+    border-color: #ff2d55;
+}
+
+/* Color Palette */
+.color-palette {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+}
+
+.color-option {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+    border-color: white;
+}
+
+.color-option.active {
+    border-color: #ff2d55;
+    border-width: 3px;
+    transform: scale(1.15);
+}
+
+.text-styles,
+.text-animations {
+    margin-bottom: 15px;
 }
 
 /* Stickers Panel */

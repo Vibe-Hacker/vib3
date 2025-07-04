@@ -1213,8 +1213,8 @@ class UploadManager {
                 }
                 console.log('Video file selected:', file.name);
                 
-                // Show the video details page instead of using the old modal system
-                this.showVideoDetailsPage(file);
+                // Open video editor first, then details page
+                this.openVideoEditor(file);
                 
                 if (window.showToast) {
                     window.showToast('Video ready for upload! 🎬');
@@ -1524,8 +1524,8 @@ class UploadManager {
             reviewModal.remove();
             // Clean up the blob URL
             URL.revokeObjectURL(reviewVideo.src);
-            // Show the video details page for upload
-            this.showVideoDetailsPage(this.selectedVideoFile);
+            // Open video editor for recorded video
+            this.openVideoEditor(this.selectedVideoFile);
         });
     }
 
@@ -1776,6 +1776,58 @@ class UploadManager {
                 }
             }
             this.closeUploadModal();
+        }
+    }
+
+    openVideoEditor(file) {
+        console.log('Opening video editor for file:', file.name);
+        
+        if (!window.videoEditor) {
+            console.error('Video editor not available');
+            // Fallback to direct upload
+            this.showVideoDetailsPage(file);
+            return;
+        }
+        
+        // Hide the upload page
+        const uploadPage = document.getElementById('fullscreenUploadPage');
+        if (uploadPage) {
+            uploadPage.style.display = 'none';
+        }
+        
+        // Set up video editor completion handler
+        const originalHandler = document.addEventListener;
+        const editorCompleteHandler = (event) => {
+            if (event.type === 'videoEdited') {
+                console.log('Video editing completed:', event.detail);
+                
+                // Update the selected file with edited version
+                if (event.detail.video) {
+                    this.selectedVideoFile = event.detail.video.file || file;
+                }
+                
+                // Show video details page after editing
+                this.showVideoDetailsPage(this.selectedVideoFile);
+                
+                // Remove the event listener
+                document.removeEventListener('videoEdited', editorCompleteHandler);
+            }
+        };
+        
+        document.addEventListener('videoEdited', editorCompleteHandler);
+        
+        // Open the video editor
+        if (window.openVideoEditor) {
+            // Create a video element for the editor
+            const videoElement = document.createElement('video');
+            videoElement.src = URL.createObjectURL(file);
+            videoElement.muted = true;
+            videoElement.preload = 'metadata';
+            
+            window.openVideoEditor(videoElement);
+        } else {
+            console.error('openVideoEditor function not found');
+            this.showVideoDetailsPage(file);
         }
     }
 
