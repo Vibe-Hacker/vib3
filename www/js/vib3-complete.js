@@ -15309,9 +15309,9 @@ function startRoomActivity(roomType, activityType) {
 
 // ================ VIB3 CREATOR STUDIO ================
 
-// Show VIB3 Creator Studio
+// Show VIB3 VIB3 Creations
 function showCreatorStudio() {
-    console.log('🎬 Opening VIB3 Creator Studio');
+    console.log('🎬 Opening VIB3 VIB3 Creations');
     
     // Initialize creator studio files storage if not exists
     if (!window.creatorStudioFiles) {
@@ -15338,12 +15338,12 @@ function showCreatorStudio() {
         creatorStudioPage.style.cssText = 'margin-left: 240px; margin-top: 60px; width: calc(100vw - 240px); height: calc(100vh - 60px); overflow: hidden; background: var(--bg-primary); display: flex; flex-direction: column;';
         
         creatorStudioPage.innerHTML = `
-            <!-- Creator Studio Header -->
+            <!-- VIB3 Creations Header -->
             <div class="studio-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px 30px; color: white; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-primary);">
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <div style="font-size: 32px;">🎬</div>
                     <div>
-                        <h1 style="margin: 0; font-size: 28px; font-weight: 800;">VIB3 Creator Studio</h1>
+                        <h1 style="margin: 0; font-size: 28px; font-weight: 800;">VIB3 VIB3 Creations</h1>
                         <p style="margin: 0; opacity: 0.9; font-size: 14px;">Professional video editing tools for creators</p>
                     </div>
                 </div>
@@ -15357,7 +15357,7 @@ function showCreatorStudio() {
                 </div>
             </div>
             
-            <!-- Creator Studio Main Interface -->
+            <!-- VIB3 Creations Main Interface -->
             <div class="studio-interface" style="flex: 1; display: flex; overflow: hidden;">
                 <!-- Left Panel - Tools & Effects -->
                 <div class="studio-left-panel" style="width: 280px; background: var(--bg-secondary); border-right: 1px solid var(--border-primary); display: flex; flex-direction: column;">
@@ -15913,7 +15913,7 @@ function refreshCreatorStudioMedia() {
     console.log('📁 Refreshing media library with imported files');
     // Refresh the media library display
     populateSampleMedia();
-    showStudioNotification('🎬 Files imported to Creator Studio library!');
+    showStudioNotification('🎬 Files imported to VIB3 Creations library!');
 }
 
 // Get user's imported media files
@@ -15999,7 +15999,7 @@ function clearAllMedia() {
             <div style="font-size: 48px; margin-bottom: 15px;">🗑️</div>
             <h3 style="margin: 0 0 15px; color: var(--text-primary);">Clear All Media</h3>
             <p style="margin: 0 0 20px; color: var(--text-secondary);">
-                This will remove all ${currentMedia.length} media files from your Creator Studio library.
+                This will remove all ${currentMedia.length} media files from your VIB3 Creations library.
                 <br><br>
                 This action cannot be undone.
             </p>
@@ -16438,7 +16438,7 @@ function downloadExportedVideo() {
     // Create a download link for demo purposes
     const link = document.createElement('a');
     link.download = 'vib3-project-export.mp4';
-    link.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent('VIB3 Creator Studio Export - Demo File');
+    link.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent('VIB3 VIB3 Creations Export - Demo File');
     link.click();
     showStudioNotification('🎬 Video download started!');
 }
@@ -16479,13 +16479,13 @@ function showStudioNotification(message) {
     }, 3000);
 }
 
-// Debug function to inspect Creator Studio state
+// Debug function to inspect VIB3 Creations state
 window.debugCreatorStudio = function() {
     console.log('🔍 CREATOR STUDIO DEBUG REPORT:');
     console.log('1. Preview Video Element:', document.getElementById('previewVideo'));
     console.log('2. Preview Placeholder:', document.getElementById('previewPlaceholder'));
     console.log('3. Media Library:', document.getElementById('mediaLibrary'));
-    console.log('4. Creator Studio Files:', window.creatorStudioFiles);
+    console.log('4. VIB3 Creations Files:', window.creatorStudioFiles);
     console.log('5. LocalStorage Media:', JSON.parse(localStorage.getItem('vib3-creator-media') || '[]'));
     
     const previewVideo = document.getElementById('previewVideo');
@@ -16502,7 +16502,7 @@ window.debugCreatorStudio = function() {
     }
     
     const creatorStudioPage = document.getElementById('creatorStudioPage');
-    console.log('7. Creator Studio Page Visible:', creatorStudioPage && creatorStudioPage.style.display !== 'none');
+    console.log('7. VIB3 Creations Page Visible:', creatorStudioPage && creatorStudioPage.style.display !== 'none');
     
     return 'Debug info logged to console';
 };
@@ -16878,7 +16878,7 @@ function joinChallenge(challengeId) {
         <div style="background: var(--bg-secondary); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid var(--border-primary); text-align: center;">
             <div style="font-size: 64px; margin-bottom: 20px;">🚀</div>
             <h3 style="margin: 0 0 15px; color: var(--text-primary);">Join Challenge</h3>
-            <p style="margin: 0 0 20px; color: var(--text-secondary);">Ready to participate in this challenge? You can create and submit your video using VIB3 Creator Studio!</p>
+            <p style="margin: 0 0 20px; color: var(--text-secondary);">Ready to participate in this challenge? You can create and submit your video using VIB3 VIB3 Creations!</p>
             
             <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 25px;">
                 <h4 style="margin: 0 0 10px; color: var(--text-primary);">Challenge Tips:</h4>
@@ -16909,9 +16909,9 @@ function startChallengeParticipation(challengeId) {
     // Close modal and show notification
     document.querySelector('.vib3-energy-modal, [style*="position: fixed"]')?.remove();
     
-    showChallengeNotification('🎬 Opening Creator Studio for challenge participation!');
+    showChallengeNotification('🎬 Opening VIB3 Creations for challenge participation!');
     
-    // Simulate opening Creator Studio for challenge
+    // Simulate opening VIB3 Creations for challenge
     setTimeout(() => {
         showCreatorStudio();
         showChallengeNotification('💡 Tip: Use #' + challengeId + ' hashtag in your video!');
