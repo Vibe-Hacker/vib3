@@ -45,23 +45,6 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   String? _draggingButton;
   Offset? _initialDragPosition;
   
-  // Follow button gap from profile button
-  static const double _followButtonGap = 8.0;
-  
-  // Calculate follow button position based on profile button (centered)
-  Offset _getFollowButtonPosition() {
-    final profilePos = _buttonPositions['profile'] ?? const Offset(0, 150);
-    const profileButtonWidth = 60.0; // Profile button width
-    const followButtonWidth = 40.0;  // Follow button is smaller
-    
-    // Center the follow button under the profile button
-    final centeredX = profilePos.dx + (profileButtonWidth - followButtonWidth) / 2;
-    
-    return Offset(
-      centeredX, // Centered X position under profile
-      profilePos.dy + 60 + _followButtonGap, // Below profile button (60px button height + gap)
-    );
-  }
   
   // Snap grid settings
   bool _showSnapGrid = false;
@@ -924,7 +907,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     }
     
     final List<Widget> buttons = [
-      // Profile Button - Draggable
+      // Profile Button with Integrated Follow Indicator - Draggable
       _buildDraggableButton(
         buttonId: 'profile',
         onTap: () => _showCreatorProfile(video),
@@ -935,79 +918,73 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             onTap: () => _showCreatorProfile(video),
             gradientColors: themeProvider.getProfileGradient(),
             shouldAnimate: !_isDragMode && isCurrentVideo && _isAppInForeground && _isScreenVisible,
-            customChild: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.black,
-              ),
-              child: Center(
-                child: Text(
-                  (video.user?['username'] ?? 'U')[0].toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black,
-                        blurRadius: 4,
+            customChild: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Main profile avatar
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(25),
+                    color: Colors.black,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Center(
+                    child: Text(
+                      (video.user?['username'] ?? 'U')[0].toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black,
+                            blurRadius: 4,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+                // Follow indicator at bottom (TikTok style)
+                if (!isOwnVideo)
+                  Positioned(
+                    bottom: -8,
+                    left: 50 / 2 - 12, // Center horizontally
+                    child: GestureDetector(
+                      onTap: () => _handleFollow(video),
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _followedUsers[video.userId] ?? false 
+                              ? Colors.transparent 
+                              : Colors.red,
+                          border: Border.all(
+                            color: Colors.white, 
+                            width: 2
+                          ),
+                        ),
+                        child: Icon(
+                          _followedUsers[video.userId] ?? false 
+                              ? Icons.check 
+                              : Icons.add,
+                          color: _followedUsers[video.userId] ?? false 
+                              ? Colors.white 
+                              : Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
       ),
     ];
-
-    // Add follow button conditionally (only if not user's own video)
-    if (!isOwnVideo) {
-      buttons.add(
-        Positioned(
-          left: _getFollowButtonPosition().dx,
-          top: _getFollowButtonPosition().dy,
-          child: TweenAnimationBuilder<double>(
-            duration: Duration(seconds: 3 + ('follow'.hashCode % 2)),
-            tween: Tween(begin: 0.0, end: 1.0),
-            builder: (context, animationValue, child) {
-              final isBeingDragged = _isDragMode && _draggingButton == 'profile';
-              return Transform.translate(
-                offset: Offset(
-                  !isBeingDragged ? (sin(animationValue * 2 * pi) * 3) : 0,
-                  !isBeingDragged ? (cos(animationValue * 2 * pi + ('follow'.hashCode % 4)) * 2) : 0,
-                ),
-                child: Transform.scale(
-                  scale: !isBeingDragged ? (1.0 + sin(animationValue * 2 * pi) * 0.02) : 1.0,
-                  child: child,
-                ),
-              );
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              transform: (_isDragMode && _draggingButton == 'profile') 
-                  ? (Matrix4.identity()..scale(1.1))
-                  : Matrix4.identity(),
-              decoration: BoxDecoration(
-                border: (_isDragMode && _draggingButton == 'profile')
-                    ? Border.all(color: Colors.cyan.withOpacity(0.5), width: 2)
-                    : null,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: _VIB3FollowButton(
-                video: video,
-                isFollowed: _followedUsers[video.userId] ?? false,
-                onTap: () => _handleFollow(video),
-                shouldAnimate: !_isDragMode && isCurrentVideo && _isAppInForeground && _isScreenVisible,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
 
     buttons.addAll([
       
