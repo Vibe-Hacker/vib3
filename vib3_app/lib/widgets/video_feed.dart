@@ -535,9 +535,18 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       setState(() {
         _likedVideos[video.id] = wasLiked;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ Failed to update like'), backgroundColor: Colors.red),
-      );
+      
+      // Check if we need to re-authenticate
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.authToken == null || authProvider.authToken!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Session expired - please login again'), backgroundColor: Colors.red),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Failed to update like - please try again'), backgroundColor: Colors.red),
+        );
+      }
     } else {
       // Sync after successful toggle to get updated counts and confirm state
       Future.delayed(const Duration(seconds: 1), () {

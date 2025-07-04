@@ -1107,6 +1107,14 @@ class VideoService {
         if (response.statusCode == 200 || response.statusCode == 201) {
           print('✅ Like successful with endpoint: $endpoint');
           return true;
+        } else if (response.statusCode == 401) {
+          print('❌ Unauthorized - token may be expired or invalid');
+          // Don't try other endpoints if it's an auth issue
+          return false;
+        } else if (response.statusCode == 404) {
+          print('❌ Video not found: $videoId');
+          // Don't try other endpoints if video doesn't exist
+          return false;
         }
       } catch (e) {
         print('❌ Like endpoint $endpoint failed: $e');
