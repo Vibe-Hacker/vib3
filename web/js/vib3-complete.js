@@ -5704,6 +5704,14 @@ function shareAnalytics() {
 let isLiveStreaming = false;
 let liveStreamConnection = null;
 let liveViewers = 0;
+let liveStreamingState = {
+    isActive: false,
+    startTime: null,
+    viewers: 0,
+    title: '',
+    category: '',
+    stream: null
+};
 
 async function startLiveStream() {
     if (isLiveStreaming) {
