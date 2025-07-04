@@ -59,10 +59,60 @@ function createDuet(videoId) {
     // TODO: Implement duet creation logic
 }
 
-// Make remix functions globally available
+// Live streaming state and functions
+let liveStreamingState = {
+    isActive: false,
+    startTime: null,
+    viewers: 0,
+    title: '',
+    category: '',
+    stream: null
+};
+
+function setupLivePreview() {
+    console.log('📹 Setting up live preview...');
+    
+    if (window.showToast) {
+        window.showToast('Live streaming setup coming soon! 📺', 'info');
+    } else {
+        console.log('Live streaming setup coming soon! 📺');
+    }
+    
+    // TODO: Implement live preview setup
+}
+
+function openLiveSetup() {
+    console.log('🎬 Opening live setup...');
+    
+    if (window.showToast) {
+        window.showToast('Live streaming coming soon! 🔴', 'info');
+    } else {
+        console.log('Live streaming coming soon! 🔴');
+    }
+    
+    // TODO: Implement live setup modal
+}
+
+function startLiveStream() {
+    console.log('🔴 Starting live stream...');
+    
+    if (window.showToast) {
+        window.showToast('Live streaming feature coming soon! 📡', 'info');
+    } else {
+        console.log('Live streaming feature coming soon! 📡');
+    }
+    
+    // TODO: Implement live streaming
+}
+
+// Make all functions globally available
 window.publishRemix = publishRemix;
 window.startRemix = startRemix;
 window.createDuet = createDuet;
+window.setupLivePreview = setupLivePreview;
+window.openLiveSetup = openLiveSetup;
+window.startLiveStream = startLiveStream;
+window.liveStreamingState = liveStreamingState;
 
 // Initialize all existing components
 document.addEventListener('DOMContentLoaded', async () => {
