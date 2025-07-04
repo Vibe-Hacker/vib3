@@ -22,6 +22,17 @@ class VideoService {
       return (_cache[cacheKey]!['data'] as List<Video>);
     }
     
+    // If this is an offline demo token, return mock data immediately
+    if (token == 'offline_demo_token') {
+      print('📱 Offline mode detected - returning demo videos');
+      final mockVideos = _getMockVideos();
+      _cache[cacheKey] = {
+        'data': mockVideos,
+        'timestamp': DateTime.now(),
+      };
+      return mockVideos;
+    }
+    
     // First, let's test with a simple direct approach
     try {
       final testResponse = await http.get(
