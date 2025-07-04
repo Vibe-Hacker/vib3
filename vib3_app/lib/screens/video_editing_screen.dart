@@ -681,11 +681,11 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   }
 
   Widget _buildLocalVideoThumbnail() {
-    // TikTok approach: Try to reuse main controller for thumbnail if available
+    // Priority 1: Show actual video if controller works
     if (_controller != null && _controller!.value.isInitialized) {
       return GestureDetector(
         onTap: () {
-          print('🎬 Thumbnail tapped - toggling play/pause');
+          print('🎬 Video preview tapped - toggling play/pause');
           if (_controller!.value.isPlaying) {
             _controller!.pause();
           } else {
@@ -695,7 +695,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
         },
         child: Stack(
           children: [
-            // Use the main controller for thumbnail display
+            // Actual video player
             AspectRatio(
               aspectRatio: _controller!.value.aspectRatio,
               child: VideoPlayer(_controller!),
@@ -724,7 +724,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                 ),
               ),
               
-            // Video info
+            // Video info overlay
             Positioned(
               bottom: 8,
               left: 8,
@@ -735,7 +735,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  'Tap to preview',
+                  '🎬 Tap to play/pause',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 11,
@@ -748,7 +748,129 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       );
     }
     
-    // Fallback to compatible mode display
+    // Priority 2: Show real video thumbnail if available
+    if (_thumbnailFile != null) {
+      return GestureDetector(
+        onTap: () {
+          print('📸 Real thumbnail tapped');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('👀 This is your video! Use the editing tools below'),
+              backgroundColor: Color(0xFF00CED1),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        },
+        child: Stack(
+          children: [
+            // Real video thumbnail
+            Container(
+              width: double.infinity,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: FileImage(_thumbnailFile!),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            
+            // Overlay indicating it's a thumbnail
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.3),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Play icon overlay
+            Center(
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF00CED1).withOpacity(0.8),
+                ),
+                child: Icon(
+                  Icons.visibility,
+                  size: 40,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            
+            // Info badges
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Color(0xFF00CED1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'THUMBNAIL',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            
+            Positioned(
+              bottom: 8,
+              left: 8,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '👀 Your video preview',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ),
+            
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  _formatDuration(_videoDuration),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Priority 3: Compatible mode fallback
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -765,7 +887,6 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       ),
       child: Stack(
         children: [
-          // TikTok-style preview placeholder
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -785,14 +906,14 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                     ),
                   ),
                   child: Icon(
-                    Icons.video_library_outlined,
+                    Icons.edit_outlined,
                     size: 40,
                     color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  '📱 TikTok Mode',
+                  '✂️ Edit Mode Ready',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -801,7 +922,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Compatible editing for all devices',
+                  'Use tools below to edit your video',
                   style: TextStyle(
                     color: Colors.grey[300],
                     fontSize: 13,
@@ -821,7 +942,6 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
             ),
           ),
           
-          // TikTok-style status badge
           Positioned(
             top: 12,
             right: 12,
@@ -832,7 +952,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                'COMPATIBLE',
+                'READY',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 10,
@@ -842,7 +962,6 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
             ),
           ),
           
-          // Duration display
           Positioned(
             bottom: 12,
             right: 12,
