@@ -5646,7 +5646,7 @@ function checkout() {
 }
 
 function setupTips() {
-    showNotification('Creator tips setup opening...', 'info');
+    showNotification('VIB3 Studio tips setup opening...', 'info');
 }
 
 function setupMerchandise() {
@@ -6991,7 +6991,7 @@ function createProfilePage() {
                         👤
                     </div>
                     <h2 style="color: white; margin-bottom: 10px;">@${currentUser?.username || 'vib3user'}</h2>
-                    <p style="color: #ccc; margin-bottom: 20px;">Creator | Dancer | Music Lover</p>
+                    <p style="color: #ccc; margin-bottom: 20px;">VIB3 Creator | Dancer | Music Lover</p>
                     <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 20px;">
                         <div><strong style="color: white;">123</strong> <span style="color: #ccc;">following</span></div>
                         <div><strong style="color: white;">1.2K</strong> <span style="color: #ccc;">followers</span></div>
@@ -7110,7 +7110,7 @@ function createProfilePage() {
                             max-width: 500px;
                         " id="profileBio">
                             Welcome to my VIB3 profile! 🎵✨<br>
-                            Creator | Dancer | Music Lover<br>
+                            VIB3 Creator | Dancer | Music Lover<br>
                             📧 Contact: hello@vib3.com
                         </div>
                         
@@ -7137,7 +7137,7 @@ function createProfilePage() {
                                 font-weight: 600;
                                 cursor: pointer;
                             ">
-                                Creator Tools
+                                VIB3 Studio
                             </button>
                         </div>
                     </div>
@@ -9078,7 +9078,7 @@ function loadProfileData() {
             document.getElementById('profileUsername').textContent = `@${currentUser.username || 'vib3user'}`;
             document.getElementById('profileBio').innerHTML = `
                 Welcome to my VIB3 profile! 🎵✨<br>
-                Creator | Dancer | Music Lover<br>
+                VIB3 Creator | Dancer | Music Lover<br>
                 📧 Contact: ${currentUser.email || 'hello@vib3.com'}
             `;
             
@@ -9455,7 +9455,7 @@ function editProfile() {
                     color: var(--text-primary);
                     font-size: 16px;
                     resize: vertical;
-                ">${currentUser?.bio || 'Welcome to my VIB3 profile! 🎵✨\nCreator | Dancer | Music Lover\n📧 Contact: hello@vib3.com'}</textarea>
+                ">${currentUser?.bio || 'Welcome to my VIB3 profile! 🎵✨\nVIB3 Creator | Dancer | Music Lover\n📧 Contact: hello@vib3.com'}</textarea>
             </div>
             
             <div style="display: flex; gap: 12px; justify-content: flex-end;">
@@ -10504,13 +10504,12 @@ async function loadVideoLikeStatus(videoId, likeBtn) {
 function createFloatingHeart(element) {
     const heart = document.createElement('div');
     heart.textContent = '❤️';
-    heart.style.cssText = `
-        position: absolute;
-        font-size: 24px;
-        pointer-events: none;
-        z-index: 1000;
-        animation: floatUp 1.5s ease-out forwards;
-    `;
+    // Use individual property assignments for better safety
+    heart.style.position = 'absolute';
+    heart.style.fontSize = '24px';
+    heart.style.pointerEvents = 'none';
+    heart.style.zIndex = '1000';
+    heart.style.animation = 'floatUp 1.5s ease-out forwards';
     
     // Add CSS animation if not exists
     if (!document.querySelector('#floating-heart-styles')) {
@@ -10579,14 +10578,13 @@ function enhanceLikeButton(likeBtn, videoElement) {
         
         // Create ripple effect
         const ripple = document.createElement('div');
-        ripple.style.cssText = `
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(254, 44, 85, 0.3);
-            transform: scale(0);
-            animation: ripple 0.6s linear;
-            pointer-events: none;
-        `;
+        // Use individual property assignments for better safety
+        ripple.style.position = 'absolute';
+        ripple.style.borderRadius = '50%';
+        ripple.style.background = 'rgba(254, 44, 85, 0.3)';
+        ripple.style.transform = 'scale(0)';
+        ripple.style.animation = 'ripple 0.6s linear';
+        ripple.style.pointerEvents = 'none';
         
         if (!document.querySelector('#ripple-styles')) {
             const style = document.createElement('style');
@@ -10689,7 +10687,7 @@ function openCreatorTools() {
                 transition: background 0.2s ease;
             " onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='none'">×</button>
             
-            <h2 style="margin: 0 0 32px 0; color: var(--text-primary); text-align: center; font-size: 28px;">Creator Tools</h2>
+            <h2 style="margin: 0 0 32px 0; color: var(--text-primary); text-align: center; font-size: 28px;">VIB3 Studio</h2>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
                 <button onclick="showNotification('Analytics coming soon', 'info')" style="
@@ -10706,7 +10704,7 @@ function openCreatorTools() {
                     <div style="font-weight: 600;">Analytics</div>
                 </button>
                 
-                <button onclick="showNotification('Creator fund info', 'info')" style="
+                <button onclick="showNotification('VIB3 Studio info', 'info')" style="
                     padding: 24px;
                     background: var(--bg-secondary);
                     border: none;
@@ -10717,7 +10715,7 @@ function openCreatorTools() {
                     transition: background 0.2s ease;
                 ">
                     <div style="font-size: 32px; margin-bottom: 8px;">💰</div>
-                    <div style="font-weight: 600;">Creator Fund</div>
+                    <div style="font-weight: 600;">VIB3 Studio</div>
                 </button>
                 
                 <button onclick="showNotification('Promotion tools', 'info')" style="
