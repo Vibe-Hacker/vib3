@@ -43,6 +43,7 @@ www/
 - Test locally: `npm start` or `node server.js`
 - Commit pattern: Standard commit messages from Team VIB3
 - Always run linting/testing before commits (when available)
+- ALWAYS PUSH AFTER COMMIT: `git push origin main`
 
 ## User Preferences
 - NEVER ASK FOR PERMISSION OR CONFIRMATION - JUST DO IT
