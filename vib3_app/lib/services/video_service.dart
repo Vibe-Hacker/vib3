@@ -1119,39 +1119,9 @@ class VideoService {
   }
 
   static Future<bool> unlikeVideo(String videoId, String token) async {
-    // Try multiple endpoints for unlike
-    final endpoints = [
-      '/api/videos/$videoId/like',
-      '/api/video/$videoId/like',
-      '/api/like/$videoId',
-      '/api/videos/like/$videoId',
-    ];
-    
-    for (String endpoint in endpoints) {
-      try {
-        print('🔄 Trying unlike endpoint: $endpoint');
-        final response = await http.delete(
-          Uri.parse('${AppConfig.baseUrl}$endpoint'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        ).timeout(const Duration(seconds: 10));
-
-        print('📡 Unlike response: ${response.statusCode} - ${response.body}');
-        
-        if (response.statusCode == 200 || response.statusCode == 204) {
-          print('✅ Unlike successful with endpoint: $endpoint');
-          return true;
-        }
-      } catch (e) {
-        print('❌ Unlike endpoint $endpoint failed: $e');
-        continue;
-      }
-    }
-    
-    print('❌ All unlike endpoints failed');
-    return false;
+    // Use the same toggle endpoint as likeVideo since server toggles likes
+    print('🔄 Unlike video using toggle endpoint (server handles like/unlike automatically)');
+    return await likeVideo(videoId, token);
   }
 
   static Future<bool> followUser(String userId, String token) async {

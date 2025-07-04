@@ -3787,6 +3787,8 @@ app.post('/api/videos/:videoId/like', requireAuth, async (req, res) => {
     const { videoId } = req.params;
     
     try {
+        console.log(`💖 Like toggle request for video ${videoId} by user ${req.user.userId}`);
+        
         const like = {
             videoId,
             userId: req.user.userId,
@@ -3796,6 +3798,7 @@ app.post('/api/videos/:videoId/like', requireAuth, async (req, res) => {
         // Try to insert like
         try {
             await db.collection('likes').insertOne(like);
+            console.log(`✅ Video ${videoId} liked by user ${req.user.userId}`);
             
             // Get updated like count
             const likeCount = await db.collection('likes').countDocuments({ videoId });
@@ -3803,15 +3806,21 @@ app.post('/api/videos/:videoId/like', requireAuth, async (req, res) => {
             res.json({ 
                 message: 'Video liked', 
                 liked: true, 
-                likeCount 
+                likeCount,
+                videoId,
+                userId: req.user.userId
             });
         } catch (error) {
-            // If duplicate key error, remove the like
+            // If duplicate key error, remove the like (toggle off)
             if (error.code === 11000) {
+                console.log(`🔄 User ${req.user.userId} already liked video ${videoId}, toggling to unlike...`);
+                
                 await db.collection('likes').deleteOne({ 
                     videoId, 
                     userId: req.user.userId 
                 });
+                
+                console.log(`✅ Video ${videoId} unliked by user ${req.user.userId}`);
                 
                 // Get updated like count
                 const likeCount = await db.collection('likes').countDocuments({ videoId });
@@ -3819,7 +3828,9 @@ app.post('/api/videos/:videoId/like', requireAuth, async (req, res) => {
                 res.json({ 
                     message: 'Video unliked', 
                     liked: false, 
-                    likeCount 
+                    likeCount,
+                    videoId,
+                    userId: req.user.userId
                 });
             } else {
                 throw error;
@@ -4279,6 +4290,27 @@ app.get('/api/videos/:videoId/like-status', requireAuth, async (req, res) => {
         res.status(500).json({ error: 'Failed to get like status' });
     }
 });
+
+// Ensure likes collection has proper unique index for toggling
+async function ensureLikesIndex() {
+    try {
+        if (db) {
+            await db.collection('likes').createIndex(
+                { videoId: 1, userId: 1 }, 
+                { unique: true, background: true }
+            );
+            console.log('✅ Likes unique index ensured');
+        }
+    } catch (error) {
+        // Index might already exist, that's fine
+        console.log('📝 Likes index already exists or error:', error.message);
+    }
+}
+
+// Call this when database connects
+if (db) {
+    ensureLikesIndex();
+}
 
 // Get user's liked videos
 app.get('/api/user/liked-videos', requireAuth, async (req, res) => {

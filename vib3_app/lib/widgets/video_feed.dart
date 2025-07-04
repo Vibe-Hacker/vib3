@@ -592,54 +592,36 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   }
 
   Future<void> _handleLike(Video video) async {
-    // Show immediate feedback
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Like button tapped for video: ${video.id}')),
-    );
-    
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final token = authProvider.authToken;
     
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ No auth token - please login'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('❌ Please login to like videos'), backgroundColor: Colors.red),
       );
       return;
     }
 
-    final isLiked = _likedVideos[video.id] ?? false;
+    final wasLiked = _likedVideos[video.id] ?? false;
     
+    // Optimistically update UI
     setState(() {
-      _likedVideos[video.id] = !isLiked;
-      video = video.copyWith(
-        likesCount: isLiked ? video.likesCount - 1 : video.likesCount + 1,
-      );
+      _likedVideos[video.id] = !wasLiked;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('📡 Making API call to ${isLiked ? "unlike" : "like"} video...')),
-    );
-    
-    final success = isLiked
-        ? await VideoService.unlikeVideo(video.id, token)
-        : await VideoService.likeVideo(video.id, token);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('✅ API call result: ${success ? "Success" : "Failed"}'),
-        backgroundColor: success ? Colors.green : Colors.red,
-      ),
-    );
+    // Call the toggle endpoint (server handles like/unlike automatically)
+    final success = await VideoService.likeVideo(video.id, token);
     
     if (!success) {
+      // Revert on failure
       setState(() {
-        _likedVideos[video.id] = isLiked;
-        video = video.copyWith(
-          likesCount: isLiked ? video.likesCount + 1 : video.likesCount - 1,
-        );
+        _likedVideos[video.id] = wasLiked;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ Failed to update like'), backgroundColor: Colors.red),
+      );
     } else {
-      // Sync after successful like/unlike to keep data fresh
+      // Sync after successful toggle to get updated counts and confirm state
       Future.delayed(const Duration(seconds: 1), () {
         _syncUserData(force: true);
       });
