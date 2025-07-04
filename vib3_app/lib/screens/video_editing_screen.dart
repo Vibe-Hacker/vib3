@@ -3,6 +3,7 @@ import 'package:video_player/video_player.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
+import 'dart:convert';
 import '../widgets/video_filters_widget.dart';
 import '../widgets/audio_overlay_widget.dart';
 import '../widgets/text_overlay_widget.dart';
@@ -72,35 +73,125 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
         return;
       }
       
-      // Try to initialize video player with fallback
-      try {
-        _controller = VideoPlayerController.file(videoFile);
-        
-        await _controller!.initialize().timeout(
-          const Duration(seconds: 15),
-          onTimeout: () {
-            throw Exception('Video initialization timeout after 15 seconds');
-          },
-        );
-        
-        setState(() {
-          _isInitialized = true;
-          _videoDuration = _controller!.value.duration;
-          _endTrim = _videoDuration;
-        });
-        
-        print('✅ Video initialized successfully, duration: ${_videoDuration.inSeconds}s');
-        _controller!.setLooping(true);
-      } catch (e) {
-        print('❌ Video player failed, falling back to simple editor: $e');
-        _controller?.dispose();
-        _controller = null;
-        _showSimpleEditor();
-      }
+      // Try multiple video player initialization strategies
+      await _tryVideoPlayerStrategies(videoFile);
+      
     } catch (e) {
       print('❌ Error in video initialization: $e');
       _showSimpleEditor();
     }
+  }
+
+  Future<void> _tryVideoPlayerStrategies(File videoFile) async {
+    final strategies = [
+      () => _initializeBasicPlayer(videoFile),
+      () => _initializeWithLowerResolution(videoFile),
+      () => _initializeWithSoftwareDecoder(videoFile),
+      () => _initializeWithNetworkUrl(videoFile),
+      () => _initializeWithMinimalOptions(videoFile),
+      () => _initializeWithCompatibilityMode(videoFile),
+    ];
+
+    for (int i = 0; i < strategies.length; i++) {
+      try {
+        print('🔄 Trying video player strategy ${i + 1}/${strategies.length}');
+        await strategies[i]();
+        
+        if (_controller != null && _controller!.value.isInitialized) {
+          print('✅ Video player strategy ${i + 1} succeeded!');
+          setState(() {
+            _isInitialized = true;
+            _videoDuration = _controller!.value.duration;
+            _endTrim = _videoDuration;
+          });
+          _controller!.setLooping(true);
+          return;
+        }
+      } catch (e) {
+        print('❌ Video player strategy ${i + 1} failed: $e');
+        _controller?.dispose();
+        _controller = null;
+        continue;
+      }
+    }
+    
+    print('❌ All video player strategies failed, using simple editor');
+    _showSimpleEditor();
+  }
+
+  Future<void> _initializeWithNetworkUrl(File videoFile) async {
+    print('📡 Strategy 4: Network URL (bypasses some codec issues)');
+    
+    // Convert file to data URL to bypass file decoder issues
+    final bytes = await videoFile.readAsBytes();
+    final base64 = base64Encode(bytes);
+    final dataUrl = 'data:video/mp4;base64,$base64';
+    
+    _controller = VideoPlayerController.network(dataUrl);
+    await _controller!.initialize().timeout(const Duration(seconds: 10));
+  }
+
+  Future<void> _initializeWithLowerResolution(File videoFile) async {
+    print('📱 Strategy 2: Lower resolution hint');
+    
+    _controller = VideoPlayerController.file(
+      videoFile,
+      videoPlayerOptions: VideoPlayerOptions(
+        mixWithOthers: true,
+        allowBackgroundPlayback: false,
+      ),
+    );
+    
+    await _controller!.initialize().timeout(const Duration(seconds: 10));
+  }
+
+  Future<void> _initializeWithSoftwareDecoder(File videoFile) async {
+    print('🖥️ Strategy 3: Software decoder hint');
+    
+    _controller = VideoPlayerController.file(
+      videoFile,
+      videoPlayerOptions: VideoPlayerOptions(
+        mixWithOthers: false,
+        allowBackgroundPlayback: false,
+      ),
+    );
+    
+    await _controller!.initialize().timeout(const Duration(seconds: 8));
+  }
+
+  Future<void> _initializeBasicPlayer(File videoFile) async {
+    print('⚡ Strategy 1: Basic player (minimal options)');
+    
+    _controller = VideoPlayerController.file(videoFile);
+    await _controller!.initialize().timeout(const Duration(seconds: 5));
+  }
+
+  Future<void> _initializeWithMinimalOptions(File videoFile) async {
+    print('🎯 Strategy 5: Minimal options (legacy compatibility)');
+    
+    _controller = VideoPlayerController.file(
+      videoFile,
+      videoPlayerOptions: VideoPlayerOptions(
+        mixWithOthers: false,
+        allowBackgroundPlayback: false,
+      ),
+    );
+    await _controller!.initialize().timeout(const Duration(seconds: 3));
+  }
+
+  Future<void> _initializeWithCompatibilityMode(File videoFile) async {
+    print('🔧 Strategy 6: Compatibility mode (older devices)');
+    
+    // Try with different configurations for older hardware
+    _controller = VideoPlayerController.file(
+      videoFile,
+      videoPlayerOptions: VideoPlayerOptions(
+        mixWithOthers: true,
+        allowBackgroundPlayback: true,
+      ),
+    );
+    
+    await _controller!.initialize().timeout(const Duration(seconds: 2));
   }
   
   void _showSimpleEditor() {
