@@ -13245,9 +13245,34 @@ function updateAllVideoLikeCounts(videoId, likeCount, liked, isOptimistic = fals
     });
 }
 
+// Rate limiter for API calls to prevent scroll freeze
+const apiCallLimiter = {
+    calls: [],
+    maxCalls: 3,
+    timeWindow: 1000, // 1 second
+    
+    canMakeCall() {
+        const now = Date.now();
+        // Remove calls older than time window
+        this.calls = this.calls.filter(time => now - time < this.timeWindow);
+        
+        if (this.calls.length < this.maxCalls) {
+            this.calls.push(now);
+            return true;
+        }
+        return false;
+    }
+};
+
 // Load like status for a video (called when video is created)
 async function loadVideoLikeStatus(videoId, likeBtn) {
     if (!videoId || videoId === 'unknown' || !likeBtn) {
+        return;
+    }
+    
+    // Rate limit API calls to prevent scroll freeze
+    if (!apiCallLimiter.canMakeCall()) {
+        console.log('🚫 Rate limited - skipping like status call for', videoId);
         return;
     }
     
@@ -13263,26 +13288,42 @@ async function loadVideoLikeStatus(videoId, likeBtn) {
         
         // Then get authoritative data from server if authenticated
         if (window.authToken && window.currentUser) {
-            const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like-status`, {
-                headers: { 'Authorization': `Bearer ${window.authToken}` }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                const { liked, likeCount } = data;
+            try {
+                const response = await fetch(`${window.API_BASE_URL}/api/videos/${videoId}/like-status`, {
+                    headers: { 'Authorization': `Bearer ${window.authToken}` }
+                });
                 
-                // Update UI with server data
-                if (heartIcon) {
-                    heartIcon.textContent = liked ? '❤️' : '🤍';
+                if (response.ok) {
+                    const data = await response.json();
+                    const { liked, likeCount } = data;
+                    
+                    // Update UI with server data
+                    if (heartIcon) {
+                        heartIcon.textContent = liked ? '❤️' : '🤍';
+                    }
+                    if (countElement) {
+                        countElement.textContent = formatCount(likeCount);
+                    }
+                    
+                    // Update localStorage with server truth
+                    localStorage.setItem(`like_${videoId}`, liked.toString());
+                    
+                    console.log(`📊 Loaded like status for ${videoId}: liked=${liked}, count=${likeCount}`);
+                } else if (response.status === 401) {
+                    // Handle unauthorized - clear invalid token and stop making requests
+                    console.warn('🔐 Auth token expired, clearing auth state');
+                    window.authToken = null;
+                    window.currentUser = null;
+                    
+                    // Don't continue making requests until re-authenticated
+                    return;
+                } else {
+                    console.error('Failed to load like status:', response.status);
                 }
-                if (countElement) {
-                    countElement.textContent = formatCount(likeCount);
-                }
-                
-                // Update localStorage with server truth
-                localStorage.setItem(`like_${videoId}`, liked.toString());
-                
-                console.log(`📊 Loaded like status for ${videoId}: liked=${liked}, count=${likeCount}`);
+            } catch (networkError) {
+                console.error('Network error loading like status:', networkError);
+                // Don't continue making requests on network errors
+                return;
             }
         }
     } catch (error) {
