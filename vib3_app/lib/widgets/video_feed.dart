@@ -139,62 +139,16 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
 
   // Safe server sync that won't block the UI
   Future<void> _syncButtonPositionsFromServerSafely() async {
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.authToken;
-      final userId = authProvider.currentUser?.id;
-      
-      if (token != null && userId != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await _loadButtonPositionsFromServer(token, userId, prefs);
-      } else {
-        print('📍 No user logged in for server sync');
-      }
-    } catch (e) {
-      print('❌ Error in safe server sync: $e');
-      // Fail silently - local positions still work
-    }
+    // Disabled - server endpoints not implemented yet
+    print('📍 Server button sync disabled');
+    return;
   }
 
-  // Load button positions from server
+  // Load button positions from server (disabled - endpoint not implemented)
   Future<void> _loadButtonPositionsFromServer(String token, String userId, SharedPreferences prefs) async {
-    try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/user/button-positions?userId=$userId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['buttonPositions'] != null) {
-          final Map<String, dynamic> serverPositions = data['buttonPositions'];
-          
-          // Update local storage with server data
-          await prefs.setString('button_positions', jsonEncode(serverPositions));
-          
-          // Update UI with server positions (only if widget is still mounted)
-          if (mounted) {
-            setState(() {
-              _buttonPositions = serverPositions.map((key, value) => 
-                MapEntry(key, Offset(value['dx'], value['dy']))
-              );
-            });
-          }
-          
-          print('🌐 Loaded button positions from server: $_buttonPositions');
-        }
-      } else if (response.statusCode == 404) {
-        print('📍 No server button positions found for user, using local/defaults');
-      } else {
-        print('⚠️ Failed to load button positions from server: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('❌ Error loading button positions from server: $e');
-      // Continue with local positions if server fails
-    }
+    // Temporarily disabled - server endpoint not implemented yet
+    print('📍 Button positions server sync disabled - using local storage only');
+    return;
   }
 
   // Save button positions to storage and sync to server
@@ -247,28 +201,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
 
   // Sync button positions to server
   Future<void> _syncButtonPositionsToServer(Map<String, dynamic> positionsMap, String token, String userId) async {
-    try {
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/api/user/button-positions'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'userId': userId,
-          'buttonPositions': positionsMap,
-        }),
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        print('✅ Button positions synced to server');
-      } else {
-        print('⚠️ Failed to sync button positions to server: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('❌ Error syncing button positions to server: $e');
-      // Don't show error to user - local save still works
-    }
+    // Temporarily disabled - server endpoint not implemented yet
+    print('📍 Button positions server sync disabled - saved locally only');
+    return;
   }
 
   // Generate snap grid points

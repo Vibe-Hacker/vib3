@@ -1435,17 +1435,10 @@ class VideoService {
   // Get user's followed users for sync
   static Future<List<String>> getUserFollowedUsers(String token) async {
     try {
-      // Try multiple endpoints for followed users
+      // Only use endpoints that are likely to work and not return HTML
       final endpoints = [
         '/api/user/followed-users', // New simplified endpoint that returns just user IDs
         '/api/user/following',
-        '/api/users/following', 
-        '/api/user/follows',
-        '/api/auth/me/following',
-        '/api/profile/following',
-        '/api/social/following',
-        '/api/relationships/following',
-        '/api/me/following',
       ];
       
       for (String endpoint in endpoints) {
@@ -1459,6 +1452,12 @@ class VideoService {
           ).timeout(const Duration(seconds: 10));
 
           if (response.statusCode == 200) {
+            // Check if response is HTML (common error case)
+            if (response.body.trim().startsWith('<') || response.body.contains('<!DOCTYPE')) {
+              print('❌ Endpoint $endpoint returned HTML instead of JSON');
+              continue;
+            }
+            
             final data = jsonDecode(response.body);
             print('✅ Following endpoint $endpoint returned: ${response.statusCode}');
             
