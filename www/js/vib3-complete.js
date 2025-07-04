@@ -15309,9 +15309,9 @@ function startRoomActivity(roomType, activityType) {
 
 // ================ VIB3 CREATOR STUDIO ================
 
-// Show VIB3 VIB3 Creations
+// Show VIB3 Creations
 function showCreatorStudio() {
-    console.log('🎬 Opening VIB3 VIB3 Creations');
+    console.log('🎬 Opening VIB3 Creations');
     
     // Initialize creator studio files storage if not exists
     if (!window.creatorStudioFiles) {
@@ -15343,7 +15343,7 @@ function showCreatorStudio() {
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <div style="font-size: 32px;">🎬</div>
                     <div>
-                        <h1 style="margin: 0; font-size: 28px; font-weight: 800;">VIB3 VIB3 Creations</h1>
+                        <h1 style="margin: 0; font-size: 28px; font-weight: 800;">VIB3 Creations</h1>
                         <p style="margin: 0; opacity: 0.9; font-size: 14px;">Professional video editing tools for creators</p>
                     </div>
                 </div>
@@ -16438,7 +16438,7 @@ function downloadExportedVideo() {
     // Create a download link for demo purposes
     const link = document.createElement('a');
     link.download = 'vib3-project-export.mp4';
-    link.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent('VIB3 VIB3 Creations Export - Demo File');
+    link.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent('VIB3 Creations Export - Demo File');
     link.click();
     showStudioNotification('🎬 Video download started!');
 }
@@ -16878,7 +16878,7 @@ function joinChallenge(challengeId) {
         <div style="background: var(--bg-secondary); border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; border: 1px solid var(--border-primary); text-align: center;">
             <div style="font-size: 64px; margin-bottom: 20px;">🚀</div>
             <h3 style="margin: 0 0 15px; color: var(--text-primary);">Join Challenge</h3>
-            <p style="margin: 0 0 20px; color: var(--text-secondary);">Ready to participate in this challenge? You can create and submit your video using VIB3 VIB3 Creations!</p>
+            <p style="margin: 0 0 20px; color: var(--text-secondary);">Ready to participate in this challenge? You can create and submit your video using VIB3 Creations!</p>
             
             <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 10px; margin-bottom: 25px;">
                 <h4 style="margin: 0 0 10px; color: var(--text-primary);">Challenge Tips:</h4>
