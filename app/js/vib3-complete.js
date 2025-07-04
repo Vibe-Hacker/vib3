@@ -2755,6 +2755,19 @@ function closeUploadModal() {
         console.log('✅ Upload modal closed and hidden');
     }
     
+    // Call the upload manager's close function if available for thorough cleanup
+    if (window.uploadManager && window.uploadManager.closeUploadModal) {
+        console.log('🧹 Calling upload manager cleanup...');
+        window.uploadManager.closeUploadModal();
+    }
+    
+    // Emergency overlay cleanup
+    if (window.clearAllOverlays) {
+        setTimeout(() => {
+            window.clearAllOverlays();
+        }, 200);
+    }
+    
     // Restore video feeds visibility
     const mainApp = document.getElementById('mainApp');
     if (mainApp) {

@@ -161,6 +161,51 @@ class UploadManager {
             console.log('Removed fullscreen upload page');
         }
         
+        // Also remove any fullscreen upload overlay that might be lingering
+        const uploadOverlay = document.getElementById('fullscreenUploadOverlay');
+        if (uploadOverlay) {
+            uploadOverlay.remove();
+            console.log('Removed fullscreen upload overlay');
+        }
+        
+        // Remove any video review modals
+        const reviewModal = document.querySelector('.video-review-modal');
+        if (reviewModal) {
+            reviewModal.remove();
+            console.log('Removed video review modal');
+        }
+        
+        // Emergency cleanup: Remove any element with dark overlay characteristics
+        document.querySelectorAll('div').forEach(element => {
+            const style = element.style;
+            const computedStyle = window.getComputedStyle(element);
+            
+            // Check if element looks like a dark overlay
+            if ((style.position === 'fixed' || computedStyle.position === 'fixed') &&
+                (style.background === '#000' || style.background === 'rgba(0,0,0,0.95)' || 
+                 style.backgroundColor === '#000' || style.backgroundColor === 'rgba(0,0,0,0.95)') &&
+                (style.width === '100vw' || style.width === '100%') &&
+                (style.height === '100vh' || style.height === '100%') &&
+                parseInt(style.zIndex || computedStyle.zIndex) > 1000) {
+                
+                // Don't remove legitimate UI elements
+                if (!element.id.includes('notification') && 
+                    !element.classList.contains('toast') &&
+                    !element.classList.contains('debug-panel') &&
+                    element.id !== 'mainApp' &&
+                    element.id !== 'app-container') {
+                    console.log('Emergency cleanup: Removing potential dark overlay:', {
+                        id: element.id,
+                        className: element.className,
+                        position: style.position || computedStyle.position,
+                        zIndex: style.zIndex || computedStyle.zIndex,
+                        background: style.background || computedStyle.background
+                    });
+                    element.remove();
+                }
+            }
+        });
+        
         // IMMEDIATE FALLBACK RESTORATION - ensure basic content is visible
         this.emergencyContentRestore();
         
@@ -597,11 +642,37 @@ class UploadManager {
         }
         
         // Clear any remaining high z-index elements that might be blocking content
-        document.querySelectorAll('[style*="z-index: 999"]').forEach(element => {
-            if (element.id !== 'toastNotification' && !element.classList.contains('debug-panel')) {
-                element.remove();
-                console.log('Fixed: Removed high z-index blocking element');
-            }
+        // Look for various z-index patterns that indicate overlay elements
+        const highZIndexSelectors = [
+            '[style*="z-index: 999"]',
+            '[style*="z-index:999"]', 
+            '[style*="z-index: 9999"]',
+            '[style*="z-index:9999"]',
+            '[style*="z-index: 99999"]',
+            '[style*="z-index:99999"]',
+            '[style*="z-index: 999999"]',
+            '[style*="z-index:999999"]',
+            '[style*="z-index: 9999999"]',
+            '[style*="z-index:9999999"]'
+        ];
+        
+        highZIndexSelectors.forEach(selector => {
+            document.querySelectorAll(selector).forEach(element => {
+                // Don't remove notification elements or debug panels
+                if (element.id !== 'toastNotification' && 
+                    !element.classList.contains('debug-panel') &&
+                    !element.id.includes('notification') &&
+                    !element.classList.contains('toast')) {
+                    console.log('Found high z-index overlay element:', {
+                        id: element.id,
+                        className: element.className,
+                        zIndex: element.style.zIndex,
+                        selector: selector
+                    });
+                    element.remove();
+                    console.log('Fixed: Removed high z-index blocking element');
+                }
+            });
         });
         
         // Update state to ensure everything is clean
@@ -1339,16 +1410,50 @@ class UploadManager {
         }
         console.log('Clearing uploadInProgress flag - videos can resume');
         
-        const overlay = document.getElementById('fullscreenUploadOverlay');
-        if (overlay) {
-            overlay.remove();
-            console.log('Fullscreen upload overlay removed');
-        }
+        // Remove all possible upload overlays
+        const overlayIds = ['fullscreenUploadOverlay', 'fullscreenUploadPage'];
+        overlayIds.forEach(id => {
+            const overlay = document.getElementById(id);
+            if (overlay) {
+                overlay.remove();
+                console.log(`Removed overlay: ${id}`);
+            }
+        });
+        
+        // Remove any modal overlays with specific classes
+        const modalClasses = ['.video-review-modal', '.camera-modal'];
+        modalClasses.forEach(className => {
+            document.querySelectorAll(className).forEach(modal => {
+                modal.remove();
+                console.log(`Removed modal: ${className}`);
+            });
+        });
+        
+        // Final sweep: remove any remaining dark overlays
+        document.querySelectorAll('div[style*="position: fixed"]').forEach(element => {
+            const style = element.style;
+            if ((style.background === '#000' || style.backgroundColor === '#000' ||
+                 style.background === 'rgba(0,0,0,0.95)' || style.backgroundColor === 'rgba(0,0,0,0.95)') &&
+                (style.width === '100vw' || style.width === '100%') &&
+                (style.height === '100vh' || style.height === '100%') &&
+                parseInt(style.zIndex) > 5000) {
+                
+                // Safety check: don't remove legitimate elements
+                if (!element.id.includes('notification') && 
+                    !element.classList.contains('toast') &&
+                    element.id !== 'mainApp') {
+                    console.log('Final sweep: Removing remaining dark overlay:', element.id || element.className);
+                    element.remove();
+                }
+            }
+        });
         
         // Remove the upload-paused flags from videos but don't auto-restart them
         document.querySelectorAll('video[data-upload-paused]').forEach(video => {
             video.removeAttribute('data-upload-paused');
         });
+        
+        console.log('All upload overlays cleaned up');
     }
 
     selectVideo() {
@@ -1855,6 +1960,11 @@ class UploadManager {
                         }
                     }
                     this.closeUploadModal();
+                    
+                    // Extra verification to ensure all overlays are removed even on error
+                    setTimeout(() => {
+                        this.verifyContentRestoration();
+                    }, 500);
                 },
                 async () => {
                     // Upload success
@@ -1891,6 +2001,11 @@ class UploadManager {
                             // Close upload modal and restore content
                             this.closeUploadModal();
                             
+                            // Extra verification to ensure all overlays are removed
+                            setTimeout(() => {
+                                this.verifyContentRestoration();
+                            }, 500);
+                            
                             // Refresh feeds after successful upload
                             if (window.loadAllVideosForFeed) {
                                 window.loadAllVideosForFeed();
@@ -1903,6 +2018,11 @@ class UploadManager {
                             window.showToast('Video uploaded but failed to save details');
                         }
                         this.closeUploadModal();
+                        
+                        // Extra verification to ensure all overlays are removed
+                        setTimeout(() => {
+                            this.verifyContentRestoration();
+                        }, 500);
                     }
                 }
             );
@@ -1922,6 +2042,11 @@ class UploadManager {
                 }
             }
             this.closeUploadModal();
+            
+            // Extra verification to ensure all overlays are removed
+            setTimeout(() => {
+                this.verifyContentRestoration();
+            }, 500);
         }
     }
 
@@ -1951,5 +2076,81 @@ const uploadManager = new UploadManager();
 
 // Make upload manager globally available
 window.uploadManager = uploadManager;
+
+// Create a global emergency overlay cleanup function
+window.clearAllOverlays = function() {
+    console.log('🚨 Emergency overlay cleanup called...');
+    
+    // Remove specific upload overlays
+    const overlayIds = ['fullscreenUploadOverlay', 'fullscreenUploadPage'];
+    overlayIds.forEach(id => {
+        const overlay = document.getElementById(id);
+        if (overlay) {
+            overlay.remove();
+            console.log(`Emergency: Removed overlay ${id}`);
+        }
+    });
+    
+    // Remove modals
+    const modalClasses = ['.video-review-modal', '.camera-modal', '.modal.active'];
+    modalClasses.forEach(className => {
+        document.querySelectorAll(className).forEach(modal => {
+            modal.remove();
+            console.log(`Emergency: Removed modal ${className}`);
+        });
+    });
+    
+    // Nuclear option: remove any fixed position dark elements
+    document.querySelectorAll('div[style*="position: fixed"]').forEach(element => {
+        const style = element.style;
+        const computedStyle = window.getComputedStyle(element);
+        
+        if ((style.background === '#000' || style.backgroundColor === '#000' ||
+             style.background === 'rgba(0,0,0,0.95)' || style.backgroundColor === 'rgba(0,0,0,0.95)' ||
+             computedStyle.backgroundColor === 'rgb(0, 0, 0)') &&
+            (style.width === '100vw' || style.width === '100%') &&
+            (style.height === '100vh' || style.height === '100%') &&
+            parseInt(style.zIndex || computedStyle.zIndex) > 1000) {
+            
+            // Safety check
+            if (!element.id.includes('notification') && 
+                !element.classList.contains('toast') &&
+                element.id !== 'mainApp' &&
+                element.id !== 'app-container') {
+                console.log('Emergency: Removing dark overlay:', {
+                    id: element.id,
+                    className: element.className,
+                    zIndex: style.zIndex || computedStyle.zIndex
+                });
+                element.remove();
+            }
+        }
+    });
+    
+    // Restore main content visibility
+    const mainElements = ['.app-container', '.main-app', '.video-feed', '.sidebar'];
+    mainElements.forEach(selector => {
+        const element = document.querySelector(selector);
+        if (element) {
+            element.style.setProperty('display', 'block', 'important');
+            element.style.setProperty('visibility', 'visible', 'important');
+            element.style.setProperty('opacity', '1', 'important');
+        }
+    });
+    
+    // Clear upload flags
+    if (window.stateManager) {
+        window.stateManager.actions.setUploadPageActive(false);
+        window.stateManager.actions.setUploadInProgress(false);
+    } else {
+        window.uploadPageActive = false;
+        window.uploadInProgress = false;
+    }
+    
+    console.log('🚨 Emergency overlay cleanup completed!');
+    if (window.showToast) {
+        window.showToast('All overlays cleared! 🧹');
+    }
+};
 
 export default UploadManager;
