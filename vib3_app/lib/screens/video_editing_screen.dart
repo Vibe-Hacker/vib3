@@ -25,7 +25,6 @@ class VideoEditingScreen extends StatefulWidget {
 class _VideoEditingScreenState extends State<VideoEditingScreen>
     with TickerProviderStateMixin {
   VideoPlayerController? _controller;
-  VideoPlayerController? _thumbnailController;
   bool _isInitialized = false;
   bool _isExporting = false;
   double _exportProgress = 0.0;
@@ -477,7 +476,10 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                     min: 0,
                     max: _videoDuration.inMilliseconds.toDouble(),
                     activeColor: const Color(0xFF00CED1),
+                    inactiveColor: Colors.grey[600],
+                    thumbColor: const Color(0xFF00CED1),
                     onChanged: (value) {
+                      print('🎬 Trim start changed to: ${Duration(milliseconds: value.toInt()).inSeconds}s');
                       setState(() {
                         _startTrim = Duration(milliseconds: value.toInt());
                         if (_startTrim >= _endTrim) {
@@ -488,9 +490,13 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                     },
                   ),
                 ),
-                Text(
-                  _formatDuration(_startTrim),
-                  style: const TextStyle(color: Colors.white70),
+                Container(
+                  width: 60,
+                  child: Text(
+                    _formatDuration(_startTrim),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
             ),
@@ -505,7 +511,10 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                     min: 0,
                     max: _videoDuration.inMilliseconds.toDouble(),
                     activeColor: const Color(0xFF00CED1),
+                    inactiveColor: Colors.grey[600],
+                    thumbColor: const Color(0xFF00CED1),
                     onChanged: (value) {
+                      print('🎬 Trim end changed to: ${Duration(milliseconds: value.toInt()).inSeconds}s');
                       setState(() {
                         _endTrim = Duration(milliseconds: value.toInt());
                         if (_endTrim <= _startTrim) {
@@ -516,9 +525,13 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                     },
                   ),
                 ),
-                Text(
-                  _formatDuration(_endTrim),
-                  style: const TextStyle(color: Colors.white70),
+                Container(
+                  width: 60,
+                  child: Text(
+                    _formatDuration(_endTrim),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
             ),
@@ -578,80 +591,140 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   @override
   void dispose() {
     _controller?.dispose();
-    _thumbnailController?.dispose();
     _tabController.dispose();
     super.dispose();
   }
 
   Widget _buildLocalVideoThumbnail() {
-    return FutureBuilder<VideoPlayerController>(
-      future: _createThumbnailController(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData && snapshot.data!.value.isInitialized) {
-          return AspectRatio(
-            aspectRatio: snapshot.data!.value.aspectRatio,
-            child: VideoPlayer(snapshot.data!),
-          );
-        }
-        
-        // Show placeholder while loading thumbnail
-        return Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: Colors.grey[800],
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.movie_outlined,
-                size: 48,
-                color: Colors.grey[600],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Video Thumbnail',
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 16,
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF00CED1).withOpacity(0.3),
+            const Color(0xFF1E90FF).withOpacity(0.3),
+            Colors.grey[800]!,
+          ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Video file info display
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xFF00CED1),
+                        Color(0xFF1E90FF),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.movie_outlined,
+                    size: 40,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Loading preview...',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
+                const SizedBox(height: 16),
+                Text(
+                  '🎬 Video Ready',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  'Compatible editing mode active',
+                  style: TextStyle(
+                    color: Colors.grey[300],
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.videoPath.split('/').last,
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 11,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
-        );
-      },
+          
+          // Video info badges
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Color(0xFF00CED1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'READY',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          
+          // Duration display
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.access_time,
+                    size: 14,
+                    color: Colors.white70,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _formatDuration(_videoDuration),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Future<VideoPlayerController> _createThumbnailController() async {
-    try {
-      final videoFile = File(widget.videoPath);
-      print('🖼️ Creating thumbnail controller for: ${widget.videoPath}');
-      
-      final controller = VideoPlayerController.file(videoFile);
-      await controller.initialize();
-      await controller.seekTo(const Duration(seconds: 1)); // Get frame at 1 second
-      await controller.pause();
-      
-      // Store reference for disposal
-      _thumbnailController = controller;
-      
-      print('✅ Thumbnail controller created successfully');
-      return controller;
-    } catch (e) {
-      print('❌ Error creating thumbnail controller: $e');
-      // Return a dummy controller that will show fallback
-      final controller = VideoPlayerController.file(File(''));
-      return controller;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
