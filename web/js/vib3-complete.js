@@ -11857,4 +11857,39 @@ function trackNotInterested(videoId) {
         reason: 'user_action'
     });
 }
+
+// ================ MISSING FUNCTION DEFINITIONS ================
+
+// Remix/Duet functions that were referenced but not defined
+function publishRemix(originalVideoId, remixData) {
+    console.log('🎬 Publishing remix for video:', originalVideoId);
+    console.log('📝 Remix data:', remixData);
+    
+    // Show notification for now
+    showNotification('Remix feature coming soon! 🎵', 'info');
+    
+    // TODO: Implement actual remix publishing logic
+    // This would typically:
+    // 1. Upload the remix video
+    // 2. Link it to the original video
+    // 3. Add remix metadata
+    // 4. Update the feed
+}
+
+function startRemix(videoId) {
+    console.log('🎵 Starting remix for video:', videoId);
+    showNotification('Remix creator coming soon! 🎤', 'info');
+    // TODO: Open remix creation interface
+}
+
+function createDuet(videoId) {
+    console.log('👥 Creating duet for video:', videoId);
+    showNotification('Duet feature coming soon! 🎭', 'info');
+    // TODO: Open duet creation interface
+}
+
+// Make remix functions globally available
+window.publishRemix = publishRemix;
+window.startRemix = startRemix;
+window.createDuet = createDuet;
   
