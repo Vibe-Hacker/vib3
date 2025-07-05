@@ -1,13 +1,16 @@
 // Simple authentication for VIB3 with MongoDB
 
-let currentUser = null;
+// Use existing currentUser or create new one
+if (typeof window.currentUser === 'undefined') {
+    window.currentUser = null;
+}
 
 // Initialize auth state listener
 function initAuth(onUserChange) {
     // Use the MongoDB adapter's auth system
     if (window.auth && window.auth.onAuthStateChanged) {
         window.auth.onAuthStateChanged((user) => {
-            currentUser = user;
+            window.currentUser = user;
             onUserChange(user);
         });
     }
@@ -15,7 +18,7 @@ function initAuth(onUserChange) {
 
 // Get current user
 function getCurrentUser() {
-    return currentUser;
+    return window.currentUser;
 }
 
 // Login function
