@@ -24,6 +24,9 @@ console.log('🚀 VIB3 Server starting...');
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
+// Serve static files from www directory
+app.use(express.static(path.join(__dirname, 'www')));
+
 // Request logging middleware
 app.use((req, res, next) => {
     try {
