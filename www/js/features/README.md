@@ -56,7 +56,7 @@
 - [ ] Trending challenges
 - [ ] Sound discovery
 - [ ] Effect discovery
-- [ ] Creator discovery
+- [ ] VIB3 Studio discovery
 
 ### 7. Messaging
 - [ ] Direct messages
@@ -65,12 +65,12 @@
 - [ ] Video replies
 - [ ] Message reactions
 
-### 8. Creator Tools
+### 8. VIB3 Studio
 - [ ] Analytics dashboard
 - [ ] Audience insights
 - [ ] Video performance
 - [ ] Growth tracking
-- [ ] Creator fund
+- [ ] VIB3 Studio
 - [ ] Brand partnerships
 
 ### 9. Settings & Privacy

@@ -1,15 +1,4 @@
-// Firebase configuration
-// In production, these values should be loaded from environment variables
-const firebaseConfig = {
-    apiKey: "AIzaSyDm3RODqsYRB1P9Lrri497FmMA0IIklvwM",
-    authDomain: "vib3-a293b.firebaseapp.com",
-    projectId: "vib3-a293b",
-    storageBucket: "vib3-a293b.firebasestorage.app",
-    messagingSenderId: "916623805957",
-    appId: "1:916623805957:web:09e9de341bc490004fd66c",
-    measurementId: "G-KW08F2608Q"
-};
-
+// VIB3 Configuration - MongoDB/Backend version
 // App configuration
 const appConfig = {
     name: 'VIB3',
@@ -23,9 +12,13 @@ const appConfig = {
     feedPageSize: 10,
     infiniteScrollThreshold: 0.1,
     videoIntersectionThreshold: 0.7,
-    keyboardShortcutsEnabled: true
+    keyboardShortcutsEnabled: true,
+    
+    // Backend API configuration
+    apiUrl: window.location.origin + '/api',
+    uploadUrl: window.location.origin + '/api/upload',
+    authUrl: window.location.origin + '/api/auth'
 };
 
-// Make configurations globally available
-window.firebaseConfig = firebaseConfig;
+// Make configuration globally available
 window.appConfig = appConfig;

@@ -1,0 +1,10 @@
+DEPLOYMENT TEST FILE
+Created: 2025-01-05
+Time: ${new Date().toISOString()}
+
+If you can read this exact text at:
+https://vib3-production.up.railway.app/deployment-test.txt
+
+Then Railway deployment is working correctly.
+
+If you see different content, then Railway has a serious deployment issue.

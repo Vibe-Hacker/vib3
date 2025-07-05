@@ -567,19 +567,26 @@ Gifts Received: ${totalGifts}`);
 
     animateGift(gift) {
         const giftsArea = document.getElementById('giftsArea');
+        if (!giftsArea) return;
+        
         const giftElement = document.createElement('div');
         giftElement.className = 'gift-animation';
         giftElement.textContent = gift.name.split(' ')[0];
         
-        // Random position
+        // Random position and safe CSS property assignment
         giftElement.style.left = Math.random() * 80 + 10 + '%';
         giftElement.style.animationDuration = '3s';
+        giftElement.style.animationName = 'floatUp';
+        giftElement.style.animationTimingFunction = 'ease-out';
+        giftElement.style.animationFillMode = 'forwards';
         
         giftsArea.appendChild(giftElement);
 
         // Remove after animation
         setTimeout(() => {
-            giftsArea.removeChild(giftElement);
+            if (giftElement.parentNode) {
+                giftElement.parentNode.removeChild(giftElement);
+            }
         }, 3000);
     }
 

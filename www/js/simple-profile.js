@@ -2,6 +2,23 @@
 
 function createSimpleProfilePage() {
     console.log('🔧 Creating comprehensive VIB3 profile page...');
+    console.log('🔍 IMMEDIATE DEBUG - window.currentUser:', window.currentUser);
+    console.log('🔍 IMMEDIATE DEBUG - profileImage value:', window.currentUser?.profileImage);
+    
+    // EMERGENCY: Define changeProfilePicture inline if it doesn't exist
+    if (!window.changeProfilePicture) {
+        console.log('⚠️ EMERGENCY: changeProfilePicture not found, creating inline version!');
+        window.changeProfilePicture = function() {
+            alert('🚨 INLINE EMERGENCY FUNCTION CALLED!');
+            console.log('🚨 This is the emergency inline changeProfilePicture function');
+            
+            // Show a basic modal
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+            modal.innerHTML = '<div style="background:white;padding:20px;border-radius:10px;"><h2>Profile Picture Upload</h2><p>The upload feature is temporarily unavailable.</p><button onclick="this.parentElement.parentElement.remove()">Close</button></div>';
+            document.body.appendChild(modal);
+        };
+    }
     
     // Remove any existing profile page
     const existingProfile = document.getElementById('profilePage');
@@ -38,6 +55,92 @@ function createSimpleProfilePage() {
         }
     };
     
+    console.log('🔧 INITIAL USER DATA FOR PROFILE CREATION:', {
+        hasProfileImage: !!user.profileImage,
+        profileImage: user.profileImage,
+        hasProfilePicture: !!user.profilePicture,
+        profilePicture: user.profilePicture,
+        username: user.username
+    });
+    
+    // Add click listeners after page creation
+    setTimeout(() => {
+        console.log('🔧 FORCING CLICK HANDLERS...');
+        const profilePic = document.getElementById('profilePicture');
+        const cameraBtn = document.querySelector('button[style*="📷"]');
+        
+        console.log('🔧 Profile picture element found:', !!profilePic);
+        console.log('🔧 Camera button element found:', !!cameraBtn);
+        
+        if (profilePic) {
+            // Remove any existing onclick
+            profilePic.onclick = null;
+            profilePic.removeAttribute('onclick');
+            
+            // Force new click handler
+            profilePic.addEventListener('click', function(e) {
+                e.stopPropagation();
+                console.log('🎯 PROFILE PIC CLICKED VIA EVENT LISTENER!');
+                alert('🎯 EVENT LISTENER CLICK DETECTED!');
+                
+                // Try multiple ways to call the function
+                try {
+                    if (window.changeProfilePicture) {
+                        console.log('🎯 Calling window.changeProfilePicture...');
+                        window.changeProfilePicture();
+                    } else if (typeof changeProfilePicture !== 'undefined') {
+                        console.log('🎯 Calling changeProfilePicture directly...');
+                        changeProfilePicture();
+                    } else {
+                        console.error('❌ changeProfilePicture function not found!');
+                        alert('❌ Function not found!');
+                    }
+                } catch (err) {
+                    console.error('❌ Error calling function:', err);
+                    alert('❌ Error: ' + err.message);
+                }
+            }, true); // Use capture phase
+            
+            console.log('✅ Click handler attached to profile picture');
+        }
+        
+        if (cameraBtn) {
+            // Remove any existing onclick
+            cameraBtn.onclick = null;
+            cameraBtn.removeAttribute('onclick');
+            
+            // Force new click handler
+            cameraBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                console.log('📷 CAMERA BUTTON CLICKED VIA EVENT LISTENER!');
+                alert('📷 CAMERA EVENT LISTENER CLICK!');
+                
+                try {
+                    if (window.changeProfilePicture) {
+                        window.changeProfilePicture();
+                    }
+                } catch (err) {
+                    console.error('❌ Camera button error:', err);
+                    alert('❌ Camera Error: ' + err.message);
+                }
+            }, true);
+            
+            console.log('✅ Click handler attached to camera button');
+        }
+        
+        // Also check what's preventing clicks
+        console.log('🔍 Checking for overlapping elements...');
+        const rect = profilePic?.getBoundingClientRect();
+        if (rect) {
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const topElement = document.elementFromPoint(centerX, centerY);
+            console.log('🔍 Element at center of profile pic:', topElement);
+            console.log('🔍 Is it the profile pic?', topElement === profilePic);
+        }
+    }, 500); // Increased delay to ensure DOM is ready
+    
     // Load user profile data
     if (window.authToken) {
         loadUserProfileData();
@@ -61,7 +164,7 @@ function createSimpleProfilePage() {
     
     profilePage.innerHTML = `
         <!-- Profile Header -->
-        <div style="background: linear-gradient(135deg, #00CED1 0%, #FF1493 100%); padding: 40px 50px; position: relative;">
+        <div style="background: linear-gradient(135deg, #fe2c55 0%, #ff006e 100%); padding: 40px 50px; position: relative;">
             <!-- Back Button -->
             <button onclick="goBackToFeed();" style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.5); color: white; border: none; padding: 12px; border-radius: 50%; cursor: pointer; font-size: 18px; width: 44px; height: 44px;">
                 ←
@@ -75,10 +178,10 @@ function createSimpleProfilePage() {
             <!-- Profile Info -->
             <div style="display: flex; align-items: center; gap: 30px; max-width: 1000px; margin: 0 auto;">
                 <div style="position: relative;">
-                    <div id="profilePicture" style="width: 140px; height: 140px; background: linear-gradient(135deg, #333, #666); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; border: 4px solid rgba(255,255,255,0.2); cursor: pointer; ${user.profileImage ? `background-image: url(${user.profileImage}); background-size: cover; background-position: center;` : ''}" onclick="changeProfilePicture()">
-                        ${user.profileImage ? '' : (user.profilePicture || '👤')}
+                    <div id="profilePicture" style="width: 140px; height: 140px; background: ${user.profileImage ? `url(${user.profileImage})` : 'linear-gradient(135deg, #333, #666)'}; ${user.profileImage ? 'background-size: cover; background-position: center;' : ''} border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; border: 4px solid rgba(255,255,255,0.2); cursor: pointer;" onclick="alert('INLINE CLICK WORKS!'); console.log('INLINE CLICK LOG!'); window.testProfilePictureClick(); changeProfilePicture();">
+${user.profileImage ? '' : (user.profilePicture || '👤')}
                     </div>
-                    <button onclick="changeProfilePicture()" style="position: absolute; bottom: 0; right: 0; background: #fe2c55; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 16px; cursor: pointer;">
+                    <button onclick="alert('CAMERA BUTTON CLICK WORKS!'); changeProfilePicture();" style="position: absolute; bottom: 0; right: 0; background: #fe2c55; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 16px; cursor: pointer;">
                         📷
                     </button>
                 </div>
@@ -267,10 +370,10 @@ async function loadUserVideos() {
         console.log('🔍 Fetching user videos from:', url);
         
         const response = await fetch(url, {
-            credentials: 'include',
+            credentials: 'include', // Use session-based auth
             headers: {
                 'Content-Type': 'application/json',
-                ...(window.authToken ? 
+                ...(window.authToken && window.authToken !== 'session-based' ? 
                     { 'Authorization': `Bearer ${window.authToken}` } : {})
             }
         });
@@ -279,23 +382,11 @@ async function loadUserVideos() {
         
         if (response.ok) {
             const data = await response.json();
-            console.log('✅ User videos loaded:', {
-                count: data.videos?.length || 0,
-                sampleVideo: data.videos?.[0] ? {
-                    title: data.videos[0].title,
-                    views: data.videos[0].views,
-                    likes: data.videos[0].likeCount
-                } : null
-            });
+            console.log('✅ User videos loaded:', data);
             displayUserVideos(data.videos || []);
         } else {
             const text = await response.text();
-            console.error('❌ Videos API failed:', { 
-                status: response.status, 
-                text: text.substring(0, 200),
-                url: url,
-                currentUser: window.currentUser
-            });
+            console.error('❌ Videos API failed:', { status: response.status, text: text.substring(0, 200) });
         }
     } catch (error) {
         console.error('Error loading user videos:', error);
@@ -308,10 +399,10 @@ async function loadUserStats() {
         console.log('📊 Loading user stats:', { baseURL, hasAuthToken: !!window.authToken });
         
         const response = await fetch(`${baseURL}/api/user/stats`, {
-            credentials: 'include',
+            credentials: 'include', // Use session-based auth
             headers: {
                 'Content-Type': 'application/json',
-                ...(window.authToken ? 
+                ...(window.authToken && window.authToken !== 'session-based' ? 
                     { 'Authorization': `Bearer ${window.authToken}` } : {})
             }
         });
@@ -346,18 +437,29 @@ function updateProfileDisplay(userData) {
     
     // Update profile picture
     const profilePicEl = document.getElementById('profilePicture');
+    console.log('🖼️ Updating profile picture:', { 
+        hasElement: !!profilePicEl, 
+        profileImage: userData.profileImage, 
+        profilePicture: userData.profilePicture 
+    });
     if (profilePicEl) {
         if (userData.profileImage) {
             // Show uploaded image
+            console.log('🖼️ Setting background image:', userData.profileImage);
             profilePicEl.style.backgroundImage = `url(${userData.profileImage})`;
             profilePicEl.style.backgroundSize = 'cover';
             profilePicEl.style.backgroundPosition = 'center';
             profilePicEl.textContent = '';
         } else if (userData.profilePicture) {
             // Show emoji
+            console.log('🖼️ Setting emoji:', userData.profilePicture);
             profilePicEl.style.backgroundImage = '';
             profilePicEl.textContent = userData.profilePicture;
+        } else {
+            console.log('🖼️ No profile image or picture found in userData');
         }
+    } else {
+        console.log('❌ Profile picture element not found');
     }
 }
 
@@ -419,7 +521,7 @@ function setupProfileActions(profileUser) {
                 Share Profile
             </button>
             <button onclick="openCreatorTools()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">
-                Creator Tools
+                VIB3 Studio
             </button>
         `;
     } else {
@@ -1141,9 +1243,11 @@ async function editUsername() {
 }
 
 async function changeProfilePicture() {
+    alert('📸 simple-profile.js changeProfilePicture called!');
+    console.log('📸 SIMPLE-PROFILE.JS changeProfilePicture called!');
     const emojis = ['👤', '😀', '😎', '🤩', '🥳', '🦄', '🌟', '💫', '🎵', '🎭', '🎨', '🏆'];
     const currentPicture = document.getElementById('profilePicture');
-    const currentEmoji = currentPicture.textContent;
+    const currentEmoji = currentPicture?.textContent || '👤';
     
     // Create profile picture picker modal
     const modal = document.createElement('div');
@@ -1161,10 +1265,7 @@ async function changeProfilePicture() {
             <div style="margin-bottom: 20px;">
                 <input type="file" id="profileImageUpload" accept="image/*" style="display: none;">
                 <button onclick="document.getElementById('profileImageUpload').click()" style="width: 100%; padding: 15px; background: #fe2c55; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 10px;">
-                    📁 Upload from Device
-                </button>
-                <button onclick="openCameraForProfile()" style="width: 100%; padding: 15px; background: #ff006e; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 10px;">
-                    📷 Take Photo
+                    📷 Upload Photo
                 </button>
                 <div style="color: #888; font-size: 12px; text-align: center;">JPG, PNG, GIF up to 5MB</div>
             </div>
@@ -1206,30 +1307,71 @@ async function changeProfilePicture() {
             }
             
             try {
+                console.log('📸 Starting profile picture upload...');
+                console.log('📸 File details:', { name: file.name, size: file.size, type: file.type });
+                
+                // Use EXACT same approach as video upload
                 const formData = new FormData();
                 formData.append('profileImage', file);
                 
-                const baseURL = getAPIBaseURL();
-                
+                // Add user information EXACTLY like video upload
+                const currentUser = window.currentUser;
+                if (currentUser) {
+                    const username = currentUser.username || 
+                                   currentUser.displayName || 
+                                   currentUser.name ||
+                                   currentUser.email?.split('@')[0] || 
+                                   'user';
+                    formData.append('username', username);
+                    formData.append('userId', currentUser.id || currentUser._id || currentUser.uid || '');
+                    
+                    console.log('📸 Adding user info to upload:');
+                    console.log('  - Username:', username);
+                    console.log('  - User ID:', currentUser.id || currentUser._id || currentUser.uid);
+                    
+                    // Log all FormData entries like video upload does
+                    console.log('🔍 COMPLETE FORMDATA CONTENTS:');
+                    for (let [key, value] of formData.entries()) {
+                        if (value instanceof File) {
+                            console.log(`  ${key}: [File] ${value.name} (${value.size} bytes, ${value.type})`);
+                        } else {
+                            console.log(`  ${key}: ${value}`);
+                        }
+                    }
+                } else {
+                    console.warn('⚠️ No currentUser found for upload');
+                }
                 
                 showNotification('Uploading profile picture...', 'info');
                 
-                const response = await fetch(`${baseURL}/api/user/profile-image`, {
+                // Use EXACT same API base URL and request format as video upload
+                const response = await fetch(`${window.API_BASE_URL}/api/user/profile-image`, {
                     method: 'POST',
-                    credentials: 'include',
-                    headers: { 
-                        ...(window.authToken && window.authToken !== 'session-based' ? { 'Authorization': `Bearer ${window.authToken}` } : {})
+                    credentials: 'include', // EXACT same as video upload
+                    headers: {
+                        // EXACT same header logic as video upload
+                        ...(window.authToken && window.authToken !== 'session-based' ? 
+                            { 'Authorization': `Bearer ${window.authToken}` } : {})
                     },
                     body: formData
                 });
                 
+                console.log('📡 RESPONSE STATUS:', response.status, response.statusText);
+                console.log('📡 RESPONSE HEADERS:', Object.fromEntries(response.headers.entries()));
+                
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('📸 Profile image upload response:', data);
+                    console.log('📸 Profile image upload SUCCESS response:', data);
                     
-                    // Update profile picture display
-                    console.log('📸 Calling updateProfilePictureDisplay with URL:', data.profilePictureUrl);
-                    updateProfilePictureDisplay(data.profilePictureUrl, null);
+                    // Update profile picture display immediately
+                    const profilePicEl = document.getElementById('profilePicture');
+                    if (profilePicEl && data.profilePictureUrl) {
+                        console.log('📸 Updating profile picture element immediately with:', data.profilePictureUrl);
+                        profilePicEl.style.backgroundImage = `url(${data.profilePictureUrl})`;
+                        profilePicEl.style.backgroundSize = 'cover';
+                        profilePicEl.style.backgroundPosition = 'center';
+                        profilePicEl.textContent = '';
+                    }
                     
                     // Update current user data
                     if (window.currentUser) {
@@ -1239,19 +1381,21 @@ async function changeProfilePicture() {
                         console.log('📸 Updated currentUser:', window.currentUser);
                     }
                     
-                    // Force reload profile data to get updated image
-                    if (window.loadUserProfileData) {
-                        setTimeout(() => window.loadUserProfileData(), 500);
-                    }
-                    
-                    showNotification('Profile picture updated!', 'success');
+                    showNotification('Profile picture updated successfully!', 'success');
                     modal.remove();
                 } else {
-                    const errorData = await response.json();
-                    showNotification(errorData.error || 'Failed to upload profile picture', 'error');
+                    const errorText = await response.text();
+                    console.error('❌ PROFILE PICTURE UPLOAD ERROR:', errorText);
+                    
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        showNotification(errorData.error || 'Failed to upload profile picture', 'error');
+                    } catch {
+                        showNotification('Failed to upload profile picture', 'error');
+                    }
                 }
             } catch (error) {
-                console.error('Error uploading profile picture:', error);
+                console.error('❌ Profile picture upload exception:', error);
                 showNotification('Error uploading profile picture', 'error');
             }
         }
@@ -1276,13 +1420,6 @@ async function changeProfilePicture() {
             
             if (response.ok) {
                 updateProfilePictureDisplay(null, emoji);
-                
-                // Update current user data
-                if (window.currentUser) {
-                    window.currentUser.profilePicture = emoji;
-                    window.currentUser.profileImage = null; // Clear image when using emoji
-                }
-                
                 showNotification('Profile picture updated!', 'success');
                 modal.remove();
             } else {
@@ -1295,170 +1432,18 @@ async function changeProfilePicture() {
     };
 }
 
-// Camera function for profile picture
-function openCameraForProfile() {
-    console.log('📷 Opening camera for profile picture...');
-    
-    const cameraModal = document.createElement('div');
-    cameraModal.id = 'profileCameraModal';
-    cameraModal.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-        background: rgba(0,0,0,0.95); z-index: 3000; display: flex; 
-        align-items: center; justify-content: center;
-    `;
-    
-    cameraModal.innerHTML = `
-        <div style="background: #222; padding: 20px; border-radius: 12px; max-width: 500px; width: 90%; text-align: center;">
-            <h3 style="color: white; margin-bottom: 20px;">Take Profile Photo</h3>
-            
-            <div style="position: relative; margin-bottom: 20px;">
-                <video id="profileCameraVideo" autoplay muted playsinline style="width: 100%; max-width: 400px; height: 300px; border-radius: 12px; background: #333; object-fit: cover;"></video>
-                <canvas id="profileCameraCanvas" style="display: none;"></canvas>
-            </div>
-            
-            <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 20px;">
-                <button id="switchProfileCamera" style="background: #444; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
-                    🔄 Switch Camera
-                </button>
-                <button id="captureProfilePhoto" style="background: #fe2c55; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                    📸 Capture
-                </button>
-            </div>
-            
-            <button onclick="closeProfileCamera()" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
-                Cancel
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(cameraModal);
-    
-    let currentStream = null;
-    let currentFacingMode = 'user';
-    
-    // Start camera
-    async function startProfileCamera() {
-        try {
-            const constraints = {
-                video: {
-                    facingMode: currentFacingMode,
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
-                }
-            };
-            
-            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-            const video = document.getElementById('profileCameraVideo');
-            if (video) {
-                video.srcObject = currentStream;
-            }
-        } catch (error) {
-            console.error('Camera access error:', error);
-            showNotification('Camera access denied or not available', 'error');
-        }
-    }
-    
-    // Switch camera
-    document.getElementById('switchProfileCamera').onclick = async () => {
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-        }
-        currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-        await startProfileCamera();
-    };
-    
-    // Capture photo
-    document.getElementById('captureProfilePhoto').onclick = () => {
-        const video = document.getElementById('profileCameraVideo');
-        const canvas = document.getElementById('profileCameraCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Set canvas size to match video
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        // Draw video frame to canvas
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Convert to blob and upload
-        canvas.toBlob(async (blob) => {
-            if (blob) {
-                const formData = new FormData();
-                formData.append('profileImage', blob, 'profile-photo.jpg');
-                
-                try {
-                    const baseURL = getAPIBaseURL();
-                    const response = await fetch(`${baseURL}/api/user/profile-image`, {
-                        method: 'POST',
-                        body: formData,
-                        credentials: 'include',
-                        headers: {
-                            ...(window.authToken && window.authToken !== 'session-based' ? 
-                                { 'Authorization': `Bearer ${window.authToken}` } : {})
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const result = await response.json();
-                        console.log('📸 Camera profile image upload response:', result);
-                        
-                        // Update UI with new image
-                        updateProfilePictureDisplay(result.profilePictureUrl);
-                        
-                        // Update current user data
-                        if (window.currentUser) {
-                            window.currentUser.profilePicture = result.profilePictureUrl;
-                            window.currentUser.profileImage = result.profilePictureUrl;
-                        }
-                        
-                        // Force reload profile data to get updated image
-                        if (window.loadUserProfileData) {
-                            setTimeout(() => window.loadUserProfileData(), 500);
-                        }
-                        
-                        showNotification('Profile picture updated successfully!', 'success');
-                        closeProfileCamera();
-                        closePictureModal();
-                    } else {
-                        throw new Error('Failed to upload image');
-                    }
-                } catch (error) {
-                    console.error('Error uploading profile picture:', error);
-                    showNotification('Error uploading profile picture', 'error');
-                }
-            }
-        }, 'image/jpeg', 0.8);
-    };
-    
-    // Close camera function
-    window.closeProfileCamera = () => {
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-        }
-        cameraModal.remove();
-    };
-    
-    // Start camera when modal opens
-    startProfileCamera();
-}
-
 // Helper function to update profile picture display
 function updateProfilePictureDisplay(imageUrl, emoji) {
-    console.log('🖼️ Updating profile picture display:', { imageUrl, emoji });
     const profilePicture = document.getElementById('profilePicture');
-    console.log('🖼️ Profile picture element found:', !!profilePicture);
-    
     if (profilePicture) {
         if (imageUrl) {
             // Show uploaded image
-            console.log('🖼️ Setting background image:', imageUrl);
             profilePicture.style.backgroundImage = `url(${imageUrl})`;
             profilePicture.style.backgroundSize = 'cover';
             profilePicture.style.backgroundPosition = 'center';
             profilePicture.textContent = '';
         } else if (emoji) {
             // Show emoji
-            console.log('🖼️ Setting emoji:', emoji);
             profilePicture.style.backgroundImage = '';
             profilePicture.textContent = emoji;
         }
@@ -1487,7 +1472,7 @@ function openProfileSettings() {
                     Account Settings
                 </button>
                 <button onclick="openCreatorTools(); closeModal()" style="background: #333; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer;">
-                    Creator Tools
+                    VIB3 Studio
                 </button>
                 <button onclick="switchAccount(); closeModal()" style="background: #333; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer;">
                     Switch Account
@@ -1594,6 +1579,29 @@ function showFollowModal(title, users) {
     window.closeModal = () => {
         modal.remove();
     };
+}
+
+// Helper function to update profile picture display
+function updateProfilePictureDisplay(imageUrl, emoji) {
+    console.log('🖼️ Updating profile picture display:', { imageUrl, emoji });
+    const profilePicture = document.getElementById('profilePicture');
+    console.log('🖼️ Profile picture element found:', !!profilePicture);
+    
+    if (profilePicture) {
+        if (imageUrl) {
+            // Show uploaded image
+            console.log('🖼️ Setting background image:', imageUrl);
+            profilePicture.style.backgroundImage = `url(${imageUrl})`;
+            profilePicture.style.backgroundSize = 'cover';
+            profilePicture.style.backgroundPosition = 'center';
+            profilePicture.textContent = '';
+        } else if (emoji) {
+            // Show emoji
+            console.log('🖼️ Setting emoji:', emoji);
+            profilePicture.style.backgroundImage = '';
+            profilePicture.textContent = emoji;
+        }
+    }
 }
 
 function toggleLikedPrivacy() {

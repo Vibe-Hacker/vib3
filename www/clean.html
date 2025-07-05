@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIB3 Clean Test</title>
+    <script>
+        // FIRST THING: Check for service workers and kill them
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                    console.log('Unregistered service worker:', registration);
+                }
+            });
+        }
+        
+        // Clear all caches
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                names.forEach(name => {
+                    caches.delete(name);
+                    console.log('Deleted cache:', name);
+                });
+            });
+        }
+        
+        // Block any script injection
+        const originalCreateElement = document.createElement;
+        document.createElement = function(tagName) {
+            if (tagName.toLowerCase() === 'script') {
+                console.warn('BLOCKED script creation attempt');
+                const stack = new Error().stack;
+                console.log('Stack trace:', stack);
+                if (stack.includes('vib3-complete.js')) {
+                    console.error('BLOCKED vib3-complete.js injection!');
+                    return document.createTextNode(''); // Return dummy element
+                }
+            }
+            return originalCreateElement.apply(document, arguments);
+        };
+        
+        // Log all script loads
+        window.addEventListener('error', function(e) {
+            if (e.filename && e.filename.includes('vib3-complete.js')) {
+                console.error('INTERCEPTED error from vib3-complete.js:', e);
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        }, true);
+    </script>
+</head>
+<body style="background: #000; color: #fff; font-family: Arial; padding: 50px;">
+    <h1>VIB3 Clean Test Page</h1>
+    <p>This page has ZERO external scripts and blocks all script injection.</p>
+    
+    <button onclick="testLive()" style="padding: 10px 20px; background: #FF0080; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+        Test Live Camera
+    </button>
+    
+    <video id="preview" style="display: block; margin: 20px 0; width: 300px; height: 400px; background: #222;" autoplay muted></video>
+    
+    <div id="status" style="margin: 20px 0; padding: 10px; background: #222; border-radius: 5px;"></div>
+    
+    <script>
+        // Define test function inline
+        function testLive() {
+            const status = document.getElementById('status');
+            status.textContent = 'Requesting camera access...';
+            
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(stream => {
+                    status.textContent = '✅ Camera access granted!';
+                    document.getElementById('preview').srcObject = stream;
+                })
+                .catch(error => {
+                    status.textContent = '❌ Error: ' + error.name + ' - ' + error.message;
+                });
+        }
+        
+        // Log what scripts are loaded
+        console.log('Scripts on page:', document.scripts.length);
+        Array.from(document.scripts).forEach((script, i) => {
+            console.log(`Script ${i}:`, script.src || 'inline');
+        });
+        
+        // Monitor for dynamic script additions
+        const observer = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                mutation.addedNodes.forEach(node => {
+                    if (node.tagName === 'SCRIPT') {
+                        console.error('DYNAMIC SCRIPT ADDED:', node.src);
+                        if (node.src && node.src.includes('vib3-complete.js')) {
+                            console.error('REMOVING vib3-complete.js!');
+                            node.remove();
+                        }
+                    }
+                });
+            });
+        });
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+    </script>
+</body>
+</html>

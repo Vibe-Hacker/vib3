@@ -1,0 +1,10 @@
+# Force no caching for JavaScript files
+<FilesMatch "\.(js)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+</FilesMatch>
+
+# Redirect old vib3-complete.js to new version
+RewriteEngine On
+RewriteRule ^js/vib3-complete\.js$ /js/vib3-complete-fixed.js [L,R=302]

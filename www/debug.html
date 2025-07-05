@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>VIB3 - Live Test v2025.07.04</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #000; color: #fff; }
+        .test-btn { padding: 15px 30px; background: #ff0050; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 10px; font-size: 16px; }
+        .test-btn:hover { background: #cc0040; }
+        .status { margin: 20px 0; padding: 15px; background: #222; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 VIB3 Live Streaming Test</h1>
+    <div class="status" id="status">Ready to test...</div>
+    
+    <button class="test-btn" onclick="testSetupLivePreview()">Test Setup Live Preview</button>
+    <button class="test-btn" onclick="testOpenLiveSetup()">Test Open Live Setup</button>
+    <button class="test-btn" onclick="testStartLiveStream()">Test Start Live Stream</button>
+    
+    <script>
+        // Live streaming state and functions - ONLY THESE, NOTHING ELSE
+        let liveStreamingState = {
+            isActive: false,
+            startTime: null,
+            viewers: 0,
+            title: '',
+            category: '',
+            stream: null
+        };
+
+        function testSetupLivePreview() {
+            document.getElementById('status').innerHTML = '✅ setupLivePreview() called successfully! No errors.';
+            console.log('📹 Setting up live preview - test version');
+        }
+
+        function testOpenLiveSetup() {
+            document.getElementById('status').innerHTML = '✅ openLiveSetup() called successfully! No errors.';
+            console.log('🎬 Opening live setup - test version');
+        }
+
+        function testStartLiveStream() {
+            document.getElementById('status').innerHTML = '✅ startLiveStream() called successfully! No errors.';
+            console.log('🔴 Starting live stream - test version');
+        }
+
+        // Make functions globally available
+        window.setupLivePreview = testSetupLivePreview;
+        window.openLiveSetup = testOpenLiveSetup;
+        window.startLiveStream = testStartLiveStream;
+        window.liveStreamingState = liveStreamingState;
+
+        console.log('🧪 Test page loaded - live streaming functions ready');
+        document.getElementById('status').innerHTML = '✅ Test page loaded successfully - no old JavaScript interference!';
+    </script>
+</body>
+</html>

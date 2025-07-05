@@ -1,0 +1,19 @@
+{
+  "rewrites": [
+    {
+      "source": "/js/vib3-complete.js",
+      "destination": "/js/vib3-complete-v2.js"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/js/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ]
+}

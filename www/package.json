@@ -1,0 +1,15 @@
+{
+  "name": "vib3-web",
+  "version": "1.0.0",
+  "description": "VIB3 Web Frontend",
+  "scripts": {
+    "start": "serve . -p $PORT -n",
+    "dev": "serve . -p 3000"
+  },
+  "dependencies": {
+    "serve": "^14.2.0"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

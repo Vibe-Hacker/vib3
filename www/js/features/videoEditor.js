@@ -25,29 +25,116 @@ class VideoEditor {
     }
 
     async loadEffects() {
-        // Load available effects
+        // Load available effects - Enhanced TikTok-style effects
         this.effects = [
-            { id: 'greenscreen', name: 'Green Screen', type: 'background' },
-            { id: 'blur', name: 'Blur Background', type: 'background' },
-            { id: 'mirror', name: 'Mirror', type: 'transform' },
-            { id: 'shake', name: 'Shake', type: 'motion' },
-            { id: 'zoom', name: 'Zoom Pulse', type: 'motion' },
-            { id: 'glitch', name: 'Glitch', type: 'distortion' },
-            { id: 'vhs', name: 'VHS', type: 'retro' },
-            { id: 'rainbow', name: 'Rainbow', type: 'color' }
+            // Background Effects
+            { id: 'greenscreen', name: 'Green Screen', type: 'background', trending: true },
+            { id: 'blur', name: 'Blur Background', type: 'background', trending: false },
+            { id: 'virtualBg', name: 'Virtual Backgrounds', type: 'background', trending: true },
+            { id: 'portraitMode', name: 'Portrait Mode', type: 'background', trending: true },
+            
+            // Transform Effects
+            { id: 'mirror', name: 'Mirror', type: 'transform', trending: false },
+            { id: 'flip', name: 'Flip', type: 'transform', trending: false },
+            { id: 'perspective', name: '3D Perspective', type: 'transform', trending: true },
+            { id: 'fishEye', name: 'Fish Eye', type: 'transform', trending: false },
+            { id: 'pinch', name: 'Pinch', type: 'transform', trending: true },
+            
+            // Motion Effects
+            { id: 'shake', name: 'Shake', type: 'motion', trending: false },
+            { id: 'zoom', name: 'Zoom Pulse', type: 'motion', trending: true },
+            { id: 'bounce', name: 'Bounce', type: 'motion', trending: true },
+            { id: 'spin', name: 'Spin', type: 'motion', trending: false },
+            { id: 'wave', name: 'Wave', type: 'motion', trending: true },
+            { id: 'elastic', name: 'Elastic', type: 'motion', trending: true },
+            
+            // Distortion Effects
+            { id: 'glitch', name: 'Glitch', type: 'distortion', trending: true },
+            { id: 'dataMosh', name: 'Data Mosh', type: 'distortion', trending: true },
+            { id: 'pixelSort', name: 'Pixel Sort', type: 'distortion', trending: false },
+            { id: 'chromatic', name: 'Chromatic Aberration', type: 'distortion', trending: true },
+            
+            // Retro Effects
+            { id: 'vhs', name: 'VHS', type: 'retro', trending: true },
+            { id: 'film', name: 'Film Grain', type: 'retro', trending: false },
+            { id: 'oldTV', name: 'Old TV', type: 'retro', trending: true },
+            { id: 'polaroid', name: 'Polaroid', type: 'retro', trending: false },
+            
+            // Color Effects
+            { id: 'rainbow', name: 'Rainbow', type: 'color', trending: true },
+            { id: 'neon', name: 'Neon Glow', type: 'color', trending: true },
+            { id: 'holographic', name: 'Holographic', type: 'color', trending: true },
+            { id: 'cyberpunk', name: 'Cyberpunk', type: 'color', trending: true },
+            { id: 'pastel', name: 'Pastel Dreams', type: 'color', trending: false },
+            
+            // Face Effects
+            { id: 'beautyFilter', name: 'Beauty Filter', type: 'face', trending: true },
+            { id: 'faceSwap', name: 'Face Swap', type: 'face', trending: true },
+            { id: 'ageFilter', name: 'Age Filter', type: 'face', trending: false },
+            { id: 'genderSwap', name: 'Gender Swap', type: 'face', trending: true },
+            { id: 'animalFace', name: 'Animal Face', type: 'face', trending: true },
+            
+            // Particle Effects
+            { id: 'particles', name: 'Particles', type: 'particle', trending: true },
+            { id: 'confetti', name: 'Confetti', type: 'particle', trending: false },
+            { id: 'sparkles', name: 'Sparkles', type: 'particle', trending: true },
+            { id: 'fire', name: 'Fire', type: 'particle', trending: false },
+            { id: 'snow', name: 'Snow', type: 'particle', trending: false },
+            
+            // Trendy Effects
+            { id: 'aesthetic', name: 'Aesthetic Vibe', type: 'trending', trending: true },
+            { id: 'dreamcore', name: 'Dreamcore', type: 'trending', trending: true },
+            { id: 'vaporwave', name: 'Vaporwave', type: 'trending', trending: true },
+            { id: 'cottagecore', name: 'Cottagecore', type: 'trending', trending: false },
+            { id: 'darkAcademia', name: 'Dark Academia', type: 'trending', trending: true }
         ];
     }
 
     async loadFilters() {
-        // Load Instagram-style filters
+        // Enhanced TikTok-style filters
         this.filters = [
-            { id: 'normal', name: 'Normal', css: '' },
-            { id: 'vibrant', name: 'Vibrant', css: 'contrast(1.2) saturate(1.3)' },
-            { id: 'vintage', name: 'Vintage', css: 'sepia(0.3) contrast(1.1)' },
-            { id: 'bw', name: 'B&W', css: 'grayscale(1) contrast(1.2)' },
-            { id: 'cold', name: 'Cold', css: 'hue-rotate(180deg) saturate(0.8)' },
-            { id: 'warm', name: 'Warm', css: 'sepia(0.2) saturate(1.2)' },
-            { id: 'fade', name: 'Fade', css: 'contrast(0.8) brightness(1.2)' }
+            // Basic Filters
+            { id: 'normal', name: 'Normal', css: '', trending: false },
+            { id: 'vibrant', name: 'Vibrant', css: 'contrast(1.2) saturate(1.3)', trending: true },
+            { id: 'vintage', name: 'Vintage', css: 'sepia(0.3) contrast(1.1)', trending: false },
+            { id: 'bw', name: 'B&W', css: 'grayscale(1) contrast(1.2)', trending: false },
+            
+            // Trending Color Filters
+            { id: 'aesthetic', name: 'Aesthetic', css: 'contrast(1.1) saturate(1.4) hue-rotate(15deg) brightness(1.1)', trending: true },
+            { id: 'moody', name: 'Moody', css: 'contrast(1.3) saturate(0.8) brightness(0.9) sepia(0.1)', trending: true },
+            { id: 'soft', name: 'Soft Glow', css: 'contrast(0.9) saturate(1.2) brightness(1.15)', trending: true },
+            { id: 'drama', name: 'Drama', css: 'contrast(1.4) saturate(1.1) brightness(0.95)', trending: true },
+            
+            // Vibe Filters
+            { id: 'sunset', name: 'Sunset', css: 'sepia(0.4) saturate(1.3) hue-rotate(15deg) brightness(1.1)', trending: true },
+            { id: 'ocean', name: 'Ocean', css: 'hue-rotate(180deg) saturate(1.2) contrast(1.1)', trending: false },
+            { id: 'forest', name: 'Forest', css: 'hue-rotate(90deg) saturate(1.3) brightness(1.05)', trending: false },
+            { id: 'neon', name: 'Neon Night', css: 'contrast(1.3) saturate(1.5) hue-rotate(270deg)', trending: true },
+            
+            // Film Emulation
+            { id: 'film35mm', name: '35mm Film', css: 'contrast(1.1) saturate(1.2) sepia(0.1) brightness(1.05)', trending: true },
+            { id: 'polaroid', name: 'Polaroid', css: 'contrast(0.9) saturate(1.3) sepia(0.2) brightness(1.1)', trending: false },
+            { id: 'cinematic', name: 'Cinematic', css: 'contrast(1.2) saturate(0.9) brightness(0.95)', trending: true },
+            
+            // Digital Effects
+            { id: 'cyberpunk', name: 'Cyberpunk', css: 'contrast(1.3) saturate(1.4) hue-rotate(300deg) brightness(1.1)', trending: true },
+            { id: 'vaporwave', name: 'Vaporwave', css: 'contrast(1.1) saturate(1.5) hue-rotate(315deg) brightness(1.2)', trending: true },
+            { id: 'matrix', name: 'Matrix', css: 'hue-rotate(120deg) contrast(1.3) saturate(0.7)', trending: false },
+            
+            // Beauty Filters
+            { id: 'smooth', name: 'Smooth Skin', css: 'blur(0.5px) contrast(1.1) brightness(1.1)', trending: true },
+            { id: 'glow', name: 'Natural Glow', css: 'contrast(1.05) saturate(1.2) brightness(1.1)', trending: true },
+            { id: 'porcelain', name: 'Porcelain', css: 'contrast(0.95) saturate(0.9) brightness(1.15)', trending: false },
+            
+            // Artistic Filters
+            { id: 'oil', name: 'Oil Painting', css: 'contrast(1.2) saturate(1.3) blur(0.3px)', trending: false },
+            { id: 'watercolor', name: 'Watercolor', css: 'contrast(0.8) saturate(1.4) blur(0.2px)', trending: false },
+            { id: 'pencil', name: 'Pencil Sketch', css: 'grayscale(1) contrast(1.5) invert(1)', trending: false },
+            
+            // Weather/Time Filters
+            { id: 'golden', name: 'Golden Hour', css: 'sepia(0.3) saturate(1.3) hue-rotate(15deg) brightness(1.1)', trending: true },
+            { id: 'blue', name: 'Blue Hour', css: 'hue-rotate(200deg) saturate(1.2) contrast(1.1)', trending: false },
+            { id: 'storm', name: 'Stormy', css: 'contrast(1.3) saturate(0.7) brightness(0.8)', trending: false }
         ];
     }
 
@@ -115,29 +202,78 @@ class VideoEditor {
                             <!-- Effects Panel -->
                             <div class="tool-panel" id="effectsPanel">
                                 <div class="effects-categories">
-                                    <button class="effect-cat active">Trending</button>
-                                    <button class="effect-cat">Background</button>
-                                    <button class="effect-cat">Motion</button>
-                                    <button class="effect-cat">Face</button>
+                                    <button class="effect-cat active" data-category="trending">🔥 Trending</button>
+                                    <button class="effect-cat" data-category="face">😊 Face</button>
+                                    <button class="effect-cat" data-category="background">🌟 Background</button>
+                                    <button class="effect-cat" data-category="motion">💫 Motion</button>
+                                    <button class="effect-cat" data-category="color">🌈 Color</button>
+                                    <button class="effect-cat" data-category="retro">📺 Retro</button>
+                                    <button class="effect-cat" data-category="particle">✨ Particles</button>
                                 </div>
                                 <div class="effects-grid"></div>
                             </div>
                             
                             <!-- Text Panel -->
                             <div class="tool-panel" id="textPanel">
-                                <input type="text" class="text-input" placeholder="Add text">
+                                <input type="text" class="text-input" placeholder="Add text" maxlength="100">
+                                
+                                <!-- Text Templates -->
+                                <div class="text-templates" style="margin-bottom: 15px;">
+                                    <h4 style="color: white; font-size: 14px; margin-bottom: 10px;">✨ Templates</h4>
+                                    <div class="template-grid">
+                                        <button class="text-template" data-template="motivation">💪 Motivation</button>
+                                        <button class="text-template" data-template="funny">😂 Funny</button>
+                                        <button class="text-template" data-template="question">❓ Question</button>
+                                        <button class="text-template" data-template="fact">🧠 Fun Fact</button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Text Styles -->
                                 <div class="text-styles">
-                                    <button class="text-style">Classic</button>
-                                    <button class="text-style">Bold</button>
-                                    <button class="text-style">Neon</button>
-                                    <button class="text-style">Typewriter</button>
+                                    <h4 style="color: white; font-size: 14px; margin-bottom: 10px;">🎨 Styles</h4>
+                                    <div class="style-grid">
+                                        <button class="text-style" data-style="classic">Classic</button>
+                                        <button class="text-style" data-style="bold">Bold</button>
+                                        <button class="text-style" data-style="neon">Neon</button>
+                                        <button class="text-style" data-style="gradient">Gradient</button>
+                                        <button class="text-style" data-style="outline">Outline</button>
+                                        <button class="text-style" data-style="shadow">Shadow</button>
+                                        <button class="text-style" data-style="retro">Retro</button>
+                                        <button class="text-style" data-style="glitch">Glitch</button>
+                                    </div>
                                 </div>
+                                
+                                <!-- Text Animations -->
                                 <div class="text-animations">
-                                    <button class="text-anim">Fade In</button>
-                                    <button class="text-anim">Slide</button>
-                                    <button class="text-anim">Pop</button>
-                                    <button class="text-anim">Bounce</button>
+                                    <h4 style="color: white; font-size: 14px; margin-bottom: 10px;">🎬 Animations</h4>
+                                    <div class="animation-grid">
+                                        <button class="text-anim" data-anim="fadeIn">Fade In</button>
+                                        <button class="text-anim" data-anim="slideUp">Slide Up</button>
+                                        <button class="text-anim" data-anim="pop">Pop</button>
+                                        <button class="text-anim" data-anim="bounce">Bounce</button>
+                                        <button class="text-anim" data-anim="typewriter">Typewriter</button>
+                                        <button class="text-anim" data-anim="zoom">Zoom</button>
+                                        <button class="text-anim" data-anim="shake">Shake</button>
+                                        <button class="text-anim" data-anim="rainbow">Rainbow</button>
+                                    </div>
                                 </div>
+                                
+                                <!-- Color Picker -->
+                                <div class="text-colors" style="margin-top: 15px;">
+                                    <h4 style="color: white; font-size: 14px; margin-bottom: 10px;">🌈 Colors</h4>
+                                    <div class="color-palette">
+                                        <div class="color-option" data-color="#ffffff" style="background: #ffffff;"></div>
+                                        <div class="color-option" data-color="#000000" style="background: #000000;"></div>
+                                        <div class="color-option" data-color="#ff2d55" style="background: #ff2d55;"></div>
+                                        <div class="color-option" data-color="#007aff" style="background: #007aff;"></div>
+                                        <div class="color-option" data-color="#34c759" style="background: #34c759;"></div>
+                                        <div class="color-option" data-color="#ff9500" style="background: #ff9500;"></div>
+                                        <div class="color-option" data-color="#af52de" style="background: #af52de;"></div>
+                                        <div class="color-option" data-color="#ff3b30" style="background: #ff3b30;"></div>
+                                    </div>
+                                </div>
+                                
+                                <button class="add-text-btn" style="width: 100%; padding: 12px; margin-top: 15px; background: #ff2d55; color: white; border: none; border-radius: 8px; font-weight: 600;">Add Text</button>
                             </div>
                             
                             <!-- Stickers Panel -->
@@ -528,37 +664,86 @@ class VideoEditor {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
 
-    // Filter preview generation
+    // Enhanced filter preview generation with trending indicators
     loadFilterPreviews() {
         const filterGrid = document.querySelector('.filter-grid');
         filterGrid.innerHTML = '';
         
-        this.filters.forEach(filter => {
+        // Sort filters to show trending first
+        const sortedFilters = [...this.filters].sort((a, b) => {
+            if (a.trending && !b.trending) return -1;
+            if (!a.trending && b.trending) return 1;
+            return 0;
+        });
+        
+        sortedFilters.forEach(filter => {
             const preview = document.createElement('div');
             preview.className = 'filter-preview';
+            if (filter.trending) preview.classList.add('trending');
+            
             preview.innerHTML = `
-                <div class="filter-thumb" style="filter: ${filter.css}"></div>
+                <div class="filter-thumb" style="filter: ${filter.css}; background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);"></div>
                 <span>${filter.name}</span>
+                ${filter.trending ? '<div class="trending-badge">🔥</div>' : ''}
             `;
             preview.addEventListener('click', () => this.applyFilter(filter.id));
             filterGrid.appendChild(preview);
         });
     }
 
-    // Effect preview generation
-    loadEffectPreviews() {
+    // Enhanced effect preview generation with categories
+    loadEffectPreviews(category = 'trending') {
         const effectsGrid = document.querySelector('.effects-grid');
         effectsGrid.innerHTML = '';
         
-        this.effects.forEach(effect => {
+        // Filter effects by category
+        let filteredEffects;
+        if (category === 'trending') {
+            filteredEffects = this.effects.filter(effect => effect.trending);
+        } else {
+            filteredEffects = this.effects.filter(effect => effect.type === category);
+        }
+        
+        filteredEffects.forEach(effect => {
             const preview = document.createElement('div');
             preview.className = 'effect-preview';
+            
+            // Get emoji for effect type
+            const getEffectEmoji = (type) => {
+                const emojiMap = {
+                    'face': '😊',
+                    'background': '🌟',
+                    'motion': '💫',
+                    'color': '🌈',
+                    'retro': '📺',
+                    'particle': '✨',
+                    'distortion': '🌀',
+                    'transform': '🔄',
+                    'trending': '🔥'
+                };
+                return emojiMap[type] || '✨';
+            };
+            
             preview.innerHTML = `
-                <div class="effect-thumb">✨</div>
+                <div class="effect-thumb">${getEffectEmoji(effect.type)}</div>
                 <span>${effect.name}</span>
+                ${effect.trending ? '<div class="trending-badge">🔥</div>' : ''}
             `;
             preview.addEventListener('click', () => this.applyEffect(effect.id));
             effectsGrid.appendChild(preview);
+        });
+        
+        // Add effect category handlers
+        document.querySelectorAll('.effect-cat').forEach(cat => {
+            cat.addEventListener('click', (e) => {
+                // Update active category
+                document.querySelectorAll('.effect-cat').forEach(c => c.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                // Load effects for this category
+                const category = e.target.dataset.category;
+                this.loadEffectPreviews(category);
+            });
         });
     }
 

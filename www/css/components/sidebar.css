@@ -39,20 +39,14 @@
 }
 
 .sidebar-item.active {
-    background: var(--vib3-brand-gradient) !important;
-    color: white !important;
-    border-radius: 12px;
-    margin: 4px 12px;
-    width: calc(100% - 24px);
-    box-shadow: var(--vib3-glow);
-    animation: vib3Float 3s ease-in-out infinite;
+    background: none !important;
+    color: var(--accent-primary) !important;
 }
 
 /* Ensure active state works for all child elements */
 .sidebar-item.active .sidebar-icon,
 .sidebar-item.active .sidebar-text {
-    color: white !important;
-    text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+    color: var(--accent-primary) !important;
 }
 
 /* Sign Out Button Styling */

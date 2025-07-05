@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIB3 Algorithm Analytics</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+        .stat-title {
+            color: #fe2c55;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #25f4ee;
+        }
+        .stat-subtitle {
+            color: #999;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .top-videos {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+        .video-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #333;
+        }
+        .video-item:last-child {
+            border-bottom: none;
+        }
+        .video-title {
+            font-weight: 500;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .video-stats {
+            font-size: 12px;
+            color: #999;
+        }
+        .refresh-btn {
+            background: #fe2c55;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .refresh-btn:hover {
+            background: #e02446;
+        }
+        .loading {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+        .error {
+            background: #ff3333;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 VIB3 Algorithm Analytics</h1>
+            <p>Real-time engagement-based ranking performance</p>
+            <button class="refresh-btn" onclick="loadAnalytics()">🔄 Refresh Data</button>
+        </div>
+
+        <div id="error-container"></div>
+        <div id="loading" class="loading">Loading analytics...</div>
+        <div id="analytics-container" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">📊 Engagement Stats</div>
+                    <div class="stat-value" id="avg-score">-</div>
+                    <div class="stat-subtitle" id="engagement-subtitle">Average engagement score</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-title">🔥 High Engagement</div>
+                    <div class="stat-value" id="high-engagement">-</div>
+                    <div class="stat-subtitle">Videos with score > 1.0</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-title">⏰ Fresh Content</div>
+                    <div class="stat-value" id="fresh-content">-</div>
+                    <div class="stat-subtitle">Videos from last 24h</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-title">👥 Creator Diversity</div>
+                    <div class="stat-value" id="diversity">-</div>
+                    <div class="stat-subtitle">Unique creators in top 10</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-title">❤️ Total Engagement</div>
+                    <div class="stat-value" id="total-likes">-</div>
+                    <div class="stat-subtitle">Total likes across all videos</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-title">📈 Like Rate</div>
+                    <div class="stat-value" id="avg-like-rate">-</div>
+                    <div class="stat-subtitle">Average likes per view</div>
+                </div>
+            </div>
+
+            <div class="top-videos">
+                <div class="stat-title">🏆 Top Ranked Videos (Algorithm Order)</div>
+                <div id="top-videos-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? '' 
+            : 'https://vib3-production.up.railway.app';
+
+        async function loadAnalytics() {
+            const loading = document.getElementById('loading');
+            const container = document.getElementById('analytics-container');
+            const errorContainer = document.getElementById('error-container');
+            
+            loading.style.display = 'block';
+            container.style.display = 'none';
+            errorContainer.innerHTML = '';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/analytics/algorithm`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const analytics = await response.json();
+                displayAnalytics(analytics);
+                
+                loading.style.display = 'none';
+                container.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Analytics error:', error);
+                loading.style.display = 'none';
+                errorContainer.innerHTML = `<div class="error">❌ Failed to load analytics: ${error.message}</div>`;
+            }
+        }
+
+        function displayAnalytics(data) {
+            // Update stats
+            document.getElementById('avg-score').textContent = data.engagementStats.avgScore.toFixed(2);
+            document.getElementById('high-engagement').textContent = data.engagementStats.highEngagementCount;
+            document.getElementById('fresh-content').textContent = data.freshnessStats.last24h;
+            document.getElementById('diversity').textContent = data.diversity.uniqueCreators;
+            document.getElementById('total-likes').textContent = data.totalEngagement.totalLikes.toLocaleString();
+            document.getElementById('avg-like-rate').textContent = (data.totalEngagement.avgLikeRate * 100).toFixed(2) + '%';
+            
+            // Update subtitles with more details
+            document.getElementById('engagement-subtitle').textContent = 
+                `Range: ${data.engagementStats.minScore.toFixed(2)} - ${data.engagementStats.maxScore.toFixed(2)}`;
+                
+            // Display top videos
+            const topVideosList = document.getElementById('top-videos-list');
+            topVideosList.innerHTML = data.topVideos.map((video, index) => `
+                <div class="video-item">
+                    <div>
+                        <div class="video-title">${index + 1}. ${video.title}</div>
+                        <div class="video-stats">Score: ${video.engagementScore} • ${video.hoursOld}h old</div>
+                    </div>
+                    <div class="video-stats">
+                        ❤️ ${video.likes} • 💬 ${video.comments} • 👁️ ${video.views} • 📊 ${(video.likeRate * 100).toFixed(1)}%
+                    </div>
+                </div>
+            `).join('');
+            
+            // Add timestamp
+            const timestamp = new Date(data.timestamp).toLocaleString();
+            document.querySelector('.header p').textContent = `Last updated: ${timestamp}`;
+        }
+
+        // Load analytics on page load
+        document.addEventListener('DOMContentLoaded', loadAnalytics);
+        
+        // Auto-refresh every 2 minutes
+        setInterval(loadAnalytics, 120000);
+    </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
-// Upload manager module - converted to global script
-// No ES6 imports - using global variables
+// Upload manager module
+import { db, storage } from '../firebase-init.js';
 
 class UploadManager {
     constructor() {
@@ -69,9 +69,6 @@ class UploadManager {
         window.uploadVideo = () => this.uploadVideo();
         window.toggleRecording = () => this.toggleRecording();
         window.switchCamera = () => this.switchCamera();
-        window.showCameraSelector = () => this.showCameraSelector();
-        window.selectSpecificCamera = (deviceId) => this.selectSpecificCamera(deviceId);
-        window.startRecordingWithCamera = (deviceId) => this.startRecordingWithCamera(deviceId);
         window.closeCameraModal = () => this.closeCameraModal();
         window.showTrendingSounds = () => this.showTrendingSounds();
         
@@ -157,52 +154,30 @@ class UploadManager {
         }
         console.log('Cleared uploadPageActive flag');
         
-        // COMPREHENSIVE MODAL CLEANUP - Remove ALL upload-related elements
-        const elementsToRemove = [
-            'fullscreenUploadPage',
-            'fullscreenUploadOverlay', 
-            'uploadModal',
-            'cameraModal',
-            'video-review-modal'
-        ];
-        
-        elementsToRemove.forEach(elementId => {
-            const element = document.getElementById(elementId);
-            if (element) {
-                element.remove();
-                console.log(`Removed ${elementId}`);
-            }
-        });
-        
-        // Remove any modals by class as well
-        const modalClassesToRemove = [
-            '.modal.video-review-modal',
-            '.modal.camera-modal', 
-            '.modal.upload-modal',
-            '.initial-camera-selector-modal',
-            '.camera-selector-modal'
-        ];
-        
-        modalClassesToRemove.forEach(className => {
-            document.querySelectorAll(className).forEach(modal => {
-                modal.remove();
-                console.log(`Removed modal by class: ${className}`);
-            });
-        });
-        
-        // Remove any high z-index overlay that might be blocking the screen
-        document.querySelectorAll('[style*="z-index: 999"]').forEach(overlay => {
-            if (overlay.id !== 'toastNotification' && !overlay.classList.contains('debug-panel')) {
-                console.log('Removing high z-index overlay:', overlay.id || overlay.className);
-                overlay.remove();
-            }
-        });
+        // Remove the fullscreen upload page
+        const uploadPage = document.getElementById('fullscreenUploadPage');
+        if (uploadPage) {
+            uploadPage.remove();
+            console.log('Removed fullscreen upload page');
+        }
         
         // IMMEDIATE FALLBACK RESTORATION - ensure basic content is visible
         this.emergencyContentRestore();
         
         // Then do the full restoration
         this.restoreMainContent();
+        
+        // Also clean up the original modal if it exists
+        const uploadModal = document.getElementById('uploadModal');
+        if (uploadModal) {
+            uploadModal.classList.remove('active');
+            uploadModal.style.cssText = '';
+            
+            const modalContent = uploadModal.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.style.cssText = '';
+            }
+        }
         
         // Clean up video file via state
         if (window.stateManager) {
@@ -213,18 +188,6 @@ class UploadManager {
         
         // Clean up camera stream if active
         this.cleanupCameraStream();
-        
-        // Clean up escape key handler
-        if (this.currentEscapeHandler) {
-            document.removeEventListener('keydown', this.currentEscapeHandler);
-            this.currentEscapeHandler = null;
-            console.log('Cleaned up escape key handler');
-        }
-        
-        // Final verification that user can see the main content
-        setTimeout(() => {
-            this.verifyContentRestoration();
-        }, 100);
         
         console.log('=== UPLOAD MODAL CLOSED ===');
     }
@@ -704,14 +667,6 @@ class UploadManager {
             e.preventDefault();
             console.log('Upload page clicked - preventing background interaction');
         });
-        
-        // Add double-click handler for emergency exit (fallback)
-        uploadPage.addEventListener('dblclick', (e) => {
-            if (e.target === uploadPage) {
-                console.log('Double-click detected on upload background - emergency close');
-                this.closeUploadModal();
-            }
-        });
 
         uploadPage.innerHTML = `
             <div style="width: 90%; max-width: 500px; text-align: center; padding: 40px; background: #1a1a1a; border-radius: 15px; position: relative;">
@@ -734,25 +689,11 @@ class UploadManager {
                 </div>
                 
                 <p style="color: #888; font-size: 14px; margin-top: 20px;">Select an option to get started</p>
-                <p style="color: #666; font-size: 12px; margin-top: 10px;">Press Esc to close • Ctrl+Esc for emergency cleanup</p>
             </div>
         `;
 
         // Add to document
         document.body.appendChild(uploadPage);
-        
-        // Add escape key handler for emergency exit
-        const handleEscape = (e) => {
-            if (e.key === 'Escape') {
-                console.log('Escape key pressed - closing upload modal');
-                this.closeUploadModal();
-                document.removeEventListener('keydown', handleEscape);
-            }
-        };
-        document.addEventListener('keydown', handleEscape);
-        
-        // Store escape handler for cleanup
-        this.currentEscapeHandler = handleEscape;
 
         // Add event listeners
         document.getElementById('closeUploadPage').addEventListener('click', () => {
@@ -1272,8 +1213,8 @@ class UploadManager {
                 }
                 console.log('Video file selected:', file.name);
                 
-                // Show the video details page instead of using the old modal system
-                this.showVideoDetailsPage(file);
+                // Open video editor first, then details page
+                this.openVideoEditor(file);
                 
                 if (window.showToast) {
                     window.showToast('Video ready for upload! 🎬');
@@ -1295,7 +1236,10 @@ class UploadManager {
                 return;
             }
 
-            console.log('MediaRecorder is supported, checking available cameras...');
+            console.log('MediaRecorder is supported, requesting camera access...');
+            if (window.showToast) {
+                window.showToast('Accessing camera... 📹');
+            }
 
             // Hide the fullscreen upload page while accessing camera
             const fullscreenUploadPage = document.getElementById('fullscreenUploadPage');
@@ -1304,55 +1248,69 @@ class UploadManager {
                 console.log('Hid fullscreen upload page');
             }
 
-            // Check available cameras first and show selection if multiple
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoInputs = devices.filter(device => device.kind === 'videoinput');
-            
-            console.log('📷 Available cameras:', videoInputs.length);
-            videoInputs.forEach((device, index) => {
-                console.log(`   Camera ${index + 1}: ${device.label || 'Unknown Camera'} (ID: ${device.deviceId})`);
-            });
-
-            // If multiple cameras available, show selector first
-            if (videoInputs.length > 1) {
-                console.log('Multiple cameras detected, showing selector...');
-                this.showInitialCameraSelector(videoInputs);
-                return;
-            }
-
-            // Single camera - proceed directly
-            if (window.showToast) {
-                window.showToast('Accessing camera... 📹');
-            }
-
-            // Use single available camera
-            let videoConstraints = { 
-                width: { ideal: 3840, max: 3840 },
-                height: { ideal: 2160, max: 2160 },
-                frameRate: { ideal: 60, max: 60 }
-            };
-
-            if (videoInputs.length === 1) {
-                videoConstraints.deviceId = videoInputs[0].deviceId;
-                console.log('📷 Single camera detected, using device ID');
-            } else {
-                videoConstraints.facingMode = this.currentFacingMode;
-                console.log('🎯 Using facingMode:', this.currentFacingMode);
-            }
-
             console.log('Attempting to get user media with constraints:', {
-                video: videoConstraints,
+                video: { 
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: this.currentFacingMode
+                },
                 audio: true
             });
 
             // Get camera stream
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: videoConstraints,
+                video: { 
+                    width: { ideal: 3840, max: 3840 },
+                    height: { ideal: 2160, max: 2160 },
+                    frameRate: { ideal: 60, max: 60 },
+                    facingMode: this.currentFacingMode
+                },
                 audio: true
             });
 
             console.log('Successfully got camera stream:', stream);
-            this.createCameraInterface(stream);
+
+            // Create camera interface
+            const cameraModal = document.createElement('div');
+            cameraModal.className = 'modal active camera-modal';
+            cameraModal.innerHTML = `
+                <div class="modal-content" style="max-width: 90%; height: 90%; background: #000;">
+                    <div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: column;">
+                        <video id="cameraPreview" autoplay playsinline muted style="flex: 1; width: 100%; object-fit: cover; border-radius: 10px;"></video>
+                        
+                        <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px;">
+                            <button onclick="switchCamera()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">🔄</button>
+                            <button onclick="closeCameraModal()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">✕</button>
+                        </div>
+                        
+                        <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; align-items: center;">
+                            <button id="recordBtn" onclick="toggleRecording()" style="width: 70px; height: 70px; background: #ff006e; border: none; border-radius: 50%; color: white; font-size: 24px; cursor: pointer; transition: all 0.3s;">📹</button>
+                            <div id="recordingTimer" style="color: white; font-size: 18px; font-weight: bold; min-width: 60px; text-align: center; display: none;">00:00</div>
+                        </div>
+                        
+                        <div id="recordingIndicator" style="position: absolute; top: 20px; left: 20px; background: #ff4444; color: white; padding: 8px 15px; border-radius: 20px; font-weight: bold; display: none;">
+                            🔴 REC
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(cameraModal);
+            
+            // Set up camera preview
+            const video = document.getElementById('cameraPreview');
+            video.srcObject = stream;
+            
+            // Store stream for recording
+            this.currentCameraStream = stream;
+            this.isRecording = false;
+            this.mediaRecorder = null;
+            this.recordedChunks = [];
+            this.recordingStartTime = null;
+            
+            if (window.showToast) {
+                window.showToast('Camera ready! Tap record to start 🎬');
+            }
             
         } catch (error) {
             console.error('Camera access error:', error);
@@ -1372,31 +1330,6 @@ class UploadManager {
                 if (window.showToast) {
                     window.showToast('No camera found on this device.');
                 }
-            } else if (error.name === 'NotReadableError') {
-                if (window.showToast) {
-                    window.showToast('Camera is blocked by a privacy shutter or being used by another app. Please check your camera settings.');
-                }
-            } else if (error.name === 'OverconstrainedError') {
-                console.log('Camera constraints not supported, trying with basic settings...');
-                try {
-                    // Fallback to basic camera settings
-                    const fallbackStream = await navigator.mediaDevices.getUserMedia({
-                        video: true,
-                        audio: true
-                    });
-                    
-                    this.createCameraInterface(fallbackStream);
-                    
-                    if (window.showToast) {
-                        window.showToast('Camera ready with basic settings! 🎬');
-                    }
-                    
-                } catch (fallbackError) {
-                    console.error('Fallback camera error:', fallbackError);
-                    if (window.showToast) {
-                        window.showToast('Camera unavailable. Check privacy settings or try a different camera.');
-                    }
-                }
             } else {
                 if (window.showToast) {
                     window.showToast('Failed to access camera. Please try again.');
@@ -1405,234 +1338,12 @@ class UploadManager {
         }
     }
 
-    async showInitialCameraSelector(videoInputs) {
-        console.log('📷 Showing initial camera selector...');
-        
-        // Create camera selection modal
-        const selectorModal = document.createElement('div');
-        selectorModal.className = 'modal active initial-camera-selector-modal';
-        selectorModal.style.zIndex = '10000';
-        
-        let cameraOptions = '';
-        videoInputs.forEach((device, index) => {
-            const isBuiltIn = device.label.toLowerCase().includes('built-in') || 
-                             device.label.toLowerCase().includes('integrated') ||
-                             device.label.toLowerCase().includes('facetime') ||
-                             device.label.toLowerCase().includes('front') ||
-                             device.label.toLowerCase().includes('back');
-                             
-            const isExternal = !isBuiltIn && device.label !== '';
-            const deviceType = isExternal ? '🔌 External' : '📱 Built-in';
-            const deviceName = device.label || `Camera ${index + 1}`;
-            
-            cameraOptions += `
-                <div onclick="startRecordingWithCamera('${device.deviceId}')" 
-                     style="padding: 15px 20px; margin: 10px 0; background: rgba(255,255,255,0.1); 
-                            border-radius: 10px; cursor: pointer; transition: all 0.3s;
-                            border: 2px solid transparent; display: flex; align-items: center; gap: 15px;"
-                     onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='#fe2c55';"
-                     onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='transparent';">
-                    <div style="font-size: 24px;">${deviceType}</div>
-                    <div>
-                        <div style="font-weight: bold; font-size: 16px; color: white;">${deviceName}</div>
-                        <div style="font-size: 12px; color: rgba(255,255,255,0.7);">
-                            ${isExternal ? 'External camera device' : 'Built-in device camera'}
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        selectorModal.innerHTML = `
-            <div class="modal-content" style="max-width: 500px; background: #161823; border-radius: 15px; padding: 0;">
-                <div style="padding: 25px 25px 0 25px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2 style="color: white; margin: 0; font-size: 20px;">Choose Camera for Recording</h2>
-                        <button onclick="this.closest('.modal').remove(); document.getElementById('fullscreenUploadPage').style.display='flex';" 
-                                style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
-                    </div>
-                    <div style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">
-                        Select which camera to use for video recording
-                    </div>
-                </div>
-                <div style="padding: 0 25px 25px 25px; max-height: 400px; overflow-y: auto;">
-                    ${cameraOptions}
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(selectorModal);
-    }
-
-    async startRecordingWithCamera(deviceId) {
-        console.log('📷 Starting recording with camera:', deviceId);
-        
-        try {
-            // Close initial selector modal
-            const selectorModal = document.querySelector('.initial-camera-selector-modal');
-            if (selectorModal) {
-                selectorModal.remove();
-            }
-            
-            if (window.showToast) {
-                window.showToast('Starting camera... 📹');
-            }
-            
-            // Get stream from specific camera
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { 
-                    deviceId: { exact: deviceId },
-                    width: { ideal: 3840, max: 3840 },
-                    height: { ideal: 2160, max: 2160 },
-                    frameRate: { ideal: 60, max: 60 }
-                },
-                audio: true
-            });
-            
-            this.createCameraInterface(stream);
-            
-            if (window.showToast) {
-                window.showToast('Camera ready! Tap record to start 🎬');
-            }
-            
-        } catch (error) {
-            console.error('❌ Camera start error:', error);
-            
-            // Restore upload page on error
-            const fullscreenUploadPage = document.getElementById('fullscreenUploadPage');
-            if (fullscreenUploadPage) {
-                fullscreenUploadPage.style.display = 'flex';
-            }
-            
-            if (error.name === 'NotReadableError') {
-                if (window.showToast) {
-                    window.showToast('Camera blocked by privacy shutter or in use by another app');
-                }
-            } else {
-                if (window.showToast) {
-                    window.showToast('Failed to start selected camera');
-                }
-            }
-        }
-    }
-
-    createCameraInterface(stream) {
-        // Create camera interface
-        const cameraModal = document.createElement('div');
-        cameraModal.className = 'modal active camera-modal';
-        cameraModal.innerHTML = `
-            <div class="modal-content" style="max-width: 90%; height: 90%; background: #000;">
-                <div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: column;">
-                    <video id="cameraPreview" autoplay playsinline muted style="flex: 1; width: 100%; object-fit: cover; border-radius: 10px;"></video>
-                    
-                    <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px;">
-                        <button onclick="showCameraSelector()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">📷</button>
-                        <button onclick="switchCamera()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">🔄</button>
-                        <button onclick="closeCameraModal()" style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer;">✕</button>
-                    </div>
-                    
-                    <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; align-items: center;">
-                        <button id="recordBtn" style="width: 70px; height: 70px; background: #ff006e; border: none; border-radius: 50%; color: white; font-size: 24px; cursor: pointer; transition: all 0.3s;">📹</button>
-                        <div id="recordingTimer" style="color: white; font-size: 18px; font-weight: bold; min-width: 60px; text-align: center; display: none;">00:00</div>
-                    </div>
-                    
-                    <div id="recordingIndicator" style="position: absolute; top: 20px; left: 20px; background: #ff4444; color: white; padding: 8px 15px; border-radius: 20px; font-weight: bold; display: none;">
-                        🔴 REC
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(cameraModal);
-        
-        // Set up camera preview
-        const video = document.getElementById('cameraPreview');
-        video.srcObject = stream;
-        
-        // Store stream for recording
-        this.currentCameraStream = stream;
-        this.isRecording = false;
-        this.mediaRecorder = null;
-        this.recordedChunks = [];
-        this.recordingStartTime = null;
-        
-        // Set up record button with direct event listener as fallback
-        setTimeout(() => {
-            const recordBtn = document.getElementById('recordBtn');
-            if (recordBtn) {
-                console.log('🎬 Setting up direct event listener for record button');
-                
-                // Remove any existing onclick
-                recordBtn.removeAttribute('onclick');
-                
-                // Add multiple event listeners for better compatibility
-                recordBtn.addEventListener('click', (e) => {
-                    console.log('🎬 Record button clicked via event listener!');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.toggleRecording();
-                });
-                
-                recordBtn.addEventListener('touchstart', (e) => {
-                    console.log('🎬 Record button touched!');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.toggleRecording();
-                });
-                
-                // Test that the button is clickable
-                recordBtn.style.pointerEvents = 'auto';
-                recordBtn.style.cursor = 'pointer';
-                recordBtn.style.zIndex = '9999';
-                
-                // Add visual feedback on hover
-                recordBtn.addEventListener('mouseenter', () => {
-                    recordBtn.style.transform = 'scale(1.1)';
-                });
-                recordBtn.addEventListener('mouseleave', () => {
-                    recordBtn.style.transform = 'scale(1)';
-                });
-                
-                console.log('🎬 Record button setup complete');
-                
-                // Test button functionality
-                window.testRecordButton = () => {
-                    console.log('🎬 Test button function called');
-                    this.toggleRecording();
-                };
-                console.log('🎬 Added global test function: window.testRecordButton()');
-                
-            } else {
-                console.error('❌ Record button not found in DOM');
-            }
-        }, 100);
-    }
-
-
     toggleRecording() {
-        console.log('🎬 Toggle recording called, current state:', this.isRecording);
-        console.log('🎬 Camera stream available:', !!this.currentCameraStream);
-        
         const recordBtn = document.getElementById('recordBtn');
         const timer = document.getElementById('recordingTimer');
         const indicator = document.getElementById('recordingIndicator');
         
-        console.log('🎬 UI elements found:', {
-            recordBtn: !!recordBtn,
-            timer: !!timer,
-            indicator: !!indicator
-        });
-        
-        if (!this.currentCameraStream) {
-            console.error('❌ No camera stream available for recording');
-            if (window.showToast) {
-                window.showToast('Camera not ready. Please try again.');
-            }
-            return;
-        }
-        
         if (!this.isRecording) {
-            console.log('🔴 Starting recording...');
             // Start recording
             this.startRecording();
             if (recordBtn) {
@@ -1642,7 +1353,6 @@ class UploadManager {
             if (timer) timer.style.display = 'block';
             if (indicator) indicator.style.display = 'block';
         } else {
-            console.log('⏹️ Stopping recording...');
             // Stop recording
             this.stopRecording();
             if (recordBtn) {
@@ -1655,62 +1365,27 @@ class UploadManager {
     }
 
     startRecording() {
-        console.log('🎬 Start recording method called');
-        console.log('🎬 Camera stream check:', !!this.currentCameraStream);
-        
-        if (!this.currentCameraStream) {
-            console.error('❌ No camera stream in startRecording');
-            return;
-        }
+        if (!this.currentCameraStream) return;
         
         try {
-            console.log('🎬 Initializing MediaRecorder...');
             this.recordedChunks = [];
-            
-            // Try different mime types for better compatibility
-            let mimeType = 'video/webm';
-            if (!MediaRecorder.isTypeSupported('video/webm')) {
-                if (MediaRecorder.isTypeSupported('video/mp4')) {
-                    mimeType = 'video/mp4';
-                } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
-                    mimeType = 'video/webm;codecs=vp8';
-                } else {
-                    mimeType = ''; // Let browser choose
-                }
-            }
-            
-            console.log('🎬 Using mime type:', mimeType);
-            
-            this.mediaRecorder = mimeType ? 
-                new MediaRecorder(this.currentCameraStream, { mimeType }) :
-                new MediaRecorder(this.currentCameraStream);
-            
-            console.log('🎬 MediaRecorder created successfully');
+            this.mediaRecorder = new MediaRecorder(this.currentCameraStream, {
+                mimeType: 'video/webm'
+            });
             
             this.mediaRecorder.ondataavailable = (event) => {
-                console.log('🎬 Data available, size:', event.data.size);
                 if (event.data.size > 0) {
                     this.recordedChunks.push(event.data);
                 }
             };
             
             this.mediaRecorder.onstop = () => {
-                console.log('🎬 Recording stopped, processing video...');
                 this.processRecordedVideo();
-            };
-            
-            this.mediaRecorder.onerror = (event) => {
-                console.error('❌ MediaRecorder error:', event.error);
-                if (window.showToast) {
-                    window.showToast('Recording error: ' + event.error.message);
-                }
             };
             
             this.mediaRecorder.start(1000); // Collect data every second
             this.isRecording = true;
             this.recordingStartTime = Date.now();
-            
-            console.log('🔴 Recording started successfully!');
             
             // Start timer
             this.recordingTimer = setInterval(() => {
@@ -1849,260 +1524,20 @@ class UploadManager {
             reviewModal.remove();
             // Clean up the blob URL
             URL.revokeObjectURL(reviewVideo.src);
-            // Show the video details page for upload
-            this.showVideoDetailsPage(this.selectedVideoFile);
+            // Open video editor for recorded video
+            this.openVideoEditor(this.selectedVideoFile);
         });
     }
 
-    async switchCamera() {
-        console.log('🔄 Switching camera from', this.currentFacingMode);
+    switchCamera() {
+        // Toggle between front and back camera
+        this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
         
-        try {
-            // Check available cameras first
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoInputs = devices.filter(device => device.kind === 'videoinput');
-            
-            console.log('📷 Available cameras:', videoInputs.length);
-            videoInputs.forEach((device, index) => {
-                console.log(`   Camera ${index + 1}: ${device.label || 'Unknown Camera'}`);
-            });
-            
-            if (videoInputs.length < 2) {
-                if (window.showToast) {
-                    window.showToast('Only one camera available on this device');
-                }
-                return;
-            }
-            
-            // Toggle between front and back camera
-            this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
-            console.log('🔄 Switching to:', this.currentFacingMode);
-            
-            // Stop current stream
-            if (this.currentCameraStream) {
-                this.currentCameraStream.getTracks().forEach(track => track.stop());
-                this.currentCameraStream = null;
-            }
-            
-            // Get new stream with updated facing mode
-            const newStream = await navigator.mediaDevices.getUserMedia({
-                video: { 
-                    width: { ideal: 3840, max: 3840 },
-                    height: { ideal: 2160, max: 2160 },
-                    frameRate: { ideal: 60, max: 60 },
-                    facingMode: this.currentFacingMode
-                },
-                audio: true
-            });
-            
-            // Update video preview
-            const video = document.getElementById('cameraPreview');
-            if (video) {
-                video.srcObject = newStream;
-                this.currentCameraStream = newStream;
-                console.log('📷 Camera switched successfully');
-                
-                if (window.showToast) {
-                    const cameraType = this.currentFacingMode === 'user' ? 'Front' : 'Back';
-                    window.showToast(`Switched to ${cameraType} camera 📷`);
-                }
-            }
-            
-        } catch (error) {
-            console.error('❌ Camera switch error:', error);
-            
-            if (error.name === 'OverconstrainedError') {
-                console.log('Requested camera not available, falling back to default');
-                // Try with any available camera
-                try {
-                    const fallbackStream = await navigator.mediaDevices.getUserMedia({
-                        video: true,
-                        audio: true
-                    });
-                    
-                    const video = document.getElementById('cameraPreview');
-                    if (video) {
-                        video.srcObject = fallbackStream;
-                        this.currentCameraStream = fallbackStream;
-                    }
-                    
-                    if (window.showToast) {
-                        window.showToast('Using available camera');
-                    }
-                } catch (fallbackError) {
-                    console.error('❌ Fallback camera error:', fallbackError);
-                    if (window.showToast) {
-                        window.showToast('Failed to switch camera');
-                    }
-                }
-            } else {
-                if (window.showToast) {
-                    window.showToast('Camera switch failed - ' + error.message);
-                }
-            }
-        }
-    }
-
-    async showCameraSelector() {
-        console.log('📷 Showing camera selector...');
-        
-        try {
-            // Get available cameras
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoInputs = devices.filter(device => device.kind === 'videoinput');
-            
-            if (videoInputs.length <= 1) {
-                if (window.showToast) {
-                    window.showToast('Only one camera available');
-                }
-                return;
-            }
-            
-            // Create camera selection modal
-            const selectorModal = document.createElement('div');
-            selectorModal.className = 'modal active camera-selector-modal';
-            selectorModal.style.zIndex = '10001'; // Higher than camera modal
-            
-            let cameraOptions = '';
-            videoInputs.forEach((device, index) => {
-                const isBuiltIn = device.label.toLowerCase().includes('built-in') || 
-                                 device.label.toLowerCase().includes('integrated') ||
-                                 device.label.toLowerCase().includes('facetime') ||
-                                 device.label.toLowerCase().includes('front') ||
-                                 device.label.toLowerCase().includes('back');
-                                 
-                const isExternal = !isBuiltIn && device.label !== '';
-                const deviceType = isExternal ? '🔌 External' : '📱 Built-in';
-                const deviceName = device.label || `Camera ${index + 1}`;
-                
-                cameraOptions += `
-                    <div onclick="selectSpecificCamera('${device.deviceId}')" 
-                         style="padding: 15px 20px; margin: 10px 0; background: rgba(255,255,255,0.1); 
-                                border-radius: 10px; cursor: pointer; transition: all 0.3s;
-                                border: 2px solid transparent; display: flex; align-items: center; gap: 15px;"
-                         onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.borderColor='#fe2c55';"
-                         onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='transparent';">
-                        <div style="font-size: 24px;">${deviceType}</div>
-                        <div>
-                            <div style="font-weight: bold; font-size: 16px; color: white;">${deviceName}</div>
-                            <div style="font-size: 12px; color: rgba(255,255,255,0.7);">
-                                ${isExternal ? 'External camera device' : 'Built-in device camera'}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            selectorModal.innerHTML = `
-                <div class="modal-content" style="max-width: 500px; background: #161823; border-radius: 15px; padding: 0;">
-                    <div style="padding: 25px 25px 0 25px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h2 style="color: white; margin: 0; font-size: 20px;">Select Camera</h2>
-                            <button onclick="this.closest('.modal').remove()" 
-                                    style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
-                        </div>
-                        <div style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">
-                            Choose which camera to use for recording
-                        </div>
-                    </div>
-                    <div style="padding: 0 25px 25px 25px; max-height: 400px; overflow-y: auto;">
-                        ${cameraOptions}
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(selectorModal);
-            
-        } catch (error) {
-            console.error('❌ Camera selector error:', error);
-            if (window.showToast) {
-                window.showToast('Failed to load camera options');
-            }
-        }
-    }
-
-    async selectSpecificCamera(deviceId) {
-        console.log('📷 Selecting specific camera:', deviceId);
-        
-        try {
-            // Close camera selector modal
-            const selectorModal = document.querySelector('.camera-selector-modal');
-            if (selectorModal) {
-                selectorModal.remove();
-            }
-            
-            // Stop current stream
-            if (this.currentCameraStream) {
-                this.currentCameraStream.getTracks().forEach(track => track.stop());
-                this.currentCameraStream = null;
-            }
-            
-            // Get stream from specific camera
-            const newStream = await navigator.mediaDevices.getUserMedia({
-                video: { 
-                    deviceId: { exact: deviceId },
-                    width: { ideal: 3840, max: 3840 },
-                    height: { ideal: 2160, max: 2160 },
-                    frameRate: { ideal: 60, max: 60 }
-                },
-                audio: true
-            });
-            
-            // Update video preview
-            const video = document.getElementById('cameraPreview');
-            if (video) {
-                video.srcObject = newStream;
-                this.currentCameraStream = newStream;
-                
-                // Get camera info for confirmation
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const selectedDevice = devices.find(device => device.deviceId === deviceId);
-                const cameraName = selectedDevice ? selectedDevice.label : 'Selected Camera';
-                
-                console.log('📷 Camera switched to:', cameraName);
-                
-                if (window.showToast) {
-                    window.showToast(`Using: ${cameraName} 📷`);
-                }
-            }
-            
-        } catch (error) {
-            console.error('❌ Specific camera selection error:', error);
-            
-            if (error.name === 'NotReadableError') {
-                if (window.showToast) {
-                    window.showToast('Camera is blocked by privacy shutter or being used by another app. Please check camera settings.');
-                }
-            } else if (error.name === 'OverconstrainedError') {
-                console.log('Selected camera constraints not supported, trying basic settings...');
-                try {
-                    // Try with basic constraints for this specific camera
-                    const basicStream = await navigator.mediaDevices.getUserMedia({
-                        video: { deviceId: { exact: deviceId } },
-                        audio: true
-                    });
-                    
-                    const video = document.getElementById('cameraPreview');
-                    if (video) {
-                        video.srcObject = basicStream;
-                        this.currentCameraStream = basicStream;
-                        
-                        if (window.showToast) {
-                            window.showToast('Camera activated with basic settings 📷');
-                        }
-                    }
-                } catch (basicError) {
-                    console.error('Basic camera settings failed:', basicError);
-                    if (window.showToast) {
-                        window.showToast('Selected camera is not available or blocked');
-                    }
-                }
-            } else {
-                if (window.showToast) {
-                    window.showToast('Failed to access selected camera - ' + error.message);
-                }
-            }
-        }
+        // Restart camera with new facing mode
+        this.closeCameraModal();
+        setTimeout(() => {
+            this.recordVideo();
+        }, 100);
     }
 
     closeCameraModal() {
@@ -2164,11 +1599,8 @@ class UploadManager {
         const titleElement = document.getElementById('videoTitle');
         const descriptionElement = document.getElementById('videoDescription');
         
-        let title = titleElement ? titleElement.value.trim() : '';
+        const title = titleElement ? titleElement.value.trim() : '';
         const description = descriptionElement ? descriptionElement.value.trim() : '';
-        
-        // Title is now optional since server validation was removed
-        console.log('🎬 Video title (optional):', title || 'No title provided');
 
         // CRITICAL: Stop ALL videos BEFORE proceeding with upload UI
         console.log('Stopping all videos before upload...');
@@ -2233,171 +1665,169 @@ class UploadManager {
             // Update status
             this.updateUploadProgress(0, 'Starting upload...');
             
-            // Create FormData for MongoDB upload
-            const formData = new FormData();
-            formData.append('video', this.selectedVideoFile);
-            formData.append('title', title);
-            formData.append('description', description);
-            
-            // Add user information for proper association
-            if (window.currentUser) {
-                // Use _id for MongoDB consistency, fallback to uid for Firebase compatibility
-                const userId = window.currentUser._id || window.currentUser.uid;
-                formData.append('userId', userId);
-                formData.append('username', window.currentUser.username || window.currentUser.email);
-                formData.append('userAvatar', window.currentUser.avatar || window.currentUser.profilePicture || '👤');
-                
-                console.log('🔑 Upload user info:', {
-                    userId: userId,
-                    username: window.currentUser.username || window.currentUser.email,
-                    hasCurrentUser: !!window.currentUser,
-                    fullCurrentUser: window.currentUser
-                });
-                
-                // Log complete FormData contents for debugging
-                console.log('🔍 COMPLETE FORMDATA CONTENTS:');
-                for (let [key, value] of formData.entries()) {
-                    if (value instanceof File) {
-                        console.log(`   ${key}: [File] ${value.name} (${value.size} bytes, ${value.type})`);
-                    } else {
-                        console.log(`   ${key}: ${value}`);
+            // Create storage reference
+            const storageRef = window.ref(storage, `videos/${window.currentUser.uid}_${Date.now()}.mp4`);
+            const uploadTask = window.uploadBytesResumable(storageRef, this.selectedVideoFile);
+
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    // Upload progress
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    
+                    // Determine status message based on progress
+                    let status = 'Uploading video...';
+                    if (progress < 10) {
+                        status = 'Starting upload...';
+                    } else if (progress < 50) {
+                        status = 'Uploading video...';
+                    } else if (progress < 90) {
+                        status = 'Almost done...';
+                    } else if (progress < 100) {
+                        status = 'Finalizing upload...';
                     }
-                }
-            }
-            
-            console.log('🚀 Uploading to MongoDB API:', `${window.API_BASE_URL}/api/upload/video`);
-            console.log('🔍 Upload request debug:', {
-                apiBaseUrl: window.API_BASE_URL,
-                authToken: window.authToken ? `${window.authToken.substring(0, 8)}...` : 'none',
-                hasCurrentUser: !!window.currentUser,
-                fileSize: this.selectedVideoFile.size,
-                fileName: this.selectedVideoFile.name
-            });
-            
-            // Simulate progress updates during upload since fetch doesn't provide native progress
-            const progressInterval = setInterval(() => {
-                // Simulate gradual progress increase
-                const currentProgress = parseInt(document.getElementById('uploadProgressText')?.textContent || '0');
-                if (currentProgress < 85) {
-                    const newProgress = Math.min(85, currentProgress + Math.random() * 15);
-                    this.updateUploadProgress(newProgress, 'Uploading video...');
-                }
-            }, 500);
-            
-            const response = await fetch(`${window.API_BASE_URL}/api/upload/video`, {
-                method: 'POST',
-                credentials: 'include', // Include HTTP-only cookies for production auth
-                headers: {
-                    // Only include Authorization header if we have a real token (not session-based)
-                    ...(window.authToken && window.authToken !== 'session-based' ? 
-                        { 'Authorization': `Bearer ${window.authToken}` } : {})
+                    
+                    // Update the progress UI
+                    this.updateUploadProgress(progress, status);
                 },
-                body: formData
-            });
-            
-            // Clear the progress simulation
-            clearInterval(progressInterval);
-            
-            if (!response.ok) {
-                // Handle upload error
-                const errorText = await response.text();
-                console.error('❌ Upload failed:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    url: response.url,
-                    errorText: errorText
-                });
-                
-                let userMessage = 'Upload failed. Please try again.';
-                try {
-                    const errorData = JSON.parse(errorText);
-                    switch (errorData.code) {
-                        case 'FILE_TOO_LARGE':
-                            userMessage = 'Video file is too large (max 500MB for 4K videos). Please compress your video or choose a smaller file.';
-                            break;
-                        case 'INVALID_FORMAT':
-                            userMessage = 'Invalid video format. Please use MP4, MOV, or AVI format.';
-                            break;
-                        case 'VIDEO_TOO_LONG':
-                            userMessage = 'Video is too long (max 3 minutes). Please trim your video to under 3 minutes.';
-                            break;
-                        default:
-                            if (response.status === 401) {
-                                userMessage = 'Please log in to upload videos. Your session may have expired.';
+                (error) => {
+                    // Upload error - use centralized error handling
+                    if (window.errorHandler) {
+                        window.errorHandler.reportError('upload', error, {
+                            operation: 'uploadVideo',
+                            userId: window.currentUser?.uid,
+                            fileSize: this.selectedVideoFile?.size,
+                            retryWithSmallerChunks: () => {
+                                // Implement retry with smaller chunks if needed
+                                console.log('Retrying upload with smaller chunks');
+                                this.uploadVideo();
                             }
-                    }
-                    throw new Error(userMessage);
-                } catch (parseError) {
-                    if (response.status === 401) {
-                        throw new Error('Please log in to upload videos. Your session may have expired.');
-                    }
-                    throw new Error(errorText || 'Upload failed. Please try again.');
-                }
-            }
-            
-            // Upload success
-            this.updateUploadProgress(100, 'Processing video...');
-            
-            const result = await response.json();
-            console.log('✅ Upload successful:', result);
-            
-            this.updateUploadProgress(100, 'Upload complete! 🎉');
-            
-            // Show success for a moment before closing
-            setTimeout(() => {
-                console.log('Upload complete - closing upload modal');
-                
-                if (window.showToast) {
-                    window.showToast('Video uploaded successfully! 🎉');
-                }
-                
-                // Close upload modal and restore content
-                this.closeUploadModal();
-                
-                // Refresh feeds and profile after successful upload
-                if (window.loadAllVideosForFeed) {
-                    console.log('🔄 Refreshing main video feed...');
-                    window.loadAllVideosForFeed();
-                }
-                
-                // Also refresh user videos if on profile page
-                if (window.loadUserVideos && typeof window.loadUserVideos === 'function') {
-                    console.log('🔄 Refreshing user profile videos...');
-                    setTimeout(() => {
-                        window.loadUserVideos();
-                    }, 1000);
-                }
-                
-                // Additionally, if we're on the profile page, force refresh
-                if (window.location.hash === '#profile' || window.currentPage === 'profile') {
-                    console.log('🔄 On profile page - forcing profile refresh...');
-                    setTimeout(() => {
-                        if (window.showPage && typeof window.showPage === 'function') {
-                            window.showPage('profile');
+                        });
+                    } else {
+                        console.error('Upload error:', error);
+                        if (window.showToast) {
+                            window.showToast('Failed to upload video');
                         }
-                    }, 1500);
+                    }
+                    this.closeUploadModal();
+                },
+                async () => {
+                    // Upload success
+                    try {
+                        this.updateUploadProgress(100, 'Processing video...');
+                        
+                        const videoUrl = await window.getDownloadURL(uploadTask.snapshot.ref);
+                        
+                        this.updateUploadProgress(100, 'Saving video details...');
+                        
+                        // Create video document in Firestore
+                        await window.addDoc(window.collection(db, 'videos'), {
+                            userId: window.currentUser.uid,
+                            title: title,
+                            description: description,
+                            videoUrl,
+                            likes: [],
+                            comments: [],
+                            shares: 0,
+                            views: 0,
+                            createdAt: new Date()
+                        });
+                        
+                        this.updateUploadProgress(100, 'Upload complete! 🎉');
+                        
+                        // Show success for a moment before closing
+                        setTimeout(() => {
+                            console.log('Upload complete - closing upload modal');
+                            
+                            if (window.showToast) {
+                                window.showToast('Video uploaded successfully! 🎉');
+                            }
+                            
+                            // Close upload modal and restore content
+                            this.closeUploadModal();
+                            
+                            // Refresh feeds after successful upload
+                            if (window.loadAllVideosForFeed) {
+                                window.loadAllVideosForFeed();
+                            }
+                        }, 2000);
+                        
+                    } catch (firestoreError) {
+                        console.error('Firestore error:', firestoreError);
+                        if (window.showToast) {
+                            window.showToast('Video uploaded but failed to save details');
+                        }
+                        this.closeUploadModal();
+                    }
                 }
-                
-                // Update user stats to reflect new video count
-                if (window.loadUserStats && typeof window.loadUserStats === 'function') {
-                    console.log('📊 Refreshing user stats...');
-                    setTimeout(() => {
-                        window.loadUserStats();
-                    }, 1500);
-                }
-            }, 2000);
+            );
             
         } catch (error) {
-            // Clear progress simulation if it exists
-            if (typeof progressInterval !== 'undefined') {
-                clearInterval(progressInterval);
-            }
-            
-            console.error('Upload error:', error);
-            if (window.showToast) {
-                window.showToast('Failed to upload video: ' + error.message);
+            // Use centralized error handling
+            if (window.errorHandler) {
+                window.errorHandler.reportError('upload', error, {
+                    operation: 'uploadVideo',
+                    userId: window.currentUser?.uid,
+                    phase: 'initialization'
+                });
+            } else {
+                console.error('Upload error:', error);
+                if (window.showToast) {
+                    window.showToast('Failed to upload video');
+                }
             }
             this.closeUploadModal();
+        }
+    }
+
+    openVideoEditor(file) {
+        console.log('Opening video editor for file:', file.name);
+        
+        if (!window.videoEditor) {
+            console.error('Video editor not available');
+            // Fallback to direct upload
+            this.showVideoDetailsPage(file);
+            return;
+        }
+        
+        // Hide the upload page
+        const uploadPage = document.getElementById('fullscreenUploadPage');
+        if (uploadPage) {
+            uploadPage.style.display = 'none';
+        }
+        
+        // Set up video editor completion handler
+        const originalHandler = document.addEventListener;
+        const editorCompleteHandler = (event) => {
+            if (event.type === 'videoEdited') {
+                console.log('Video editing completed:', event.detail);
+                
+                // Update the selected file with edited version
+                if (event.detail.video) {
+                    this.selectedVideoFile = event.detail.video.file || file;
+                }
+                
+                // Show video details page after editing
+                this.showVideoDetailsPage(this.selectedVideoFile);
+                
+                // Remove the event listener
+                document.removeEventListener('videoEdited', editorCompleteHandler);
+            }
+        };
+        
+        document.addEventListener('videoEdited', editorCompleteHandler);
+        
+        // Open the video editor
+        if (window.openVideoEditor) {
+            // Create a video element for the editor
+            const videoElement = document.createElement('video');
+            videoElement.src = URL.createObjectURL(file);
+            videoElement.muted = true;
+            videoElement.preload = 'metadata';
+            
+            window.openVideoEditor(videoElement);
+        } else {
+            console.error('openVideoEditor function not found');
+            this.showVideoDetailsPage(file);
         }
     }
 
@@ -2427,3 +1857,5 @@ const uploadManager = new UploadManager();
 
 // Make upload manager globally available
 window.uploadManager = uploadManager;
+
+export default UploadManager;

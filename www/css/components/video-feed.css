@@ -1,22 +1,17 @@
-/* VIB3 Video Feed Styles */
+/* Video Feed Styles - TikTok Layout */
 .video-feed {
-    height: calc(100vh - 60px);
-    margin-top: 60px;
+    height: 100vh;
+    margin-top: 0;
     margin-left: 240px;
     width: calc(100vw - 240px);
-    overflow-y: auto;
-    overflow-x: hidden;
-    background: var(--bg-primary);
+    overflow: hidden;
+    background: #000;
     transition: all 0.3s ease;
     box-sizing: border-box;
     position: relative;
     display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    scroll-snap-type: y mandatory;
-    scroll-behavior: smooth;
-    padding: 20px 0;
+    justify-content: center;
+    align-items: flex-start;
 }
 
 .video-feed::-webkit-scrollbar {
@@ -24,12 +19,7 @@
 }
 
 .feed-tabs {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    padding: 20px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-primary);
+    display: none; /* vertical video - no tabs in feed */
 }
 
 @media (min-width: 768px) {
@@ -52,43 +42,6 @@
 
 .feed-tab.active {
     color: white;
-    background: var(--vib3-brand-gradient);
-    border-radius: 25px;
-    box-shadow: var(--vib3-glow);
-    transform: translateY(-2px);
-}
-
-/* VIB3 Pulse Feed Special Styling */
-.vib3-pulse-tab {
-    position: relative;
-    overflow: hidden;
-}
-
-.vib3-pulse-tab.active {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%) !important;
-    animation: pulse-glow 2s ease-in-out infinite;
-}
-
-@keyframes pulse-glow {
-    0%, 100% { 
-        box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
-        transform: scale(1);
-    }
-    50% { 
-        box-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
-        transform: scale(1.05);
-    }
-}
-
-.pulse-icon {
-    display: inline-block;
-    animation: heartbeat 1.5s ease-in-out infinite;
-}
-
-@keyframes heartbeat {
-    0%, 50%, 100% { transform: scale(1); }
-    25% { transform: scale(1.2); }
-    75% { transform: scale(1.1); }
 }
 
 .feed-tab.active::after {
@@ -109,7 +62,7 @@
 
 .feed-content {
     display: none;
-    height: calc(100vh - 120px);
+    height: 100vh;
     width: 100%;
     max-width: 500px;
     overflow-y: auto;
@@ -119,7 +72,7 @@
     scroll-behavior: smooth;
     margin: 0 auto;
     position: relative;
-    padding: 0;
+    padding: 20px 20px 20px 20px;
 }
 
 .feed-content::-webkit-scrollbar {

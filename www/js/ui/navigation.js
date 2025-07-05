@@ -75,8 +75,14 @@ export function showPage(page) {
             window.stopAllVideosCompletely();
         }
         
-        if (window.showToast) {
-            window.showToast('Live streaming coming soon! 🎥');
+        // Setup live preview
+        if (window.setupLivePreview) {
+            window.setupLivePreview();
+        } else {
+            console.error('setupLivePreview not found');
+            if (window.showToast) {
+                window.showToast('Live streaming setup error', 'error');
+            }
         }
         return;
     }

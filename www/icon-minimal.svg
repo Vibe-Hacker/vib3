@@ -1,0 +1,27 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Clean gradient -->
+    <linearGradient id="cleanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF0050"/>
+      <stop offset="100%" style="stop-color:#8338EC"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="115" ry="115" fill="url(#cleanGrad)"/>
+  
+  <!-- Main V symbol - clean and bold -->
+  <path d="M140 160 L256 380 L372 160" 
+        stroke="#FFFFFF" 
+        stroke-width="40" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        fill="none"/>
+  
+  <!-- Clean "3" representation -->
+  <g fill="#FFFFFF">
+    <circle cx="400" cy="180" r="12"/>
+    <circle cx="400" cy="220" r="12"/>
+    <circle cx="400" cy="260" r="12"/>
+  </g>
+</svg>
