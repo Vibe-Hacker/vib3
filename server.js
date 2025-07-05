@@ -4991,9 +4991,9 @@ app.post('/api/upload/validate', requireAuth, upload.array('files', 35), async (
     }
 });
 
-// Serve the lightweight frontend by default
+// Serve the modular frontend by default (no vib3-complete.js)
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'www', 'index.html'));
+    res.sendFile(path.join(__dirname, 'www', 'index-heavy.html'));
 });
 
 // Serve original app on /app route with mobile detection (both /app and /app/)
@@ -5016,9 +5016,9 @@ app.get(['/app', '/app/'], (req, res) => {
     }
 });
 
-// Catch all route
+// Catch all route - use modular version
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'www', 'index.html'));
+    res.sendFile(path.join(__dirname, 'www', 'index-heavy.html'));
 });
 
 // ================ ADMIN CLEANUP ENDPOINTS ================
