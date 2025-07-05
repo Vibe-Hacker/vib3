@@ -524,12 +524,51 @@
     </div>
 
     <!-- Load extracted modular JavaScript -->
-    <script src="js/emergency-init.js?v=20250105001"></script>
+    <script>
+        // Inline critical fixes to avoid Railway caching issues
+        console.log('🚨 INLINE FIXES LOADING - Version 2025.01.05');
+        
+        // Define critical variables before any script loads
+        window.liveStreamingState = {
+            isActive: false,
+            startTime: null,
+            viewers: 0,
+            title: '',
+            category: '',
+            stream: null
+        };
+        
+        window.apiCallLimiter = {
+            calls: new Map(),
+            limit: 10,
+            window: 60000,
+            canMakeCall(key) {
+                const now = Date.now();
+                if (!this.calls.has(key)) {
+                    this.calls.set(key, []);
+                }
+                const calls = this.calls.get(key);
+                const recentCalls = calls.filter(time => now - time < this.window);
+                this.calls.set(key, recentCalls);
+                return recentCalls.length < this.limit;
+            },
+            recordCall(key) {
+                if (!this.calls.has(key)) {
+                    this.calls.set(key, []);
+                }
+                this.calls.get(key).push(Date.now());
+            }
+        };
+        
+        console.log('✅ INLINE FIXES READY - Variables defined');
+    </script>
+    <!-- Core initialization scripts -->
     <script src="js/mongodb-adapter.js?v=20250105001"></script>
-    <script src="js/init-fix.js?v=20250705"></script>
+    <script src="js/auth-simple.js?v=20250105001"></script>
+    
+    <!-- Feature scripts -->
     <script src="js/remix-fallback.js?v=20250704005"></script>
     <script src="js/live-functions.js?v=20250704006"></script>
-    <script src="js/utils/early-auth-fix.js?v=20250704005"></script>
     <script src="js/utils/video-deletion-fix-simple.js?v=20250704005"></script>
     <script src="js/utils/force-stop-videos.js?v=20250704005"></script>
     <script src="js/utils/video-feed-display-fix.js?v=20250704005"></script>
@@ -537,13 +576,11 @@
     <script src="js/feed-simple.js?v=20250105006"></script>
     <script src="js/video-simple.js?v=20250105006"></script>
     <script src="js/feed-integration.js?v=20250105007"></script>
-    <script type="module" src="js/components/video/video-utils.js?v=20250704005"></script>
     <script src="js/features/videoEditor.js?v=20250704005"></script>
-    <script type="module" src="js/components/upload-manager.js?v=20250704005"></script>
-    <script type="module" src="js/app-extracted.js?v=20250704005"></script>
-    <script type="module" src="js/main.js?v=20250704005"></script>
-    <script src="fix-creations-text.js?v=20250704005"></script>
+    
+    <!-- Fix scripts at the end -->
     <script src="js/fix-all-errors.js?v=20250105002"></script>
-    <script src="js/auth-fix.js?v=20250105005"></script>
+    <script src="js/more-options.js?v=20250105001"></script>
+    <script src="js/page-handler.js?v=20250105001"></script>
 </body>
 </html>

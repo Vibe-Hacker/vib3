@@ -35,7 +35,9 @@ window.loadVideoLikeStatus = async function(videoId, likeButton) {
             return;
         }
         
-        const currentUser = window.mongoAPI?.getCurrentUser?.() || window.currentUser;
+        const currentUser = (typeof window.mongoAPI !== 'undefined' && window.mongoAPI.getCurrentUser) 
+            ? window.mongoAPI.getCurrentUser() 
+            : (typeof window.currentUser !== 'undefined' ? window.currentUser : null);
         if (!currentUser) return;
         
         // Just set a default state for now
