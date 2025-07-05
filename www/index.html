@@ -3,31 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIB3 - Video Social App</title>
-    <link rel="stylesheet" href="css/main.css?v=20250703081">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>VIB3 Studio - Video Social App</title>
+    <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
     <div class="auth-container" id="authContainer">
         <div class="auth-form">
-            <div class="vib3-logo-wrapper">
-                <h2 class="vib3-logo">VIB3</h2>
-            </div>
+            <h2>Welcome to VIB3</h2>
             <div class="auth-error" id="authError"></div>
+            <div class="auth-loading" id="authLoading">Loading...</div>
             <div id="loginForm">
-                <input type="email" class="auth-input" id="loginEmail" placeholder="Email" autocomplete="email">
-                <input type="password" class="auth-input" id="loginPassword" placeholder="Password" autocomplete="current-password">
-                <button class="auth-btn" onclick="handleLogin()">Log in</button>
+                <input type="email" class="auth-input" id="loginEmail" placeholder="Email" required aria-label="Email">
+                <input type="password" class="auth-input" id="loginPassword" placeholder="Password" required aria-label="Password">
+                <button class="auth-btn" onclick="handleLogin()" aria-label="Sign In">Sign In</button>
                 <div class="auth-switch">
                     Don't have an account? <a onclick="showSignup()">Sign up</a>
                 </div>
             </div>
             <div id="signupForm" style="display: none;">
-                <input type="text" class="auth-input" id="signupName" placeholder="Username" autocomplete="username">
-                <input type="email" class="auth-input" id="signupEmail" placeholder="Email" autocomplete="email">
-                <input type="password" class="auth-input" id="signupPassword" placeholder="Password" autocomplete="new-password">
-                <button class="auth-btn" onclick="handleSignup()">Sign up</button>
+                <input type="text" class="auth-input" id="signupName" placeholder="Display Name" required aria-label="Display Name">
+                <input type="email" class="auth-input" id="signupEmail" placeholder="Email" required aria-label="Email">
+                <input type="password" class="auth-input" id="signupPassword" placeholder="Password (min 6 chars)" required aria-label="Password">
+                <button class="auth-btn" onclick="handleSignup()" aria-label="Create Account">Create Account</button>
                 <div class="auth-switch">
-                    Already have an account? <a onclick="showLogin()">Log in</a>
+                    Already have an account? <a onclick="showLogin()">Sign in</a>
                 </div>
             </div>
         </div>
@@ -37,7 +39,7 @@
     <div class="sidebar" id="sidebar">
         <!-- VIB3 Logo (clickable to refresh) -->
         <div class="sidebar-logo" onclick="refreshForYou()" style="cursor: pointer; padding: 0 20px 20px 20px;">
-            <h1 class="vib3-logo" style="font-size: 32px;">VIB3</h1>
+            <h1 style="font-size: 32px; font-weight: 900; letter-spacing: -1px; color: var(--text-primary);">VIB3</h1>
         </div>
         
         <!-- Search Bar -->
@@ -47,24 +49,32 @@
         </div>
         
         <!-- Main Navigation -->
-        <!-- Note: Home, Discover, Vibing, and Squad are now in the feed tabs above -->
-
-        <button class="sidebar-item" onclick="showPage('viberooms')" id="sidebarVibeRooms">
+        <button class="sidebar-item" onclick="showPage('foryou')" id="sidebarHome">
             <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                <circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.7"/>
-                <circle cx="7" cy="9" r="2" fill="currentColor" opacity="0.5"/>
-                <circle cx="17" cy="9" r="2" fill="currentColor" opacity="0.5"/>
             </svg>
-            <div class="sidebar-text">Vibe Rooms</div>
+            <div class="sidebar-text">For You</div>
         </button>
         
-        <button class="sidebar-item" onclick="showPage('live')" id="sidebarLive">
+        <button class="sidebar-item" onclick="showPage('explore')" id="sidebarExplore">
             <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4zM14 13h-3v3H9v-3H6v-2h3V8h2v3h3v2z"/>
-                <circle cx="19" cy="6" r="2" fill="red"/>
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
             </svg>
-            <div class="sidebar-text">Live</div>
+            <div class="sidebar-text">Explore</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showPage('following')" id="sidebarFollowing">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A2.01 2.01 0 0 0 18.08 7c-.8 0-1.54.5-1.85 1.26l-1.94 5.83-1.31-.78A2.01 2.01 0 0 0 11.1 13l-4.03 2.41C6.41 15.74 6 16.36 6 17v5h2v-4.5l1.5-.9L9 19l1.5-2.1L12 16l1.5.9L15 19v3h4v-3h1z"/>
+            </svg>
+            <div class="sidebar-text">Following</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showPage('friends')" id="sidebarFriends">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm2.78 3.58A2 2 0 0 0 17 7h-2c-.83 0-1.58.56-1.85 1.37L12 12l-1.15-3.63A2 2 0 0 0 9 7H7a2 2 0 0 0-1.78.58L4 9v6h2v5h3v-5h2v5h3v-5h2V9l-1.22-1.42z"/>
+            </svg>
+            <div class="sidebar-text">Friends</div>
         </button>
         
         <button class="sidebar-item" onclick="showUploadModal()">
@@ -74,52 +84,6 @@
             <div class="sidebar-text">Upload</div>
         </button>
         
-        
-        <button class="sidebar-item" onclick="showPage('creator-studio')" id="sidebarCreatorStudio">
-            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20 4v12H8V4h12m0-2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-                <path d="M12 12l3.5 2.08-.65-3.78L17.7 8.2l-3.79-.55L12 4.1 10.09 7.65 6.3 8.2l2.85 2.1-.65 3.78z"/>
-                <circle cx="10" cy="18" r="2"/>
-                <circle cx="16" cy="18" r="2"/>
-                <path d="M8 16h8v2H8z"/>
-            </svg>
-            <div class="sidebar-text">VIB3 Creations</div>
-        </button>
-        
-        <button class="sidebar-item" onclick="showPage('challenges')" id="sidebarChallenges">
-            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                <path d="M9 11H7v9h2v-9zm4-4H11v13h2V7zm4-3h-2v16h2V4z"/>
-            </svg>
-            <div class="sidebar-text">Challenges</div>
-        </button>
-
-        <button class="sidebar-item" onclick="showPage('collaboration')" id="sidebarCollaboration">
-            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zM4 18v-6h3v-2.5c0-1.1.9-2 2-2s2 .9 2 2V10h3v8H4zm10-8v8h6v-8h-3v-2.5c0-1.1-.9-2-2-2s-2 .9-2 2V10h1z"/>
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" opacity="0.3"/>
-                <circle cx="7" cy="9" r="1.5" fill="currentColor"/>
-                <circle cx="17" cy="9" r="1.5" fill="currentColor"/>
-                <circle cx="12" cy="15" r="1.5" fill="currentColor"/>
-                <path d="M7 9l5 6 5-6" stroke="currentColor" stroke-width="1" fill="none"/>
-            </svg>
-            <div class="sidebar-text">Collaborate</div>
-        </button>
-        
-        <button class="sidebar-item" onclick="showPage('coins')" id="sidebarCoins">
-            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="10" fill="url(#coinGradient)"/>
-                <path d="M12 6C8.69 6 6 8.69 6 12s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
-                <text x="12" y="16" text-anchor="middle" font-size="8" font-weight="bold" fill="white">V3</text>
-                <defs>
-                    <linearGradient id="coinGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
-                    </linearGradient>
-                </defs>
-            </svg>
-            <div class="sidebar-text">VIB3 Coins</div>
-        </button>
         
         <button class="sidebar-item" onclick="showPage('activity')">
             <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -135,6 +99,13 @@
             <div class="sidebar-text">Messages</div>
         </button>
         
+        <button class="sidebar-item" onclick="showPage('live')">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="3.2"/>
+                <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+            </svg>
+            <div class="sidebar-text">LIVE</div>
+        </button>
         
         <button class="sidebar-item" onclick="showPage('profile')" id="sidebarProfile">
             <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -147,7 +118,7 @@
             <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
             </svg>
-            <div class="sidebar-text">Creator Fund</div>
+            <div class="sidebar-text">VIB3 Studio</div>
         </button>
         
         <button class="sidebar-item" onclick="showPage('shop')">
@@ -162,15 +133,6 @@
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
             </svg>
             <div class="sidebar-text">Analytics</div>
-        </button>
-
-        <button class="sidebar-item" onclick="showPage('energymeter')" id="sidebarEnergyMeter">
-            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-                <path d="M12 6v6l4 2-1 1.7-5-3V6h2z" fill="var(--accent-primary)"/>
-                <circle cx="12" cy="12" r="2" fill="var(--accent-secondary)"/>
-            </svg>
-            <div class="sidebar-text">Energy Meter</div>
         </button>
         
         <button class="sidebar-item" onclick="showMoreOptions()">
@@ -205,36 +167,19 @@
     </div>
     
     
-    <!-- VIB3 Top Header Bar -->
-    <div class="vib3-header" style="position: fixed; top: 0; left: 240px; right: 0; height: 60px; background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%); z-index: 100; display: flex; align-items: center; justify-content: center;">
-        <div style="color: white; font-size: 18px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-            Welcome to VIB3 - Where Creativity Vibes
-        </div>
-    </div>
-
-    <div class="app-container main-app" id="mainApp" style="margin-top: 0; padding-top: 60px;">
+    <div class="app-container main-app" id="mainApp">
         
         <div class="video-feed" id="videoFeed">
             <div class="feed-tabs">
-                <button class="feed-tab active" onclick="switchFeedTab('home')" id="homeTab" aria-label="Home Feed">Home</button>
-                <button class="feed-tab" onclick="switchFeedTab('subscriptions')" id="subscriptionsTab" aria-label="Squad Feed">Squad</button>
-                <button class="feed-tab vib3-pulse-tab" onclick="switchFeedTab('pulse')" id="pulseTab" aria-label="Pulse Feed">
-                    <span class="pulse-icon">⚡</span> Pulse Feed
-                </button>
-                <button class="feed-tab" onclick="switchFeedTab('discover')" id="discoverTab" aria-label="Discover Feed">Discover</button>
-                <button class="feed-tab" onclick="switchFeedTab('vibing')" id="vibingTab" aria-label="Vibing Feed">
-                    <span style="margin-right: 4px;">✨</span> Vibing
-                </button>
+                <button class="feed-tab active" onclick="switchFeedTab('foryou')" id="foryouTab" aria-label="For You Feed">For You</button>
+                <button class="feed-tab" onclick="switchFeedTab('following')" id="followingTab" aria-label="Following Feed">Following</button>
+                <button class="feed-tab" onclick="switchFeedTab('explore')" id="exploreTab" aria-label="Explore Feed">Explore</button>
             </div>
-            <div class="feed-content active" id="homeFeed">
+            <div class="feed-content active" id="foryouFeed">
             </div>
-            <div class="feed-content" id="subscriptionsFeed">
+            <div class="feed-content" id="followingFeed">
             </div>
-            <div class="feed-content" id="pulseFeed">
-            </div>
-            <div class="feed-content" id="vibingFeed">
-            </div>
-            <div class="feed-content" id="discoverFeed">
+            <div class="feed-content" id="exploreFeed">
                 <!-- Explore Top Navigation -->
                 <div class="explore-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border-primary); background: var(--bg-primary); position: sticky; top: 0; z-index: 100;">
                     <!-- Search Bar -->
@@ -594,9 +539,9 @@
             <button onclick="startNewChat()" class="new-chat-btn">+ Start New Chat</button>
         </div>
         
-        <!-- Creator Fund Page -->
+        <!-- VIB3 Studio Page -->
         <div class="creator-page" id="creatorPage" style="margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px; display: none;">
-            <h2 style="margin-bottom: 20px;">💰 Creator Fund</h2>
+            <h2 style="margin-bottom: 20px;">🎬 VIB3 Studio</h2>
             
             <!-- Earnings Dashboard -->
             <div class="earnings-dashboard">
@@ -619,7 +564,7 @@
                 </div>
                 
                 <div class="earnings-card">
-                    <h3>Creator Tips</h3>
+                    <h3>VIB3 Studio Tips</h3>
                     <div class="earnings-amount">$67.30</div>
                     <div class="earnings-subtitle">From 23 supporters</div>
                 </div>
@@ -627,7 +572,7 @@
             
             <!-- Fund Requirements -->
             <div class="fund-requirements">
-                <h3>Creator Fund Eligibility</h3>
+                <h3>VIB3 Studio Eligibility</h3>
                 <div class="requirement-item completed">
                     <span class="requirement-icon">✅</span>
                     <span>10,000+ followers</span>
@@ -656,7 +601,7 @@
                 <div class="tool-grid">
                     <div class="tool-card" onclick="setupTips()">
                         <div class="tool-icon">💝</div>
-                        <div class="tool-name">Creator Tips</div>
+                        <div class="tool-name">VIB3 Studio Tips</div>
                         <div class="tool-description">Let fans tip you directly</div>
                         <button class="tool-action">Set Up</button>
                     </div>
@@ -696,7 +641,7 @@
                 <button class="shop-category" onclick="filterShop('tech')">📱 Tech</button>
                 <button class="shop-category" onclick="filterShop('beauty')">💄 Beauty</button>
                 <button class="shop-category" onclick="filterShop('home')">🏠 Home</button>
-                <button class="shop-category" onclick="filterShop('merch')">👕 Creator Merch</button>
+                <button class="shop-category" onclick="filterShop('merch')">👕 VIB3 Studio Merch</button>
             </div>
             
             <!-- Product Grid -->
@@ -1150,16 +1095,22 @@
     </div>
 
     <!-- Load MongoDB adapter and auth-simple, then complete VIB3 app -->
-    <script src="js/mongodb-adapter.js"></script>
+    <script src="js/preload-fixes.js?v=20250105008"></script>
+    <script src="js/init-fix.js?v=20250105008"></script>
+    <script src="js/mongodb-adapter.js?v=20250105008"></script>
     <script src="js/auth-simple.js"></script>
-    <script src="js/video-simple.js"></script>
     <script src="js/simple-profile.js"></script>
-    <script src="js/profile-functions.js?v=20250702020"></script>
+    <script src="js/profile-functions.js"></script>
     <script src="js/features/videoEditor.js"></script>
     <script src="js/comments-simple.js"></script>
     <script src="js/search-simple.js"></script>
-    <script src="js/components/upload-manager.js?v=20250702001"></script>
-    <script src="js/vib3-complete.js?v=20250703088"></script>
+    <script src="js/live-functions.js?v=20250704007"></script>
+    <!-- Removed vib3-complete-v2.js - using modular approach -->
+    <script src="js/feed-simple.js?v=20250105009"></script>
+    <script src="js/video-simple.js?v=20250105009"></script>
+    <script src="js/feed-integration.js?v=20250105009"></script>
+    <script src="js/app-extracted.js?v=20250105009"></script>
+    <script src="js/main.js?v=20250105009"></script>
     
     <!-- Auto-testing and fixing scripts for development -->
     <script>

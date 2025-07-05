@@ -1095,8 +1095,9 @@
     </div>
 
     <!-- Load MongoDB adapter and auth-simple, then complete VIB3 app -->
-    <script src="js/init-fix.js"></script>
-    <script src="js/mongodb-adapter.js"></script>
+    <script src="js/preload-fixes.js?v=20250105008"></script>
+    <script src="js/init-fix.js?v=20250105008"></script>
+    <script src="js/mongodb-adapter.js?v=20250105008"></script>
     <script src="js/auth-simple.js"></script>
     <script src="js/simple-profile.js"></script>
     <script src="js/profile-functions.js"></script>
@@ -1104,7 +1105,12 @@
     <script src="js/comments-simple.js"></script>
     <script src="js/search-simple.js"></script>
     <script src="js/live-functions.js?v=20250704007"></script>
-    <script src="js/vib3-complete-v2.js?v=20250704007"></script>
+    <!-- Removed vib3-complete-v2.js - using modular approach -->
+    <script src="js/feed-simple.js?v=20250105009"></script>
+    <script src="js/video-simple.js?v=20250105009"></script>
+    <script src="js/feed-integration.js?v=20250105009"></script>
+    <script src="js/app-extracted.js?v=20250105009"></script>
+    <script src="js/main.js?v=20250105009"></script>
     
     <!-- Auto-testing and fixing scripts for development -->
     <script>
