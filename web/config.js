@@ -2,7 +2,7 @@
 // This file configures the web app to use the backend API
 
 const config = {
-    // Backend API URL - Change this to your Railway backend URL
+    // Backend API URL - Your original Railway backend
     API_URL: 'https://vib3-production.up.railway.app',
     
     // If running locally, use localhost
