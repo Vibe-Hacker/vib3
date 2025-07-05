@@ -347,7 +347,8 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
     try {
       // Get actual video duration first
       final actualDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
-      print('⏱️ Detected video duration: ${actualDuration.inSeconds}s');
+      print('⏱️ Detected video duration: ${actualDuration.inSeconds}s (${actualDuration.inMilliseconds}ms)');
+      print('📊 Formatted duration: ${_formatDuration(actualDuration)}');
       
       // Set initial state
       setState(() {
@@ -948,9 +949,15 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+    
+    if (hours > 0) {
+      return "${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}";
+    } else {
+      return "${twoDigits(minutes)}:${twoDigits(seconds)}";
+    }
   }
 
   @override
