@@ -1,12 +1,11 @@
 {
-  "version": 2,
+  "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "nixpacks",
-    "buildCommand": "echo 'Clearing cache...' && rm -rf .cache && echo 'Cache cleared'"
+    "builder": "NIXPACKS"
   },
   "deploy": {
-    "restartPolicyType": "never",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 300
+    "startCommand": "npx serve . -l 3000",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
   }
 }
