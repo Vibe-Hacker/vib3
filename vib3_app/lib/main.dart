@@ -17,10 +17,20 @@ void main() {
     DeviceOrientation.portraitDown,
   ]);
   
-  // Use edge-to-edge mode but keep system UI visible
+  // Set system UI mode to show all overlays
   SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.edgeToEdge,
-    overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
+    SystemUiMode.manual,
+    overlays: SystemUiOverlay.values, // Show all system UI
+  );
+  
+  // Make status bar transparent
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.black,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
   );
   
   runApp(const VIB3App());

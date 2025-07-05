@@ -114,22 +114,26 @@ $analysis
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          VideoFeed(isVisible: _currentIndex == 0),
-          const SearchScreen(),
-          const UploadScreen(),
-          const NotificationsScreen(),
-          const ProfileScreen(),
-        ],
+      body: SafeArea(
+        bottom: false, // Don't add padding at bottom
+        child: IndexedStack(
+          index: _currentIndex,
+          children: [
+            VideoFeed(isVisible: _currentIndex == 0),
+            const SearchScreen(),
+            const UploadScreen(),
+            const NotificationsScreen(),
+            const ProfileScreen(),
+          ],
+        ),
       ),
       bottomNavigationBar: Container(
-        height: 100, // Force a specific height
-        color: Colors.pink, // Bright color to see if it's rendering
-        child: SafeArea(
-          top: false,
-          child: BottomNavigationBar(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: Colors.grey[800]!, width: 0.5),
+          ),
+        ),
+        child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) {
             setState(() {
@@ -142,14 +146,14 @@ $analysis
           unselectedItemColor: Colors.grey,
           showSelectedLabels: false,
           showUnselectedLabels: false,
+          elevation: 0,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Discover'),
-            BottomNavigationBarItem(icon: Icon(Icons.add_box), label: 'Create'),
-            BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Notifications'),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+            BottomNavigationBarItem(icon: Icon(Icons.home, size: 24), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.search, size: 24), label: 'Discover'),
+            BottomNavigationBarItem(icon: Icon(Icons.add_box, size: 24), label: 'Create'),
+            BottomNavigationBarItem(icon: Icon(Icons.notifications, size: 24), label: 'Notifications'),
+            BottomNavigationBarItem(icon: Icon(Icons.person, size: 24), label: 'Profile'),
           ],
-        ),
         ),
       ),
     );
