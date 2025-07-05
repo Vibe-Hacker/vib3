@@ -114,46 +114,44 @@ $analysis
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
+      body: IndexedStack(
+        index: _currentIndex,
         children: [
-          // Main content
-          IndexedStack(
-            index: _currentIndex,
-            children: [
-              VideoFeed(isVisible: _currentIndex == 0),
-              const SearchScreen(),
-              const UploadScreen(),
-              const NotificationsScreen(),
-              const ProfileScreen(),
-            ],
-          ),
-          
-          // Bottom navigation
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.8),
-                border: const Border(
-                  top: BorderSide(color: Colors.grey, width: 0.1),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(Icons.home, 'Home', 0),
-                  _buildNavItem(Icons.search, 'Discover', 1),
-                  _buildNavItem(Icons.add_box, 'Create', 2),
-                  _buildNavItem(Icons.notifications, 'Notifications', 3),
-                  _buildNavItem(Icons.person, 'Profile', 4),
-                ],
-              ),
-            ),
-          ),
+          VideoFeed(isVisible: _currentIndex == 0),
+          const SearchScreen(),
+          const UploadScreen(),
+          const NotificationsScreen(),
+          const ProfileScreen(),
         ],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.black,
+          border: Border(
+            top: BorderSide(color: Colors.grey[800]!, width: 0.5),
+          ),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.black,
+          selectedItemColor: const Color(0xFF00CED1),
+          unselectedItemColor: Colors.grey,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Discover'),
+            BottomNavigationBarItem(icon: Icon(Icons.add_box), label: 'Create'),
+            BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Notifications'),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          ],
+        ),
       ),
     );
   }
