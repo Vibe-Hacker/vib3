@@ -1,89 +1,35 @@
-// Main application initialization - extracted from inline JavaScript
-import { auth, db, storage } from './firebase-config.js';
-import { 
-    signInWithEmailAndPassword, 
-    createUserWithEmailAndPassword, 
-    signOut, 
-    onAuthStateChanged, 
-    updateProfile 
-} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { 
-    collection, 
-    query, 
-    where, 
-    getDocs, 
-    addDoc, 
-    deleteDoc, 
-    doc, 
-    setDoc, 
-    updateDoc, 
-    arrayUnion, 
-    arrayRemove, 
-    getDoc, 
-    deleteField, 
-    increment 
-} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-import { 
-    ref, 
-    uploadBytesResumable, 
-    getDownloadURL, 
-    deleteObject 
-} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+// Main application initialization - MongoDB version
+// This file sets up the core app functionality
 
-// Set up global Firebase functions for legacy compatibility
-function setupGlobalFirebaseFunctions() {
-    // Auth functions
-    window.auth = auth;
-    window.db = db;
-    window.storage = storage;
-    window.signInWithEmailAndPassword = signInWithEmailAndPassword;
-    window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
-    window.signOut = signOut;
-    window.onAuthStateChanged = onAuthStateChanged;
-    window.updateProfile = updateProfile;
-    
-    // Firestore functions
-    window.collection = collection;
-    window.query = query;
-    window.where = where;
-    window.getDocs = getDocs;
-    window.addDoc = addDoc;
-    window.deleteDoc = deleteDoc;
-    window.doc = doc;
-    window.setDoc = setDoc;
-    window.updateDoc = updateDoc;
-    window.arrayUnion = arrayUnion;
-    window.arrayRemove = arrayRemove;
-    window.getDoc = getDoc;
-    window.deleteField = deleteField;
-    window.increment = increment;
-    
-    // Storage functions
-    window.ref = ref;
-    window.uploadBytesResumable = uploadBytesResumable;
-    window.getDownloadURL = getDownloadURL;
-    window.deleteObject = deleteObject;
+console.log('🚀 Initializing VIB3 app (MongoDB version)...');
 
-    console.log('Firebase functions assigned to window:', {
-        auth: !!window.auth,
-        signIn: !!window.signInWithEmailAndPassword,
-        createUser: !!window.createUserWithEmailAndPassword,
-        query: !!window.query,
-        where: !!window.where,
-        getDocs: !!window.getDocs
-    });
+// Import MongoDB adapter functions
+function setupGlobalMongoFunctions() {
+    // Check if mongodb-adapter is loaded
+    if (!window.mongoAPI) {
+        console.error('MongoDB adapter not loaded yet, waiting...');
+        setTimeout(setupGlobalMongoFunctions, 100);
+        return;
+    }
     
-    // Set flag to indicate Firebase is ready
-    window.firebaseReady = true;
+    console.log('✅ MongoDB adapter loaded, setting up global functions');
+    
+    // Auth functions from mongodb-adapter
+    window.login = window.mongoAPI.login;
+    window.signup = window.mongoAPI.signup;
+    window.logout = window.mongoAPI.logout;
+    window.getCurrentUser = window.mongoAPI.getCurrentUser;
+    
+    // Set ready flag
+    window.mongoReady = true;
 }
 
 // Global auth functions for form handling
 function setupGlobalAuthFunctions() {
-    // Login function that reads from form and uses auth manager
-    window.login = async () => {
+    // Login function that reads from form
+    window.handleLogin = async () => {
         const emailInput = document.getElementById('loginEmail');
         const passwordInput = document.getElementById('loginPassword');
-        const loginBtn = document.querySelector('button[aria-label="Sign In"]');
         
         if (!emailInput || !passwordInput) {
             console.error('Login form elements not found');
@@ -95,39 +41,42 @@ function setupGlobalAuthFunctions() {
         
         if (!email || !password) {
             if (window.showToast) {
-                window.showToast('Please enter email and password');
+                window.showToast('Please enter email and password', 'error');
             }
             return;
         }
         
-        // Set button loading state
-        if (window.loadingManager) {
-            window.loadingManager.setButtonLoading(loginBtn, true);
-        }
-        
         try {
-            if (window.authManager) {
-                const result = await window.authManager.login(email, password);
-                if (result.success) {
-                    // Clear form
-                    emailInput.value = '';
-                    passwordInput.value = '';
+            const result = await window.login(email, password);
+            if (result.success) {
+                // Hide auth container and show main app
+                const authContainer = document.getElementById('authContainer');
+                if (authContainer) authContainer.style.display = 'none';
+                
+                // Show main content
+                const sidebar = document.getElementById('sidebar');
+                const mainContent = document.getElementById('mainContent');
+                if (sidebar) sidebar.style.display = 'block';
+                if (mainContent) mainContent.style.display = 'block';
+                
+                // Load user profile
+                if (window.loadUserProfile) {
+                    window.loadUserProfile(result.user);
                 }
+                
+                window.showToast('Welcome back!', 'success');
             }
-        } finally {
-            // Remove button loading state
-            if (window.loadingManager) {
-                window.loadingManager.setButtonLoading(loginBtn, false);
-            }
+        } catch (error) {
+            console.error('Login error:', error);
+            window.showToast(error.message || 'Login failed', 'error');
         }
     };
     
-    // Signup function that reads from form and uses auth manager
-    window.signup = async () => {
+    // Signup function
+    window.handleSignup = async () => {
         const nameInput = document.getElementById('signupName');
         const emailInput = document.getElementById('signupEmail');
         const passwordInput = document.getElementById('signupPassword');
-        const signupBtn = document.querySelector('button[aria-label="Create Account"]');
         
         if (!nameInput || !emailInput || !passwordInput) {
             console.error('Signup form elements not found');
@@ -139,49 +88,78 @@ function setupGlobalAuthFunctions() {
         const password = passwordInput.value.trim();
         
         if (!name || !email || !password) {
-            if (window.showToast) {
-                window.showToast('Please fill in all fields');
-            }
+            window.showToast('Please fill all fields', 'error');
             return;
         }
         
         if (password.length < 6) {
-            if (window.showToast) {
-                window.showToast('Password must be at least 6 characters');
-            }
+            window.showToast('Password must be at least 6 characters', 'error');
             return;
         }
         
-        // Set button loading state
-        if (window.loadingManager) {
-            window.loadingManager.setButtonLoading(signupBtn, true);
-        }
-        
         try {
-            if (window.authManager) {
-                const result = await window.authManager.signup(name, email, password);
-                if (result.success) {
-                    // Clear form
-                    nameInput.value = '';
-                    emailInput.value = '';
-                    passwordInput.value = '';
-                }
+            const result = await window.signup(email, password, name);
+            if (result.success) {
+                window.showToast('Account created successfully!', 'success');
+                // Auto login after signup
+                await window.handleLogin();
             }
-        } finally {
-            // Remove button loading state
-            if (window.loadingManager) {
-                window.loadingManager.setButtonLoading(signupBtn, false);
-            }
+        } catch (error) {
+            console.error('Signup error:', error);
+            window.showToast(error.message || 'Signup failed', 'error');
         }
+    };
+    
+    // Form switching functions
+    window.showLogin = () => {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('signupForm').style.display = 'none';
+    };
+    
+    window.showSignup = () => {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('signupForm').style.display = 'block';
     };
 }
 
-// Initialize the application
+// Initialize the app
 export function initializeApp() {
-    console.log('Loading legacy functions for transition...');
-    setupGlobalFirebaseFunctions();
+    console.log('📱 Starting VIB3 app initialization...');
+    
+    // Set up MongoDB functions
+    setupGlobalMongoFunctions();
+    
+    // Set up auth form handlers
     setupGlobalAuthFunctions();
-    console.log('Firebase functions assigned to window');
+    
+    // Check for existing session
+    setTimeout(() => {
+        if (window.mongoAPI && window.mongoAPI.getCurrentUser) {
+            const currentUser = window.mongoAPI.getCurrentUser();
+            if (currentUser) {
+                console.log('✅ Found existing session for:', currentUser.email);
+                // Auto-login with existing session
+                const authContainer = document.getElementById('authContainer');
+                if (authContainer) authContainer.style.display = 'none';
+                
+                const sidebar = document.getElementById('sidebar');
+                const mainContent = document.getElementById('mainContent');
+                if (sidebar) sidebar.style.display = 'block';
+                if (mainContent) mainContent.style.display = 'block';
+                
+                if (window.loadUserProfile) {
+                    window.loadUserProfile(currentUser);
+                }
+            }
+        }
+    }, 500);
+    
+    console.log('✅ VIB3 app initialization complete');
 }
 
-export { auth, db, storage };
+// Auto-initialize if this is loaded directly
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}

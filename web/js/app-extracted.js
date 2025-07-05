@@ -1,174 +1,151 @@
-// New main entry point with extracted modules
+// Main entry point for modular VIB3 - MongoDB version
+console.log('Starting VIB3 application (MongoDB version)...');
+
+// Import core functionality
 import { initializeApp } from './core/app-init.js';
-import { handleVideoMetadata } from './components/video/video-utils.js';
-import { setupAuthStateListener } from './components/auth/auth-service.js';
-import { showMainApp, showAuthScreen, showLogin, showSignup, clearError } from './components/auth/auth-ui.js';
-import { showPage } from './ui/navigation.js';
 import { showToast } from './utils/ui-utils.js';
-import EventManager from './ui/event-manager.js';
-import functionStubs from './utils/function-stubs.js';
 
 // Initialize the application
-console.log('Starting VIB3 application v2...');
 initializeApp();
 
-// Set up authentication
-setupAuthStateListener();
-
-// Missing functions that were in vib3-complete.js but not in modular files
+// Missing functions that were in vib3-complete.js
 function publishRemix(originalVideoId, remixData) {
     console.log('🎬 Publishing remix for video:', originalVideoId);
     console.log('📝 Remix data:', remixData);
     
-    // Show notification for now
     if (window.showToast) {
         window.showToast('Remix feature coming soon! 🎵', 'info');
-    } else {
-        console.log('Remix feature coming soon! 🎵');
     }
-    
-    // TODO: Implement actual remix publishing logic
-    // This would typically:
-    // 1. Upload the remix video
-    // 2. Link it to the original video
-    // 3. Add remix metadata
-    // 4. Update the feed
 }
 
-function startRemix(videoId) {
-    console.log('🎵 Starting remix for video:', videoId);
-    
-    if (window.showToast) {
-        window.showToast('Remix creation coming soon! 🎬', 'info');
-    } else {
-        console.log('Remix creation coming soon! 🎬');
-    }
-    
-    // TODO: Implement remix creation logic
-}
-
-function createDuet(videoId) {
-    console.log('👥 Creating duet for video:', videoId);
-    
-    if (window.showToast) {
-        window.showToast('Duet feature coming soon! 🎭', 'info');
-    } else {
-        console.log('Duet feature coming soon! 🎭');
-    }
-    
-    // TODO: Implement duet creation logic
-}
-
-// Live streaming state and functions
-let liveStreamingState = {
-    isActive: false,
-    startTime: null,
-    viewers: 0,
-    title: '',
-    category: '',
-    stream: null
-};
-
+// Setup live preview function (fixed version)
 function setupLivePreview() {
     console.log('📹 Setting up live preview...');
     
-    try {
-        // Check if liveStreamingState exists
-        if (!liveStreamingState) {
-            console.error('❌ liveStreamingState not initialized');
-            if (window.showToast) {
-                window.showToast('Live streaming setup failed', 'error');
-            }
-            return;
+    if (!window.liveStreamingState) {
+        window.liveStreamingState = {
+            isActive: false,
+            startTime: null,
+            viewers: 0,
+            title: '',
+            category: '',
+            stream: null
+        };
+    }
+    
+    const previewVideo = document.getElementById('live-preview');
+    if (!previewVideo) {
+        console.error('Live preview element not found');
+        return;
+    }
+    
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user'
+        }, 
+        audio: true 
+    })
+    .then(stream => {
+        console.log('✅ Camera and microphone access granted');
+        window.liveStreamingState.stream = stream;
+        previewVideo.srcObject = stream;
+        previewVideo.muted = true;
+        previewVideo.play();
+        
+        // Show go live controls
+        const goLiveControls = document.querySelector('.go-live-controls');
+        if (goLiveControls) {
+            goLiveControls.style.display = 'block';
         }
         
-        // Check camera and microphone permissions
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            .then(stream => {
-                console.log('✅ Camera and microphone access granted');
-                const previewVideo = document.getElementById('live-preview');
-                if (previewVideo) {
-                    previewVideo.srcObject = stream;
-                    previewVideo.play();
-                }
-                liveStreamingState.stream = stream;
-                if (window.showToast) {
-                    window.showToast('Live preview ready! 📺', 'success');
-                }
-            })
-            .catch(error => {
-                console.error('❌ Failed to setup live preview:', error);
-                if (window.showToast) {
-                    window.showToast('Unable to access camera and microphone. Please ensure permissions are granted.', 'error');
-                }
-            });
-            
-    } catch (error) {
+        window.showToast('Live preview ready! 📺', 'success');
+    })
+    .catch(error => {
         console.error('❌ Failed to setup live preview:', error);
-        if (window.showToast) {
-            window.showToast('Live streaming setup failed', 'error');
+        let message = 'Camera access failed';
+        
+        if (error.name === 'NotAllowedError') {
+            message = 'Camera permission denied. Please allow camera access.';
+        } else if (error.name === 'NotFoundError') {
+            message = 'No camera found on this device.';
+        } else if (error.name === 'NotReadableError') {
+            message = 'Camera is being used by another application.';
         }
-    }
+        
+        window.showToast(message, 'error');
+    });
 }
 
-function openLiveSetup() {
-    console.log('🎬 Opening live setup...');
-    
-    if (window.showToast) {
-        window.showToast('Live streaming coming soon! 🔴', 'info');
-    } else {
-        console.log('Live streaming coming soon! 🔴');
-    }
-    
-    // TODO: Implement live setup modal
-}
-
+// Start live stream function
 function startLiveStream() {
     console.log('🔴 Starting live stream...');
     
-    if (window.showToast) {
-        window.showToast('Live streaming feature coming soon! 📡', 'info');
-    } else {
-        console.log('Live streaming feature coming soon! 📡');
+    if (!window.liveStreamingState || !window.liveStreamingState.stream) {
+        console.error('No stream available');
+        window.showToast('Please allow camera access first', 'error');
+        return;
     }
     
-    // TODO: Implement live streaming
+    const titleInput = document.getElementById('liveTitle');
+    const categorySelect = document.getElementById('liveCategory');
+    
+    window.liveStreamingState.isActive = true;
+    window.liveStreamingState.startTime = Date.now();
+    window.liveStreamingState.title = titleInput ? titleInput.value : 'Live Stream';
+    window.liveStreamingState.category = categorySelect ? categorySelect.value : 'general';
+    
+    // Close setup modal
+    const modal = document.getElementById('liveSetupModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    window.showToast('Live stream started! 🔴', 'success');
+    
+    // TODO: Implement actual streaming to backend
 }
 
-// Make all functions globally available
-window.publishRemix = publishRemix;
-window.startRemix = startRemix;
-window.createDuet = createDuet;
-window.setupLivePreview = setupLivePreview;
-window.openLiveSetup = openLiveSetup;
-window.startLiveStream = startLiveStream;
-window.liveStreamingState = liveStreamingState;
-
-// Initialize all existing components
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('DOM loaded. Firebase functions available:', !!window.firebaseReady);
+// Show page function
+function showPage(page) {
+    console.log('Navigating to page:', page);
     
-    // Import and initialize existing components
-    try {
-        // Import existing managers
-        const { default: AuthManager } = await import('./components/auth-manager.js');
-        const { default: VideoManager } = await import('./components/video-manager.js');
-        const { default: ThemeManager } = await import('./components/theme-manager.js');
-        const { default: FeedManager } = await import('./components/feed-manager.js');
-        const { default: UploadManager } = await import('./components/upload-manager.js');
-        const { default: ProfileManager } = await import('./components/profile/profile-manager.js');
-        
-        console.log('All components loaded successfully');
-        
-        // Give components time to initialize, then remove inline handlers
-        setTimeout(() => {
-            if (window.eventManager) {
-                window.eventManager.removeInlineHandlers();
-                console.log('Phase 3: Modern event listeners activated');
-            }
-        }, 2000);
-        
-    } catch (error) {
-        console.error('Error loading components:', error);
+    // Hide all pages
+    const pages = document.querySelectorAll('[id$="-page"], [id$="Page"]');
+    pages.forEach(p => p.style.display = 'none');
+    
+    // Show requested page
+    const pageElement = document.getElementById(page + '-page') || document.getElementById(page + 'Page');
+    if (pageElement) {
+        pageElement.style.display = 'block';
     }
-});
+    
+    // Special handling for live page
+    if (page === 'live') {
+        openLiveSetup();
+    }
+}
+
+// Open live setup modal
+function openLiveSetup() {
+    console.log('Opening live setup...');
+    
+    const modal = document.getElementById('liveSetupModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        setupLivePreview();
+    } else {
+        console.error('Live setup modal not found');
+    }
+}
+
+// Export functions to global scope
+window.publishRemix = publishRemix;
+window.setupLivePreview = setupLivePreview;
+window.startLiveStream = startLiveStream;
+window.showPage = showPage;
+window.openLiveSetup = openLiveSetup;
+
+// Also export for modules
+export { publishRemix, setupLivePreview, startLiveStream, showPage, openLiveSetup };

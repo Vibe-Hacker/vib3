@@ -1,9 +1,9 @@
 // Main entry point for VIB3 - modular JS version
 // This file is loaded by index-heavy.html as a module
 
-console.log('📱 VIB3 Main.js loading...');
+console.log('📱 VIB3 Main.js loading (MongoDB version)...');
 
-// Import and initialize core functionality needed by index-heavy.html
+// Import and initialize core functionality
 import { initializeApp } from './core/app-init.js';
 import { showToast } from './utils/ui-utils.js';
 
@@ -13,42 +13,23 @@ initializeApp();
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('📄 DOM ready, loading components...');
+    console.log('📄 DOM ready, setting up app...');
     
     try {
-        // Import all required managers for the app
-        const [
-            { default: AuthManager },
-            { default: VideoManager },
-            { default: ThemeManager },
-            { default: FeedManager },
-            { default: UploadManager },
-            { default: ProfileManager }
-        ] = await Promise.all([
-            import('./components/auth-manager.js'),
-            import('./components/video-manager.js'),
-            import('./components/theme-manager.js'),
-            import('./components/feed-manager.js'),
-            import('./components/upload-manager.js'),
-            import('./components/profile/profile-manager.js')
-        ]);
-        
-        console.log('✅ All VIB3 components loaded successfully');
-        
         // Set up global ready flag
         window.vib3Ready = true;
         
         // Emit ready event
         document.dispatchEvent(new CustomEvent('vib3Ready'));
         
+        console.log('✅ VIB3 ready!');
+        
     } catch (error) {
-        console.error('❌ Error loading VIB3 components:', error);
+        console.error('❌ Error during app setup:', error);
         
         // Show user-friendly error
         if (window.showToast) {
-            window.showToast('Failed to load app components. Please refresh the page.', 'error');
+            window.showToast('Failed to load app. Please refresh the page.', 'error');
         }
     }
 });
-
-console.log('📱 Main.js setup complete');
