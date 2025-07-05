@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Test</title>
+</head>
+<body>
+    <h1>Simple Camera Test</h1>
+    <video id="video" width="320" height="240" autoplay></video>
+    <br>
+    <button onclick="start()">Start Camera</button>
+    <button onclick="stop()">Stop Camera</button>
+    <div id="log"></div>
+    
+    <script>
+        const video = document.getElementById('video');
+        const log = document.getElementById('log');
+        let stream = null;
+        
+        function addLog(msg, color = 'black') {
+            log.innerHTML += `<div style="color: ${color}">${new Date().toLocaleTimeString()}: ${msg}</div>`;
+        }
+        
+        async function start() {
+            addLog('Requesting camera...', 'blue');
+            
+            try {
+                // Try simplest possible request first
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                addLog('Camera access granted!', 'green');
+                video.srcObject = stream;
+            } catch (err) {
+                addLog(`Error: ${err.name} - ${err.message}`, 'red');
+                
+                // Try to understand the error
+                if (err.name === 'NotAllowedError') {
+                    addLog('Permission denied by user or browser policy', 'red');
+                } else if (err.name === 'NotFoundError') {
+                    addLog('No camera found', 'red');
+                } else if (err.name === 'NotReadableError') {
+                    addLog('Camera is being used by another app', 'red');
+                } else if (err.name === 'OverconstrainedError') {
+                    addLog('Camera constraints cannot be satisfied', 'red');
+                } else if (err.name === 'SecurityError') {
+                    addLog('Security error - is this HTTPS?', 'red');
+                }
+            }
+        }
+        
+        function stop() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                addLog('Camera stopped', 'blue');
+            }
+        }
+        
+        // Check if we're on HTTPS
+        addLog(`Protocol: ${location.protocol}`, location.protocol === 'https:' ? 'green' : 'orange');
+        addLog(`Host: ${location.host}`);
+        
+        // Check if mediaDevices is available
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            addLog('getUserMedia is available', 'green');
+        } else {
+            addLog('getUserMedia is NOT available', 'red');
+        }
+    </script>
+</body>
+</html>
