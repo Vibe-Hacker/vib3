@@ -115,6 +115,12 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   Future<void> _tryVideoPlayerStrategies(File videoFile) async {
     print('🎥 Initializing video player...');
     
+    // Get duration first before any controller initialization
+    final detectedDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
+    print('🕐 Pre-detected duration: ${detectedDuration.inSeconds}s');
+    _videoDuration = detectedDuration;
+    _endTrim = detectedDuration;
+    
     try {
       // Try standard video player initialization first
       _controller = VideoPlayerController.file(videoFile);
@@ -122,11 +128,13 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       
       if (_controller!.value.isInitialized) {
         print('✅ Video player initialized successfully');
+        print('🎮 Controller duration: ${_controller!.value.duration.inSeconds}s');
+        print('🕐 Using our duration: ${_videoDuration.inSeconds}s');
+        
         setState(() {
           _isInitialized = true;
           _hasError = false;
-          _videoDuration = _controller!.value.duration;
-          _endTrim = _videoDuration;
+          // Keep using our detected duration, not controller's
         });
         
         // Generate frame previews for trim bar
@@ -181,6 +189,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       _frameData.clear();
       
       print('📊 Video duration: ${_videoDuration.inSeconds}s');
+      print('📊 Formatted duration: ${_formatDuration(_videoDuration)}');
       print('📊 Generating frames at ${_videoDuration.inMilliseconds ~/ frameCount}ms intervals');
       
       for (int i = 0; i < frameCount; i++) {
@@ -359,6 +368,10 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
         _endTrim = actualDuration;
         _isGeneratingFrames = true;
       });
+      
+      // DEBUG: Force check what we're setting
+      print('🔍 DEBUG: _videoDuration = ${_videoDuration.inSeconds}s');
+      print('🔍 DEBUG: _videoDuration formatted = ${_formatDuration(_videoDuration)}');
       
       // Generate more frames for smoother preview
       final frameCount = actualDuration.inSeconds <= 60 ? 30 : 
