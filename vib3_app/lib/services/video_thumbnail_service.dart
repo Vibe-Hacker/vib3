@@ -5,59 +5,11 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 
 class VideoThumbnailService {
   static Future<Duration> getVideoDuration(String videoPath) async {
-    try {
-      print('📏 Getting video duration from: $videoPath');
-      
-      final videoFile = File(videoPath);
-      if (!await videoFile.exists()) {
-        print('❌ Video file does not exist');
-        return const Duration(seconds: 30);
-      }
-      
-      // Try to detect actual duration by testing frames at different positions
-      final fileSize = await videoFile.length();
-      print('📏 Video file size: ${(fileSize / 1024 / 1024).toStringAsFixed(1)}MB');
-      
-      // Binary search for actual video duration
-      int minDuration = 0;
-      int maxDuration = 600000; // 10 minutes max for search
-      int actualDuration = 30000; // Default 30 seconds
-      
-      // Quick test at common durations
-      final testPoints = [5000, 10000, 15000, 30000, 60000, 120000, 300000];
-      
-      for (final testMs in testPoints) {
-        try {
-          final testData = await VideoThumbnail.thumbnailData(
-            video: videoPath,
-            imageFormat: ImageFormat.JPEG,
-            maxHeight: 32,
-            quality: 10,
-            timeMs: testMs,
-          );
-          
-          if (testData != null && testData.isNotEmpty) {
-            actualDuration = testMs;
-            print('✅ Frame found at ${testMs}ms (${(testMs/1000).toStringAsFixed(1)}s)');
-          } else {
-            print('❌ No frame at ${testMs}ms - video is shorter');
-            break;
-          }
-        } catch (e) {
-          // This position is beyond video duration
-          break;
-        }
-      }
-      
-      // Add 10% buffer to ensure we don't exceed actual duration
-      final estimatedMs = (actualDuration * 1.1).round();
-      print('📏 Estimated duration: ${(estimatedMs/1000).toStringAsFixed(1)}s');
-      
-      return Duration(milliseconds: estimatedMs);
-    } catch (e) {
-      print('❌ Error getting video duration: $e');
-      return const Duration(seconds: 30);
-    }
+    print('📏 Getting video duration from: $videoPath');
+    
+    // TEMPORARY: Just return 10 seconds to test the display
+    print('📏 HARDCODED duration: 10 seconds');
+    return const Duration(seconds: 10);
   }
 
   static Future<File?> generateThumbnail(String videoPath) async {
