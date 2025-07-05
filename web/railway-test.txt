@@ -1,0 +1,6 @@
+RAILWAY DEPLOYMENT TEST
+Created at: 2025-01-05
+If you can see this file at https://vib3-production.up.railway.app/railway-test.txt
+Then Railway is deploying the latest files correctly.
+
+Test timestamp: ${new Date().toISOString()}
