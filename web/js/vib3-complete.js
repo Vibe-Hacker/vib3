@@ -1,17 +1,29 @@
-// DEPRECATED - This file has been replaced with vib3-complete-v2.js
-// Redirecting to new version to avoid cache issues
+// EMERGENCY REDIRECT - Railway is caching old version
+// Force load the fixed version with all initialization issues resolved
 
-console.warn('⚠️ Loading deprecated vib3-complete.js - redirecting to new version');
+console.warn('⚠️ EMERGENCY: Redirecting to vib3-complete-fixed.js due to Railway cache');
 
-// Dynamically load the new version
 (function() {
+    // Define critical variables immediately to prevent errors
+    window.liveStreamingState = window.liveStreamingState || {
+        isActive: false,
+        startTime: null,
+        viewers: 0,
+        title: '',
+        category: '',
+        stream: null
+    };
+    
+    window.apiCallLimiter = window.apiCallLimiter || {
+        calls: 0,
+        maxCalls: 100,
+        resetInterval: 60000,
+        lastReset: Date.now()
+    };
+    
+    // Load the fixed version
     const script = document.createElement('script');
-    script.src = 'js/vib3-complete-v2.js?v=' + Date.now();
-    script.onload = function() {
-        console.log('✅ Loaded vib3-complete-v2.js');
-    };
-    script.onerror = function() {
-        console.error('❌ Failed to load vib3-complete-v2.js');
-    };
+    script.src = 'js/vib3-complete-fixed.js?v=' + Date.now();
+    script.async = false; // Load synchronously to ensure variables are available
     document.head.appendChild(script);
 })();
