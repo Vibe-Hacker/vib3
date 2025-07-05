@@ -24,12 +24,12 @@ jobs:
         
     - name: Replace main.dart with simple version
       run: |
-        cd vib3_flutter
-        cp lib/main_simple.dart lib/main.dart
+        cd vib3_app
+        cp lib/main_simple.dart lib/main.dart || echo "main_simple.dart not found, using existing main.dart"
         
     - name: Create minimal pubspec.yaml
       run: |
-        cd vib3_flutter
+        cd vib3_app
         cat > pubspec.yaml << EOF
         name: vib3_flutter
         description: VIB3 Simple Test
@@ -49,16 +49,16 @@ jobs:
         
     - name: Get dependencies
       run: |
-        cd vib3_flutter
+        cd vib3_app
         flutter pub get
         
     - name: Build APK
       run: |
-        cd vib3_flutter
+        cd vib3_app
         flutter build apk --debug
         
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: simple-test-apk
-        path: vib3_flutter/build/app/outputs/flutter-apk/app-debug.apk
+        path: vib3_app/build/app/outputs/flutter-apk/app-debug.apk

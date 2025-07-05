@@ -26,15 +26,15 @@ jobs:
       run: flutter doctor -v
         
     - name: Get Dependencies
-      working-directory: vib3_flutter
+      working-directory: vib3_app
       run: flutter pub get
         
     - name: Build APK
-      working-directory: vib3_flutter
+      working-directory: vib3_app
       run: flutter build apk --debug --no-shrink
         
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: vib3-app
-        path: vib3_flutter/build/app/outputs/flutter-apk/app-debug.apk
+        path: vib3_app/build/app/outputs/flutter-apk/app-debug.apk
