@@ -14,10 +14,11 @@ class VideoThumbnailService {
         return const Duration(seconds: 30);
       }
       
-      // For now, use a more generous estimation
-      // The video_thumbnail package might fail on some devices
+      // Use file size estimation for duration
+      final fileSize = await videoFile.length();
+      
+      // Test if we can get a frame at 60 seconds to verify it's a longer video
       try {
-        // Quick test - if we can get a frame at 60 seconds, assume longer video
         final testData = await VideoThumbnail.thumbnailData(
           video: videoPath,
           imageFormat: ImageFormat.JPEG,
@@ -27,20 +28,23 @@ class VideoThumbnailService {
         );
         
         if (testData != null && testData.isNotEmpty) {
-          print('📏 Video is at least 60 seconds, using file size estimation');
+          print('📏 Video is at least 60 seconds');
+          // Use more generous estimation for longer videos
+          final estimatedMinutes = fileSize / (2.0 * 1024 * 1024); // 2MB per minute
+          final estimatedSeconds = (estimatedMinutes * 60).round();
+          print('📏 Estimated duration: ${estimatedSeconds}s from ${fileSize / 1024 / 1024}MB file');
+          return Duration(seconds: estimatedSeconds.clamp(60, 3600)); // 60s to 1 hour
         }
       } catch (e) {
-        print('⚠️ Could not test duration, using estimation');
-        
-        // Fallback to file size estimation with better calculation
-        final fileSize = await videoFile.length();
-        // More accurate: ~2.5MB per minute for mobile video
-        final estimatedMinutes = fileSize / (2.5 * 1024 * 1024);
-        final estimatedSeconds = (estimatedMinutes * 60).round();
-        
-        print('📏 Estimated duration: ${estimatedSeconds}s from ${fileSize / 1024 / 1024}MB file');
-        return Duration(seconds: estimatedSeconds.clamp(5, 3600)); // Max 1 hour
+        print('⚠️ Could not test 60s mark, using standard estimation');
       }
+      
+      // Standard estimation: ~2.5MB per minute for mobile video
+      final estimatedMinutes = fileSize / (2.5 * 1024 * 1024);
+      final estimatedSeconds = (estimatedMinutes * 60).round();
+      
+      print('📏 Estimated duration: ${estimatedSeconds}s from ${fileSize / 1024 / 1024}MB file');
+      return Duration(seconds: estimatedSeconds.clamp(5, 3600)); // 5s to 1 hour
     } catch (e) {
       print('❌ Error getting video duration: $e');
       return const Duration(seconds: 30);
