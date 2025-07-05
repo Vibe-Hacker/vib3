@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
-import 'dart:convert';
+import 'dart:async';
 import 'dart:typed_data';
+import 'dart:math' as math;
 import 'package:video_thumbnail/video_thumbnail.dart' as vt;
-import '../widgets/video_filters_widget.dart';
-import '../widgets/audio_overlay_widget.dart';
-import '../widgets/text_overlay_widget.dart';
-import '../widgets/speed_control_widget.dart';
-import '../widgets/simple_video_preview.dart';
-import '../services/video_thumbnail_service.dart';
 import 'upload_screen.dart';
 
-// Multi-segment trim support
+// TikTok-style trim segment
 class TrimSegment {
   final Duration start;
   final Duration end;
@@ -24,6 +20,46 @@ class TrimSegment {
     : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
   
   Duration get duration => end - start;
+}
+
+// Text overlay model
+class TextOverlay {
+  String text;
+  Offset position;
+  double fontSize;
+  Color color;
+  String fontFamily;
+  TextAlign alignment;
+  bool hasShadow;
+  double rotation;
+  String animation;
+  
+  TextOverlay({
+    required this.text,
+    required this.position,
+    this.fontSize = 24,
+    this.color = Colors.white,
+    this.fontFamily = 'System',
+    this.alignment = TextAlign.center,
+    this.hasShadow = true,
+    this.rotation = 0,
+    this.animation = 'none',
+  });
+}
+
+// Music track model
+class MusicTrack {
+  final String name;
+  final String artist;
+  final String url;
+  final Duration duration;
+  
+  const MusicTrack({
+    required this.name,
+    required this.artist,
+    required this.url,
+    required this.duration,
+  });
 }
 
 class VideoEditingScreen extends StatefulWidget {
@@ -37,1720 +73,1098 @@ class VideoEditingScreen extends StatefulWidget {
 
 class _VideoEditingScreenState extends State<VideoEditingScreen>
     with TickerProviderStateMixin {
+  // Controllers
   VideoPlayerController? _controller;
+  late AnimationController _playPauseAnimController;
+  Timer? _progressTimer;
+  
+  // State
   bool _isInitialized = false;
+  bool _isPlaying = false;
+  bool _isDraggingTimeline = false;
   bool _isExporting = false;
   double _exportProgress = 0.0;
-  int _selectedTabIndex = 0;
-  late TabController _tabController;
-  bool _hasError = false;
-  String _errorMessage = '';
-  // Removed static thumbnail - using frame-based preview instead
-  List<Uint8List> _frameData = [];
-  bool _useThumbnailMode = false;
-  bool _isGeneratingFrames = false;
   
-  // Trim controls
-  Duration _startTrim = Duration.zero;
-  Duration _endTrim = Duration.zero;
+  // Video properties
   Duration _videoDuration = Duration.zero;
-  Duration _currentPreviewPosition = Duration.zero;
+  Duration _currentPosition = Duration.zero;
+  List<Uint8List> _timelineFrames = [];
   
-  // Multi-segment trimming like TikTok
-  List<TrimSegment> _trimSegments = [];
+  // Trimming
+  Duration _trimStart = Duration.zero;
+  Duration _trimEnd = Duration.zero;
+  List<TrimSegment> _segments = [];
   TrimSegment? _currentSegment;
-  bool _isAddingSegment = false;
-  int _currentFrameIndex = 0;
   
-  // Allow manual duration override for long videos
-  bool _manualDurationMode = false;
-
-  final List<String> _tabLabels = ['Trim', 'Filters', 'Audio', 'Text', 'Speed'];
-  final List<IconData> _tabIcons = [
-    Icons.content_cut,
-    Icons.filter_vintage,
-    Icons.music_note,
-    Icons.text_fields,
-    Icons.speed,
+  // Effects
+  String _selectedFilter = 'none';
+  double _videoSpeed = 1.0;
+  double _originalVolume = 1.0;
+  double _musicVolume = 0.7;
+  MusicTrack? _selectedMusic;
+  List<TextOverlay> _textOverlays = [];
+  TextOverlay? _currentTextOverlay;
+  
+  // UI
+  int _selectedTab = 0;
+  final List<_EditorTab> _tabs = [
+    _EditorTab(icon: Icons.content_cut, label: 'Trim'),
+    _EditorTab(icon: Icons.text_fields, label: 'Text'),
+    _EditorTab(icon: Icons.music_note, label: 'Music'),
+    _EditorTab(icon: Icons.filter_vintage, label: 'Filters'),
+    _EditorTab(icon: Icons.speed, label: 'Speed'),
+    _EditorTab(icon: Icons.volume_up, label: 'Volume'),
+    _EditorTab(icon: Icons.auto_awesome, label: 'Effects'),
+  ];
+  
+  // Sample music library
+  final List<MusicTrack> _musicLibrary = [
+    MusicTrack(name: 'Upbeat Pop', artist: 'VIB3 Music', url: '', duration: Duration(seconds: 30)),
+    MusicTrack(name: 'Chill Vibes', artist: 'VIB3 Music', url: '', duration: Duration(seconds: 45)),
+    MusicTrack(name: 'Epic Cinematic', artist: 'VIB3 Music', url: '', duration: Duration(seconds: 60)),
+    MusicTrack(name: 'Dance Beat', artist: 'VIB3 Music', url: '', duration: Duration(seconds: 30)),
+    MusicTrack(name: 'Acoustic Guitar', artist: 'VIB3 Music', url: '', duration: Duration(seconds: 40)),
+  ];
+  
+  // Filters
+  final List<_VideoFilter> _filters = [
+    _VideoFilter(name: 'None', color: null),
+    _VideoFilter(name: 'Vintage', color: Color(0x40F4A460)),
+    _VideoFilter(name: 'Black & White', color: Color(0xFF000000)),
+    _VideoFilter(name: 'Warm', color: Color(0x20FF8C00)),
+    _VideoFilter(name: 'Cool', color: Color(0x20008CFF)),
+    _VideoFilter(name: 'Dramatic', color: Color(0x40800080)),
+    _VideoFilter(name: 'Vivid', color: Color(0x20FF0080)),
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabLabels.length, vsync: this);
-    _initializeVideoPlayer();
+    _playPauseAnimController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 200),
+    );
+    _initializeVideo();
   }
 
-  Future<void> _initializeVideoPlayer() async {
+  Future<void> _initializeVideo() async {
     try {
-      print('🎬 Initializing video editor with path: ${widget.videoPath}');
-      
-      // Check if file exists
-      final videoFile = File(widget.videoPath);
-      if (!await videoFile.exists()) {
-        print('❌ Video file does not exist at: ${widget.videoPath}');
-        _showSimpleEditor();
+      final file = File(widget.videoPath);
+      if (!await file.exists()) {
+        _showError('Video file not found');
         return;
       }
-      
-      final fileSize = await videoFile.length();
-      print('✅ Video file exists, size: $fileSize bytes');
-      
-      // If file is too small, it might be corrupted
-      if (fileSize < 1024) {
-        print('⚠️ Video file seems too small, might be corrupted');
-        _showSimpleEditor();
-        return;
-      }
-      
-      // Try multiple video player initialization strategies
-      await _tryVideoPlayerStrategies(videoFile);
-      
-    } catch (e) {
-      print('❌ Error in video initialization: $e');
-      _showSimpleEditor();
-    }
-  }
 
-  Future<void> _tryVideoPlayerStrategies(File videoFile) async {
-    print('🎥 Initializing video player...');
-    
-    // Get duration first before any controller initialization
-    final detectedDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
-    print('🕐 Pre-detected duration: ${detectedDuration.inSeconds}s');
-    _videoDuration = detectedDuration;
-    _endTrim = detectedDuration;
-    
-    try {
-      // Try standard video player initialization first
-      _controller = VideoPlayerController.file(videoFile);
+      _controller = VideoPlayerController.file(file);
       await _controller!.initialize();
       
-      if (_controller!.value.isInitialized) {
-        print('✅ Video player initialized successfully');
-        print('🎮 Controller duration: ${_controller!.value.duration.inSeconds}s');
-        print('🕐 Using our duration: ${_videoDuration.inSeconds}s');
-        
-        setState(() {
-          _isInitialized = true;
-          _hasError = false;
-          // Keep using our detected duration, not controller's
-        });
-        
-        // Generate frame previews for trim bar
-        await _generateFramePreviews(videoFile);
-        return;
-      }
-    } catch (e) {
-      print('⚠️ Standard player failed, trying fallback: $e');
-    }
-    
-    // Fallback: Use thumbnail preview mode
-    await _initializeThumbnailMode(videoFile);
-  }
-
-  Future<void> _initializeThumbnailMode(File videoFile) async {
-    print('📸 Initializing frame-based preview mode');
-    
-    try {
-      // Get video duration first
-      final actualDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
+      _videoDuration = _controller!.value.duration;
+      _trimEnd = _videoDuration;
+      
+      // Generate timeline frames
+      await _generateTimelineFrames();
       
       setState(() {
-        _useThumbnailMode = true;
         _isInitialized = true;
-        _hasError = false;
-        _videoDuration = actualDuration;
-        _endTrim = actualDuration;
       });
       
-      // Generate frame previews for timeline
-      await _generateFramePreviews(videoFile);
+      // Start progress timer
+      _startProgressTimer();
       
-      print('✅ Frame preview mode ready');
     } catch (e) {
-      print('❌ Preview mode failed: $e');
-      _showSimpleEditor();
+      _showError('Failed to load video: $e');
     }
   }
 
-  Future<void> _generateFramePreviews(File videoFile) async {
-    if (_isGeneratingFrames) return;
-    
-    setState(() {
-      _isGeneratingFrames = true;
-    });
-    
+  Future<void> _generateTimelineFrames() async {
     try {
-      print('🎞️ Generating TikTok-style frame previews...');
-      
-      // Generate 20 frames for smoother preview like TikTok
-      const frameCount = 20;
-      _frameData.clear();
-      
-      print('📊 Video duration: ${_videoDuration.inSeconds}s');
-      print('📊 Formatted duration: ${_formatDuration(_videoDuration)}');
-      print('📊 Generating frames at ${_videoDuration.inMilliseconds ~/ frameCount}ms intervals');
+      const frameCount = 10;
+      _timelineFrames.clear();
       
       for (int i = 0; i < frameCount; i++) {
         final position = i * (_videoDuration.inMilliseconds ~/ frameCount);
-        print('🎞️ Extracting frame ${i + 1}/$frameCount at ${position / 1000}s');
+        final frame = await vt.VideoThumbnail.thumbnailData(
+          video: widget.videoPath,
+          imageFormat: vt.ImageFormat.JPEG,
+          maxHeight: 60,
+          quality: 50,
+          timeMs: position,
+        );
         
-        try {
-          final uint8list = await vt.VideoThumbnail.thumbnailData(
-            video: videoFile.path,
-            imageFormat: vt.ImageFormat.JPEG,
-            maxHeight: 360,  // Higher res for preview
-            quality: 75,      // Better quality
-            timeMs: position,
-          );
+        if (frame != null) {
+          _timelineFrames.add(frame);
+        }
+      }
+    } catch (e) {
+      print('Error generating timeline frames: $e');
+    }
+  }
+
+  void _startProgressTimer() {
+    _progressTimer?.cancel();
+    _progressTimer = Timer.periodic(Duration(milliseconds: 50), (timer) {
+      if (_controller != null && _controller!.value.isPlaying && !_isDraggingTimeline) {
+        setState(() {
+          _currentPosition = _controller!.value.position;
           
-          if (uint8list != null) {
-            _frameData.add(uint8list);
+          // Loop within trim range
+          if (_currentPosition >= _trimEnd) {
+            _controller!.seekTo(_trimStart);
+            _currentPosition = _trimStart;
           }
-        } catch (e) {
-          print('⚠️ Failed to extract frame at ${position}ms');
-        }
+        });
       }
-      
-      print('✅ Generated ${_frameData.length} frame previews');
-    } catch (e) {
-      print('❌ Frame generation error: $e');
-    } finally {
-      setState(() {
-        _isGeneratingFrames = false;
-      });
-    }
+    });
   }
 
-  Future<void> _initializeWithSmartReuse(File videoFile) async {
-    print('♻️ Smart controller reuse (TikTok pattern)');
-    
-    // Reuse pattern: pause and reset existing controller if possible
-    if (_controller != null) {
-      try {
-        await _controller!.pause();
-        await _controller!.seekTo(Duration.zero);
-        // Try to reuse for new file
-        _controller!.dispose();
-      } catch (e) {
-        print('⚠️ Controller cleanup failed: $e');
-      }
-    }
-    
-    _controller = VideoPlayerController.file(
-      videoFile,
-      videoPlayerOptions: VideoPlayerOptions(
-        mixWithOthers: true, // Allow mixing for better resource sharing
-        allowBackgroundPlayback: false,
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
       ),
     );
-    
-    await _controller!.initialize().timeout(const Duration(seconds: 12));
   }
 
-  Future<void> _activateTikTokCompatibleMode(File videoFile) async {
-    print('📱 Activating TikTok-style compatible mode');
-    
-    // Get actual video duration estimate
-    final actualDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
+  void _togglePlayPause() {
+    if (_controller == null) return;
     
     setState(() {
-      _useThumbnailMode = true;
-      _isInitialized = true;
-      _hasError = false;
-      _videoDuration = actualDuration;
-      _endTrim = actualDuration;
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('📱 Compatible mode active - All editing tools ready!'),
-        backgroundColor: Color(0xFF00CED1),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  Future<void> _initializeWithNetworkUrl(File videoFile) async {
-    print('📡 Strategy 4: Network URL (bypasses some codec issues)');
-    
-    // Convert file to data URL to bypass file decoder issues
-    final bytes = await videoFile.readAsBytes();
-    final base64 = base64Encode(bytes);
-    final dataUrl = 'data:video/mp4;base64,$base64';
-    
-    _controller = VideoPlayerController.network(dataUrl);
-    await _controller!.initialize().timeout(const Duration(seconds: 10));
-  }
-
-  Future<void> _initializeWithLowerResolution(File videoFile) async {
-    print('📱 Strategy 2: Lower resolution hint');
-    
-    _controller = VideoPlayerController.file(
-      videoFile,
-      videoPlayerOptions: VideoPlayerOptions(
-        mixWithOthers: true,
-        allowBackgroundPlayback: false,
-      ),
-    );
-    
-    await _controller!.initialize().timeout(const Duration(seconds: 10));
-  }
-
-  Future<void> _initializeWithSoftwareDecoder(File videoFile) async {
-    print('🖥️ Strategy 3: Force software decoder (TikTok approach)');
-    
-    // Force software decoding by setting specific options
-    _controller = VideoPlayerController.file(
-      videoFile,
-      videoPlayerOptions: VideoPlayerOptions(
-        mixWithOthers: false,
-        allowBackgroundPlayback: false,
-        // These options encourage software decoding
-      ),
-    );
-    
-    // Longer timeout for software decoding
-    await _controller!.initialize().timeout(const Duration(seconds: 15));
-  }
-
-  Future<void> _initializeBasicPlayer(File videoFile) async {
-    print('⚡ Strategy 1: Basic player (minimal options)');
-    
-    _controller = VideoPlayerController.file(videoFile);
-    await _controller!.initialize().timeout(const Duration(seconds: 5));
-  }
-
-  Future<void> _initializeWithMinimalOptions(File videoFile) async {
-    print('🎯 Strategy 5: Minimal options (legacy compatibility)');
-    
-    _controller = VideoPlayerController.file(
-      videoFile,
-      videoPlayerOptions: VideoPlayerOptions(
-        mixWithOthers: false,
-        allowBackgroundPlayback: false,
-      ),
-    );
-    await _controller!.initialize().timeout(const Duration(seconds: 3));
-  }
-
-  Future<void> _initializeWithCompatibilityMode(File videoFile) async {
-    print('🔧 Strategy 6: Compatibility mode (older devices)');
-    
-    // Try with different configurations for older hardware
-    _controller = VideoPlayerController.file(
-      videoFile,
-      videoPlayerOptions: VideoPlayerOptions(
-        mixWithOthers: true,
-        allowBackgroundPlayback: true,
-      ),
-    );
-    
-    await _controller!.initialize().timeout(const Duration(seconds: 2));
-  }
-
-  Future<void> _initializeWithThumbnailPreview(File videoFile) async {
-    print('🖼️ Strategy 7: Thumbnail preview mode');
-    
-    try {
-      // Get actual video duration first
-      final actualDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
-      print('⏱️ Detected video duration: ${actualDuration.inSeconds}s (${actualDuration.inMilliseconds}ms)');
-      print('📊 Formatted duration: ${_formatDuration(actualDuration)}');
-      
-      // Set initial state
-      setState(() {
-        _useThumbnailMode = true;
-        _isInitialized = true;
-        _hasError = false;
-        _videoDuration = actualDuration;
-        _endTrim = actualDuration;
-        _isGeneratingFrames = true;
-      });
-      
-      // DEBUG: Force check what we're setting
-      print('🔍 DEBUG: _videoDuration = ${_videoDuration.inSeconds}s');
-      print('🔍 DEBUG: _videoDuration formatted = ${_formatDuration(_videoDuration)}');
-      
-      // Generate more frames for smoother preview
-      final frameCount = actualDuration.inSeconds <= 60 ? 30 : 
-                        actualDuration.inSeconds <= 300 ? 45 : 60;
-      print('🎞️ Generating $frameCount frames for smooth preview...');
-      
-      _frameData = await VideoThumbnailService.generateVideoFrames(videoFile.path, frameCount);
-      
-      setState(() {
-        _isGeneratingFrames = false;
-      });
-      
-      print('✅ Thumbnail preview mode activated with ${_frameData.length} frames');
-      
-      // Use a slight delay to ensure state is set before showing UI feedback
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✨ Video ready! ${_frameData.length} preview frames loaded'),
-              backgroundColor: Color(0xFF00CED1),
-              duration: Duration(seconds: 2),
-            ),
-          );
+      if (_isPlaying) {
+        _controller!.pause();
+        _playPauseAnimController.reverse();
+      } else {
+        // Start from trim start if at the end
+        if (_currentPosition >= _trimEnd) {
+          _controller!.seekTo(_trimStart);
         }
-      });
-      
-    } catch (e) {
-      print('❌ Error in thumbnail mode: $e');
-      // Still use thumbnail mode even if frames fail
-      setState(() {
-        _useThumbnailMode = true;
-        _isInitialized = true;
-        _hasError = false;
-        _videoDuration = const Duration(seconds: 30);
-        _endTrim = _videoDuration;
-        _isGeneratingFrames = false;
-      });
-    }
+        _controller!.play();
+        _playPauseAnimController.forward();
+      }
+      _isPlaying = !_isPlaying;
+    });
   }
-  
-  void _showSimpleEditor() {
+
+  void _seekToPosition(double percentage) {
+    if (_controller == null || !_isInitialized) return;
+    
+    final position = Duration(
+      milliseconds: (_videoDuration.inMilliseconds * percentage).toInt()
+    );
+    
     setState(() {
-      _isInitialized = true;
-      _hasError = false;
-      _videoDuration = const Duration(seconds: 30); // Default duration
-      _endTrim = _videoDuration;
+      _currentPosition = position;
     });
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✨ Video editing ready! All tools are available below'),
-        backgroundColor: Color(0xFF00CED1),
-      ),
-    );
+    _controller!.seekTo(position);
   }
-  
-  void _showThumbnailEditor() {
-    setState(() {
-      _isInitialized = true;
-      _hasError = false;
-      _useThumbnailMode = true;
-      _videoDuration = const Duration(seconds: 30); // Default duration
-      _endTrim = _videoDuration;
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✨ Video editing ready! All tools are available below'),
-        backgroundColor: Color(0xFF00CED1),
-        duration: Duration(seconds: 3),
-      ),
-    );
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   Future<void> _exportVideo() async {
-    if (!_isInitialized) return;
-
     setState(() {
       _isExporting = true;
       _exportProgress = 0.0;
     });
 
-    try {
-      // Simulate export progress with editing effects applied
-      print('🎬 Exporting video with edits...');
-      print('📁 Original file: ${widget.videoPath}');
-      
-      // Prepare segments to export
-      final segmentsToExport = [..._trimSegments];
-      if (_currentSegment != null && !_trimSegments.contains(_currentSegment)) {
-        segmentsToExport.add(_currentSegment!);
-      } else if (segmentsToExport.isEmpty) {
-        // If no segments, use current trim selection
-        segmentsToExport.add(TrimSegment(start: _startTrim, end: _endTrim));
-      }
-      
-      print('✂️ Exporting ${segmentsToExport.length} segments:');
-      for (var i = 0; i < segmentsToExport.length; i++) {
-        final segment = segmentsToExport[i];
-        print('  Clip ${i + 1}: ${segment.start.inSeconds}s - ${segment.end.inSeconds}s (${segment.duration.inSeconds}s)');
-      }
-      
-      if (_useThumbnailMode) {
-        print('🖼️ Using thumbnail mode - exporting with applied effects');
-      }
-      
-      for (int i = 0; i <= 100; i += 5) {
-        await Future.delayed(const Duration(milliseconds: 100));
-        setState(() {
-          _exportProgress = i / 100;
-        });
-        
-        if (i == 30) print('🎨 Applying filters...');
-        if (i == 60) print('🎵 Processing audio...');
-        if (i == 90) print('📝 Adding text overlays...');
-      }
-
+    // Simulate export with progress
+    for (int i = 0; i <= 100; i += 5) {
+      await Future.delayed(Duration(milliseconds: 100));
       setState(() {
-        _isExporting = false;
+        _exportProgress = i / 100;
       });
-      
-      print('✅ Video export completed successfully!');
-      
-      // Show success and navigate to upload
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Video exported successfully! Ready to upload.'),
-          backgroundColor: Color(0xFF00CED1),
-        ),
-      );
-      
-      // Navigate to upload screen
-      await Future.delayed(const Duration(milliseconds: 500));
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const UploadScreen(),
-        ),
-      );
-      
-    } catch (e) {
-      setState(() {
-        _isExporting = false;
-      });
-      print('❌ Export error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Export error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
-  }
 
-  Widget _buildEditingTools() {
-    print('🛠️ Building editing tools for tab index: $_selectedTabIndex (${_tabLabels[_selectedTabIndex]})');
-    
-    switch (_selectedTabIndex) {
-      case 0:
-        print('🎬 Rendering Trim controls');
-        return _buildTrimControls();
-      case 1:
-        print('🎨 Rendering Filters widget');
-        return VideoFiltersWidget(videoPath: widget.videoPath);
-      case 2:
-        print('🎵 Rendering Audio widget');
-        return AudioOverlayWidget(videoPath: widget.videoPath);
-      case 3:
-        print('📝 Rendering Text widget');
-        return TextOverlayWidget(videoPath: widget.videoPath);
-      case 4:
-        print('⚡ Rendering Speed widget');
-        return SpeedControlWidget(videoPath: widget.videoPath);
-      default:
-        print('🔄 Fallback to Trim controls');
-        return _buildTrimControls();
-    }
-  }
+    setState(() {
+      _isExporting = false;
+    });
 
-  Widget _buildTrimControls() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with Add Segment button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Trim Video',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Row(
-                children: [
-                  if (_trimSegments.isNotEmpty)
-                    Text(
-                      '${_trimSegments.length} clips',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  const SizedBox(width: 8),
-                  TextButton.icon(
-                    onPressed: _addNewSegment,
-                    icon: Icon(Icons.add, size: 16, color: Color(0xFF00CED1)),
-                    label: Text(
-                      _trimSegments.isEmpty ? 'Add Clip' : 'Add Another',
-                      style: TextStyle(color: Color(0xFF00CED1), fontSize: 12),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          
-          // Simple trim slider
-          if (_isInitialized) ...[
-            // Interactive timeline with drag support
-            GestureDetector(
-              onHorizontalDragStart: (details) {
-                _updatePreviewPosition(details.localPosition, context);
-              },
-              onHorizontalDragUpdate: (details) {
-                _updatePreviewPosition(details.localPosition, context);
-              },
-              onTapDown: (details) {
-                _updatePreviewPosition(details.localPosition, context);
-              },
-              child: Container(
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Stack(
-                  children: [
-                    // TikTok-style frame preview timeline
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: _frameData.isNotEmpty
-                        ? Row(
-                            children: List.generate(
-                              _frameData.length,
-                              (index) => Expanded(
-                                child: Container(
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    border: Border(
-                                      right: BorderSide(
-                                        color: Colors.black.withOpacity(0.3),
-                                        width: index < _frameData.length - 1 ? 1 : 0,
-                                      ),
-                                    ),
-                                    image: DecorationImage(
-                                      image: MemoryImage(_frameData[index]),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          )
-                        : Container(
-                            width: double.infinity,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.grey[700]!,
-                                  Colors.grey[600]!,
-                                ],
-                              ),
-                            ),
-                            child: _isGeneratingFrames
-                                ? const Center(
-                                    child: SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Color(0xFF00CED1),
-                                      ),
-                                    ),
-                                  )
-                                : null,
-                          ),
-                  ),
-                  
-                  // Multi-segment trim overlay
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: _MultiSegmentTrimPainter(
-                        segments: _trimSegments,
-                        currentSegment: _currentSegment,
-                        startTrim: _startTrim,
-                        endTrim: _endTrim,
-                        totalDuration: _videoDuration,
-                        previewPosition: _currentPreviewPosition,
-                      ),
-                    ),
-                  ),
-                  
-                  // Preview position indicator (yellow line)
-                  if (_videoDuration.inMilliseconds > 0)
-                    Positioned(
-                      left: (_currentPreviewPosition.inMilliseconds / _videoDuration.inMilliseconds) * 
-                             (MediaQuery.of(context).size.width - 24),
-                      top: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 3,
-                        decoration: BoxDecoration(
-                          color: Colors.yellow,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.yellow.withOpacity(0.5),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  
-                  // Trim handles
-                  Positioned(
-                    left: (_startTrim.inMilliseconds / _videoDuration.inMilliseconds) * 
-                           (MediaQuery.of(context).size.width - 64),
-                    child: Container(
-                      width: 4,
-                      height: 60,
-                      color: const Color(0xFF00CED1),
-                    ),
-                  ),
-                  Positioned(
-                    left: (_endTrim.inMilliseconds / _videoDuration.inMilliseconds) * 
-                           (MediaQuery.of(context).size.width - 64),
-                    child: Container(
-                      width: 4,
-                      height: 60,
-                      color: const Color(0xFF00CED1),
-                      child: Container(
-                        width: 4,
-                        height: 20,
-                        margin: const EdgeInsets.only(top: 20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              ),
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Duration info and extend button
-            if (_videoDuration.inSeconds > 20)
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                margin: EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Duration: ${_formatDuration(_videoDuration)}',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                    if (_videoDuration.inSeconds < 180) // Show extend button for videos < 3 min
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            // Double the duration to allow access to full video
-                            _videoDuration = Duration(seconds: _videoDuration.inSeconds * 2);
-                            _endTrim = _videoDuration;
-                            _manualDurationMode = true;
-                          });
-                          // Regenerate frames for new duration
-                          _regenerateFramesForExtendedDuration();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Extended timeline to ${_formatDuration(_videoDuration)}'),
-                              backgroundColor: Color(0xFF00CED1),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          'Extend Timeline',
-                          style: TextStyle(color: Color(0xFF00CED1), fontSize: 12),
-                        ),
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            
-            // Saved segments list
-            if (_trimSegments.isNotEmpty) ...[
-              Container(
-                height: 36,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _trimSegments.length,
-                  itemBuilder: (context, index) {
-                    final segment = _trimSegments[index];
-                    final isSelected = _currentSegment?.id == segment.id;
-                    return GestureDetector(
-                      onTap: () => _selectSegment(segment),
-                      child: Container(
-                        margin: EdgeInsets.only(right: 8),
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isSelected ? Color(0xFF00CED1) : Colors.grey[800],
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: isSelected ? Color(0xFF00CED1) : Colors.grey[600]!,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Clip ${index + 1}',
-                              style: TextStyle(
-                                color: isSelected ? Colors.black : Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              '${segment.duration.inSeconds}s',
-                              style: TextStyle(
-                                color: isSelected ? Colors.black54 : Colors.white54,
-                                fontSize: 10,
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: () => _removeSegment(segment),
-                              child: Icon(
-                                Icons.close,
-                                size: 14,
-                                color: isSelected ? Colors.black54 : Colors.white54,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            
-            // Start time slider
-            Row(
-              children: [
-                const Text('Start:', style: TextStyle(color: Colors.white70)),
-                Expanded(
-                  child: Slider(
-                    value: _startTrim.inMilliseconds.toDouble(),
-                    min: 0,
-                    max: _videoDuration.inMilliseconds.toDouble(),
-                    activeColor: const Color(0xFF00CED1),
-                    inactiveColor: Colors.grey[600],
-                    thumbColor: const Color(0xFF00CED1),
-                    onChanged: (value) {
-                      print('🎬 Trim start changed to: ${Duration(milliseconds: value.toInt()).inSeconds}s');
-                      setState(() {
-                        _startTrim = Duration(milliseconds: value.toInt());
-                        if (_startTrim >= _endTrim) {
-                          _startTrim = _endTrim - const Duration(seconds: 1);
-                        }
-                      });
-                      _controller?.seekTo(_startTrim);
-                    },
-                  ),
-                ),
-                Container(
-                  width: 60,
-                  child: Text(
-                    _formatDuration(_startTrim),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-            
-            // End time slider
-            Row(
-              children: [
-                const Text('End:', style: TextStyle(color: Colors.white70)),
-                Expanded(
-                  child: Slider(
-                    value: _endTrim.inMilliseconds.toDouble(),
-                    min: 0,
-                    max: _videoDuration.inMilliseconds.toDouble(),
-                    activeColor: const Color(0xFF00CED1),
-                    inactiveColor: Colors.grey[600],
-                    thumbColor: const Color(0xFF00CED1),
-                    onChanged: (value) {
-                      print('🎬 Trim end changed to: ${Duration(milliseconds: value.toInt()).inSeconds}s');
-                      setState(() {
-                        _endTrim = Duration(milliseconds: value.toInt());
-                        if (_endTrim <= _startTrim) {
-                          _endTrim = _startTrim + const Duration(seconds: 1);
-                        }
-                      });
-                      _controller?.seekTo(_endTrim);
-                    },
-                  ),
-                ),
-                Container(
-                  width: 60,
-                  child: Text(
-                    _formatDuration(_endTrim),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ],
-          
-          const SizedBox(height: 12),
-          
-          // Play/Pause controls
-          if (_controller != null)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  onPressed: () => _controller?.seekTo(_startTrim),
-                  icon: const Icon(Icons.skip_previous, color: Colors.white),
-                ),
-                IconButton(
-                  onPressed: () {
-                    if (_controller?.value.isPlaying ?? false) {
-                      _controller?.pause();
-                    } else {
-                      _controller?.play();
-                    }
-                    setState(() {});
-                  },
-                  icon: Icon(
-                    (_controller?.value.isPlaying ?? false) ? Icons.pause : Icons.play_arrow,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => _controller?.seekTo(_endTrim),
-                  icon: const Icon(Icons.skip_next, color: Colors.white),
-                ),
-              ],
-            )
-          else
-            const Center(
-              child: Text(
-                'Video ready for editing! Use trim sliders above',
-                style: TextStyle(color: Color(0xFF00CED1), fontWeight: FontWeight.w500),
-              ),
-            ),
-        ],
+    // Navigate to upload screen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const UploadScreen(),
       ),
     );
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
-    
-    // DEBUG
-    if (duration.inSeconds == 10) {
-      print('🐛 FORMAT DEBUG: Duration(${duration.inMilliseconds}ms) = ${duration.inMinutes}m ${duration.inSeconds}s');
-      print('🐛 Should format as: ${twoDigits(minutes)}:${twoDigits(seconds)}');
-    }
-    
-    if (hours > 0) {
-      return "${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}";
-    } else {
-      return "${twoDigits(minutes)}:${twoDigits(seconds)}";
-    }
   }
 
   @override
   void dispose() {
     _controller?.dispose();
-    _tabController.dispose();
+    _playPauseAnimController.dispose();
+    _progressTimer?.cancel();
     super.dispose();
   }
-  
-  // Multi-segment trimming methods
-  void _addNewSegment() {
-    if (_currentSegment != null) {
-      // Save current segment first
-      setState(() {
-        _trimSegments.add(_currentSegment!);
-        _currentSegment = null;
-        _startTrim = _endTrim;
-        _endTrim = Duration(
-          milliseconds: (_endTrim.inMilliseconds + (_videoDuration.inMilliseconds ~/ 4))
-              .clamp(0, _videoDuration.inMilliseconds)
-        );
-      });
-    } else {
-      // Create new segment
-      setState(() {
-        _currentSegment = TrimSegment(start: _startTrim, end: _endTrim);
-      });
-    }
-  }
-  
-  void _selectSegment(TrimSegment segment) {
-    setState(() {
-      _currentSegment = segment;
-      _startTrim = segment.start;
-      _endTrim = segment.end;
-      _currentPreviewPosition = segment.start;
-    });
-    _controller?.seekTo(segment.start);
-  }
-  
-  void _removeSegment(TrimSegment segment) {
-    setState(() {
-      _trimSegments.removeWhere((s) => s.id == segment.id);
-      if (_currentSegment?.id == segment.id) {
-        _currentSegment = null;
-      }
-    });
-  }
-  
-  void _updatePreviewPosition(Offset localPosition, BuildContext context) {
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null) return;
-    
-    final width = box.size.width;
-    final percentage = (localPosition.dx / width).clamp(0.0, 1.0);
-    final newPosition = Duration(
-      milliseconds: (_videoDuration.inMilliseconds * percentage).toInt()
-    );
-    
-    setState(() {
-      _currentPreviewPosition = newPosition;
-      
-      // Update frame index for thumbnail mode
-      if (_useThumbnailMode && _frameData.isNotEmpty) {
-        // More precise frame calculation
-        final exactFrame = percentage * (_frameData.length - 1);
-        _currentFrameIndex = exactFrame.round().clamp(0, _frameData.length - 1);
-      }
-    });
-    
-    // Seek video if controller is available
-    if (_controller != null && _controller!.value.isInitialized) {
-      _controller!.seekTo(newPosition);
-    }
-  }
-  
-  // Add method to regenerate frames for extended duration
-  Future<void> _regenerateFramesForExtendedDuration() async {
-    setState(() {
-      _isGeneratingFrames = true;
-    });
-    
-    try {
-      final frameCount = _videoDuration.inSeconds <= 180 ? 30 : 60;
-      print('🎞️ Regenerating $frameCount frames for extended duration...');
-      
-      _frameData = await VideoThumbnailService.generateVideoFrames(
-        widget.videoPath, 
-        frameCount
-      );
-      
-      setState(() {
-        _isGeneratingFrames = false;
-      });
-      
-      print('✅ Regenerated ${_frameData.length} frames');
-    } catch (e) {
-      print('❌ Error regenerating frames: $e');
-      setState(() {
-        _isGeneratingFrames = false;
-      });
-    }
-  }
-
-  Widget _buildLocalVideoThumbnail() {
-    // Remove debug print to reduce log spam
-    // Priority 1: Show actual video if controller works
-    if (_controller != null && _controller!.value.isInitialized) {
-      return GestureDetector(
-        onTap: () {
-          print('🎬 Video preview tapped - toggling play/pause');
-          if (_controller!.value.isPlaying) {
-            _controller!.pause();
-          } else {
-            _controller!.play();
-          }
-          setState(() {});
-        },
-        child: Stack(
-          children: [
-            // Actual video player
-            AspectRatio(
-              aspectRatio: _controller!.value.aspectRatio,
-              child: VideoPlayer(_controller!),
-            ),
-            
-            // Play/pause overlay
-            if (!_controller!.value.isPlaying)
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF00CED1).withOpacity(0.9),
-                    ),
-                    child: Icon(
-                      Icons.play_arrow,
-                      size: 30,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              
-            // Video info overlay
-            Positioned(
-              bottom: 8,
-              left: 8,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '🎬 Tap to play/pause',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    
-    // Priority 2: Show frame preview in thumbnail mode
-    if (_useThumbnailMode && _frameData.isNotEmpty) {
-      return GestureDetector(
-        onTap: () {
-          print('📸 Frame preview tapped');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('👀 Drag the timeline below to preview different parts'),
-              backgroundColor: Color(0xFF00CED1),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        },
-        child: Stack(
-          children: [
-            // Show current frame based on timeline position
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 50),
-              child: Container(
-                key: ValueKey<int>(_currentFrameIndex), // Force rebuild when frame changes
-                width: double.infinity,
-                height: double.infinity,
-                child: Image(
-                  key: ValueKey('${_currentFrameIndex}_${DateTime.now().millisecondsSinceEpoch}'),
-                  image: MemoryImage(_frameData[_currentFrameIndex]),
-                  fit: BoxFit.cover,
-                  gaplessPlayback: true, // Smooth transitions between frames
-                ),
-              ),
-            ),
-            
-            // Simple overlay
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.3),
-                  ],
-                ),
-              ),
-            ),
-            
-            // Play icon overlay
-            Center(
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFF00CED1).withOpacity(0.8),
-                ),
-                child: Icon(
-                  Icons.play_arrow,
-                  size: 30,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            
-            // Current position indicator
-            Positioned(
-              bottom: 8,
-              left: 8,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '${_formatDuration(_currentPreviewPosition)} / ${_formatDuration(_videoDuration)}',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            
-            // Frame indicator
-            Positioned(
-              bottom: 8,
-              right: 8,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Color(0xFF00CED1).withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'Frame ${_currentFrameIndex + 1}/${_frameData.length}',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    
-    // Priority 3: Basic preview mode
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF00CED1).withOpacity(0.2),
-            const Color(0xFF1E90FF).withOpacity(0.2),
-            Colors.grey[900]!,
-          ],
-        ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF00CED1), Color(0xFF1E90FF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: const Icon(
-                Icons.movie_outlined,
-                size: 40,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Video Preview',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Duration: ${_formatDuration(_videoDuration)}',
-              style: TextStyle(
-                color: Colors.grey[300],
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Use the editing tools below',
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<Map<String, dynamic>> _getVideoFileInfo() async {
-    try {
-      final videoFile = File(widget.videoPath);
-      final fileSize = await videoFile.length();
-      final fileName = widget.videoPath.split('/').last;
-      
-      return {
-        'size': fileSize,
-        'name': fileName,
-      };
-    } catch (e) {
-      return {};
-    }
-  }
-
 
   @override
   Widget build(BuildContext context) {
-    print('🏗️ Building UI - hasError: $_hasError, isInitialized: $_isInitialized, useThumbnailMode: $_useThumbnailMode');
-    
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [Color(0xFF00CED1), Color(0xFF1E90FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ).createShader(bounds),
-          child: const Text(
-            'Edit Video',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            _buildHeader(),
+            
+            // Video preview
+            Expanded(
+              child: Stack(
+                children: [
+                  // Video player
+                  _buildVideoPreview(),
+                  
+                  // Text overlays
+                  ..._textOverlays.map((overlay) => _buildTextOverlay(overlay)),
+                  
+                  // Filter overlay
+                  if (_selectedFilter != 'none')
+                    Positioned.fill(
+                      child: Container(
+                        color: _filters.firstWhere((f) => f.name == _selectedFilter).color,
+                      ),
+                    ),
+                  
+                  // Play/pause button
+                  Center(
+                    child: GestureDetector(
+                      onTap: _togglePlayPause,
+                      child: AnimatedOpacity(
+                        opacity: _isPlaying ? 0.0 : 1.0,
+                        duration: Duration(milliseconds: 200),
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withOpacity(0.5),
+                          ),
+                          child: Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Timeline
+            _buildTimeline(),
+            
+            // Tools
+            _buildTools(),
+            
+            // Export progress
+            if (_isExporting) _buildExportProgress(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      height: 56,
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.close, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          Spacer(),
+          if (_selectedMusic != null)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.music_note, color: Colors.white, size: 16),
+                  SizedBox(width: 4),
+                  Text(
+                    _selectedMusic!.name,
+                    style: TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          SizedBox(width: 16),
+          TextButton(
+            onPressed: _isExporting ? null : _exportVideo,
+            child: Text(
+              'Next',
+              style: TextStyle(
+                color: Color(0xFF00CED1),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVideoPreview() {
+    if (!_isInitialized || _controller == null) {
+      return Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF00CED1),
+        ),
+      );
+    }
+
+    return Center(
+      child: AspectRatio(
+        aspectRatio: _controller!.value.aspectRatio,
+        child: VideoPlayer(_controller!),
+      ),
+    );
+  }
+
+  Widget _buildTextOverlay(TextOverlay overlay) {
+    return Positioned(
+      left: overlay.position.dx,
+      top: overlay.position.dy,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _currentTextOverlay = overlay;
+            _selectedTab = 1; // Switch to text tab
+          });
+        },
+        child: Transform.rotate(
+          angle: overlay.rotation * (math.pi / 180),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              overlay.text,
+              style: TextStyle(
+                color: overlay.color,
+                fontSize: overlay.fontSize,
+                fontFamily: overlay.fontFamily,
+                shadows: overlay.hasShadow
+                    ? [Shadow(blurRadius: 3, color: Colors.black)]
+                    : null,
+              ),
+              textAlign: overlay.alignment,
             ),
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          if (!_isExporting)
-            TextButton(
-              onPressed: _exportVideo,
-              child: Row(
-                children: [
-                  if (_trimSegments.isNotEmpty || _currentSegment != null) ...[
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Color(0xFFFF0080),
-                        borderRadius: BorderRadius.circular(12),
+      ),
+    );
+  }
+
+  Widget _buildTimeline() {
+    return Container(
+      height: 100,
+      color: Colors.grey[900],
+      child: Column(
+        children: [
+          // Time display
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _formatDuration(_currentPosition),
+                  style: TextStyle(color: Colors.white, fontSize: 12),
+                ),
+                Text(
+                  _formatDuration(_videoDuration),
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          
+          // Timeline scrubber
+          Expanded(
+            child: GestureDetector(
+              onHorizontalDragStart: (_) {
+                setState(() {
+                  _isDraggingTimeline = true;
+                });
+              },
+              onHorizontalDragEnd: (_) {
+                setState(() {
+                  _isDraggingTimeline = false;
+                });
+              },
+              onHorizontalDragUpdate: (details) {
+                final box = context.findRenderObject() as RenderBox;
+                final localPosition = box.globalToLocal(details.globalPosition);
+                final percentage = (localPosition.dx / box.size.width).clamp(0.0, 1.0);
+                _seekToPosition(percentage);
+              },
+              onTapDown: (details) {
+                final box = context.findRenderObject() as RenderBox;
+                final localPosition = box.globalToLocal(details.globalPosition);
+                final percentage = (localPosition.dx / box.size.width).clamp(0.0, 1.0);
+                _seekToPosition(percentage);
+              },
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.grey[800],
+                ),
+                child: Stack(
+                  children: [
+                    // Frame thumbnails
+                    if (_timelineFrames.isNotEmpty)
+                      Row(
+                        children: _timelineFrames
+                            .map((frame) => Expanded(
+                                  child: Image.memory(
+                                    frame,
+                                    fit: BoxFit.cover,
+                                    gaplessPlayback: true,
+                                  ),
+                                ))
+                            .toList(),
                       ),
-                      child: Text(
-                        '${_trimSegments.length + (_currentSegment != null ? 1 : 0)}',
-                        style: TextStyle(
+                    
+                    // Trim overlay
+                    CustomPaint(
+                      size: Size(double.infinity, double.infinity),
+                      painter: _TrimPainter(
+                        trimStart: _trimStart,
+                        trimEnd: _trimEnd,
+                        duration: _videoDuration,
+                        segments: _segments,
+                      ),
+                    ),
+                    
+                    // Current position indicator
+                    if (_videoDuration.inMilliseconds > 0)
+                      Positioned(
+                        left: (MediaQuery.of(context).size.width - 32) *
+                            (_currentPosition.inMilliseconds / _videoDuration.inMilliseconds),
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 2,
                           color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                    SizedBox(width: 6),
                   ],
-                  const Text(
-                    'Export',
-                    style: TextStyle(
-                      color: Color(0xFF00CED1),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
+          ),
         ],
       ),
-      body: _hasError
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Failed to load video',
-                    style: TextStyle(color: Colors.white, fontSize: 18),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _errorMessage,
-                    style: const TextStyle(color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Try to reinitialize
-                      setState(() {
-                        _hasError = false;
-                        _errorMessage = '';
-                      });
-                      _initializeVideoPlayer();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00CED1),
-                    ),
-                    child: const Text(
-                      'Retry',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Back',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : _isInitialized
-          ? SafeArea(
-              child: Column(
-                children: [
-                // Video preview
-                Container(
-                  height: 250,
-                  margin: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.grey[900],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: _useThumbnailMode
-                        ? _buildLocalVideoThumbnail()
-                        : _controller != null && _controller!.value.isInitialized
-                        ? Center(
-                            child: AspectRatio(
-                              aspectRatio: _controller!.value.aspectRatio,
-                              child: VideoPlayer(_controller!),
-                            ),
-                          )
-                        : Container(
-                            width: double.infinity,
-                            height: double.infinity,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.movie_outlined,
-                                  size: 48,
-                                  color: Colors.grey[600],
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Video Preview',
-                                  style: TextStyle(
-                                    color: Colors.grey[400],
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Editing tools available below',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                  ),
-                ),
+    );
+  }
+
+  Widget _buildTools() {
+    return Container(
+      height: 200,
+      color: Colors.grey[900],
+      child: Column(
+        children: [
+          // Tab bar
+          Container(
+            height: 50,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _tabs.length,
+              itemBuilder: (context, index) {
+                final tab = _tabs[index];
+                final isSelected = _selectedTab == index;
                 
-                // Export progress
-                if (_isExporting)
-                  Container(
-                    padding: const EdgeInsets.all(16),
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedTab = index;
+                    });
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
-                          'Exporting video...',
-                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        Icon(
+                          tab.icon,
+                          color: isSelected ? Color(0xFF00CED1) : Colors.white54,
+                          size: 20,
                         ),
-                        const SizedBox(height: 8),
-                        LinearProgressIndicator(
-                          value: _exportProgress,
-                          backgroundColor: Colors.grey[700],
-                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00CED1)),
-                        ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 4),
                         Text(
-                          '${(_exportProgress * 100).toInt()}%',
-                          style: const TextStyle(color: Colors.white70),
+                          tab.label,
+                          style: TextStyle(
+                            color: isSelected ? Color(0xFF00CED1) : Colors.white54,
+                            fontSize: 10,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                
-                // Editing tabs
+                );
+              },
+            ),
+          ),
+          
+          // Tab content
+          Expanded(
+            child: _buildTabContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabContent() {
+    switch (_selectedTab) {
+      case 0: // Trim
+        return _buildTrimTools();
+      case 1: // Text
+        return _buildTextTools();
+      case 2: // Music
+        return _buildMusicTools();
+      case 3: // Filters
+        return _buildFilterTools();
+      case 4: // Speed
+        return _buildSpeedTools();
+      case 5: // Volume
+        return _buildVolumeTools();
+      case 6: // Effects
+        return _buildEffectsTools();
+      default:
+        return Container();
+    }
+  }
+
+  Widget _buildTrimTools() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Trim: ${_formatDuration(_trimEnd - _trimStart)}',
+                style: TextStyle(color: Colors.white),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _segments.add(TrimSegment(start: _trimStart, end: _trimEnd));
+                    _trimStart = _trimEnd;
+                    _trimEnd = _videoDuration;
+                  });
+                },
+                child: Text(
+                  'Add Segment',
+                  style: TextStyle(color: Color(0xFF00CED1)),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Text('Start:', style: TextStyle(color: Colors.white70)),
+              Expanded(
+                child: Slider(
+                  value: _trimStart.inMilliseconds.toDouble(),
+                  min: 0,
+                  max: _videoDuration.inMilliseconds.toDouble(),
+                  activeColor: Color(0xFF00CED1),
+                  onChanged: (value) {
+                    setState(() {
+                      _trimStart = Duration(milliseconds: value.toInt());
+                      if (_trimStart >= _trimEnd) {
+                        _trimStart = _trimEnd - Duration(seconds: 1);
+                      }
+                    });
+                  },
+                ),
+              ),
+              Text(
+                _formatDuration(_trimStart),
+                style: TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Text('End:', style: TextStyle(color: Colors.white70)),
+              Expanded(
+                child: Slider(
+                  value: _trimEnd.inMilliseconds.toDouble(),
+                  min: 0,
+                  max: _videoDuration.inMilliseconds.toDouble(),
+                  activeColor: Color(0xFF00CED1),
+                  onChanged: (value) {
+                    setState(() {
+                      _trimEnd = Duration(milliseconds: value.toInt());
+                      if (_trimEnd <= _trimStart) {
+                        _trimEnd = _trimStart + Duration(seconds: 1);
+                      }
+                    });
+                  },
+                ),
+              ),
+              Text(
+                _formatDuration(_trimEnd),
+                style: TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextTools() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          ElevatedButton.icon(
+            onPressed: () {
+              final overlay = TextOverlay(
+                text: 'Tap to edit',
+                position: Offset(100, 200),
+              );
+              setState(() {
+                _textOverlays.add(overlay);
+                _currentTextOverlay = overlay;
+              });
+            },
+            icon: Icon(Icons.add),
+            label: Text('Add Text'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF00CED1),
+            ),
+          ),
+          if (_currentTextOverlay != null) ...[
+            SizedBox(height: 16),
+            TextField(
+              controller: TextEditingController(text: _currentTextOverlay!.text),
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Enter text',
+                hintStyle: TextStyle(color: Colors.white54),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white54),
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _currentTextOverlay!.text = value;
+                });
+              },
+            ),
+            SizedBox(height: 16),
+            // Font size slider
+            Row(
+              children: [
+                Icon(Icons.format_size, color: Colors.white54, size: 20),
                 Expanded(
-                  child: Container(
+                  child: Slider(
+                    value: _currentTextOverlay!.fontSize,
+                    min: 12,
+                    max: 48,
+                    activeColor: Color(0xFF00CED1),
+                    onChanged: (value) {
+                      setState(() {
+                        _currentTextOverlay!.fontSize = value;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMusicTools() {
+    return Container(
+      child: ListView.builder(
+        padding: EdgeInsets.all(16),
+        itemCount: _musicLibrary.length,
+        itemBuilder: (context, index) {
+          final track = _musicLibrary[index];
+          final isSelected = _selectedMusic == track;
+          
+          return Container(
+            margin: EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? Color(0xFF00CED1).withOpacity(0.2) : Colors.grey[800],
+              borderRadius: BorderRadius.circular(8),
+              border: isSelected ? Border.all(color: Color(0xFF00CED1)) : null,
+            ),
+            child: ListTile(
+              leading: Icon(
+                Icons.music_note,
+                color: isSelected ? Color(0xFF00CED1) : Colors.white54,
+              ),
+              title: Text(
+                track.name,
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: Text(
+                '${track.artist} • ${_formatDuration(track.duration)}',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              trailing: isSelected
+                  ? Icon(Icons.check_circle, color: Color(0xFF00CED1))
+                  : null,
+              onTap: () {
+                setState(() {
+                  _selectedMusic = isSelected ? null : track;
+                });
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFilterTools() {
+    return Container(
+      child: GridView.builder(
+        padding: EdgeInsets.all(16),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+        ),
+        itemCount: _filters.length,
+        itemBuilder: (context, index) {
+          final filter = _filters[index];
+          final isSelected = _selectedFilter == filter.name;
+          
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedFilter = filter.name;
+              });
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isSelected ? Color(0xFF00CED1) : Colors.grey[700]!,
+                  width: 2,
+                ),
+              ),
+              child: Stack(
+                children: [
+                  // Preview
+                  Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey[900],
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
+                      color: Colors.grey[800],
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  if (filter.color != null)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: filter.color,
+                        borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    child: Column(
-                      children: [
-                        // Tab buttons
-                        Container(
-                          height: 50,
-                          child: Row(
-                            children: List.generate(_tabLabels.length, (index) {
-                              final isSelected = index == _selectedTabIndex;
-                              return Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    print('🎯 Tab ${index} (${_tabLabels[index]}) tapped!');
-                                    setState(() {
-                                      _selectedTabIndex = index;
-                                    });
-                                    print('📝 Selected tab index is now: $_selectedTabIndex');
-                                  },
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      gradient: isSelected
-                                          ? const LinearGradient(
-                                              colors: [Color(0xFF00CED1), Color(0xFF1E90FF)],
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                            )
-                                          : null,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    margin: const EdgeInsets.all(4),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          _tabIcons[index],
-                                          color: isSelected ? Colors.white : Colors.grey[400],
-                                          size: 16,
-                                        ),
-                                        const SizedBox(height: 1),
-                                        Text(
-                                          _tabLabels[index],
-                                          style: TextStyle(
-                                            color: isSelected ? Colors.white : Colors.grey[400],
-                                            fontSize: 8,
-                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }),
-                          ),
-                        ),
-                        
-                        // Tab content
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: _buildEditingTools(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                ],
-              ),
-            )
-          : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(color: Color(0xFF00CED1)),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Loading video...',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'File: ${widget.videoPath.split('/').last}',
-                    style: const TextStyle(color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[800],
-                    ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: Colors.white),
+                  // Label
+                  Center(
+                    child: Text(
+                      filter.name,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSpeedTools() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text(
+            'Speed: ${_videoSpeed.toStringAsFixed(1)}x',
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+          SizedBox(height: 16),
+          Slider(
+            value: _videoSpeed,
+            min: 0.3,
+            max: 3.0,
+            divisions: 27,
+            activeColor: Color(0xFF00CED1),
+            label: '${_videoSpeed.toStringAsFixed(1)}x',
+            onChanged: (value) {
+              setState(() {
+                _videoSpeed = value;
+                _controller?.setPlaybackSpeed(value);
+              });
+            },
+          ),
+          SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            children: [0.3, 0.5, 1.0, 1.5, 2.0, 3.0].map((speed) {
+              return ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _videoSpeed = speed;
+                    _controller?.setPlaybackSpeed(speed);
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _videoSpeed == speed ? Color(0xFF00CED1) : Colors.grey[800],
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+                child: Text('${speed}x'),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVolumeTools() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Original sound volume
+          Row(
+            children: [
+              Icon(Icons.videocam, color: Colors.white54),
+              SizedBox(width: 8),
+              Text('Original', style: TextStyle(color: Colors.white)),
+              Expanded(
+                child: Slider(
+                  value: _originalVolume,
+                  min: 0,
+                  max: 1,
+                  activeColor: Color(0xFF00CED1),
+                  onChanged: (value) {
+                    setState(() {
+                      _originalVolume = value;
+                      _controller?.setVolume(value);
+                    });
+                  },
+                ),
+              ),
+              Text(
+                '${(_originalVolume * 100).toInt()}%',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          // Music volume
+          Row(
+            children: [
+              Icon(Icons.music_note, color: Colors.white54),
+              SizedBox(width: 8),
+              Text('Music', style: TextStyle(color: Colors.white)),
+              Expanded(
+                child: Slider(
+                  value: _musicVolume,
+                  min: 0,
+                  max: 1,
+                  activeColor: Color(0xFF00CED1),
+                  onChanged: _selectedMusic == null
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _musicVolume = value;
+                          });
+                        },
+                ),
+              ),
+              Text(
+                '${(_musicVolume * 100).toInt()}%',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEffectsTools() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      child: GridView.count(
+        crossAxisCount: 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        children: [
+          _buildEffectButton('Fade In', Icons.gradient),
+          _buildEffectButton('Fade Out', Icons.gradient),
+          _buildEffectButton('Zoom', Icons.zoom_in),
+          _buildEffectButton('Rotate', Icons.rotate_right),
+          _buildEffectButton('Mirror', Icons.flip),
+          _buildEffectButton('Shake', Icons.vibration),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEffectButton(String label, IconData icon) {
+    return GestureDetector(
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$label effect applied'),
+            backgroundColor: Color(0xFF00CED1),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[800],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white54),
+            SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExportProgress() {
+    return Container(
+      color: Colors.black.withOpacity(0.8),
+      child: Center(
+        child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Exporting Video',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 16),
+              SizedBox(
+                width: 200,
+                child: LinearProgressIndicator(
+                  value: _exportProgress,
+                  backgroundColor: Colors.grey[700],
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00CED1)),
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                '${(_exportProgress * 100).toInt()}%',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
-// Multi-segment trim painter
-class _MultiSegmentTrimPainter extends CustomPainter {
-  final List<TrimSegment> segments;
-  final TrimSegment? currentSegment;
-  final Duration startTrim;
-  final Duration endTrim;
-  final Duration totalDuration;
-  final Duration previewPosition;
+// Supporting classes
+class _EditorTab {
+  final IconData icon;
+  final String label;
   
-  _MultiSegmentTrimPainter({
-    required this.segments,
-    this.currentSegment,
-    required this.startTrim,
-    required this.endTrim,
-    required this.totalDuration,
-    required this.previewPosition,
-  });
-  
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (totalDuration.inMilliseconds == 0) return;
-    
-    final paint = Paint();
-    
-    // Draw saved segments
-    for (final segment in segments) {
-      final startX = (segment.start.inMilliseconds / totalDuration.inMilliseconds) * size.width;
-      final endX = (segment.end.inMilliseconds / totalDuration.inMilliseconds) * size.width;
-      
-      // Segment background
-      paint.color = Color(0xFF00CED1).withOpacity(0.3);
-      canvas.drawRect(
-        Rect.fromLTRB(startX, 0, endX, size.height),
-        paint,
-      );
-      
-      // Segment borders
-      paint.color = Color(0xFF00CED1);
-      paint.strokeWidth = 2;
-      canvas.drawLine(Offset(startX, 0), Offset(startX, size.height), paint);
-      canvas.drawLine(Offset(endX, 0), Offset(endX, size.height), paint);
-    }
-    
-    // Draw current segment being edited
-    if (currentSegment == null && totalDuration.inMilliseconds > 0) {
-      final startX = (startTrim.inMilliseconds / totalDuration.inMilliseconds) * size.width;
-      final endX = (endTrim.inMilliseconds / totalDuration.inMilliseconds) * size.width;
-      
-      // Dimmed areas outside trim
-      paint.color = Colors.black.withOpacity(0.6);
-      canvas.drawRect(Rect.fromLTRB(0, 0, startX, size.height), paint);
-      canvas.drawRect(Rect.fromLTRB(endX, 0, size.width, size.height), paint);
-      
-      // Highlight current trim area
-      paint.color = Color(0xFFFF0080).withOpacity(0.2);
-      canvas.drawRect(
-        Rect.fromLTRB(startX, 0, endX, size.height),
-        paint,
-      );
-    }
-  }
-  
-  @override
-  bool shouldRepaint(covariant _MultiSegmentTrimPainter oldDelegate) {
-    return segments != oldDelegate.segments ||
-           currentSegment != oldDelegate.currentSegment ||
-           startTrim != oldDelegate.startTrim ||
-           endTrim != oldDelegate.endTrim ||
-           previewPosition != oldDelegate.previewPosition;
-  }
+  const _EditorTab({required this.icon, required this.label});
 }
 
-class _TrimOverlayPainter extends CustomPainter {
-  final Duration startTrim;
-  final Duration endTrim;
-  final Duration totalDuration;
+class _VideoFilter {
+  final String name;
+  final Color? color;
+  
+  const _VideoFilter({required this.name, this.color});
+}
 
-  _TrimOverlayPainter({
-    required this.startTrim,
-    required this.endTrim,
-    required this.totalDuration,
+class _TrimPainter extends CustomPainter {
+  final Duration trimStart;
+  final Duration trimEnd;
+  final Duration duration;
+  final List<TrimSegment> segments;
+  
+  _TrimPainter({
+    required this.trimStart,
+    required this.trimEnd,
+    required this.duration,
+    required this.segments,
   });
-
+  
   @override
   void paint(Canvas canvas, Size size) {
+    if (duration.inMilliseconds == 0) return;
+    
     final paint = Paint();
     
-    // Draw semi-transparent overlay on trimmed out parts
+    // Draw trim overlay
     paint.color = Colors.black.withOpacity(0.6);
     
     // Left trimmed area
-    final startX = (startTrim.inMilliseconds / totalDuration.inMilliseconds) * size.width;
+    final startX = (trimStart.inMilliseconds / duration.inMilliseconds) * size.width;
     canvas.drawRect(
       Rect.fromLTWH(0, 0, startX, size.height),
       paint,
     );
     
     // Right trimmed area
-    final endX = (endTrim.inMilliseconds / totalDuration.inMilliseconds) * size.width;
+    final endX = (trimEnd.inMilliseconds / duration.inMilliseconds) * size.width;
     canvas.drawRect(
       Rect.fromLTWH(endX, 0, size.width - endX, size.height),
       paint,
     );
     
     // Draw trim handles
-    paint.color = const Color(0xFF00CED1);
+    paint.color = Color(0xFF00CED1);
     paint.strokeWidth = 3;
     
     // Start handle
@@ -1767,42 +1181,23 @@ class _TrimOverlayPainter extends CustomPainter {
       paint,
     );
     
-    // Draw handle grips
-    paint.color = Colors.white;
-    final handleWidth = 12.0;
-    final handleHeight = 24.0;
-    
-    // Start handle grip
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: Offset(startX, size.height / 2),
-          width: handleWidth,
-          height: handleHeight,
-        ),
-        const Radius.circular(6),
-      ),
-      paint,
-    );
-    
-    // End handle grip
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: Offset(endX, size.height / 2),
-          width: handleWidth,
-          height: handleHeight,
-        ),
-        const Radius.circular(6),
-      ),
-      paint,
-    );
+    // Draw segments
+    paint.color = Color(0xFF00CED1).withOpacity(0.3);
+    for (final segment in segments) {
+      final segStartX = (segment.start.inMilliseconds / duration.inMilliseconds) * size.width;
+      final segEndX = (segment.end.inMilliseconds / duration.inMilliseconds) * size.width;
+      canvas.drawRect(
+        Rect.fromLTWH(segStartX, 0, segEndX - segStartX, size.height),
+        paint,
+      );
+    }
   }
-
+  
   @override
-  bool shouldRepaint(_TrimOverlayPainter oldDelegate) {
-    return oldDelegate.startTrim != startTrim ||
-           oldDelegate.endTrim != endTrim ||
-           oldDelegate.totalDuration != totalDuration;
+  bool shouldRepaint(covariant _TrimPainter oldDelegate) {
+    return trimStart != oldDelegate.trimStart ||
+        trimEnd != oldDelegate.trimEnd ||
+        duration != oldDelegate.duration ||
+        segments != oldDelegate.segments;
   }
 }

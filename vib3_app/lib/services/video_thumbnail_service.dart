@@ -2,14 +2,67 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:video_player/video_player.dart';
 
 class VideoThumbnailService {
   static Future<Duration> getVideoDuration(String videoPath) async {
     print('📏 Getting video duration from: $videoPath');
     
-    // TEMPORARY: Just return 10 seconds to test the display
-    print('📏 HARDCODED duration: 10 seconds');
-    return const Duration(seconds: 10);
+    try {
+      // Method 1: Try using video_player to get duration
+      final controller = VideoPlayerController.file(File(videoPath));
+      await controller.initialize();
+      final duration = controller.value.duration;
+      controller.dispose();
+      
+      if (duration.inMilliseconds > 0) {
+        print('📏 Video duration: ${duration.inSeconds}s (${duration.inMilliseconds}ms)');
+        return duration;
+      }
+    } catch (e) {
+      print('⚠️ Failed to get duration with video_player: $e');
+    }
+    
+    // Method 2: Try using ffprobe if available (fallback)
+    try {
+      final result = await Process.run('ffprobe', [
+        '-v', 'quiet',
+        '-print_format', 'json',
+        '-show_format',
+        videoPath
+      ]);
+      
+      if (result.exitCode == 0) {
+        final output = result.stdout.toString();
+        // Parse JSON to extract duration
+        final match = RegExp(r'"duration"\s*:\s*"([0-9.]+)"').firstMatch(output);
+        if (match != null) {
+          final seconds = double.parse(match.group(1)!);
+          final duration = Duration(milliseconds: (seconds * 1000).toInt());
+          print('📏 FFprobe duration: ${duration.inSeconds}s');
+          return duration;
+        }
+      }
+    } catch (e) {
+      print('⚠️ FFprobe not available: $e');
+    }
+    
+    // Method 3: Estimate based on file size (very rough estimate)
+    try {
+      final file = File(videoPath);
+      final sizeInBytes = await file.length();
+      // Assume average bitrate of 5 Mbps
+      final estimatedSeconds = (sizeInBytes * 8) / (5 * 1000 * 1000);
+      final duration = Duration(seconds: estimatedSeconds.toInt());
+      print('📏 Estimated duration based on file size: ${duration.inSeconds}s');
+      return duration;
+    } catch (e) {
+      print('❌ Failed to estimate duration: $e');
+    }
+    
+    // Default fallback
+    print('📏 Using default duration: 30 seconds');
+    return const Duration(seconds: 30);
   }
 
   static Future<File?> generateThumbnail(String videoPath) async {

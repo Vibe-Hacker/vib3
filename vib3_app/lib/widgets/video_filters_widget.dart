@@ -10,25 +10,20 @@ class VideoFiltersWidget extends StatefulWidget {
 }
 
 class _VideoFiltersWidgetState extends State<VideoFiltersWidget> {
-  final List<String> _filters = [
-    'none',
-    'blackAndWhite',
-    'vintage',
-    'cool',
-    'warm',
-    'dramatic',
+  String _selectedFilter = 'None';
+  
+  final List<_FilterOption> _filters = [
+    _FilterOption(name: 'None', color: null, icon: Icons.block),
+    _FilterOption(name: 'Vintage', color: Color(0x40F4A460), icon: Icons.photo_filter),
+    _FilterOption(name: 'B&W', color: Color(0xFF000000), icon: Icons.filter_b_and_w),
+    _FilterOption(name: 'Warm', color: Color(0x20FF8C00), icon: Icons.wb_sunny),
+    _FilterOption(name: 'Cool', color: Color(0x20008CFF), icon: Icons.ac_unit),
+    _FilterOption(name: 'Dramatic', color: Color(0x40800080), icon: Icons.theaters),
+    _FilterOption(name: 'Vivid', color: Color(0x20FF0080), icon: Icons.palette),
+    _FilterOption(name: 'Retro', color: Color(0x30FF69B4), icon: Icons.camera_alt),
+    _FilterOption(name: 'Film', color: Color(0x25000000), icon: Icons.movie),
   ];
 
-  final List<String> _filterNames = [
-    'None',
-    'B&W',
-    'Vintage',
-    'Cool',
-    'Warm',
-    'Dramatic',
-  ];
-
-  int _selectedFilterIndex = 0;
   double _brightness = 0.0;
   double _contrast = 1.0;
   double _saturation = 1.0;
@@ -40,8 +35,8 @@ class _VideoFiltersWidgetState extends State<VideoFiltersWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Filters & Adjustments',
+          Text(
+            'Video Filters',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -50,58 +45,121 @@ class _VideoFiltersWidgetState extends State<VideoFiltersWidget> {
           ),
           const SizedBox(height: 16),
           
-          // Filter presets
-          SizedBox(
-            height: 80,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
+          // Filter grid - TikTok style
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1,
+              ),
               itemCount: _filters.length,
               itemBuilder: (context, index) {
-                final isSelected = index == _selectedFilterIndex;
+                final filter = _filters[index];
+                final isSelected = _selectedFilter == filter.name;
+                
                 return GestureDetector(
                   onTap: () {
                     setState(() {
-                      _selectedFilterIndex = index;
+                      _selectedFilter = filter.name;
                     });
-                    // Apply filter to video
-                    print('Applying filter: ${_filterNames[index]} to ${widget.videoPath}');
+                    
+                    // Notify parent about filter change
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${filter.name} filter applied'),
+                        backgroundColor: Color(0xFF00CED1),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
                   },
-                  child: Container(
-                    width: 70,
-                    margin: const EdgeInsets.only(right: 8),
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 200),
                     decoration: BoxDecoration(
-                      gradient: isSelected
-                          ? const LinearGradient(
-                              colors: [Color(0xFF00CED1), Color(0xFF1E90FF)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? Color(0xFF00CED1) : Colors.grey[700]!,
+                        width: isSelected ? 3 : 1,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: Color(0xFF00CED1).withOpacity(0.3),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ]
                           : null,
-                      color: isSelected ? null : Colors.grey[800],
-                      borderRadius: BorderRadius.circular(8),
-                      border: isSelected
-                          ? null
-                          : Border.all(color: Colors.grey[700]!),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.filter_vintage,
-                          color: isSelected ? Colors.white : Colors.grey[400],
-                          size: 24,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _filterNames[index],
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.grey[400],
-                            fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(11),
+                      child: Stack(
+                        children: [
+                          // Background
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.grey[800]!,
+                                  Colors.grey[900]!,
+                                ],
+                              ),
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                          
+                          // Filter preview
+                          if (filter.color != null)
+                            Container(
+                              color: filter.color,
+                            ),
+                          
+                          // Content
+                          Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  filter.icon,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  filter.name,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          // Selected indicator
+                          if (isSelected)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF00CED1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -111,65 +169,87 @@ class _VideoFiltersWidgetState extends State<VideoFiltersWidget> {
           
           const SizedBox(height: 20),
           
-          // Manual adjustments
-          _buildSlider('Brightness', _brightness, -1.0, 1.0, (value) {
-            setState(() {
-              _brightness = value;
-            });
-            // Apply brightness adjustment
-            _applyColorAdjustments();
-          }),
-          
-          _buildSlider('Contrast', _contrast, 0.0, 2.0, (value) {
-            setState(() {
-              _contrast = value;
-            });
-            // Apply contrast adjustment
-            _applyColorAdjustments();
-          }),
-          
-          _buildSlider('Saturation', _saturation, 0.0, 2.0, (value) {
-            setState(() {
-              _saturation = value;
-            });
-            // Apply saturation adjustment
-            _applyColorAdjustments();
-          }),
+          // Manual adjustments section
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[850],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                _buildSlider('Brightness', _brightness, -1.0, 1.0, (value) {
+                  setState(() {
+                    _brightness = value;
+                  });
+                }),
+                _buildSlider('Contrast', _contrast, 0.0, 2.0, (value) {
+                  setState(() {
+                    _contrast = value;
+                  });
+                }),
+                _buildSlider('Saturation', _saturation, 0.0, 2.0, (value) {
+                  setState(() {
+                    _saturation = value;
+                  });
+                }),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildSlider(String label, double value, double min, double max, Function(double) onChanged) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
-        ),
-        const SizedBox(height: 4),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            activeTrackColor: const Color(0xFF00CED1),
-            inactiveTrackColor: Colors.grey[700],
-            thumbColor: const Color(0xFF00CED1),
-            overlayColor: const Color(0xFF00CED1).withOpacity(0.3),
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
-          child: Slider(
-            value: value,
-            min: min,
-            max: max,
-            onChanged: onChanged,
+        ),
+        Expanded(
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: const Color(0xFF00CED1),
+              inactiveTrackColor: Colors.grey[700],
+              thumbColor: const Color(0xFF00CED1),
+              overlayColor: const Color(0xFF00CED1).withOpacity(0.3),
+              trackHeight: 2,
+              thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+            ),
+            child: Slider(
+              value: value,
+              min: min,
+              max: max,
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 40,
+          child: Text(
+            value.toStringAsFixed(1),
+            style: TextStyle(color: Colors.white54, fontSize: 12),
+            textAlign: TextAlign.right,
           ),
         ),
       ],
     );
   }
+}
 
-  void _applyColorAdjustments() {
-    // Apply color adjustments to the video
-    print('Applying adjustments - Brightness: $_brightness, Contrast: $_contrast, Saturation: $_saturation');
-    print('Video path: ${widget.videoPath}');
-  }
+class _FilterOption {
+  final String name;
+  final Color? color;
+  final IconData icon;
+
+  const _FilterOption({
+    required this.name,
+    this.color,
+    required this.icon,
+  });
 }
