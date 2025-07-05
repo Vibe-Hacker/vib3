@@ -1,0 +1,64 @@
+name: Test Simple Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+        
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+        
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.10.6'
+        
+    - name: Replace main.dart with simple version
+      run: |
+        cd vib3_flutter
+        cp lib/main_simple.dart lib/main.dart
+        
+    - name: Create minimal pubspec.yaml
+      run: |
+        cd vib3_flutter
+        cat > pubspec.yaml << EOF
+        name: vib3_flutter
+        description: VIB3 Simple Test
+        version: 1.0.0+1
+        
+        environment:
+          sdk: ^3.0.0
+        
+        dependencies:
+          flutter:
+            sdk: flutter
+          cupertino_icons: ^1.0.2
+        
+        flutter:
+          uses-material-design: true
+        EOF
+        
+    - name: Get dependencies
+      run: |
+        cd vib3_flutter
+        flutter pub get
+        
+    - name: Build APK
+      run: |
+        cd vib3_flutter
+        flutter build apk --debug
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: simple-test-apk
+        path: vib3_flutter/build/app/outputs/flutter-apk/app-debug.apk
