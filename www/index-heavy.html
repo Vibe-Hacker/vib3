@@ -561,10 +561,54 @@
         };
         
         console.log('✅ INLINE FIXES READY - Variables defined');
+        
+        // INLINE AUTH HANDLERS - Direct in HTML to avoid any loading issues
+        window.handleLogin = async function() {
+            console.log('🔐 INLINE handleLogin called');
+            const email = document.getElementById('loginEmail')?.value.trim();
+            const password = document.getElementById('loginPassword')?.value.trim();
+            
+            if (!email || !password) {
+                const errorDiv = document.getElementById('authError');
+                if (errorDiv) {
+                    errorDiv.textContent = 'Please enter email and password';
+                    errorDiv.style.display = 'block';
+                }
+                return;
+            }
+            
+            try {
+                const result = await window.signInWithEmailAndPassword(window.auth, email, password);
+                console.log('✅ Login successful');
+                document.getElementById('authContainer').style.display = 'none';
+                if (window.loadFeedVideos) window.loadFeedVideos('foryou');
+            } catch (error) {
+                console.error('Login error:', error);
+                const errorDiv = document.getElementById('authError');
+                if (errorDiv) {
+                    errorDiv.textContent = error.message || 'Login failed';
+                    errorDiv.style.display = 'block';
+                }
+            }
+        };
+        
+        window.handleSignup = function() {
+            console.log('handleSignup called');
+        };
+        
+        window.showLogin = function() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('signupForm').style.display = 'none';
+        };
+        
+        window.showSignup = function() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+        };
     </script>
     <!-- Core initialization scripts -->
     <script src="js/mongodb-adapter.js?v=20250105001"></script>
-    <script src="js/auth-simple.js?v=20250105002"></script>
+    <script src="js/auth-handlers.js?v=20250105001"></script>
     <script src="js/api-fix.js?v=20250105001"></script>
     
     <!-- Feature scripts -->
