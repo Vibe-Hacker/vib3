@@ -14,6 +14,18 @@ import '../widgets/simple_video_preview.dart';
 import '../services/video_thumbnail_service.dart';
 import 'upload_screen.dart';
 
+// Multi-segment trim support
+class TrimSegment {
+  final Duration start;
+  final Duration end;
+  final String id;
+  
+  TrimSegment({required this.start, required this.end, String? id}) 
+    : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
+  
+  Duration get duration => end - start;
+}
+
 class VideoEditingScreen extends StatefulWidget {
   final String videoPath;
 
@@ -33,7 +45,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   late TabController _tabController;
   bool _hasError = false;
   String _errorMessage = '';
-  File? _thumbnailFile;
+  // Removed static thumbnail - using frame-based preview instead
   List<Uint8List> _frameData = [];
   bool _useThumbnailMode = false;
   bool _isGeneratingFrames = false;
@@ -42,6 +54,16 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   Duration _startTrim = Duration.zero;
   Duration _endTrim = Duration.zero;
   Duration _videoDuration = Duration.zero;
+  Duration _currentPreviewPosition = Duration.zero;
+  
+  // Multi-segment trimming like TikTok
+  List<TrimSegment> _trimSegments = [];
+  TrimSegment? _currentSegment;
+  bool _isAddingSegment = false;
+  int _currentFrameIndex = 0;
+  
+  // Allow manual duration override for long videos
+  bool _manualDurationMode = false;
 
   final List<String> _tabLabels = ['Trim', 'Filters', 'Audio', 'Text', 'Speed'];
   final List<IconData> _tabIcons = [
@@ -120,14 +142,10 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   }
 
   Future<void> _initializeThumbnailMode(File videoFile) async {
-    print('📸 Initializing thumbnail preview mode');
+    print('📸 Initializing frame-based preview mode');
     
     try {
-      // Generate thumbnail and frame previews
-      _thumbnailFile = await VideoThumbnailService.generateThumbnail(videoFile.path);
-      await _generateFramePreviews(videoFile);
-      
-      // Get actual video duration
+      // Get video duration first
       final actualDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
       
       setState(() {
@@ -137,8 +155,13 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
         _videoDuration = actualDuration;
         _endTrim = actualDuration;
       });
+      
+      // Generate frame previews for timeline
+      await _generateFramePreviews(videoFile);
+      
+      print('✅ Frame preview mode ready');
     } catch (e) {
-      print('❌ Thumbnail mode failed: $e');
+      print('❌ Preview mode failed: $e');
       _showSimpleEditor();
     }
   }
@@ -153,19 +176,23 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
     try {
       print('🎞️ Generating TikTok-style frame previews...');
       
-      // Generate 10 frames across the video duration
-      const frameCount = 10;
+      // Generate 20 frames for smoother preview like TikTok
+      const frameCount = 20;
       _frameData.clear();
+      
+      print('📊 Video duration: ${_videoDuration.inSeconds}s');
+      print('📊 Generating frames at ${_videoDuration.inMilliseconds ~/ frameCount}ms intervals');
       
       for (int i = 0; i < frameCount; i++) {
         final position = i * (_videoDuration.inMilliseconds ~/ frameCount);
+        print('🎞️ Extracting frame ${i + 1}/$frameCount at ${position / 1000}s');
         
         try {
           final uint8list = await vt.VideoThumbnail.thumbnailData(
             video: videoFile.path,
             imageFormat: vt.ImageFormat.JPEG,
-            maxHeight: 60,
-            quality: 50,
+            maxHeight: 360,  // Higher res for preview
+            quality: 75,      // Better quality
             timeMs: position,
           );
           
@@ -408,7 +435,22 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       // Simulate export progress with editing effects applied
       print('🎬 Exporting video with edits...');
       print('📁 Original file: ${widget.videoPath}');
-      print('⏱️ Trim: ${_startTrim.inSeconds}s to ${_endTrim.inSeconds}s');
+      
+      // Prepare segments to export
+      final segmentsToExport = [..._trimSegments];
+      if (_currentSegment != null && !_trimSegments.contains(_currentSegment)) {
+        segmentsToExport.add(_currentSegment!);
+      } else if (segmentsToExport.isEmpty) {
+        // If no segments, use current trim selection
+        segmentsToExport.add(TrimSegment(start: _startTrim, end: _endTrim));
+      }
+      
+      print('✂️ Exporting ${segmentsToExport.length} segments:');
+      for (var i = 0; i < segmentsToExport.length; i++) {
+        final segment = segmentsToExport[i];
+        print('  Clip ${i + 1}: ${segment.start.inSeconds}s - ${segment.end.inSeconds}s (${segment.duration.inSeconds}s)');
+      }
+      
       if (_useThumbnailMode) {
         print('🖼️ Using thumbnail mode - exporting with applied effects');
       }
@@ -492,30 +534,70 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Trim Video',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+          // Header with Add Segment button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Trim Video',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Row(
+                children: [
+                  if (_trimSegments.isNotEmpty)
+                    Text(
+                      '${_trimSegments.length} clips',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: _addNewSegment,
+                    icon: Icon(Icons.add, size: 16, color: Color(0xFF00CED1)),
+                    label: Text(
+                      _trimSegments.isEmpty ? 'Add Clip' : 'Add Another',
+                      style: TextStyle(color: Color(0xFF00CED1), fontSize: 12),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           
           // Simple trim slider
           if (_isInitialized) ...[
-            Container(
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.grey[800],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Stack(
-                children: [
-                  // TikTok-style frame preview timeline
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: _frameData.isNotEmpty
+            // Interactive timeline with drag support
+            GestureDetector(
+              onHorizontalDragStart: (details) {
+                print('👆 Drag started at: ${details.localPosition}');
+                _updatePreviewPosition(details.localPosition, context);
+              },
+              onHorizontalDragUpdate: (details) {
+                _updatePreviewPosition(details.localPosition, context);
+              },
+              onTapDown: (details) {
+                print('👇 Tap detected at: ${details.localPosition}');
+                _updatePreviewPosition(details.localPosition, context);
+              },
+              child: Container(
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.grey[800],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Stack(
+                  children: [
+                    // TikTok-style frame preview timeline
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: _frameData.isNotEmpty
                         ? Row(
                             children: List.generate(
                               _frameData.length,
@@ -564,16 +646,41 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                           ),
                   ),
                   
-                  // Trim selection overlay
+                  // Multi-segment trim overlay
                   Positioned.fill(
                     child: CustomPaint(
-                      painter: _TrimOverlayPainter(
+                      painter: _MultiSegmentTrimPainter(
+                        segments: _trimSegments,
+                        currentSegment: _currentSegment,
                         startTrim: _startTrim,
                         endTrim: _endTrim,
                         totalDuration: _videoDuration,
+                        previewPosition: _currentPreviewPosition,
                       ),
                     ),
                   ),
+                  
+                  // Preview position indicator (yellow line)
+                  if (_videoDuration.inMilliseconds > 0)
+                    Positioned(
+                      left: (_currentPreviewPosition.inMilliseconds / _videoDuration.inMilliseconds) * 
+                             (MediaQuery.of(context).size.width - 24),
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 3,
+                        decoration: BoxDecoration(
+                          color: Colors.yellow,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.yellow.withOpacity(0.5),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   
                   // Trim handles
                   Positioned(
@@ -605,9 +712,116 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                   ),
                 ],
               ),
+              ),
             ),
             
             const SizedBox(height: 12),
+            
+            // Duration info and extend button
+            if (_videoDuration.inSeconds > 20)
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                margin: EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[800],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Duration: ${_formatDuration(_videoDuration)}',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    if (_videoDuration.inSeconds < 180) // Show extend button for videos < 3 min
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            // Double the duration to allow access to full video
+                            _videoDuration = Duration(seconds: _videoDuration.inSeconds * 2);
+                            _endTrim = _videoDuration;
+                            _manualDurationMode = true;
+                          });
+                          // Regenerate frames for new duration
+                          _generateFramePreviews(File(widget.videoPath));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Extended timeline to ${_formatDuration(_videoDuration)}'),
+                              backgroundColor: Color(0xFF00CED1),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'Extend Timeline',
+                          style: TextStyle(color: Color(0xFF00CED1), fontSize: 12),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            
+            // Saved segments list
+            if (_trimSegments.isNotEmpty) ...[
+              Container(
+                height: 36,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _trimSegments.length,
+                  itemBuilder: (context, index) {
+                    final segment = _trimSegments[index];
+                    final isSelected = _currentSegment?.id == segment.id;
+                    return GestureDetector(
+                      onTap: () => _selectSegment(segment),
+                      child: Container(
+                        margin: EdgeInsets.only(right: 8),
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isSelected ? Color(0xFF00CED1) : Colors.grey[800],
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isSelected ? Color(0xFF00CED1) : Colors.grey[600]!,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Clip ${index + 1}',
+                              style: TextStyle(
+                                color: isSelected ? Colors.black : Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              '${segment.duration.inSeconds}s',
+                              style: TextStyle(
+                                color: isSelected ? Colors.black54 : Colors.white54,
+                                fontSize: 10,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => _removeSegment(segment),
+                              child: Icon(
+                                Icons.close,
+                                size: 14,
+                                color: isSelected ? Colors.black54 : Colors.white54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             
             // Start time slider
             Row(
@@ -737,8 +951,97 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
     _tabController.dispose();
     super.dispose();
   }
+  
+  // Multi-segment trimming methods
+  void _addNewSegment() {
+    if (_currentSegment != null) {
+      // Save current segment first
+      setState(() {
+        _trimSegments.add(_currentSegment!);
+        _currentSegment = null;
+        _startTrim = _endTrim;
+        _endTrim = Duration(
+          milliseconds: (_endTrim.inMilliseconds + (_videoDuration.inMilliseconds ~/ 4))
+              .clamp(0, _videoDuration.inMilliseconds)
+        );
+      });
+    } else {
+      // Create new segment
+      setState(() {
+        _currentSegment = TrimSegment(start: _startTrim, end: _endTrim);
+      });
+    }
+  }
+  
+  void _selectSegment(TrimSegment segment) {
+    setState(() {
+      _currentSegment = segment;
+      _startTrim = segment.start;
+      _endTrim = segment.end;
+      _currentPreviewPosition = segment.start;
+    });
+    _controller?.seekTo(segment.start);
+  }
+  
+  void _removeSegment(TrimSegment segment) {
+    setState(() {
+      _trimSegments.removeWhere((s) => s.id == segment.id);
+      if (_currentSegment?.id == segment.id) {
+        _currentSegment = null;
+      }
+    });
+  }
+  
+  void _updatePreviewPosition(Offset localPosition, BuildContext context) {
+    print('🎯 Drag position: ${localPosition.dx}');
+    
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) {
+      print('❌ RenderBox is null');
+      return;
+    }
+    
+    final width = box.size.width;
+    final percentage = localPosition.dx.clamp(0, width) / width;
+    final newPosition = Duration(
+      milliseconds: (_videoDuration.inMilliseconds * percentage).toInt()
+    );
+    
+    print('📍 Position: ${percentage * 100}% = ${newPosition.inSeconds}s');
+    
+    setState(() {
+      _currentPreviewPosition = newPosition;
+    });
+    
+    // Seek video to this position
+    if (_controller != null && _controller!.value.isInitialized) {
+      print('🎬 Seeking video to ${newPosition.inSeconds}s');
+      _controller!.seekTo(newPosition);
+      // Force a frame update for better responsiveness
+      if (!_controller!.value.isPlaying) {
+        _controller!.play();
+        Future.delayed(Duration(milliseconds: 50), () {
+          _controller!.pause();
+        });
+      }
+    }
+    
+    // For thumbnail mode, we need to update the displayed thumbnail
+    if (_useThumbnailMode && _frameData.isNotEmpty) {
+      // Calculate which frame to show based on position
+      final frameIndex = ((percentage * (_frameData.length - 1)).round()).clamp(0, _frameData.length - 1);
+      print('🖼️ Updating to frame $frameIndex/${_frameData.length}');
+      setState(() {
+        _currentFrameIndex = frameIndex;
+      });
+    } else {
+      print('⚠️ Thumbnail mode: $_useThumbnailMode, Frames: ${_frameData.length}');
+    }
+  }
 
   Widget _buildLocalVideoThumbnail() {
+    print('🖼️ Building thumbnail preview - Frames: ${_frameData.length}, CurrentFrame: $_currentFrameIndex');
+    
     // Priority 1: Show actual video if controller works
     if (_controller != null && _controller!.value.isInitialized) {
       return GestureDetector(
@@ -806,14 +1109,14 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       );
     }
     
-    // Priority 2: Show real video thumbnail if available
-    if (_thumbnailFile != null) {
+    // Priority 2: Show frame preview in thumbnail mode
+    if (_useThumbnailMode && _frameData.isNotEmpty) {
       return GestureDetector(
         onTap: () {
-          print('📸 Real thumbnail tapped');
+          print('📸 Frame preview tapped');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('👀 This is your video! Use the editing tools below'),
+              content: Text('👀 Drag the timeline below to preview different parts'),
               backgroundColor: Color(0xFF00CED1),
               duration: Duration(seconds: 2),
             ),
@@ -821,13 +1124,13 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
         },
         child: Stack(
           children: [
-            // Real video thumbnail
+            // Show current frame based on timeline position
             Container(
               width: double.infinity,
               height: double.infinity,
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: FileImage(_thumbnailFile!),
+                  image: MemoryImage(_frameData[_currentFrameIndex]),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -864,17 +1167,39 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
               ),
             ),
             
+            // Current position indicator
+            Positioned(
+              bottom: 8,
+              left: 8,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${_formatDuration(_currentPreviewPosition)} / ${_formatDuration(_videoDuration)}',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            
+            // Frame indicator
             Positioned(
               bottom: 8,
               right: 8,
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
+                  color: Color(0xFF00CED1).withOpacity(0.8),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  _formatDuration(_videoDuration),
+                  'Frame ${_currentFrameIndex + 1}/${_frameData.length}',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 11,
@@ -1002,13 +1327,35 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
           if (!_isExporting)
             TextButton(
               onPressed: _exportVideo,
-              child: const Text(
-                'Export',
-                style: TextStyle(
-                  color: Color(0xFF00CED1),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+              child: Row(
+                children: [
+                  if (_trimSegments.isNotEmpty || _currentSegment != null) ...[
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFFF0080),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${_trimSegments.length + (_currentSegment != null ? 1 : 0)}',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 6),
+                  ],
+                  const Text(
+                    'Export',
+                    style: TextStyle(
+                      color: Color(0xFF00CED1),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -1073,15 +1420,15 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: _controller != null && _controller!.value.isInitialized
+                    child: _useThumbnailMode
+                        ? _buildLocalVideoThumbnail()
+                        : _controller != null && _controller!.value.isInitialized
                         ? Center(
                             child: AspectRatio(
                               aspectRatio: _controller!.value.aspectRatio,
                               child: VideoPlayer(_controller!),
                             ),
                           )
-                        : _useThumbnailMode
-                        ? _buildLocalVideoThumbnail()
                         : Container(
                             width: double.infinity,
                             height: double.infinity,
@@ -1250,6 +1597,78 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
               ),
             ),
     );
+  }
+}
+
+// Multi-segment trim painter
+class _MultiSegmentTrimPainter extends CustomPainter {
+  final List<TrimSegment> segments;
+  final TrimSegment? currentSegment;
+  final Duration startTrim;
+  final Duration endTrim;
+  final Duration totalDuration;
+  final Duration previewPosition;
+  
+  _MultiSegmentTrimPainter({
+    required this.segments,
+    this.currentSegment,
+    required this.startTrim,
+    required this.endTrim,
+    required this.totalDuration,
+    required this.previewPosition,
+  });
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (totalDuration.inMilliseconds == 0) return;
+    
+    final paint = Paint();
+    
+    // Draw saved segments
+    for (final segment in segments) {
+      final startX = (segment.start.inMilliseconds / totalDuration.inMilliseconds) * size.width;
+      final endX = (segment.end.inMilliseconds / totalDuration.inMilliseconds) * size.width;
+      
+      // Segment background
+      paint.color = Color(0xFF00CED1).withOpacity(0.3);
+      canvas.drawRect(
+        Rect.fromLTRB(startX, 0, endX, size.height),
+        paint,
+      );
+      
+      // Segment borders
+      paint.color = Color(0xFF00CED1);
+      paint.strokeWidth = 2;
+      canvas.drawLine(Offset(startX, 0), Offset(startX, size.height), paint);
+      canvas.drawLine(Offset(endX, 0), Offset(endX, size.height), paint);
+    }
+    
+    // Draw current segment being edited
+    if (currentSegment == null && totalDuration.inMilliseconds > 0) {
+      final startX = (startTrim.inMilliseconds / totalDuration.inMilliseconds) * size.width;
+      final endX = (endTrim.inMilliseconds / totalDuration.inMilliseconds) * size.width;
+      
+      // Dimmed areas outside trim
+      paint.color = Colors.black.withOpacity(0.6);
+      canvas.drawRect(Rect.fromLTRB(0, 0, startX, size.height), paint);
+      canvas.drawRect(Rect.fromLTRB(endX, 0, size.width, size.height), paint);
+      
+      // Highlight current trim area
+      paint.color = Color(0xFFFF0080).withOpacity(0.2);
+      canvas.drawRect(
+        Rect.fromLTRB(startX, 0, endX, size.height),
+        paint,
+      );
+    }
+  }
+  
+  @override
+  bool shouldRepaint(covariant _MultiSegmentTrimPainter oldDelegate) {
+    return segments != oldDelegate.segments ||
+           currentSegment != oldDelegate.currentSegment ||
+           startTrim != oldDelegate.startTrim ||
+           endTrim != oldDelegate.endTrim ||
+           previewPosition != oldDelegate.previewPosition;
   }
 }
 

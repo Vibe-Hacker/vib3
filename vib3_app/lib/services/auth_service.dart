@@ -6,6 +6,15 @@ class AuthService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     print('🔐 Login attempt for: $email');
     
+    // Check network connectivity first
+    bool hasNetwork = await _checkNetworkConnectivity();
+    if (!hasNetwork) {
+      return {
+        'success': false,
+        'message': 'No internet connection.\n\nPlease check:\n• WiFi is connected\n• Mobile data is enabled\n• Airplane mode is off',
+      };
+    }
+    
     // Try each backend URL until one works
     for (int i = 0; i < AppConfig.backendUrls.length; i++) {
       final baseUrl = AppConfig.backendUrls[i];
@@ -47,19 +56,33 @@ class AuthService {
       } catch (e) {
         print('💥 Backend ${i + 1} failed: $e');
         
+        // Log specific network errors
+        if (e.toString().contains('Network is unreachable')) {
+          print('🚫 Network unreachable - device may have connectivity issues');
+        } else if (e.toString().contains('Connection failed')) {
+          print('🚫 Connection failed - server may be down or blocked');
+        }
+        
         // If this was the last backend, return error
         if (i == AppConfig.backendUrls.length - 1) {
           if (e.toString().contains('Failed host lookup') || 
               e.toString().contains('No address associated with hostname')) {
             return {
               'success': false,
-              'message': 'Network connection failed.\nAll servers unreachable.\n\nTry switching to mobile data or a different WiFi network.',
+              'message': 'DNS resolution failed.\n\nTry:\n• Switching WiFi networks\n• Using mobile data\n• Restarting your device',
+            };
+          }
+          
+          if (e.toString().contains('Network is unreachable')) {
+            return {
+              'success': false,
+              'message': 'Network unreachable.\n\nPlease check:\n• Internet connection\n• VPN settings\n• Firewall settings',
             };
           }
           
           return {
             'success': false,
-            'message': 'All servers unavailable. Please try again later.',
+            'message': 'All servers unavailable.\n\nError: ${e.toString().split(':').first}',
           };
         }
         
@@ -73,9 +96,43 @@ class AuthService {
       'message': 'Network error: Unable to connect to any server',
     };
   }
+  
+  Future<bool> _checkNetworkConnectivity() async {
+    try {
+      // Try to resolve a well-known domain
+      final result = await http.get(
+        Uri.parse('https://www.google.com'),
+      ).timeout(const Duration(seconds: 5));
+      
+      return result.statusCode == 200;
+    } catch (e) {
+      print('🚫 Network connectivity check failed: $e');
+      
+      // Try HTTP as fallback
+      try {
+        final result = await http.get(
+          Uri.parse('http://www.google.com'),
+        ).timeout(const Duration(seconds: 5));
+        
+        return result.statusCode == 200 || result.statusCode == 301;
+      } catch (e2) {
+        print('🚫 HTTP fallback also failed: $e2');
+        return false;
+      }
+    }
+  }
 
   Future<Map<String, dynamic>> signup(String username, String email, String password) async {
     print('📝 Signup attempt for: $username ($email)');
+    
+    // Check network connectivity first
+    bool hasNetwork = await _checkNetworkConnectivity();
+    if (!hasNetwork) {
+      return {
+        'success': false,
+        'message': 'No internet connection.\n\nPlease check:\n• WiFi is connected\n• Mobile data is enabled\n• Airplane mode is off',
+      };
+    }
     
     // Try each backend URL until one works
     for (int i = 0; i < AppConfig.backendUrls.length; i++) {

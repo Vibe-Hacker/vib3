@@ -1069,13 +1069,15 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
         // Remove the empty videos check - let the PageView handle everything
 
         // Show actual video content with unique card-style layout
-        return PageView.builder(
-          controller: _pageController,
-          scrollDirection: Axis.vertical,
-          onPageChanged: _onPageChanged,
-          itemCount: videoProvider.videos.length + (videoProvider.hasMoreVideos ? 1 : 0),
-          allowImplicitScrolling: true,
-          itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 60), // Space for bottom navigation
+          child: PageView.builder(
+            controller: _pageController,
+            scrollDirection: Axis.vertical,
+            onPageChanged: _onPageChanged,
+            itemCount: videoProvider.videos.length + (videoProvider.hasMoreVideos ? 1 : 0),
+            allowImplicitScrolling: true,
+            itemBuilder: (context, index) {
             // Show loading indicator if we're at the end and loading more
             if (index >= videoProvider.videos.length) {
               return Container(
@@ -1289,6 +1291,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               ),
             );
           },
+          ),
         );
       },
     );

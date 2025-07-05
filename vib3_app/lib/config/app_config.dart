@@ -2,8 +2,11 @@ class AppConfig {
   // Backend URLs (multiple for reliability)
   static const List<String> backendUrls = [
     'https://vib3-production.up.railway.app',
-    'https://66.33.22.132',        // Railway IP address (Samsung DNS fallback)
-    'https://192.168.1.100:3000',  // Local fallback
+    'http://66.33.22.132',         // Railway IP - HTTP fallback for Samsung
+    'https://66.33.22.132',        // Railway IP - HTTPS 
+    'http://192.168.1.100:3000',   // Local HTTP fallback
+    'https://192.168.1.100:3000',  // Local HTTPS fallback
+    'http://10.0.2.2:3000',        // Android emulator localhost
     'https://vib3.onrender.com',   // Alternative hosting
   ];
   
