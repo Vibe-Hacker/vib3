@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIB3 Studio - Live Streaming</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: linear-gradient(90deg, #FF0080 0%, #00CED1 100%);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .main-container {
+            flex: 1;
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .video-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .video-container {
+            background: #111;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 9/16;
+            max-height: 70vh;
+        }
+        
+        #liveVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .live-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: #ff0000;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .live-badge.active {
+            display: block;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .controls {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group h3 {
+            margin-bottom: 10px;
+            color: #00CED1;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: #FF0080;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #ff1a8c;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #00CED1;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #00e5e8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #e74c3c;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .stats {
+            margin-bottom: 30px;
+        }
+        
+        .stat-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #222;
+            border-radius: 8px;
+        }
+        
+        .stat-label {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00CED1;
+        }
+        
+        .chat-container {
+            flex: 1;
+            background: #222;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #FF0080;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            background: #333;
+            border: none;
+            border-radius: 6px;
+            color: white;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            background: #222;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        #status {
+            font-size: 18px;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .toast.success {
+            background: #28a745;
+        }
+        
+        .toast.error {
+            background: #dc3545;
+        }
+        
+        .toast.info {
+            background: #17a2b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">VIB3 Studio - Live</div>
+        <a href="index-heavy.html" style="color: white; text-decoration: none;">Back to App</a>
+    </div>
+    
+    <div class="main-container">
+        <div class="video-section">
+            <div class="video-container">
+                <video id="liveVideo" autoplay muted playsinline></video>
+                <div class="live-badge" id="liveBadge">● LIVE</div>
+            </div>
+            
+            <div class="controls">
+                <div class="status">
+                    <div id="status">Ready to stream</div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Stream Controls</h3>
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="setupCamera()">
+                            📹 Setup Camera
+                        </button>
+                        <button class="btn btn-secondary" onclick="startStreaming()">
+                            🔴 Go Live
+                        </button>
+                        <button class="btn btn-danger" onclick="stopStreaming()">
+                            ⏹️ End Stream
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Stream Settings</h3>
+                    <div class="button-group">
+                        <button class="btn btn-secondary" onclick="toggleAudio()">
+                            🔊 Toggle Audio
+                        </button>
+                        <button class="btn btn-secondary" onclick="switchCamera()">
+                            🔄 Switch Camera
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sidebar">
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">Viewers</div>
+                    <div class="stat-value" id="viewerCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Duration</div>
+                    <div class="stat-value" id="duration">00:00</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Status</div>
+                    <div class="stat-value" id="streamStatus">Offline</div>
+                </div>
+            </div>
+            
+            <div class="chat-container">
+                <div class="chat-header">Live Chat</div>
+                <div class="chat-messages" id="chatMessages">
+                    <div style="color: #666; padding: 20px; text-align: center;">
+                        Chat will appear here when live
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" placeholder="Type a message..." disabled>
+                    <button class="btn btn-primary" style="padding: 10px;">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // All live streaming functionality in one place
+        let stream = null;
+        let isLive = false;
+        let startTime = null;
+        let durationInterval = null;
+        
+        function showToast(message, type = 'info') {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        function updateStatus(text, color = '#fff') {
+            const status = document.getElementById('status');
+            status.textContent = text;
+            status.style.color = color;
+        }
+        
+        async function setupCamera() {
+            try {
+                updateStatus('Requesting camera access...');
+                
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    },
+                    audio: true
+                });
+                
+                const video = document.getElementById('liveVideo');
+                video.srcObject = stream;
+                
+                updateStatus('Camera ready - Click "Go Live" to start', '#00CED1');
+                showToast('Camera setup successful!', 'success');
+                
+            } catch (error) {
+                console.error('Camera error:', error);
+                updateStatus('Camera access denied', '#ff4444');
+                
+                let message = 'Failed to access camera';
+                if (error.name === 'NotAllowedError') {
+                    message = 'Camera permission denied. Please allow camera access.';
+                } else if (error.name === 'NotFoundError') {
+                    message = 'No camera found on this device.';
+                }
+                
+                showToast(message, 'error');
+            }
+        }
+        
+        function startStreaming() {
+            if (!stream) {
+                showToast('Please setup camera first', 'error');
+                setupCamera();
+                return;
+            }
+            
+            isLive = true;
+            startTime = Date.now();
+            
+            // Update UI
+            document.getElementById('liveBadge').classList.add('active');
+            document.getElementById('streamStatus').textContent = 'Live';
+            document.getElementById('streamStatus').style.color = '#ff0000';
+            updateStatus('🔴 LIVE - Streaming active', '#ff0000');
+            
+            // Start duration counter
+            updateDuration();
+            durationInterval = setInterval(updateDuration, 1000);
+            
+            // Simulate viewer count
+            updateViewerCount();
+            
+            showToast('You are now LIVE!', 'success');
+        }
+        
+        function stopStreaming() {
+            if (!isLive) return;
+            
+            isLive = false;
+            
+            // Stop all tracks
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            // Update UI
+            document.getElementById('liveBadge').classList.remove('active');
+            document.getElementById('streamStatus').textContent = 'Offline';
+            document.getElementById('streamStatus').style.color = '#666';
+            document.getElementById('liveVideo').srcObject = null;
+            updateStatus('Stream ended', '#666');
+            
+            // Stop duration counter
+            if (durationInterval) {
+                clearInterval(durationInterval);
+                durationInterval = null;
+            }
+            
+            showToast('Stream ended', 'info');
+        }
+        
+        function toggleAudio() {
+            if (!stream) {
+                showToast('No active stream', 'error');
+                return;
+            }
+            
+            const audioTrack = stream.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = !audioTrack.enabled;
+                showToast(audioTrack.enabled ? 'Audio unmuted' : 'Audio muted', 'info');
+            }
+        }
+        
+        function switchCamera() {
+            showToast('Camera switching coming soon!', 'info');
+        }
+        
+        function updateDuration() {
+            if (!startTime) return;
+            
+            const elapsed = Date.now() - startTime;
+            const seconds = Math.floor(elapsed / 1000) % 60;
+            const minutes = Math.floor(elapsed / 60000);
+            
+            document.getElementById('duration').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function updateViewerCount() {
+            // Simulate viewer count
+            const baseViewers = Math.floor(Math.random() * 50) + 10;
+            document.getElementById('viewerCount').textContent = baseViewers;
+            
+            // Random updates while live
+            if (isLive) {
+                setTimeout(() => {
+                    const change = Math.floor(Math.random() * 10) - 5;
+                    const current = parseInt(document.getElementById('viewerCount').textContent);
+                    document.getElementById('viewerCount').textContent = Math.max(1, current + change);
+                    updateViewerCount();
+                }, Math.random() * 5000 + 2000);
+            }
+        }
+        
+        // Auto-setup camera on load
+        window.addEventListener('load', () => {
+            console.log('✅ Live streaming page loaded');
+            // Don't auto-setup to avoid permission spam
+            updateStatus('Click "Setup Camera" to begin');
+        });
+    </script>
+</body>
+</html>
