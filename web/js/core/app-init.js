@@ -55,9 +55,9 @@ function setupGlobalAuthFunctions() {
                 
                 // Show main content
                 const sidebar = document.getElementById('sidebar');
-                const mainContent = document.getElementById('mainContent');
+                const mainApp = document.getElementById('mainApp');
                 if (sidebar) sidebar.style.display = 'block';
-                if (mainContent) mainContent.style.display = 'block';
+                if (mainApp) mainApp.style.display = 'block';
                 
                 // Load user profile
                 if (window.loadUserProfile) {
@@ -120,6 +120,27 @@ function setupGlobalAuthFunctions() {
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('signupForm').style.display = 'block';
     };
+    
+    // Logout function
+    window.handleLogout = async () => {
+        try {
+            await window.logout();
+            // Show auth container and hide main app
+            const authContainer = document.getElementById('authContainer');
+            if (authContainer) authContainer.style.display = 'block';
+            
+            // Hide main content
+            const sidebar = document.getElementById('sidebar');
+            const mainApp = document.getElementById('mainApp');
+            if (sidebar) sidebar.style.display = 'none';
+            if (mainApp) mainApp.style.display = 'none';
+            
+            window.showToast('Logged out successfully', 'success');
+        } catch (error) {
+            console.error('Logout error:', error);
+            window.showToast('Logout failed', 'error');
+        }
+    };
 }
 
 // Initialize the app
@@ -143,9 +164,9 @@ export function initializeApp() {
                 if (authContainer) authContainer.style.display = 'none';
                 
                 const sidebar = document.getElementById('sidebar');
-                const mainContent = document.getElementById('mainContent');
+                const mainApp = document.getElementById('mainApp');
                 if (sidebar) sidebar.style.display = 'block';
-                if (mainContent) mainContent.style.display = 'block';
+                if (mainApp) mainApp.style.display = 'block';
                 
                 if (window.loadUserProfile) {
                     window.loadUserProfile(currentUser);
