@@ -71,16 +71,32 @@ class VideoThumbnailService {
           final frameData = await VideoThumbnail.thumbnailData(
             video: videoPath,
             imageFormat: ImageFormat.JPEG,
-            maxHeight: 60,
-            quality: 40,
+            maxHeight: 80, // Slightly higher quality for better preview
+            quality: 50,    // Better quality
             timeMs: position,
           );
           
           if (frameData != null) {
             frames.add(frameData);
+            print('🖼️ Frame ${i + 1}/$frameCount extracted at ${position}ms');
           }
         } catch (e) {
           print('⚠️ Failed to extract frame at ${position}ms: $e');
+          // Try fallback with lower quality
+          try {
+            final frameData = await VideoThumbnail.thumbnailData(
+              video: videoPath,
+              imageFormat: ImageFormat.JPEG,
+              maxHeight: 60,
+              quality: 30,
+              timeMs: position,
+            );
+            if (frameData != null) {
+              frames.add(frameData);
+            }
+          } catch (e2) {
+            // Skip this frame
+          }
         }
       }
       

@@ -345,30 +345,38 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
     print('🖼️ Strategy 7: Thumbnail preview mode');
     
     try {
-      // Generate video frames for timeline
-      _frameData = await VideoThumbnailService.generateVideoFrames(videoFile.path, 10);
-      
-      // Get actual video duration
+      // Get actual video duration first
       final actualDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
       print('⏱️ Detected video duration: ${actualDuration.inSeconds}s');
       
-      // Set thumbnail mode successfully with setState to trigger UI update
+      // Set initial state
       setState(() {
         _useThumbnailMode = true;
         _isInitialized = true;
-        _hasError = false; // Ensure no error state
+        _hasError = false;
         _videoDuration = actualDuration;
         _endTrim = actualDuration;
+        _isGeneratingFrames = true;
       });
       
-      print('✅ Thumbnail preview mode activated successfully');
+      // Generate more frames for smoother preview (30 frames for videos up to 3 minutes)
+      final frameCount = actualDuration.inSeconds <= 180 ? 30 : 60;
+      print('🎞️ Generating $frameCount frames for smooth preview...');
+      
+      _frameData = await VideoThumbnailService.generateVideoFrames(videoFile.path, frameCount);
+      
+      setState(() {
+        _isGeneratingFrames = false;
+      });
+      
+      print('✅ Thumbnail preview mode activated with ${_frameData.length} frames');
       
       // Use a slight delay to ensure state is set before showing UI feedback
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✨ Video editing ready! All tools are available below'),
+            SnackBar(
+              content: Text('✨ Video ready! ${_frameData.length} preview frames loaded'),
               backgroundColor: Color(0xFF00CED1),
               duration: Duration(seconds: 2),
             ),
@@ -378,13 +386,14 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       
     } catch (e) {
       print('❌ Error in thumbnail mode: $e');
-      // Still use thumbnail mode even if frames fail, but with setState
+      // Still use thumbnail mode even if frames fail
       setState(() {
         _useThumbnailMode = true;
         _isInitialized = true;
-        _hasError = false; // Ensure no error state
+        _hasError = false;
         _videoDuration = const Duration(seconds: 30);
         _endTrim = _videoDuration;
+        _isGeneratingFrames = false;
       });
     }
   }
@@ -743,7 +752,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                             _manualDurationMode = true;
                           });
                           // Regenerate frames for new duration
-                          _generateFramePreviews(File(widget.videoPath));
+                          _regenerateFramesForExtendedDuration();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('Extended timeline to ${_formatDuration(_videoDuration)}'),
@@ -993,49 +1002,57 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   }
   
   void _updatePreviewPosition(Offset localPosition, BuildContext context) {
-    print('🎯 Drag position: ${localPosition.dx}');
-    
     final box = context.findRenderObject() as RenderBox?;
-    if (box == null) {
-      print('❌ RenderBox is null');
-      return;
-    }
+    if (box == null) return;
     
     final width = box.size.width;
-    final percentage = localPosition.dx.clamp(0, width) / width;
+    final percentage = (localPosition.dx / width).clamp(0.0, 1.0);
     final newPosition = Duration(
       milliseconds: (_videoDuration.inMilliseconds * percentage).toInt()
     );
     
-    print('📍 Position: ${percentage * 100}% = ${newPosition.inSeconds}s');
-    
     setState(() {
       _currentPreviewPosition = newPosition;
+      
+      // Update frame index for thumbnail mode
+      if (_useThumbnailMode && _frameData.isNotEmpty) {
+        // More precise frame calculation
+        final exactFrame = percentage * (_frameData.length - 1);
+        _currentFrameIndex = exactFrame.round().clamp(0, _frameData.length - 1);
+      }
     });
     
-    // Seek video to this position
+    // Seek video if controller is available
     if (_controller != null && _controller!.value.isInitialized) {
-      print('🎬 Seeking video to ${newPosition.inSeconds}s');
       _controller!.seekTo(newPosition);
-      // Force a frame update for better responsiveness
-      if (!_controller!.value.isPlaying) {
-        _controller!.play();
-        Future.delayed(Duration(milliseconds: 50), () {
-          _controller!.pause();
-        });
-      }
     }
+  }
+  
+  // Add method to regenerate frames for extended duration
+  Future<void> _regenerateFramesForExtendedDuration() async {
+    setState(() {
+      _isGeneratingFrames = true;
+    });
     
-    // For thumbnail mode, we need to update the displayed thumbnail
-    if (_useThumbnailMode && _frameData.isNotEmpty) {
-      // Calculate which frame to show based on position
-      final frameIndex = ((percentage * (_frameData.length - 1)).round()).clamp(0, _frameData.length - 1);
-      print('🖼️ Updating to frame $frameIndex/${_frameData.length}');
+    try {
+      final frameCount = _videoDuration.inSeconds <= 180 ? 30 : 60;
+      print('🎞️ Regenerating $frameCount frames for extended duration...');
+      
+      _frameData = await VideoThumbnailService.generateVideoFrames(
+        widget.videoPath, 
+        frameCount
+      );
+      
       setState(() {
-        _currentFrameIndex = frameIndex;
+        _isGeneratingFrames = false;
       });
-    } else {
-      print('⚠️ Thumbnail mode: $_useThumbnailMode, Frames: ${_frameData.length}');
+      
+      print('✅ Regenerated ${_frameData.length} frames');
+    } catch (e) {
+      print('❌ Error regenerating frames: $e');
+      setState(() {
+        _isGeneratingFrames = false;
+      });
     }
   }
 
