@@ -8,6 +8,14 @@
     <meta http-equiv="Expires" content="0">
     <title>VIB3 - Video Social App v2025.07.04</title>
     <link rel="stylesheet" href="css/main.css">
+    <style>
+        /* Emergency visibility fixes */
+        #mainApp { display: none; }
+        #sidebar { display: none; }
+        #videoFeed { display: block !important; }
+        .app-container { display: block !important; }
+        .video-feed { display: block !important; }
+    </style>
     <script src="js/preload-fixes.js?v=20250105003"></script>
     <script src="config.js?v=20250105004"></script>
 </head>
@@ -581,7 +589,16 @@
                 const result = await window.signInWithEmailAndPassword(window.auth, email, password);
                 console.log('✅ Login successful');
                 document.getElementById('authContainer').style.display = 'none';
-                if (window.loadFeedVideos) window.loadFeedVideos('foryou');
+                // Initialize the full app
+                if (window.initializeApp) {
+                    window.initializeApp();
+                } else {
+                    // Fallback - show main elements
+                    document.getElementById('mainApp').style.display = 'block';
+                    document.getElementById('sidebar').style.display = 'block';
+                    document.getElementById('videoFeed').style.display = 'block';
+                    if (window.loadFeedVideos) window.loadFeedVideos('foryou');
+                }
             } catch (error) {
                 console.error('Login error:', error);
                 const errorDiv = document.getElementById('authError');
@@ -628,5 +645,6 @@
     <script src="js/more-options.js?v=20250105001"></script>
     <script src="js/page-handler.js?v=20250105001"></script>
     <script src="js/upload-modal.js?v=20250105001"></script>
+    <script src="js/app-initializer.js?v=20250105001"></script>
 </body>
 </html>
