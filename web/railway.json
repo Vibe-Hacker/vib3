@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "build": {
+    "builder": "nixpacks",
+    "buildCommand": "echo 'Clearing cache...' && rm -rf .cache && echo 'Cache cleared'"
+  },
+  "deploy": {
+    "restartPolicyType": "never",
+    "healthcheckPath": "/",
+    "healthcheckTimeout": 300
+  }
+}
