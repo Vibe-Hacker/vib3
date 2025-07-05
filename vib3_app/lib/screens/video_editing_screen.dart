@@ -966,6 +966,12 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
     final minutes = duration.inMinutes.remainder(60);
     final seconds = duration.inSeconds.remainder(60);
     
+    // DEBUG
+    if (duration.inSeconds == 10) {
+      print('🐛 FORMAT DEBUG: Duration(${duration.inMilliseconds}ms) = ${duration.inMinutes}m ${duration.inSeconds}s');
+      print('🐛 Should format as: ${twoDigits(minutes)}:${twoDigits(seconds)}');
+    }
+    
     if (hours > 0) {
       return "${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}";
     } else {
