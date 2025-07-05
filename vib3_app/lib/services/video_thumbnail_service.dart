@@ -14,37 +14,46 @@ class VideoThumbnailService {
         return const Duration(seconds: 30);
       }
       
-      // Use file size estimation for duration
+      // Try to detect actual duration by testing frames at different positions
       final fileSize = await videoFile.length();
+      print('📏 Video file size: ${(fileSize / 1024 / 1024).toStringAsFixed(1)}MB');
       
-      // Test if we can get a frame at 60 seconds to verify it's a longer video
-      try {
-        final testData = await VideoThumbnail.thumbnailData(
-          video: videoPath,
-          imageFormat: ImageFormat.JPEG,
-          maxHeight: 64,
-          quality: 10,
-          timeMs: 60000, // 60 seconds
-        );
-        
-        if (testData != null && testData.isNotEmpty) {
-          print('📏 Video is at least 60 seconds');
-          // Use more generous estimation for longer videos
-          final estimatedMinutes = fileSize / (2.0 * 1024 * 1024); // 2MB per minute
-          final estimatedSeconds = (estimatedMinutes * 60).round();
-          print('📏 Estimated duration: ${estimatedSeconds}s from ${fileSize / 1024 / 1024}MB file');
-          return Duration(seconds: estimatedSeconds.clamp(60, 3600)); // 60s to 1 hour
+      // Binary search for actual video duration
+      int minDuration = 0;
+      int maxDuration = 600000; // 10 minutes max for search
+      int actualDuration = 30000; // Default 30 seconds
+      
+      // Quick test at common durations
+      final testPoints = [5000, 10000, 15000, 30000, 60000, 120000, 300000];
+      
+      for (final testMs in testPoints) {
+        try {
+          final testData = await VideoThumbnail.thumbnailData(
+            video: videoPath,
+            imageFormat: ImageFormat.JPEG,
+            maxHeight: 32,
+            quality: 10,
+            timeMs: testMs,
+          );
+          
+          if (testData != null && testData.isNotEmpty) {
+            actualDuration = testMs;
+            print('✅ Frame found at ${testMs}ms (${(testMs/1000).toStringAsFixed(1)}s)');
+          } else {
+            print('❌ No frame at ${testMs}ms - video is shorter');
+            break;
+          }
+        } catch (e) {
+          // This position is beyond video duration
+          break;
         }
-      } catch (e) {
-        print('⚠️ Could not test 60s mark, using standard estimation');
       }
       
-      // Standard estimation: ~2.5MB per minute for mobile video
-      final estimatedMinutes = fileSize / (2.5 * 1024 * 1024);
-      final estimatedSeconds = (estimatedMinutes * 60).round();
+      // Add 10% buffer to ensure we don't exceed actual duration
+      final estimatedMs = (actualDuration * 1.1).round();
+      print('📏 Estimated duration: ${(estimatedMs/1000).toStringAsFixed(1)}s');
       
-      print('📏 Estimated duration: ${estimatedSeconds}s from ${fileSize / 1024 / 1024}MB file');
-      return Duration(seconds: estimatedSeconds.clamp(5, 3600)); // 5s to 1 hour
+      return Duration(milliseconds: estimatedMs);
     } catch (e) {
       print('❌ Error getting video duration: $e');
       return const Duration(seconds: 30);
