@@ -31,7 +31,8 @@ window.mongoAPI = {
                 currentUser = data.user;
                 return { success: true, user: data.user };
             } else {
-                throw new Error(data.error || 'Login failed');
+                console.error('Login failed - Status:', response.status, 'Data:', data);
+                throw new Error(data.error || data.message || `Login failed (${response.status})`);
             }
         } catch (error) {
             console.error('Login error:', error);
@@ -41,10 +42,10 @@ window.mongoAPI = {
 
     async signup(email, password, displayName) {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+            const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, displayName })
+                body: JSON.stringify({ email, password, username: displayName })
             });
             
             const data = await response.json();
@@ -55,7 +56,8 @@ window.mongoAPI = {
                 currentUser = data.user;
                 return { success: true, user: data.user };
             } else {
-                throw new Error(data.error || 'Signup failed');
+                console.error('Signup failed - Status:', response.status, 'Data:', data);
+                throw new Error(data.error || data.message || `Signup failed (${response.status})`);
             }
         } catch (error) {
             console.error('Signup error:', error);

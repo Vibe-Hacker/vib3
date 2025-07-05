@@ -2,6 +2,10 @@
 (function() {
     console.log('🎬 Video Feed Display Fix loading...');
     
+    // Prevent infinite reload loops
+    let reloadAttempts = 0;
+    const maxReloadAttempts = 3;
+    
     function fixVideoFeedDisplay() {
         console.log('🔧 Fixing video feed display...');
         
@@ -43,8 +47,9 @@
         const videoItems = document.querySelectorAll('.video-item');
         console.log(`📊 Found ${videoItems.length} video items`);
         
-        if (videoItems.length === 0) {
-            console.log('⚠️ No video items found - may need to reload feed');
+        if (videoItems.length === 0 && reloadAttempts < maxReloadAttempts) {
+            console.log(`⚠️ No video items found - reload attempt ${reloadAttempts + 1}/${maxReloadAttempts}`);
+            reloadAttempts++;
             // Trigger feed reload if no videos
             if (window.switchFeedTab) {
                 setTimeout(() => {
@@ -52,6 +57,11 @@
                     window.switchFeedTab('foryou');
                 }, 100);
             }
+        } else if (videoItems.length === 0) {
+            console.log('⚠️ No videos loaded after max attempts - stopping reload loop');
+        } else {
+            // Reset counter if videos are found
+            reloadAttempts = 0;
         }
     }
     
