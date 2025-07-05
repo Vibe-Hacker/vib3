@@ -125,13 +125,11 @@ $analysis
         ],
       ),
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.black,
-          border: Border(
-            top: BorderSide(color: Colors.grey[800]!, width: 0.5),
-          ),
-        ),
-        child: BottomNavigationBar(
+        height: 100, // Force a specific height
+        color: Colors.pink, // Bright color to see if it's rendering
+        child: SafeArea(
+          top: false,
+          child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) {
             setState(() {
@@ -151,6 +149,7 @@ $analysis
             BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Notifications'),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
           ],
+        ),
         ),
       ),
     );
