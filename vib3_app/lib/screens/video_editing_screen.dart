@@ -359,8 +359,9 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
         _isGeneratingFrames = true;
       });
       
-      // Generate more frames for smoother preview (30 frames for videos up to 3 minutes)
-      final frameCount = actualDuration.inSeconds <= 180 ? 30 : 60;
+      // Generate more frames for smoother preview
+      final frameCount = actualDuration.inSeconds <= 60 ? 30 : 
+                        actualDuration.inSeconds <= 300 ? 45 : 60;
       print('🎞️ Generating $frameCount frames for smooth preview...');
       
       _frameData = await VideoThumbnailService.generateVideoFrames(videoFile.path, frameCount);
@@ -585,14 +586,12 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
             // Interactive timeline with drag support
             GestureDetector(
               onHorizontalDragStart: (details) {
-                print('👆 Drag started at: ${details.localPosition}');
                 _updatePreviewPosition(details.localPosition, context);
               },
               onHorizontalDragUpdate: (details) {
                 _updatePreviewPosition(details.localPosition, context);
               },
               onTapDown: (details) {
-                print('👇 Tap detected at: ${details.localPosition}');
                 _updatePreviewPosition(details.localPosition, context);
               },
               child: Container(
@@ -1011,9 +1010,6 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       milliseconds: (_videoDuration.inMilliseconds * percentage).toInt()
     );
     
-    // Debug logging
-    print('🎯 Drag: ${percentage.toStringAsFixed(2)} = ${newPosition.inSeconds}s');
-    
     setState(() {
       _currentPreviewPosition = newPosition;
       
@@ -1022,7 +1018,6 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
         // More precise frame calculation
         final exactFrame = percentage * (_frameData.length - 1);
         _currentFrameIndex = exactFrame.round().clamp(0, _frameData.length - 1);
-        print('📍 Frame index: $_currentFrameIndex / ${_frameData.length}');
       }
     });
     
@@ -1146,13 +1141,13 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
           children: [
             // Show current frame based on timeline position
             Container(
+              key: ValueKey('frame_$_currentFrameIndex'), // Force rebuild when frame changes
               width: double.infinity,
               height: double.infinity,
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: MemoryImage(_frameData[_currentFrameIndex]),
-                  fit: BoxFit.cover,
-                ),
+              child: Image.memory(
+                _frameData[_currentFrameIndex],
+                fit: BoxFit.cover,
+                gaplessPlayback: true, // Smooth transitions between frames
               ),
             ),
             
