@@ -1,69 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Camera Test</title>
+    <style>
+        body { background: #000; color: #fff; font-family: Arial; padding: 20px; }
+        video { width: 400px; height: 300px; background: #222; }
+        button { padding: 10px 20px; margin: 5px; }
+        #log { background: #111; padding: 10px; margin-top: 20px; font-family: monospace; }
+    </style>
 </head>
 <body>
-    <h1>Simple Camera Test</h1>
-    <video id="video" width="320" height="240" autoplay></video>
+    <h1>Direct Camera Test</h1>
+    <video id="video" autoplay muted></video>
     <br>
-    <button onclick="start()">Start Camera</button>
-    <button onclick="stop()">Stop Camera</button>
+    <button onclick="startCamera()">Start Camera</button>
+    <button onclick="stopCamera()">Stop Camera</button>
     <div id="log"></div>
     
     <script>
-        const video = document.getElementById('video');
-        const log = document.getElementById('log');
+        // NO EXTERNAL SCRIPTS - EVERYTHING INLINE
         let stream = null;
         
-        function addLog(msg, color = 'black') {
-            log.innerHTML += `<div style="color: ${color}">${new Date().toLocaleTimeString()}: ${msg}</div>`;
+        function log(msg) {
+            document.getElementById('log').innerHTML += msg + '<br>';
+            console.log(msg);
         }
         
-        async function start() {
-            addLog('Requesting camera...', 'blue');
-            
+        async function startCamera() {
             try {
-                // Try simplest possible request first
-                stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                addLog('Camera access granted!', 'green');
-                video.srcObject = stream;
+                log('Requesting camera...');
+                stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('video').srcObject = stream;
+                log('✅ Camera started!');
             } catch (err) {
-                addLog(`Error: ${err.name} - ${err.message}`, 'red');
-                
-                // Try to understand the error
-                if (err.name === 'NotAllowedError') {
-                    addLog('Permission denied by user or browser policy', 'red');
-                } else if (err.name === 'NotFoundError') {
-                    addLog('No camera found', 'red');
-                } else if (err.name === 'NotReadableError') {
-                    addLog('Camera is being used by another app', 'red');
-                } else if (err.name === 'OverconstrainedError') {
-                    addLog('Camera constraints cannot be satisfied', 'red');
-                } else if (err.name === 'SecurityError') {
-                    addLog('Security error - is this HTTPS?', 'red');
-                }
+                log('❌ Error: ' + err.message);
             }
         }
         
-        function stop() {
+        function stopCamera() {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
-                video.srcObject = null;
-                addLog('Camera stopped', 'blue');
+                document.getElementById('video').srcObject = null;
+                stream = null;
+                log('Camera stopped');
             }
         }
         
-        // Check if we're on HTTPS
-        addLog(`Protocol: ${location.protocol}`, location.protocol === 'https:' ? 'green' : 'orange');
-        addLog(`Host: ${location.host}`);
-        
-        // Check if mediaDevices is available
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            addLog('getUserMedia is available', 'green');
-        } else {
-            addLog('getUserMedia is NOT available', 'red');
-        }
+        log('Page loaded at: ' + new Date().toISOString());
     </script>
 </body>
 </html>
