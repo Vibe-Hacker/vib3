@@ -11,8 +11,17 @@ import 'config/app_config.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Set fullscreen mode
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  // Set preferred orientations and system UI
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  
+  // Use edge-to-edge mode but keep system UI visible
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.edgeToEdge,
+    overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
+  );
   
   runApp(const VIB3App());
 }
