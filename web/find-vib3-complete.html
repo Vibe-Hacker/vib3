@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Find VIB3 Complete Script</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #000; color: #0f0; }
+        .script { margin: 10px 0; padding: 10px; border: 1px solid #0f0; }
+        .bad { color: #f00; border-color: #f00; }
+    </style>
+</head>
+<body>
+    <h1>Script Diagnostic Tool</h1>
+    <div id="results"></div>
+    
+    <script>
+        function checkScripts() {
+            const results = document.getElementById('results');
+            const scripts = document.querySelectorAll('script');
+            
+            results.innerHTML = '<h2>All loaded scripts:</h2>';
+            
+            scripts.forEach((script, index) => {
+                const div = document.createElement('div');
+                div.className = 'script';
+                
+                if (script.src) {
+                    div.textContent = `Script ${index + 1}: ${script.src}`;
+                    if (script.src.includes('vib3-complete')) {
+                        div.className += ' bad';
+                        div.textContent += ' ⚠️ OLD VERSION';
+                    }
+                } else {
+                    div.textContent = `Script ${index + 1}: Inline script (${script.textContent.length} chars)`;
+                }
+                
+                results.appendChild(div);
+            });
+            
+            // Check parent window if in iframe
+            if (window.parent !== window) {
+                results.innerHTML += '<h2>Parent window scripts:</h2>';
+                try {
+                    const parentScripts = window.parent.document.querySelectorAll('script');
+                    parentScripts.forEach((script, index) => {
+                        const div = document.createElement('div');
+                        div.className = 'script';
+                        if (script.src) {
+                            div.textContent = `Parent Script ${index + 1}: ${script.src}`;
+                            if (script.src.includes('vib3-complete')) {
+                                div.className += ' bad';
+                            }
+                        }
+                        results.appendChild(div);
+                    });
+                } catch (e) {
+                    results.innerHTML += '<p>Cannot access parent window (cross-origin)</p>';
+                }
+            }
+        }
+        
+        // Check on load and monitor changes
+        checkScripts();
+        setInterval(checkScripts, 2000);
+        
+        // Also check the actual page
+        setTimeout(() => {
+            fetch('/index-heavy.html')
+                .then(r => r.text())
+                .then(html => {
+                    const scriptMatches = html.match(/<script[^>]*src=[^>]*>/g);
+                    if (scriptMatches) {
+                        results.innerHTML += '<h2>Scripts in index-heavy.html source:</h2>';
+                        scriptMatches.forEach(match => {
+                            const div = document.createElement('div');
+                            div.className = 'script';
+                            div.textContent = match;
+                            if (match.includes('vib3-complete')) {
+                                div.className += ' bad';
+                            }
+                            results.appendChild(div);
+                        });
+                    }
+                });
+        }, 1000);
+    </script>
+</body>
+</html>
