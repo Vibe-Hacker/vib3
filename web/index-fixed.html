@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIB3 Studio - Fixed Version</title>
+    
+    <!-- Force no cache -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- Copy all styles from index-heavy.html -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/themes/variables.css">
+    <link rel="stylesheet" href="css/base/reset.css">
+    <link rel="stylesheet" href="css/layouts/app-container.css">
+    <link rel="stylesheet" href="css/layouts/responsive.css">
+    <link rel="stylesheet" href="css/components/navigation.css">
+    <link rel="stylesheet" href="css/components/sidebar.css">
+    <link rel="stylesheet" href="css/components/video-feed.css">
+    <link rel="stylesheet" href="css/components/video-item.css">
+    <link rel="stylesheet" href="css/components/video-actions.css">
+    <link rel="stylesheet" href="css/components/modals.css">
+    <link rel="stylesheet" href="css/components/auth.css">
+    <link rel="stylesheet" href="css/components/musicLibrary.css">
+    <link rel="stylesheet" href="css/components/videoEditor.css">
+    <link rel="stylesheet" href="css/components/liveStream.css">
+    <link rel="stylesheet" href="css/components/duetStitch.css">
+    <link rel="stylesheet" href="css/components/theme-selector.css">
+    <link rel="stylesheet" href="css/components/analytics.css">
+    <link rel="stylesheet" href="css/pages/profile.css">
+    <link rel="stylesheet" href="css/pages/settings.css">
+    <link rel="stylesheet" href="css/pages/search.css">
+    <link rel="stylesheet" href="css/pages/messages.css">
+    <link rel="stylesheet" href="css/pages/activity.css">
+    <link rel="stylesheet" href="css/utils/animations.css">
+    <link rel="stylesheet" href="css/utils/utilities.css">
+    <link rel="stylesheet" href="css/fixes/video-feed-visibility.css">
+    
+    <script>
+        // CRITICAL: Define these IMMEDIATELY before ANY other scripts load
+        window.liveStreamingState = {
+            isActive: false,
+            startTime: null,
+            viewers: 0,
+            title: '',
+            category: '',
+            stream: null
+        };
+        
+        window.apiCallLimiter = {
+            calls: 0,
+            maxCalls: 100,
+            resetInterval: 60000,
+            lastReset: Date.now()
+        };
+        
+        // Define all critical functions that might be called by onclick
+        window.setupLivePreview = function() {
+            console.log('📹 Setting up live preview...');
+            
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(stream => {
+                    console.log('✅ Camera access granted');
+                    window.liveStreamingState.stream = stream;
+                    const previewVideo = document.getElementById('live-preview');
+                    if (previewVideo) {
+                        previewVideo.srcObject = stream;
+                        previewVideo.muted = true;
+                        previewVideo.play();
+                    }
+                    if (window.showToast) {
+                        window.showToast('Live preview ready! 📺', 'success');
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Failed to setup live preview:', error);
+                    if (window.showToast) {
+                        window.showToast('Camera access denied', 'error');
+                    }
+                });
+        };
+        
+        window.openLiveSetup = function() {
+            console.log('🎬 Opening live setup...');
+            window.setupLivePreview();
+        };
+        
+        window.startLiveStream = function() {
+            console.log('🔴 Starting live stream...');
+            if (!window.liveStreamingState.stream) {
+                window.setupLivePreview();
+                return;
+            }
+            window.liveStreamingState.isActive = true;
+            if (window.showToast) {
+                window.showToast('Live streaming started! 🔴', 'success');
+            }
+        };
+        
+        window.publishRemix = function() {
+            console.log('🎵 Remix feature coming soon!');
+            if (window.showToast) {
+                window.showToast('Remix feature coming soon! 🎵', 'info');
+            }
+        };
+        
+        window.startRemix = function() {
+            console.log('🎤 Starting remix...');
+            if (window.showToast) {
+                window.showToast('Remix creator coming soon! 🎤', 'info');
+            }
+        };
+        
+        window.createDuet = function() {
+            console.log('🎭 Creating duet...');
+            if (window.showToast) {
+                window.showToast('Duet feature coming soon! 🎭', 'info');
+            }
+        };
+    </script>
+</head>
+<body>
+    <div id="app">
+        <!-- Copy main structure from index-heavy.html but simplified -->
+        <h1 style="color: white; text-align: center; padding: 20px;">VIB3 Studio - Fixed Version</h1>
+        <p style="color: white; text-align: center;">This is a temporary fixed version while we resolve deployment issues.</p>
+        
+        <div style="text-align: center; padding: 20px;">
+            <button onclick="window.setupLivePreview()" style="padding: 10px 20px; margin: 10px; background: #FF0080; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                Test Live Preview
+            </button>
+            <button onclick="window.location.href='index-heavy.html'" style="padding: 10px 20px; margin: 10px; background: #00CED1; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                Back to Main App
+            </button>
+        </div>
+        
+        <video id="live-preview" style="width: 300px; height: 400px; background: black; margin: 20px auto; display: block;"></video>
+        
+        <div class="toast" id="toast"></div>
+    </div>
+    
+    <!-- Minimal scripts - NO vib3-complete.js -->
+    <script>
+        // Simple toast function
+        window.showToast = function(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            toast.style.cssText = 'position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; background: rgba(0,0,0,0.8); color: white; border-radius: 5px; z-index: 9999;';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        };
+        
+        console.log('✅ Fixed version loaded - NO vib3-complete.js');
+    </script>
+</body>
+</html>
