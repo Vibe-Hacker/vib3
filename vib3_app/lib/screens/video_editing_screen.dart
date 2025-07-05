@@ -1147,14 +1147,18 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
         child: Stack(
           children: [
             // Show current frame based on timeline position
-            Container(
-              key: ValueKey('frame_$_currentFrameIndex'), // Force rebuild when frame changes
-              width: double.infinity,
-              height: double.infinity,
-              child: Image.memory(
-                _frameData[_currentFrameIndex],
-                fit: BoxFit.cover,
-                gaplessPlayback: true, // Smooth transitions between frames
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 50),
+              child: Container(
+                key: ValueKey<int>(_currentFrameIndex), // Force rebuild when frame changes
+                width: double.infinity,
+                height: double.infinity,
+                child: Image(
+                  key: ValueKey('${_currentFrameIndex}_${DateTime.now().millisecondsSinceEpoch}'),
+                  image: MemoryImage(_frameData[_currentFrameIndex]),
+                  fit: BoxFit.cover,
+                  gaplessPlayback: true, // Smooth transitions between frames
+                ),
               ),
             ),
             
