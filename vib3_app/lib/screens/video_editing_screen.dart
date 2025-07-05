@@ -5,6 +5,7 @@ import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:video_thumbnail/video_thumbnail.dart' as vt;
 import '../widgets/video_filters_widget.dart';
 import '../widgets/audio_overlay_widget.dart';
 import '../widgets/text_overlay_widget.dart';
@@ -33,8 +34,9 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   bool _hasError = false;
   String _errorMessage = '';
   File? _thumbnailFile;
-  List<File> _videoFrames = [];
+  List<Uint8List> _frameData = [];
   bool _useThumbnailMode = false;
+  bool _isGeneratingFrames = false;
   
   // Trim controls
   Duration _startTrim = Duration.zero;
@@ -89,19 +91,43 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   }
 
   Future<void> _tryVideoPlayerStrategies(File videoFile) async {
-    print('🎥 OnePlus 8 Pro - Starting simple video approach...');
+    print('🎥 Initializing video player...');
     
-    // Skip ALL video player attempts - they fail on OnePlus due to decoder issues
-    // Go straight to thumbnail generation which should work better
+    try {
+      // Try standard video player initialization first
+      _controller = VideoPlayerController.file(videoFile);
+      await _controller!.initialize();
+      
+      if (_controller!.value.isInitialized) {
+        print('✅ Video player initialized successfully');
+        setState(() {
+          _isInitialized = true;
+          _hasError = false;
+          _videoDuration = _controller!.value.duration;
+          _endTrim = _videoDuration;
+        });
+        
+        // Generate frame previews for trim bar
+        await _generateFramePreviews(videoFile);
+        return;
+      }
+    } catch (e) {
+      print('⚠️ Standard player failed, trying fallback: $e');
+    }
     
-    print('⚠️ Skipping video player initialization due to OnePlus hardware limitations');
-    print('📸 Attempting thumbnail generation instead...');
+    // Fallback: Use thumbnail preview mode
+    await _initializeThumbnailMode(videoFile);
+  }
+
+  Future<void> _initializeThumbnailMode(File videoFile) async {
+    print('📸 Initializing thumbnail preview mode');
     
-    // Try to generate a thumbnail
-    _thumbnailFile = await VideoThumbnailService.generateThumbnail(videoFile.path);
-    
-    if (_thumbnailFile != null && await _thumbnailFile!.exists()) {
-      print('✅ Thumbnail generated successfully!');
+    try {
+      // Generate thumbnail and frame previews
+      _thumbnailFile = await VideoThumbnailService.generateThumbnail(videoFile.path);
+      await _generateFramePreviews(videoFile);
+      
+      // Get actual video duration
       final actualDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
       
       setState(() {
@@ -111,61 +137,54 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
         _videoDuration = actualDuration;
         _endTrim = actualDuration;
       });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('📱 OnePlus compatible mode - Video ready for editing!'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 3),
-        ),
-      );
-      return;
+    } catch (e) {
+      print('❌ Thumbnail mode failed: $e');
+      _showSimpleEditor();
     }
-    
-    print('❌ Thumbnail generation also failed, using basic editor');
-    await _activateBasicEditor(videoFile);
   }
 
-  Future<void> _activateBasicEditor(File videoFile) async {
-    print('📱 Activating basic editor for OnePlus device');
-    
-    // Get actual video duration estimate
-    final actualDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
+  Future<void> _generateFramePreviews(File videoFile) async {
+    if (_isGeneratingFrames) return;
     
     setState(() {
-      _useThumbnailMode = true;
-      _isInitialized = true;
-      _hasError = false;
-      _videoDuration = actualDuration;
-      _endTrim = actualDuration;
+      _isGeneratingFrames = true;
     });
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✂️ Basic editing mode - All tools available below!'),
-        backgroundColor: Color(0xFF00CED1),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  Future<void> _initializeTikTokStyle(File videoFile) async {
-    print('🎬 TikTok-style software decoder initialization');
-    
-    // Ensure no existing controller conflicts
-    _controller?.dispose();
-    
-    _controller = VideoPlayerController.file(
-      videoFile,
-      videoPlayerOptions: VideoPlayerOptions(
-        // TikTok-style options that favor software decoding
-        mixWithOthers: false,
-        allowBackgroundPlayback: false,
-      ),
-    );
-    
-    // TikTok uses longer timeouts for software decoding
-    await _controller!.initialize().timeout(const Duration(seconds: 20));
+    try {
+      print('🎞️ Generating TikTok-style frame previews...');
+      
+      // Generate 10 frames across the video duration
+      const frameCount = 10;
+      _frameData.clear();
+      
+      for (int i = 0; i < frameCount; i++) {
+        final position = i * (_videoDuration.inMilliseconds ~/ frameCount);
+        
+        try {
+          final uint8list = await vt.VideoThumbnail.thumbnailData(
+            video: videoFile.path,
+            imageFormat: vt.ImageFormat.JPEG,
+            maxHeight: 60,
+            quality: 50,
+            timeMs: position,
+          );
+          
+          if (uint8list != null) {
+            _frameData.add(uint8list);
+          }
+        } catch (e) {
+          print('⚠️ Failed to extract frame at ${position}ms');
+        }
+      }
+      
+      print('✅ Generated ${_frameData.length} frame previews');
+    } catch (e) {
+      print('❌ Frame generation error: $e');
+    } finally {
+      setState(() {
+        _isGeneratingFrames = false;
+      });
+    }
   }
 
   Future<void> _initializeWithSmartReuse(File videoFile) async {
@@ -300,7 +319,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
     
     try {
       // Generate video frames for timeline
-      _videoFrames = await VideoThumbnailService.generateVideoFrames(videoFile.path, 10);
+      _frameData = await VideoThumbnailService.generateVideoFrames(videoFile.path, 10);
       
       // Get actual video duration
       final actualDuration = await VideoThumbnailService.getVideoDuration(videoFile.path);
@@ -493,18 +512,66 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
               ),
               child: Stack(
                 children: [
-                  // Video timeline background
-                  Container(
-                    width: double.infinity,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.grey[700]!,
-                          Colors.grey[600]!,
-                        ],
+                  // TikTok-style frame preview timeline
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: _frameData.isNotEmpty
+                        ? Row(
+                            children: List.generate(
+                              _frameData.length,
+                              (index) => Expanded(
+                                child: Container(
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      right: BorderSide(
+                                        color: Colors.black.withOpacity(0.3),
+                                        width: index < _frameData.length - 1 ? 1 : 0,
+                                      ),
+                                    ),
+                                    image: DecorationImage(
+                                      image: MemoryImage(_frameData[index]),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                        : Container(
+                            width: double.infinity,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.grey[700]!,
+                                  Colors.grey[600]!,
+                                ],
+                              ),
+                            ),
+                            child: _isGeneratingFrames
+                                ? const Center(
+                                    child: SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Color(0xFF00CED1),
+                                      ),
+                                    ),
+                                  )
+                                : null,
+                          ),
+                  ),
+                  
+                  // Trim selection overlay
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: _TrimOverlayPainter(
+                        startTrim: _startTrim,
+                        endTrim: _endTrim,
+                        totalDuration: _videoDuration,
                       ),
-                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   
@@ -525,6 +592,15 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                       width: 4,
                       height: 60,
                       color: const Color(0xFF00CED1),
+                      child: Container(
+                        width: 4,
+                        height: 20,
+                        margin: const EdgeInsets.only(top: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -639,7 +715,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
           else
             const Center(
               child: Text(
-                '🎬 Video ready for editing! Use trim sliders above',
+                'Video ready for editing! Use trim sliders above',
                 style: TextStyle(color: Color(0xFF00CED1), fontWeight: FontWeight.w500),
               ),
             ),
@@ -757,7 +833,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
               ),
             ),
             
-            // Overlay indicating it's a thumbnail
+            // Simple overlay
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -774,62 +850,16 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
             // Play icon overlay
             Center(
               child: Container(
-                width: 80,
-                height: 80,
+                width: 60,
+                height: 60,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Color(0xFF00CED1).withOpacity(0.8),
                 ),
                 child: Icon(
-                  Icons.visibility,
-                  size: 40,
+                  Icons.play_arrow,
+                  size: 30,
                   color: Colors.white,
-                ),
-              ),
-            ),
-            
-            // Info badges
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _thumbnailFile!.path.contains('oneplus_thumb') 
-                    ? Colors.orange 
-                    : Color(0xFF00CED1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  _thumbnailFile!.path.contains('oneplus_thumb') 
-                    ? 'ONEPLUS MODE'
-                    : 'THUMBNAIL',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            
-            Positioned(
-              bottom: 8,
-              left: 8,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  _thumbnailFile!.path.contains('oneplus_thumb')
-                    ? '🔧 OnePlus compatible preview'
-                    : '👀 Your video preview',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                  ),
                 ),
               ),
             ),
@@ -858,154 +888,70 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       );
     }
     
-    // Priority 3: OnePlus Basic Mode - Show video file info
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _getVideoFileInfo(),
-      builder: (context, snapshot) {
-        final fileInfo = snapshot.data ?? {};
-        final fileSize = fileInfo['size'] ?? 0;
-        final fileName = fileInfo['name'] ?? 'Unknown';
-        final sizeInMB = (fileSize / (1024 * 1024)).toStringAsFixed(1);
-        
-        return Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.orange.withOpacity(0.3),
-                const Color(0xFF1E90FF).withOpacity(0.3),
-                Colors.grey[800]!,
-              ],
+    // Priority 3: Basic preview mode
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF00CED1).withOpacity(0.2),
+            const Color(0xFF1E90FF).withOpacity(0.2),
+            Colors.grey[900]!,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF00CED1), Color(0xFF1E90FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Icon(
+                Icons.movie_outlined,
+                size: 40,
+                color: Colors.white,
+              ),
             ),
-          ),
-          child: Stack(
-            children: [
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.orange,
-                            Color(0xFF1E90FF),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.movie_creation_outlined,
-                        size: 50,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      '📱 OnePlus Mode',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Video File: ${sizeInMB}MB',
-                      style: TextStyle(
-                        color: Colors.orange[300],
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Duration: ${_formatDuration(_videoDuration)}',
-                      style: TextStyle(
-                        color: Colors.grey[300],
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'All editing tools work below!\nTrim, filters, audio, text, speed',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      fileName,
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 10,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+            const SizedBox(height: 16),
+            Text(
+              'Video Preview',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
               ),
-              
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    'ONEPLUS',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Duration: ${_formatDuration(_videoDuration)}',
+              style: TextStyle(
+                color: Colors.grey[300],
+                fontSize: 14,
               ),
-              
-              Positioned(
-                bottom: 12,
-                left: 12,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '✂️ Ready to edit',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Use the editing tools below',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 12,
               ),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1304,5 +1250,95 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
               ),
             ),
     );
+  }
+}
+
+class _TrimOverlayPainter extends CustomPainter {
+  final Duration startTrim;
+  final Duration endTrim;
+  final Duration totalDuration;
+
+  _TrimOverlayPainter({
+    required this.startTrim,
+    required this.endTrim,
+    required this.totalDuration,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    
+    // Draw semi-transparent overlay on trimmed out parts
+    paint.color = Colors.black.withOpacity(0.6);
+    
+    // Left trimmed area
+    final startX = (startTrim.inMilliseconds / totalDuration.inMilliseconds) * size.width;
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, startX, size.height),
+      paint,
+    );
+    
+    // Right trimmed area
+    final endX = (endTrim.inMilliseconds / totalDuration.inMilliseconds) * size.width;
+    canvas.drawRect(
+      Rect.fromLTWH(endX, 0, size.width - endX, size.height),
+      paint,
+    );
+    
+    // Draw trim handles
+    paint.color = const Color(0xFF00CED1);
+    paint.strokeWidth = 3;
+    
+    // Start handle
+    canvas.drawLine(
+      Offset(startX, 0),
+      Offset(startX, size.height),
+      paint,
+    );
+    
+    // End handle
+    canvas.drawLine(
+      Offset(endX, 0),
+      Offset(endX, size.height),
+      paint,
+    );
+    
+    // Draw handle grips
+    paint.color = Colors.white;
+    final handleWidth = 12.0;
+    final handleHeight = 24.0;
+    
+    // Start handle grip
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(startX, size.height / 2),
+          width: handleWidth,
+          height: handleHeight,
+        ),
+        const Radius.circular(6),
+      ),
+      paint,
+    );
+    
+    // End handle grip
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(endX, size.height / 2),
+          width: handleWidth,
+          height: handleHeight,
+        ),
+        const Radius.circular(6),
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_TrimOverlayPainter oldDelegate) {
+    return oldDelegate.startTrim != startTrim ||
+           oldDelegate.endTrim != endTrim ||
+           oldDelegate.totalDuration != totalDuration;
   }
 }

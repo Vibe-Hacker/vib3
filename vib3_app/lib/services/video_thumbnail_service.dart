@@ -51,104 +51,20 @@ class VideoThumbnailService {
         }
       }
       
-      print('⚠️ Video thumbnail extraction failed - using OnePlus compatible mode');
-      return await _createOnePlusCompatibleThumbnail(videoPath);
+      print('⚠️ Video thumbnail extraction failed - using fallback mode');
+      return await _createFallbackThumbnail();
     } catch (e) {
       print('❌ Thumbnail generation failed: $e');
       if (e.toString().contains('GraphicBuffer') || 
           e.toString().contains('AdrenoUtils') || 
           e.toString().contains('qdgralloc')) {
-        print('🔧 Detected OnePlus/Qualcomm GPU issues - using compatible mode');
+        print('🔧 Detected GPU compatibility issues - using fallback mode');
       }
-      return await _createOnePlusCompatibleThumbnail(videoPath);
-    }
-  }
-
-  static Future<File?> _createOnePlusCompatibleThumbnail(String videoPath) async {
-    try {
-      print('🔧 Creating OnePlus-compatible thumbnail');
-      
-      final tempDir = await getTemporaryDirectory();
-      final thumbnailPath = '${tempDir.path}/oneplus_thumb_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final thumbnailFile = File(thumbnailPath);
-      
-      // Get video file info for thumbnail generation
-      final videoFile = File(videoPath);
-      final fileSize = await videoFile.length();
-      final fileName = videoPath.split('/').last;
-      
-      // Create a visual thumbnail based on file info (like TikTok does for problematic devices)
-      final thumbnailData = await _generateInfoBasedThumbnail(fileName, fileSize);
-      await thumbnailFile.writeAsBytes(thumbnailData);
-      
-      print('✅ OnePlus-compatible thumbnail created');
-      return thumbnailFile;
-    } catch (e) {
-      print('❌ OnePlus-compatible thumbnail failed: $e');
       return await _createFallbackThumbnail();
     }
   }
 
-  static Future<Uint8List> _generateInfoBasedThumbnail(String fileName, int fileSize) async {
-    // Create a simple but informative thumbnail image
-    // This is similar to how TikTok handles problematic devices
-    final width = 360;
-    final height = 640;
-    final bytesPerPixel = 3;
-    final imageSize = width * height * bytesPerPixel;
-    
-    final pixels = Uint8List(imageSize);
-    
-    // Create a gradient background
-    for (int y = 0; y < height; y++) {
-      for (int x = 0; x < width; x++) {
-        final index = (y * width + x) * bytesPerPixel;
-        
-        // Gradient from cyan to blue
-        final gradientFactor = y / height;
-        pixels[index] = (0 + (255 * x / width * 0.3)).round().clamp(0, 255);     // R
-        pixels[index + 1] = (206 * (1 - gradientFactor * 0.5)).round().clamp(0, 255); // G
-        pixels[index + 2] = (209 + (46 * gradientFactor)).round().clamp(0, 255); // B
-      }
-    }
-    
-    // Convert to JPEG format (simplified)
-    return _createSimpleJPEG(width, height, pixels);
-  }
 
-  static Uint8List _createSimpleJPEG(int width, int height, Uint8List pixels) {
-    // Create a minimal JPEG header with our image data
-    // This is a simplified JPEG for compatibility
-    final jpegHeader = Uint8List.fromList([
-      0xFF, 0xD8, // SOI
-      0xFF, 0xE0, // APP0
-      0x00, 0x10, // Length
-      0x4A, 0x46, 0x49, 0x46, 0x00, // JFIF
-      0x01, 0x01, // Version
-      0x01, // Units
-      0x00, 0x48, 0x00, 0x48, // X/Y density
-      0x00, 0x00, // Thumbnail size
-    ]);
-    
-    // For OnePlus compatibility, create a very simple solid color JPEG
-    final simpleJPEG = Uint8List.fromList([
-      0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01,
-      0x01, 0x01, 0x00, 0x48, 0x00, 0x48, 0x00, 0x00, 0xFF, 0xDB, 0x00, 0x43,
-      0x00, 0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08, 0x07, 0x07, 0x07, 0x09,
-      0x09, 0x08, 0x0A, 0x0C, 0x14, 0x0D, 0x0C, 0x0B, 0x0B, 0x0C, 0x19, 0x12,
-      0x13, 0x0F, 0x14, 0x1D, 0x1A, 0x1F, 0x1E, 0x1D, 0x1A, 0x1C, 0x1C, 0x20,
-      0x24, 0x2E, 0x27, 0x20, 0x22, 0x2C, 0x23, 0x1C, 0x1C, 0x28, 0x37, 0x29,
-      0x2C, 0x30, 0x31, 0x34, 0x34, 0x34, 0x1F, 0x27, 0x39, 0x3D, 0x38, 0x32,
-      0x3C, 0x2E, 0x33, 0x34, 0x32, 0xFF, 0xC0, 0x00, 0x11, 0x08, 0x00, 0x64,
-      0x00, 0x64, 0x01, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01,
-      0xFF, 0xC4, 0x00, 0x1F, 0x00, 0x00, 0x01, 0x05, 0x01, 0x01, 0x01, 0x01,
-      0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02,
-      0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0xFF, 0xDA, 0x00,
-      0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00, 0xAA, 0xFF, 0xD9
-    ]);
-    
-    return simpleJPEG;
-  }
 
   static Future<File?> _createFallbackThumbnail() async {
     try {
@@ -198,19 +114,32 @@ class VideoThumbnailService {
     }
   }
   
-  static Future<List<File>> generateVideoFrames(String videoPath, int frameCount) async {
+  static Future<List<Uint8List>> generateVideoFrames(String videoPath, int frameCount) async {
     try {
       print('🎞️ Generating $frameCount frames from video');
       
-      final frames = <File>[];
-      final tempDir = await getTemporaryDirectory();
+      final frames = <Uint8List>[];
+      final duration = await getVideoDuration(videoPath);
       
-      // Generate placeholder frames
+      // Generate frames at regular intervals
       for (int i = 0; i < frameCount; i++) {
-        final framePath = '${tempDir.path}/frame_${i}_${DateTime.now().millisecondsSinceEpoch}.png';
-        final frameFile = File(framePath);
-        await frameFile.writeAsBytes([]);
-        frames.add(frameFile);
+        final position = i * (duration.inMilliseconds ~/ frameCount);
+        
+        try {
+          final frameData = await VideoThumbnail.thumbnailData(
+            video: videoPath,
+            imageFormat: ImageFormat.JPEG,
+            maxHeight: 60,
+            quality: 40,
+            timeMs: position,
+          );
+          
+          if (frameData != null) {
+            frames.add(frameData);
+          }
+        } catch (e) {
+          print('⚠️ Failed to extract frame at ${position}ms: $e');
+        }
       }
       
       print('✅ Generated ${frames.length} frames');
