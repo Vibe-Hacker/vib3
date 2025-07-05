@@ -1095,22 +1095,53 @@
     </div>
 
     <!-- Load MongoDB adapter and auth-simple, then complete VIB3 app -->
-    <script src="js/preload-fixes.js?v=20250105008"></script>
-    <script src="js/init-fix.js?v=20250105008"></script>
-    <script src="js/mongodb-adapter.js?v=20250105008"></script>
+    <script>
+        // Inline critical fixes to avoid Railway caching issues
+        console.log('🚨 INLINE FIXES LOADING - Version 2025.01.05');
+        
+        // Define critical variables before any script loads
+        window.liveStreamingState = {
+            isActive: false,
+            startTime: null,
+            viewers: 0,
+            title: '',
+            category: '',
+            stream: null
+        };
+        
+        window.apiCallLimiter = {
+            calls: new Map(),
+            limit: 10,
+            window: 60000,
+            canMakeCall(key) {
+                const now = Date.now();
+                if (!this.calls.has(key)) {
+                    this.calls.set(key, []);
+                }
+                const calls = this.calls.get(key);
+                const recentCalls = calls.filter(time => now - time < this.window);
+                this.calls.set(key, recentCalls);
+                return recentCalls.length < this.limit;
+            },
+            recordCall(key) {
+                if (!this.calls.has(key)) {
+                    this.calls.set(key, []);
+                }
+                this.calls.get(key).push(Date.now());
+            }
+        };
+        
+        console.log('✅ INLINE FIXES READY - Variables defined');
+    </script>
+    <script src="js/mongodb-adapter.js"></script>
     <script src="js/auth-simple.js"></script>
     <script src="js/simple-profile.js"></script>
     <script src="js/profile-functions.js"></script>
     <script src="js/features/videoEditor.js"></script>
     <script src="js/comments-simple.js"></script>
     <script src="js/search-simple.js"></script>
-    <script src="js/live-functions.js?v=20250704007"></script>
-    <!-- Removed vib3-complete-v2.js - using modular approach -->
-    <script src="js/feed-simple.js?v=20250105009"></script>
-    <script src="js/video-simple.js?v=20250105009"></script>
-    <script src="js/feed-integration.js?v=20250105009"></script>
-    <script src="js/app-extracted.js?v=20250105009"></script>
-    <script src="js/main.js?v=20250105009"></script>
+    <!-- Put vib3-complete-v2.js back since Railway insists on serving it -->
+    <script src="js/vib3-complete-v2.js?v=20250704007"></script>
     
     <!-- Auto-testing and fixing scripts for development -->
     <script>
