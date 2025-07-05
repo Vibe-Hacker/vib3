@@ -72,13 +72,43 @@ let liveStreamingState = {
 function setupLivePreview() {
     console.log('📹 Setting up live preview...');
     
-    if (window.showToast) {
-        window.showToast('Live streaming setup coming soon! 📺', 'info');
-    } else {
-        console.log('Live streaming setup coming soon! 📺');
+    try {
+        // Check if liveStreamingState exists
+        if (!liveStreamingState) {
+            console.error('❌ liveStreamingState not initialized');
+            if (window.showToast) {
+                window.showToast('Live streaming setup failed', 'error');
+            }
+            return;
+        }
+        
+        // Check camera and microphone permissions
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then(stream => {
+                console.log('✅ Camera and microphone access granted');
+                const previewVideo = document.getElementById('live-preview');
+                if (previewVideo) {
+                    previewVideo.srcObject = stream;
+                    previewVideo.play();
+                }
+                liveStreamingState.stream = stream;
+                if (window.showToast) {
+                    window.showToast('Live preview ready! 📺', 'success');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Failed to setup live preview:', error);
+                if (window.showToast) {
+                    window.showToast('Unable to access camera and microphone. Please ensure permissions are granted.', 'error');
+                }
+            });
+            
+    } catch (error) {
+        console.error('❌ Failed to setup live preview:', error);
+        if (window.showToast) {
+            window.showToast('Live streaming setup failed', 'error');
+        }
     }
-    
-    // TODO: Implement live preview setup
 }
 
 function openLiveSetup() {
