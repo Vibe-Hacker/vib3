@@ -1011,6 +1011,9 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       milliseconds: (_videoDuration.inMilliseconds * percentage).toInt()
     );
     
+    // Debug logging
+    print('🎯 Drag: ${percentage.toStringAsFixed(2)} = ${newPosition.inSeconds}s');
+    
     setState(() {
       _currentPreviewPosition = newPosition;
       
@@ -1019,6 +1022,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
         // More precise frame calculation
         final exactFrame = percentage * (_frameData.length - 1);
         _currentFrameIndex = exactFrame.round().clamp(0, _frameData.length - 1);
+        print('📍 Frame index: $_currentFrameIndex / ${_frameData.length}');
       }
     });
     
@@ -1057,8 +1061,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   }
 
   Widget _buildLocalVideoThumbnail() {
-    print('🖼️ Building thumbnail preview - Frames: ${_frameData.length}, CurrentFrame: $_currentFrameIndex');
-    
+    // Remove debug print to reduce log spam
     // Priority 1: Show actual video if controller works
     if (_controller != null && _controller!.value.isInitialized) {
       return GestureDetector(

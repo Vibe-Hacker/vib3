@@ -67,44 +67,74 @@ class VideoThumbnailService {
       final frames = <Uint8List>[];
       final duration = await getVideoDuration(videoPath);
       
+      // Calculate interval between frames
+      final intervalMs = duration.inMilliseconds ~/ frameCount;
+      
       // Generate frames at regular intervals
       for (int i = 0; i < frameCount; i++) {
-        final position = i * (duration.inMilliseconds ~/ frameCount);
+        final position = i * intervalMs;
         
         try {
           final frameData = await VideoThumbnail.thumbnailData(
             video: videoPath,
             imageFormat: ImageFormat.JPEG,
-            maxHeight: 80, // Slightly higher quality for better preview
-            quality: 50,    // Better quality
+            maxHeight: 100, // Higher quality for better preview
+            quality: 60,     // Better quality
             timeMs: position,
           );
           
           if (frameData != null) {
             frames.add(frameData);
-            print('🖼️ Frame ${i + 1}/$frameCount extracted at ${position}ms');
-          }
-        } catch (e) {
-          print('⚠️ Failed to extract frame at ${position}ms: $e');
-          // Try fallback with lower quality
-          try {
-            final frameData = await VideoThumbnail.thumbnailData(
+            print('🖼️ Frame ${frames.length}/$frameCount at ${position}ms (${(position/1000).toStringAsFixed(1)}s)');
+          } else {
+            print('⚠️ Null frame at ${position}ms, trying lower quality');
+            // Try with lower quality
+            final fallbackData = await VideoThumbnail.thumbnailData(
               video: videoPath,
               imageFormat: ImageFormat.JPEG,
               maxHeight: 60,
               quality: 30,
               timeMs: position,
             );
+            if (fallbackData != null) {
+              frames.add(fallbackData);
+              print('🖼️ Fallback frame ${frames.length}/$frameCount at ${position}ms');
+            }
+          }
+        } catch (e) {
+          print('⚠️ Failed to extract frame at ${position}ms: $e');
+          // Try fallback with even lower quality
+          try {
+            final frameData = await VideoThumbnail.thumbnailData(
+              video: videoPath,
+              imageFormat: ImageFormat.JPEG,
+              maxHeight: 40,
+              quality: 20,
+              timeMs: position,
+            );
             if (frameData != null) {
               frames.add(frameData);
+              print('🖼️ Low quality frame ${frames.length}/$frameCount at ${position}ms');
             }
           } catch (e2) {
-            // Skip this frame
+            print('❌ Skipping frame at ${position}ms');
           }
         }
       }
       
-      print('✅ Generated ${frames.length} frames');
+      print('✅ Generated ${frames.length}/$frameCount frames (${(frames.length * 100 / frameCount).toStringAsFixed(0)}%)');
+      
+      // If we didn't get enough frames, try to fill in gaps
+      if (frames.length < frameCount && frames.length > 0) {
+        print('🔧 Filling gaps: have ${frames.length}, need $frameCount');
+        // Duplicate existing frames to reach target count
+        while (frames.length < frameCount) {
+          final sourceIndex = frames.length % frames.length;
+          frames.add(frames[sourceIndex]);
+        }
+        print('🎆 Padded to ${frames.length} frames');
+      }
+      
       return frames;
     } catch (e) {
       print('❌ Error generating frames: $e');
