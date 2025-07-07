@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'dart:async';
 
@@ -38,8 +39,8 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
   late AnimationController _toolPanelController;
   late AnimationController _transitionController;
   
-  // Current mode
-  CreatorMode _currentMode = CreatorMode.camera;
+  // Current mode - start with camera if no initial video
+  late CreatorMode _currentMode;
   
   @override
   void initState() {
@@ -56,10 +57,13 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
       vsync: this,
     );
     
-    // Initialize after widget is built
+    // Initialize mode based on whether we have a video
     if (widget.videoPath != null) {
       // Start in edit mode when we have a video
       _currentMode = CreatorMode.edit;
+    } else {
+      // Start with camera when no video
+      _currentMode = CreatorMode.camera;
     }
     
     // Lock to portrait
@@ -86,6 +90,9 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
       case CreatorMode.camera:
         return CameraModule(
           onVideoRecorded: (path) {
+            // The CameraModule already adds the clip to creation state
+            // We just need to switch to edit mode
+            print('VideoCreatorScreen: Switching to edit mode after recording');
             setState(() {
               _currentMode = CreatorMode.edit;
             });
@@ -132,13 +139,15 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
           
           return Scaffold(
             backgroundColor: Colors.black,
-            body: Stack(
-          children: [
-            // Main content area
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: _buildCurrentMode(),
-            ),
+            body: Consumer<CreationStateProvider>(
+              builder: (context, creationState, child) {
+                return Stack(
+                  children: [
+                    // Main content area
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: _buildCurrentMode(),
+                    ),
             
             // Top toolbar (context-sensitive)
             if (_currentMode != CreatorMode.camera)
@@ -203,8 +212,42 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                   ),
                 ),
               ),
-          ],
-        ),
+                    // Debug overlay
+                    if (kDebugMode)
+                      Positioned(
+                        top: 100,
+                        left: 20,
+                        right: 20,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          color: Colors.black.withOpacity(0.8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Mode: $_currentMode',
+                                style: const TextStyle(color: Colors.green, fontSize: 12),
+                              ),
+                              Text(
+                                'Clips: ${creationState.videoClips.length}',
+                                style: const TextStyle(color: Colors.green, fontSize: 12),
+                              ),
+                              if (creationState.videoClips.isNotEmpty)
+                                Text(
+                                  'Path: ${creationState.videoClips.first.path}',
+                                  style: const TextStyle(color: Colors.green, fontSize: 10),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
           );
         },
       ),
