@@ -218,25 +218,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Center(
-              child: AspectRatio(
-                aspectRatio: 9 / 16, // TikTok-style aspect ratio
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.black,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: FittedBox(
-                      fit: BoxFit.cover,
-                      child: SizedBox(
-                        width: _controller!.value.size.width,
-                        height: _controller!.value.size.height,
-                        child: VideoPlayer(_controller!),
-                      ),
-                    ),
-                  ),
+            // Fill entire screen width and height
+            Positioned.fill(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _controller!.value.size.width,
+                  height: _controller!.value.size.height,
+                  child: VideoPlayer(_controller!),
                 ),
               ),
             ),

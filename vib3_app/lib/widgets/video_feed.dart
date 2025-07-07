@@ -48,10 +48,10 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   // Draggable button positions
   bool _isDragMode = false;
   Map<String, Offset> _buttonPositions = {
-    'profile': const Offset(320, 150),
-    'like': const Offset(320, 250),
-    'comment': const Offset(320, 350),
-    'share': const Offset(320, 450),
+    'profile': const Offset(280, 150),
+    'like': const Offset(280, 250),
+    'comment': const Offset(280, 350),
+    'share': const Offset(280, 450),
   };
   String? _draggingButton;
   Offset? _initialDragPosition;
@@ -591,35 +591,23 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   Widget _buildVideoPlayer(Video video, bool isCurrentVideo) {
     if (video.videoUrl != null && video.videoUrl!.isNotEmpty && isCurrentVideo) {
       return Positioned.fill(
-        bottom: 120,
         child: GestureDetector(
           onDoubleTap: () => _handleLike(video),
           onLongPress: () => _showComments(video),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: SizedBox(
-              width: double.infinity,
-              height: double.infinity,
-              child: VideoPlayerWidget(
-                videoUrl: video.videoUrl!,
-                isPlaying: isCurrentVideo,
-              ),
-            ),
+          child: VideoPlayerWidget(
+            videoUrl: video.videoUrl!,
+            isPlaying: isCurrentVideo,
           ),
         ),
       );
     } else {
       return Positioned.fill(
-        bottom: 120,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            width: double.infinity,
-            height: double.infinity,
-            color: Colors.grey[900],
-            child: const Center(
-              child: Icon(Icons.play_circle_outline, size: 80, color: Colors.white),
-            ),
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: Colors.grey[900],
+          child: const Center(
+            child: Icon(Icons.play_circle_outline, size: 80, color: Colors.white),
           ),
         ),
       );
@@ -678,21 +666,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               color: Colors.black,
               child: Center(
                 child: Container(
-                  width: kIsWeb ? 600 : MediaQuery.of(context).size.width * 0.95,
-                  height: MediaQuery.of(context).size.height * 0.85,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 10,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Stack(
+                  width: kIsWeb ? 600 : MediaQuery.of(context).size.width,
+                  height: MediaQuery.of(context).size.height,
+                  child: Stack(
                       children: [
                         // Video player
                         _buildVideoPlayer(video, isCurrentVideo),
