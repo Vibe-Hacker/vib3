@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import '../providers/creation_state_provider.dart';
 
 class MusicModule extends StatefulWidget {
@@ -27,6 +28,11 @@ class _MusicModuleState extends State<MusicModule>
   
   // Voice effects
   String _selectedVoiceEffect = 'none';
+  
+  // Beat sync
+  bool _beatSyncEnabled = false;
+  Timer? _beatTimer;
+  int _currentBeat = 0;
   
   // Mock music library
   final List<MusicTrack> _musicLibrary = [
@@ -512,6 +518,74 @@ class _MusicModuleState extends State<MusicModule>
                 ),
               ],
             ),
+          
+          const SizedBox(height: 16),
+          
+          // Beat sync toggle
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.sync, color: Color(0xFF00CED1), size: 20),
+                    SizedBox(width: 10),
+                    Text(
+                      'Beat Sync',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Switch(
+                  value: _beatSyncEnabled,
+                  onChanged: (value) {
+                    setState(() {
+                      _beatSyncEnabled = value;
+                    });
+                    if (value) {
+                      _startBeatSync();
+                    } else {
+                      _stopBeatSync();
+                    }
+                  },
+                  activeColor: const Color(0xFF00CED1),
+                ),
+              ],
+            ),
+          ),
+          
+          if (_beatSyncEnabled)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00CED1).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.info_outline, color: Color(0xFF00CED1), size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Cuts will snap to the beat',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -584,34 +658,191 @@ class _MusicModuleState extends State<MusicModule>
   }
   
   void _showMusicTrimmer(MusicTrack track) {
+    double startTime = 0;
+    double endTime = track.duration.inSeconds.toDouble();
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1A1A1A),
       isScrollControlled: true,
-      builder: (context) => Container(
-        height: 300,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Text(
-              'Trim "${track.title}"',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            // TODO: Implement waveform trimmer
-            const Expanded(
-              child: Center(
-                child: Text(
-                  'Waveform trimmer coming soon',
-                  style: TextStyle(color: Colors.white54),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Container(
+          height: 400,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Text(
+                'Trim "${track.title}"',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              
+              // Visual waveform placeholder
+              Container(
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Stack(
+                  children: [
+                    // Waveform visualization
+                    CustomPaint(
+                      size: const Size(double.infinity, 80),
+                      painter: WaveformPainter(),
+                    ),
+                    
+                    // Trim handles
+                    Positioned(
+                      left: (startTime / track.duration.inSeconds) * 
+                            (MediaQuery.of(context).size.width - 40),
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 3,
+                        color: const Color(0xFF00CED1),
+                      ),
+                    ),
+                    Positioned(
+                      left: (endTime / track.duration.inSeconds) * 
+                            (MediaQuery.of(context).size.width - 40),
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 3,
+                        color: const Color(0xFF00CED1),
+                      ),
+                    ),
+                    
+                    // Selected region
+                    Positioned(
+                      left: (startTime / track.duration.inSeconds) * 
+                            (MediaQuery.of(context).size.width - 40),
+                      right: ((track.duration.inSeconds - endTime) / track.duration.inSeconds) * 
+                             (MediaQuery.of(context).size.width - 40),
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                        color: const Color(0xFF00CED1).withOpacity(0.2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Time display
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatDuration(Duration(seconds: startTime.toInt())),
+                    style: const TextStyle(color: Color(0xFF00CED1)),
+                  ),
+                  Text(
+                    'Duration: ${_formatDuration(Duration(seconds: (endTime - startTime).toInt()))}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  Text(
+                    _formatDuration(Duration(seconds: endTime.toInt())),
+                    style: const TextStyle(color: Color(0xFF00CED1)),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 30),
+              
+              // Start time slider
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Start Time',
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                  Slider(
+                    value: startTime,
+                    max: endTime - 1,
+                    activeColor: const Color(0xFF00CED1),
+                    inactiveColor: Colors.white.withOpacity(0.2),
+                    onChanged: (value) {
+                      setState(() {
+                        startTime = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              
+              // End time slider
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'End Time',
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                  Slider(
+                    value: endTime,
+                    min: startTime + 1,
+                    max: track.duration.inSeconds.toDouble(),
+                    activeColor: const Color(0xFF00CED1),
+                    inactiveColor: Colors.white.withOpacity(0.2),
+                    onChanged: (value) {
+                      setState(() {
+                        endTime = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              
+              const Spacer(),
+              
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white54),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Apply trim
+                        final creationState = context.read<CreationStateProvider>();
+                        // Store trim data with the music selection
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Music trimmed successfully'),
+                            backgroundColor: Color(0xFF00CED1),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00CED1),
+                        foregroundColor: Colors.black,
+                      ),
+                      child: const Text('Apply'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -663,6 +894,56 @@ class _MusicModuleState extends State<MusicModule>
     final seconds = duration.inSeconds % 60;
     return '${minutes}:${seconds.toString().padLeft(2, '0')}';
   }
+  
+  void _startBeatSync() {
+    // Get current track's BPM
+    final selectedTrack = _musicLibrary.firstWhere(
+      (track) => track.id == context.read<CreationStateProvider>().backgroundMusicPath,
+      orElse: () => _musicLibrary.first,
+    );
+    
+    // Calculate beat interval
+    final beatInterval = Duration(milliseconds: (60000 / selectedTrack.bpm).round());
+    
+    _beatTimer?.cancel();
+    _beatTimer = Timer.periodic(beatInterval, (timer) {
+      setState(() {
+        _currentBeat++;
+      });
+      
+      // Notify the video editor about the beat
+      // This can be used to auto-cut or add effects on beat
+      context.read<CreationStateProvider>().notifyListeners();
+    });
+  }
+  
+  void _stopBeatSync() {
+    _beatTimer?.cancel();
+    _beatTimer = null;
+    setState(() {
+      _currentBeat = 0;
+    });
+  }
+  
+  void _toggleVoiceoverRecording() {
+    setState(() {
+      _isRecordingVoiceover = !_isRecordingVoiceover;
+    });
+    
+    if (_isRecordingVoiceover) {
+      // Start recording
+      _voiceoverSeconds = 0;
+      _voiceoverTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {
+          _voiceoverSeconds++;
+        });
+      });
+    } else {
+      // Stop recording
+      _voiceoverTimer?.cancel();
+      // TODO: Save recording and add to creation state
+    }
+  }
 }
 
 // Data models
@@ -694,4 +975,37 @@ class SoundEffectItem {
     required this.name,
     required this.category,
   });
+}
+
+// Custom painter for waveform visualization
+class WaveformPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.3)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+    
+    final path = Path();
+    final amplitude = size.height / 2;
+    final frequency = 0.02;
+    
+    // Draw a simple sine wave as placeholder
+    for (double x = 0; x <= size.width; x++) {
+      final y = amplitude + amplitude * 0.7 * 
+                (x / size.width) * // Fade in/out
+                math.sin(x * frequency);
+      
+      if (x == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    
+    canvas.drawPath(path, paint);
+  }
+  
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

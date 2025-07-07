@@ -403,6 +403,26 @@ class _CameraModuleState extends State<CameraModule>
     }
   }
   
+  void _setupGestureRecognition() {
+    // Hands-free gesture recording using peace sign (✌️) detection
+    // This is a placeholder - in production, you'd use a hand detection ML model
+    // For now, we'll simulate with a double tap gesture
+  }
+  
+  void _handleGesture() {
+    final now = DateTime.now();
+    if (_lastGestureTime != null && 
+        now.difference(_lastGestureTime!).inSeconds < 2) {
+      // Double gesture detected - toggle recording
+      if (_isRecording) {
+        _stopRecording();
+      } else {
+        _startRecording();
+      }
+    }
+    _lastGestureTime = now;
+  }
+  
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized || _cameraController == null) {
@@ -424,6 +444,7 @@ class _CameraModuleState extends State<CameraModule>
             onScaleUpdate: (details) {
               _setZoom(_zoomLevel * details.scale);
             },
+            onDoubleTap: _handleGesture, // Hands-free gesture simulation
             child: CameraPreview(_cameraController!),
           ),
         ),
@@ -492,6 +513,34 @@ class _CameraModuleState extends State<CameraModule>
               onChanged: (value) {
                 creationState.setBeautyIntensity(value);
               },
+            ),
+          ),
+        
+        // Hands-free indicator
+        if (_selectedCameraIndex == 1) // Front camera
+          Positioned(
+            top: 120,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.waving_hand, color: Color(0xFF00CED1), size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Double tap to start/stop',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         
