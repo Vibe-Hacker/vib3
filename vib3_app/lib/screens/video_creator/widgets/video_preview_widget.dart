@@ -139,52 +139,52 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
       });
     }
     
-    return Stack(
-      children: [
-        // Video preview
-        if (_controller != null && _controller!.value.isInitialized)
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showControls = !_showControls;
-                });
-              },
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: _controller!.value.aspectRatio,
-                  child: VideoPlayer(_controller!),
-                ),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _showControls = !_showControls;
+        });
+      },
+      child: Stack(
+        children: [
+          // Background
+          Container(color: Colors.black),
+          
+          // Video preview
+          if (_controller != null && _controller!.value.isInitialized)
+            Center(
+              child: AspectRatio(
+                aspectRatio: _controller!.value.aspectRatio,
+                child: VideoPlayer(_controller!),
+              ),
+            )
+          else if (creationState.videoClips.isNotEmpty)
+            const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF00CED1),
+              ),
+            )
+          else
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(
+                    Icons.videocam_off,
+                    color: Colors.white30,
+                    size: 80,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No video recorded yet',
+                    style: TextStyle(
+                      color: Colors.white30,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
               ),
             ),
-          )
-        else if (creationState.videoClips.isNotEmpty)
-          const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFF00CED1),
-            ),
-          )
-        else
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.videocam_off,
-                  color: Colors.white30,
-                  size: 80,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No video recorded yet',
-                  style: TextStyle(
-                    color: Colors.white30,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
         
         // Filter overlay
         if (creationState.selectedFilter != 'none')
@@ -252,12 +252,12 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
         }).toList(),
         
         // Play/pause button - always visible
-        AnimatedOpacity(
-          opacity: _showControls || !_isPlaying ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 200),
-          child: Positioned(
-            bottom: 20,
-            right: 20,
+        Positioned(
+          bottom: 20,
+          right: 20,
+          child: AnimatedOpacity(
+            opacity: _showControls || !_isPlaying ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
             child: GestureDetector(
               onTap: _togglePlayPause,
               child: Container(
@@ -344,7 +344,8 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
             right: 0,
             child: _buildClipsTimeline(creationState),
           ),
-      ],
+        ],
+      ),
     );
   }
   
