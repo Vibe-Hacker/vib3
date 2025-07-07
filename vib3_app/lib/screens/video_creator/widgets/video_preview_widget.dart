@@ -58,11 +58,21 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
       
       if (creationState.videoClips.isEmpty) {
         print('VideoPreviewWidget: No clips available!');
+        // Try again after a short delay in case provider is still initializing
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (creationState.videoClips.isNotEmpty) {
+          _initializeVideo();
+        }
         return;
       }
       
       final firstClip = creationState.videoClips[creationState.currentClipIndex];
       print('VideoPreviewWidget: Loading video from ${firstClip.path}');
+      
+      // Dispose old controller if exists
+      if (_controller != null) {
+        await _controller!.dispose();
+      }
       
       _controller = VideoPlayerController.file(File(firstClip.path));
       
@@ -121,6 +131,13 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
   @override
   Widget build(BuildContext context) {
     final creationState = context.watch<CreationStateProvider>();
+    
+    // Re-initialize video if clips change
+    if (creationState.videoClips.isNotEmpty && _controller == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initializeVideo();
+      });
+    }
     
     return Stack(
       children: [

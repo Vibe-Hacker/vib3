@@ -58,9 +58,8 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
     
     // Initialize after widget is built
     if (widget.videoPath != null) {
-      setState(() {
-        _currentMode = CreatorMode.edit;
-      });
+      // Start in edit mode when we have a video
+      _currentMode = CreatorMode.edit;
     }
     
     // Lock to portrait
@@ -119,14 +118,17 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
       create: (_) => CreationStateProvider(),
       child: Builder(
         builder: (providerContext) {
-          // Initialize creation state with video path
-          final creationState = providerContext.read<CreationStateProvider>();
-          if (widget.videoPath != null && creationState.videoClips.isEmpty) {
-            creationState.loadExistingVideo(widget.videoPath!);
-          }
-          if (widget.audioPath != null) {
-            creationState.setBackgroundMusic(widget.audioPath!);
-          }
+          // Initialize creation state with video path immediately
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final creationState = providerContext.read<CreationStateProvider>();
+            if (widget.videoPath != null && creationState.videoClips.isEmpty) {
+              print('VideoCreatorScreen: Loading video from ${widget.videoPath}');
+              creationState.loadExistingVideo(widget.videoPath!);
+            }
+            if (widget.audioPath != null) {
+              creationState.setBackgroundMusic(widget.audioPath!);
+            }
+          });
           
           return Scaffold(
             backgroundColor: Colors.black,
