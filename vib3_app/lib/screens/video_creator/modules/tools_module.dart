@@ -234,6 +234,15 @@ class _ToolsModuleState extends State<ToolsModule>
                 top: 0,
                 bottom: 0,
                 child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    final RenderBox box = context.findRenderObject() as RenderBox;
+                    final localPosition = box.globalToLocal(details.globalPosition);
+                    final percentage = ((localPosition.dx - 16) / (box.size.width - 32) * 100)
+                        .clamp(0.0, _trimEnd - 1);
+                    setState(() {
+                      _trimStart = percentage;
+                    });
+                  },
                   child: Container(
                     width: 24,
                     child: Center(
@@ -268,6 +277,15 @@ class _ToolsModuleState extends State<ToolsModule>
                 top: 0,
                 bottom: 0,
                 child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    final RenderBox box = context.findRenderObject() as RenderBox;
+                    final localPosition = box.globalToLocal(details.globalPosition);
+                    final percentage = ((localPosition.dx - 16) / (box.size.width - 32) * 100)
+                        .clamp(_trimStart + 1, 100.0);
+                    setState(() {
+                      _trimEnd = percentage;
+                    });
+                  },
                   child: Container(
                     width: 24,
                     child: Center(
@@ -402,6 +420,11 @@ class _ToolsModuleState extends State<ToolsModule>
                       child: RangeSlider(
                         values: RangeValues(_trimStart, _trimEnd),
                         max: 100,
+                        divisions: 100,
+                        labels: RangeLabels(
+                          _formatDuration(_trimStart),
+                          _formatDuration(_trimEnd),
+                        ),
                         activeColor: const Color(0xFF00CED1),
                         inactiveColor: Colors.white.withOpacity(0.2),
                         onChanged: (values) {
