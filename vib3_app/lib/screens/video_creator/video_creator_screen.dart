@@ -212,38 +212,6 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                   ),
                 ),
               ),
-                    // Debug overlay
-                    if (kDebugMode)
-                      Positioned(
-                        top: 100,
-                        left: 20,
-                        right: 20,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          color: Colors.black.withOpacity(0.8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Mode: $_currentMode',
-                                style: const TextStyle(color: Colors.green, fontSize: 12),
-                              ),
-                              Text(
-                                'Clips: ${creationState.videoClips.length}',
-                                style: const TextStyle(color: Colors.green, fontSize: 12),
-                              ),
-                              if (creationState.videoClips.isNotEmpty)
-                                Text(
-                                  'Path: ${creationState.videoClips.first.path}',
-                                  style: const TextStyle(color: Colors.green, fontSize: 10),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
                   ],
                 );
               },
