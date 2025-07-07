@@ -551,7 +551,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                       ),
                     ),
                     
-                    // Current position indicator
+                    // Current playback position indicator (white line)
                     if (_videoDuration.inMilliseconds > 0)
                       Positioned(
                         left: (MediaQuery.of(context).size.width - 32) *
@@ -561,6 +561,15 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                         child: Container(
                           width: 2,
                           color: Colors.white,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            margin: EdgeInsets.only(left: -5),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
                         ),
                       ),
                   ],
@@ -664,17 +673,32 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                 'Trim: ${_formatDuration(_trimEnd - _trimStart)}',
                 style: TextStyle(color: Colors.white),
               ),
-              TextButton(
+              ElevatedButton.icon(
                 onPressed: () {
                   setState(() {
                     _segments.add(TrimSegment(start: _trimStart, end: _trimEnd));
-                    _trimStart = _trimEnd;
-                    _trimEnd = _videoDuration;
+                    // Move to next untrimmed section
+                    if (_trimEnd < _videoDuration) {
+                      _trimStart = _trimEnd;
+                      _trimEnd = _trimEnd + Duration(seconds: 5);
+                      if (_trimEnd > _videoDuration) {
+                        _trimEnd = _videoDuration;
+                      }
+                    }
                   });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Segment added! Total: ${_segments.length}'),
+                      duration: Duration(seconds: 1),
+                      backgroundColor: Color(0xFF00CED1),
+                    ),
+                  );
                 },
-                child: Text(
-                  'Add Segment',
-                  style: TextStyle(color: Color(0xFF00CED1)),
+                icon: Icon(Icons.add, size: 16),
+                label: Text('Add Segment'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF00CED1),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 ),
               ),
             ],
@@ -689,12 +713,24 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                   min: 0,
                   max: _videoDuration.inMilliseconds.toDouble(),
                   activeColor: Color(0xFF00CED1),
+                  onChangeStart: (value) {
+                    // Pause video when starting to drag
+                    if (_isPlaying) {
+                      _controller?.pause();
+                      setState(() {
+                        _isPlaying = false;
+                      });
+                    }
+                  },
                   onChanged: (value) {
                     setState(() {
                       _trimStart = Duration(milliseconds: value.toInt());
                       if (_trimStart >= _trimEnd) {
                         _trimStart = _trimEnd - Duration(seconds: 1);
                       }
+                      // Seek video to trim start position for live preview
+                      _controller?.seekTo(_trimStart);
+                      _currentPosition = _trimStart;
                     });
                   },
                 ),
@@ -714,12 +750,24 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                   min: 0,
                   max: _videoDuration.inMilliseconds.toDouble(),
                   activeColor: Color(0xFF00CED1),
+                  onChangeStart: (value) {
+                    // Pause video when starting to drag
+                    if (_isPlaying) {
+                      _controller?.pause();
+                      setState(() {
+                        _isPlaying = false;
+                      });
+                    }
+                  },
                   onChanged: (value) {
                     setState(() {
                       _trimEnd = Duration(milliseconds: value.toInt());
                       if (_trimEnd <= _trimStart) {
                         _trimEnd = _trimStart + Duration(seconds: 1);
                       }
+                      // Seek video to trim end position for live preview
+                      _controller?.seekTo(_trimEnd);
+                      _currentPosition = _trimEnd;
                     });
                   },
                 ),
@@ -730,6 +778,76 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
               ),
             ],
           ),
+          // Display existing segments
+          if (_segments.isNotEmpty) ...[
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Text(
+                  'Segments (${_segments.length})',
+                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+                Spacer(),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _segments.clear();
+                      _trimStart = Duration.zero;
+                      _trimEnd = _videoDuration;
+                    });
+                  },
+                  child: Text(
+                    'Clear All',
+                    style: TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Container(
+              constraints: BoxConstraints(maxHeight: 100),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _segments.length,
+                itemBuilder: (context, index) {
+                  final segment = _segments[index];
+                  return Container(
+                    margin: EdgeInsets.only(bottom: 4),
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Color(0xFF00CED1).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Color(0xFF00CED1).withOpacity(0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Segment ${index + 1}: ${_formatDuration(segment.start)} - ${_formatDuration(segment.end)}',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                        Spacer(),
+                        IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red, size: 18),
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints(),
+                          onPressed: () {
+                            setState(() {
+                              _segments.removeAt(index);
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Tip: Add multiple segments to keep only the parts you want',
+              style: TextStyle(color: Colors.white54, fontSize: 11),
+            ),
+          ],
         ],
         ),
       ),
@@ -1176,10 +1294,29 @@ class _TrimPainter extends CustomPainter {
       paint,
     );
     
+    // Draw start handle grip
+    paint.style = PaintingStyle.fill;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(startX - 10, 0, 20, 20),
+        Radius.circular(4),
+      ),
+      paint,
+    );
+    
     // End handle
     canvas.drawLine(
       Offset(endX, 0),
       Offset(endX, size.height),
+      paint,
+    );
+    
+    // Draw end handle grip
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(endX - 10, 0, 20, 20),
+        Radius.circular(4),
+      ),
       paint,
     );
     
