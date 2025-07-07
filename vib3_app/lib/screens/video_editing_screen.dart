@@ -654,8 +654,9 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   Widget _buildTrimTools() {
     return Container(
       padding: EdgeInsets.all(16),
-      child: Column(
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -730,6 +731,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
             ],
           ),
         ],
+        ),
       ),
     );
   }

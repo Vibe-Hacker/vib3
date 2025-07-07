@@ -60,6 +60,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _initializeVideo();
       } else if (!widget.isPlaying && _isInitialized) {
         _controller?.pause();
+        // Dispose controller after a delay to free resources
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted && !widget.isPlaying) {
+            _disposeController();
+          }
+        });
       } else if (widget.isPlaying && _isInitialized) {
         _controller?.play();
       }
@@ -211,24 +217,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     return GestureDetector(
       onTap: _togglePlayPause,
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        color: Colors.black,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Fill entire screen width and height
-            Positioned.fill(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: _controller!.value.size.width,
-                  height: _controller!.value.size.height,
-                  child: VideoPlayer(_controller!),
+      child: ClipRRect(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(30),
+          bottom: Radius.circular(30),
+        ),
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: Colors.black,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Fill entire screen width and height
+              Positioned.fill(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _controller!.value.size.width,
+                    height: _controller!.value.size.height,
+                    child: VideoPlayer(_controller!),
+                  ),
                 ),
               ),
-            ),
             // Play/Pause icon overlay
             if (_showPlayIcon)
               Center(
@@ -251,6 +262,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 ),
               ),
           ],
+          ),
         ),
       ),
     );

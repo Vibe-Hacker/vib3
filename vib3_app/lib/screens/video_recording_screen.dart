@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
+import 'dart:async';
 import 'video_editing_screen.dart';
 
 class VideoRecordingScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
   int _recordingTime = 0;
   late AnimationController _pulseController;
   late AnimationController _timerController;
+  Timer? _recordingTimer;
   double _zoom = 1.0;
   int _selectedCameraIndex = 0;
   FlashMode _flashMode = FlashMode.off;
@@ -83,28 +85,58 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
         _isPaused = false;
         _showTimer = false;
       });
-      _timerController.stop();
+      _recordingTimer?.cancel();
       
       // Navigate to editing screen
       if (mounted) {
         print('🎬 Video recorded successfully at: ${video.path}');
-        print('📁 Video file size: ${await File(video.path).length()} bytes');
         
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => VideoEditingScreen(videoPath: video.path),
-          ),
-        );
+        // Check if file exists
+        final videoFile = File(video.path);
+        if (await videoFile.exists()) {
+          final fileSize = await videoFile.length();
+          print('📁 Video file size: $fileSize bytes');
+          
+          if (fileSize > 0) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => VideoEditingScreen(videoPath: video.path),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Error: Video file is empty'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: Video file not found'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       print('Error stopping recording: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   void _startTimer() {
-    _timerController.repeat();
-    _timerController.addListener(() {
+    _recordingTimer?.cancel();
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_isRecording && !_isPaused) {
         setState(() {
           _recordingTime++;
@@ -173,6 +205,7 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
     _controller?.dispose();
     _pulseController.dispose();
     _timerController.dispose();
+    _recordingTimer?.cancel();
     super.dispose();
   }
 
@@ -285,7 +318,7 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
             right: 0,
             child: SafeArea(
               child: Container(
-                padding: const EdgeInsets.only(bottom: 20, top: 20, left: 20, right: 20),
+                padding: const EdgeInsets.only(bottom: 10, top: 10, left: 20, right: 20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
@@ -303,8 +336,8 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: Container(
-                      width: 50,
-                      height: 50,
+                      width: 45,
+                      height: 45,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
@@ -317,8 +350,8 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
                   GestureDetector(
                     onTap: _isRecording ? _stopRecording : _startRecording,
                     child: Container(
-                      width: 80,
-                      height: 80,
+                      width: 70,
+                      height: 70,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 4),
@@ -338,8 +371,8 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
                   IconButton(
                     onPressed: _flipCamera,
                     icon: Container(
-                      width: 50,
-                      height: 50,
+                      width: 45,
+                      height: 45,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         shape: BoxShape.circle,
