@@ -156,8 +156,24 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                     }
                   },
                   onNext: () {
-                    // Navigate to upload screen
-                    _navigateToUpload();
+                    if (_currentMode == CreatorMode.edit) {
+                      // Only navigate to upload from edit mode
+                      _navigateToUpload();
+                    } else {
+                      // From other modes, return to edit mode
+                      setState(() {
+                        _currentMode = CreatorMode.edit;
+                      });
+                      
+                      // Show confirmation
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(_getConfirmationMessage()),
+                          duration: const Duration(seconds: 1),
+                          backgroundColor: const Color(0xFF00CED1),
+                        ),
+                      );
+                    }
                   },
                 ),
               ),
@@ -191,6 +207,23 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
         },
       ),
     );
+  }
+  
+  String _getConfirmationMessage() {
+    switch (_currentMode) {
+      case CreatorMode.music:
+        return 'Music added to video';
+      case CreatorMode.effects:
+        return 'Effects applied';
+      case CreatorMode.text:
+        return 'Text & stickers added';
+      case CreatorMode.filters:
+        return 'Filter applied';
+      case CreatorMode.tools:
+        return 'Adjustments saved';
+      default:
+        return 'Changes applied';
+    }
   }
   
   void _navigateToUpload() {
