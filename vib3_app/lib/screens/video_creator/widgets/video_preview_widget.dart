@@ -251,9 +251,9 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
           );
         }).toList(),
         
-        // Play/pause button - always visible
+        // Play/pause button - always visible above bottom toolbar
         Positioned(
-          bottom: 20,
+          bottom: 100,  // Moved up to clear bottom toolbar
           right: 20,
           child: AnimatedOpacity(
             opacity: _showControls || !_isPlaying ? 1.0 : 0.0,
@@ -289,7 +289,7 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
         // Progress bar
         if (_controller != null && _controller!.value.isInitialized && _showControls)
           Positioned(
-            bottom: 90,
+            bottom: 170,  // Moved up to stay above play button
             left: 20,
             right: 20,
             child: VideoProgressIndicator(
@@ -339,7 +339,7 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
         // Clips timeline (if multiple clips)
         if (creationState.videoClips.length > 1)
           Positioned(
-            bottom: 100,
+            bottom: 180,  // Moved up to clear bottom toolbar
             left: 0,
             right: 0,
             child: _buildClipsTimeline(creationState),
