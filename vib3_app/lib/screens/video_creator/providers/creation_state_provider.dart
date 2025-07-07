@@ -22,6 +22,7 @@ class CreationStateProvider extends ChangeNotifier {
   // Volume levels
   double _originalVolume = 1.0;
   double _musicVolume = 0.7;
+  bool _beatSyncEnabled = false;
   
   // Effects and filters
   String _selectedFilter = 'none';
@@ -41,7 +42,7 @@ class CreationStateProvider extends ChangeNotifier {
   double _beautyIntensity = 0.5;
   
   // Getters
-  String? get backgroundMusicPath => _backgroundMusicPath;
+  String get backgroundMusicPath => _backgroundMusicPath ?? '';
   String? get voiceoverPath => _voiceoverPath;
   String get selectedFilter => _selectedFilter;
   double get originalVolume => _originalVolume;
@@ -54,6 +55,7 @@ class CreationStateProvider extends ChangeNotifier {
   List<VideoEffect> get effects => _effects;
   List<TextOverlay> get textOverlays => _textOverlays;
   List<StickerOverlay> get stickers => _stickers;
+  bool get beatSyncEnabled => _beatSyncEnabled;
   
   // Add video clip
   void addVideoClip(String path, {Duration? trimStart, Duration? trimEnd}) {
@@ -124,6 +126,11 @@ class CreationStateProvider extends ChangeNotifier {
   
   void setMusicVolume(double volume) {
     _musicVolume = volume.clamp(0.0, 1.0);
+    notifyListeners();
+  }
+  
+  void setBeatSyncEnabled(bool enabled) {
+    _beatSyncEnabled = enabled;
     notifyListeners();
   }
   

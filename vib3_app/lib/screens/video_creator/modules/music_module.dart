@@ -81,6 +81,7 @@ class _MusicModuleState extends State<MusicModule>
     _tabController.dispose();
     _audioPlayer.dispose();
     _voiceoverTimer?.cancel();
+    _beatTimer?.cancel();
     super.dispose();
   }
   
@@ -163,35 +164,106 @@ class _MusicModuleState extends State<MusicModule>
           ),
         ),
         
-        // Genre filter
-        Container(
-          height: 40,
-          margin: const EdgeInsets.only(bottom: 10),
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: ['All', 'Pop', 'Electronic', 'Hip Hop', 'Rock', 'Classical']
-                .map((genre) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(genre),
-                        selected: _selectedGenre == genre,
-                        onSelected: (selected) {
-                          setState(() {
-                            _selectedGenre = selected ? genre : 'All';
-                          });
-                        },
-                        backgroundColor: Colors.white.withOpacity(0.1),
-                        selectedColor: const Color(0xFF00CED1),
-                        labelStyle: TextStyle(
-                          color: _selectedGenre == genre 
-                              ? Colors.black 
-                              : Colors.white,
-                        ),
+        // Genre filter and Beat Sync toggle
+        Column(
+          children: [
+            Container(
+              height: 40,
+              margin: const EdgeInsets.only(bottom: 10),
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: ['All', 'Pop', 'Electronic', 'Hip Hop', 'Rock', 'Classical']
+                    .map((genre) => Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: Text(genre),
+                            selected: _selectedGenre == genre,
+                            onSelected: (selected) {
+                              setState(() {
+                                _selectedGenre = selected ? genre : 'All';
+                              });
+                            },
+                            backgroundColor: Colors.white.withOpacity(0.1),
+                            selectedColor: const Color(0xFF00CED1),
+                            labelStyle: TextStyle(
+                              color: _selectedGenre == genre 
+                                  ? Colors.black 
+                                  : Colors.white,
+                            ),
+                          ),
+                        ))
+                    .toList(),
+              ),
+            ),
+            
+            // Beat sync control
+            if (creationState.backgroundMusicPath.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _beatSyncEnabled 
+                      ? const Color(0xFF00CED1).withOpacity(0.2)
+                      : Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: _beatSyncEnabled 
+                        ? const Color(0xFF00CED1)
+                        : Colors.white.withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.music_note,
+                      color: _beatSyncEnabled ? const Color(0xFF00CED1) : Colors.white54,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Beat Sync',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            _beatSyncEnabled 
+                                ? 'Auto-cut on beat (Beat $_currentBeat)'
+                                : 'Sync edits to music beats',
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
-                    ))
-                .toList(),
-          ),
+                    ),
+                    Switch(
+                      value: _beatSyncEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _beatSyncEnabled = value;
+                          if (value) {
+                            _startBeatSync();
+                          } else {
+                            _stopBeatSync();
+                          }
+                        });
+                        
+                        // Store beat sync status
+                        creationState.setBeatSyncEnabled(value);
+                      },
+                      activeColor: const Color(0xFF00CED1),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
         
         // Music list
