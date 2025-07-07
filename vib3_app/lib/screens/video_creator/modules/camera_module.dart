@@ -285,6 +285,10 @@ class _CameraModuleState extends State<CameraModule>
       
       HapticFeedback.heavyImpact();
       
+      // Add to creation state
+      final creationState = context.read<CreationStateProvider>();
+      creationState.addVideoClip(videoFile.path);
+      
       // Apply speed if needed
       if (_selectedSpeed != 1.0) {
         // TODO: Process video with speed change
@@ -403,11 +407,6 @@ class _CameraModuleState extends State<CameraModule>
     }
   }
   
-  void _setupGestureRecognition() {
-    // Hands-free gesture recording using peace sign (✌️) detection
-    // This is a placeholder - in production, you'd use a hand detection ML model
-    // For now, we'll simulate with a double tap gesture
-  }
   
   void _handleGesture() {
     final now = DateTime.now();

@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import '../providers/creation_state_provider.dart';
+import '../widgets/trim_preview_widget.dart';
+
+// Data model for trim segments
+class TrimSegment {
+  final Duration start;
+  final Duration end;
+  
+  TrimSegment({required this.start, required this.end});
+}
 
 class ToolsModule extends StatefulWidget {
   const ToolsModule({super.key});
@@ -89,66 +98,198 @@ class _ToolsModuleState extends State<ToolsModule>
   }
   
   Widget _buildTrimTab(CreationStateProvider creationState) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final availableHeight = screenHeight - 200; // Minus tab bar and controls
+    
     return Column(
       children: [
-        // Visual timeline
+        // Video preview - now takes up most of the available space
+        Expanded(
+          flex: 3,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            decoration: BoxDecoration(
+              color: Colors.grey[900],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
+            ),
+            child: Stack(
+              children: [
+                // Video preview with aspect ratio preservation
+                Center(
+                  child: AspectRatio(
+                    aspectRatio: 9 / 16, // TikTok video aspect ratio
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: TrimPreviewWidget(
+                        videoPath: creationState.videoClips.isNotEmpty 
+                            ? creationState.videoClips[creationState.currentClipIndex].path 
+                            : null,
+                        trimStart: _trimStart,
+                        trimEnd: _trimEnd,
+                      ),
+                    ),
+                  ),
+                ),
+                // Preview time indicator
+                Positioned(
+                  bottom: 16,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_formatDuration(_trimStart)} - ${_formatDuration(_trimEnd)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        // Visual timeline with thumbnails
         Container(
           height: 100,
-          margin: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
           ),
           child: Stack(
             children: [
-              // Timeline background
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.blue.withOpacity(0.3),
-                      Colors.purple.withOpacity(0.3),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              
-              // Trim handles
-              Positioned(
-                left: (_trimStart / 100) * (MediaQuery.of(context).size.width - 32),
-                top: 0,
-                bottom: 0,
-                child: Container(
-                  width: 4,
-                  color: const Color(0xFF00CED1),
-                  child: Center(
-                    child: Container(
-                      width: 20,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00CED1),
-                        borderRadius: BorderRadius.circular(4),
+              // Timeline background with frame thumbnails
+              ClipRRect(
+                borderRadius: BorderRadius.circular(11),
+                child: Row(
+                  children: List.generate(10, (index) => 
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.blue.withOpacity(0.2),
+                              Colors.purple.withOpacity(0.2),
+                            ],
+                          ),
+                          border: Border(
+                            right: BorderSide(
+                              color: Colors.white.withOpacity(0.1),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.3),
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
               
+              // Selected area overlay
               Positioned(
-                left: (_trimEnd / 100) * (MediaQuery.of(context).size.width - 32),
+                left: (_trimStart / 100) * (MediaQuery.of(context).size.width - 32),
+                right: ((100 - _trimEnd) / 100) * (MediaQuery.of(context).size.width - 32),
                 top: 0,
                 bottom: 0,
                 child: Container(
-                  width: 4,
-                  color: const Color(0xFF00CED1),
-                  child: Center(
-                    child: Container(
-                      width: 20,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00CED1),
-                        borderRadius: BorderRadius.circular(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00CED1).withOpacity(0.2),
+                    border: Border(
+                      left: BorderSide(color: const Color(0xFF00CED1), width: 3),
+                      right: BorderSide(color: const Color(0xFF00CED1), width: 3),
+                    ),
+                  ),
+                ),
+              ),
+              
+              // Start handle
+              Positioned(
+                left: (_trimStart / 100) * (MediaQuery.of(context).size.width - 32) - 12,
+                top: 0,
+                bottom: 0,
+                child: GestureDetector(
+                  child: Container(
+                    width: 24,
+                    child: Center(
+                      child: Container(
+                        width: 24,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00CED1),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.drag_indicator,
+                          color: Colors.black,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              
+              // End handle
+              Positioned(
+                left: (_trimEnd / 100) * (MediaQuery.of(context).size.width - 32) - 12,
+                top: 0,
+                bottom: 0,
+                child: GestureDetector(
+                  child: Container(
+                    width: 24,
+                    child: Center(
+                      child: Container(
+                        width: 24,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00CED1),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.drag_indicator,
+                          color: Colors.black,
+                          size: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -171,90 +312,114 @@ class _ToolsModuleState extends State<ToolsModule>
           ),
         ),
         
-        // Trim controls
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+        // Trim controls - more compact
+        Container(
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              // Duration and controls row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Duration: ${_formatDuration(_trimEnd - _trimStart)}',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _trimSegments.add(TrimSegment(
-                          start: Duration(milliseconds: (_trimStart * 10).toInt()),
-                          end: Duration(milliseconds: (_trimEnd * 10).toInt()),
-                        ));
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Segment added'),
-                          duration: Duration(seconds: 1),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Selected Duration',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      Text(
+                        _formatDuration(_trimEnd - _trimStart),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Add Segment'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00CED1),
-                      foregroundColor: Colors.black,
-                    ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      // Split clip button
+                      IconButton(
+                        onPressed: () {
+                          // Split at current position
+                        },
+                        icon: const Icon(Icons.content_cut),
+                        color: const Color(0xFF00CED1),
+                        tooltip: 'Split clip',
+                      ),
+                      const SizedBox(width: 8),
+                      // Add segment button
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _trimSegments.add(TrimSegment(
+                              start: Duration(milliseconds: (_trimStart * 10).toInt()),
+                              end: Duration(milliseconds: (_trimEnd * 10).toInt()),
+                            ));
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Segment added'),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Add'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00CED1),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
               
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               
-              // Start slider
+              // Compact sliders
               Row(
                 children: [
-                  const Text('Start:', style: TextStyle(color: Colors.white70)),
-                  Expanded(
-                    child: Slider(
-                      value: _trimStart,
-                      max: _trimEnd - 1,
-                      activeColor: const Color(0xFF00CED1),
-                      inactiveColor: Colors.white.withOpacity(0.2),
-                      onChanged: (value) {
-                        setState(() {
-                          _trimStart = value;
-                        });
-                      },
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      _formatDuration(_trimStart),
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-                  Text(
-                    _formatDuration(_trimStart),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ],
-              ),
-              
-              // End slider
-              Row(
-                children: [
-                  const Text('End:', style: TextStyle(color: Colors.white70)),
                   Expanded(
-                    child: Slider(
-                      value: _trimEnd,
-                      min: _trimStart + 1,
-                      max: 100,
-                      activeColor: const Color(0xFF00CED1),
-                      inactiveColor: Colors.white.withOpacity(0.2),
-                      onChanged: (value) {
-                        setState(() {
-                          _trimEnd = value;
-                        });
-                      },
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 4,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                      ),
+                      child: RangeSlider(
+                        values: RangeValues(_trimStart, _trimEnd),
+                        max: 100,
+                        activeColor: const Color(0xFF00CED1),
+                        inactiveColor: Colors.white.withOpacity(0.2),
+                        onChanged: (values) {
+                          setState(() {
+                            _trimStart = values.start;
+                            _trimEnd = values.end;
+                          });
+                        },
+                      ),
                     ),
                   ),
-                  Text(
-                    _formatDuration(_trimEnd),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      _formatDuration(_trimEnd),
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ],
               ),
@@ -262,36 +427,47 @@ class _ToolsModuleState extends State<ToolsModule>
           ),
         ),
         
-        // Segments list
+        // Segments list - compact horizontal scroll
         if (_trimSegments.isNotEmpty)
-          Expanded(
+          Container(
+            height: 60,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              scrollDirection: Axis.horizontal,
               itemCount: _trimSegments.length,
               itemBuilder: (context, index) {
                 final segment = _trimSegments[index];
                 return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
+                  width: 120,
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: const Color(0xFF00CED1).withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFF00CED1).withOpacity(0.5)),
                   ),
-                  child: Row(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Segment ${index + 1}: ${segment.start.inSeconds}s - ${segment.end.inSeconds}s',
-                        style: const TextStyle(color: Colors.white),
+                        'Clip ${index + 1}',
+                        style: const TextStyle(
+                          color: Color(0xFF00CED1),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: () {
+                      Text(
+                        '${segment.start.inSeconds}s - ${segment.end.inSeconds}s',
+                        style: const TextStyle(color: Colors.white70, fontSize: 10),
+                      ),
+                      GestureDetector(
+                        onTap: () {
                           setState(() {
                             _trimSegments.removeAt(index);
                           });
                         },
-                        icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                        child: const Icon(Icons.close, color: Colors.red, size: 16),
                       ),
                     ],
                   ),

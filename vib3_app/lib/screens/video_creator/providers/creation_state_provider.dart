@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
 import '../../../services/video_export_service.dart';
@@ -50,6 +51,9 @@ class CreationStateProvider extends ChangeNotifier {
   double get recordingSpeed => _recordingSpeed;
   bool get beautyMode => _beautyMode;
   double get beautyIntensity => _beautyIntensity;
+  List<VideoEffect> get effects => _effects;
+  List<TextOverlay> get textOverlays => _textOverlays;
+  List<StickerOverlay> get stickers => _stickers;
   
   // Add video clip
   void addVideoClip(String path, {Duration? trimStart, Duration? trimEnd}) {

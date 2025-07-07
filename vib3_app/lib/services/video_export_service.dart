@@ -1,12 +1,11 @@
 import 'dart:io';
-import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import '../screens/video_creator/providers/creation_state_provider.dart';
 
+/// Mock video export service for testing without FFmpeg
 class VideoExportService {
-  /// Export video with all edits applied
+  /// Export video with all edits applied (MOCK VERSION)
   static Future<String> exportVideo({
     required List<VideoClip> clips,
     required String? backgroundMusicPath,
@@ -18,302 +17,31 @@ class VideoExportService {
     required double musicVolume,
     Function(double)? onProgress,
   }) async {
-    try {
-      // Get temporary directory for processing
-      final tempDir = await getTemporaryDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputPath = path.join(tempDir.path, 'vib3_export_$timestamp.mp4');
-      
-      // Build FFmpeg command
-      String command = await _buildFFmpegCommand(
-        clips: clips,
-        backgroundMusicPath: backgroundMusicPath,
-        voiceoverPath: voiceoverPath,
-        textOverlays: textOverlays,
-        stickers: stickers,
-        selectedFilter: selectedFilter,
-        originalVolume: originalVolume,
-        musicVolume: musicVolume,
-        outputPath: outputPath,
-      );
-      
-      print('FFmpeg command: $command');
-      
-      // Execute FFmpeg command
-      final session = await FFmpegKit.executeAsync(
-        command,
-        (session) async {
-          final returnCode = await session.getReturnCode();
-          
-          if (ReturnCode.isSuccess(returnCode)) {
-            print('Video export successful');
-          } else if (ReturnCode.isCancel(returnCode)) {
-            print('Video export cancelled');
-            throw Exception('Export cancelled');
-          } else {
-            print('Video export failed with rc=$returnCode');
-            final failStackTrace = await session.getFailStackTrace();
-            print('Fail stack trace: $failStackTrace');
-            throw Exception('Export failed');
-          }
-        },
-        (log) {
-          print('FFmpeg log: ${log.getMessage()}');
-        },
-        (statistics) {
-          // Calculate progress
-          if (statistics.getTime() > 0 && onProgress != null) {
-            // Estimate total duration from clips
-            int totalDuration = 0;
-            for (final clip in clips) {
-              totalDuration += clip.duration.inMilliseconds;
-            }
-            
-            if (totalDuration > 0) {
-              final progress = statistics.getTime() / totalDuration;
-              onProgress(progress.clamp(0.0, 1.0));
-            }
-          }
-        },
-      );
-      
-      // Wait for completion
-      await session.getReturnCode();
-      
-      // Verify output file exists
-      final outputFile = File(outputPath);
-      if (!await outputFile.exists()) {
-        throw Exception('Output file not created');
+    // Simulate export progress
+    if (onProgress != null) {
+      for (int i = 0; i <= 100; i += 10) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        onProgress(i / 100);
       }
-      
-      return outputPath;
-    } catch (e) {
-      print('Export error: $e');
-      rethrow;
     }
+    
+    // Return the first clip path as the "exported" video
+    if (clips.isNotEmpty) {
+      return clips.first.path;
+    }
+    
+    // Return a dummy path if no clips
+    final tempDir = await getTemporaryDirectory();
+    return path.join(tempDir.path, 'mock_export.mp4');
   }
   
-  /// Build FFmpeg command with all parameters
-  static Future<String> _buildFFmpegCommand({
-    required List<VideoClip> clips,
-    required String? backgroundMusicPath,
-    required String? voiceoverPath,
-    required List<TextOverlay> textOverlays,
-    required List<StickerOverlay> stickers,
-    required String selectedFilter,
-    required double originalVolume,
-    required double musicVolume,
-    required String outputPath,
-  }) async {
-    List<String> inputs = [];
-    List<String> filters = [];
-    String audioMix = '';
-    
-    // Add video clips as inputs
-    for (int i = 0; i < clips.length; i++) {
-      inputs.add('-i "${clips[i].path}"');
-    }
-    
-    // Add audio inputs
-    int audioInputIndex = clips.length;
-    if (backgroundMusicPath != null) {
-      inputs.add('-i "$backgroundMusicPath"');
-      audioInputIndex++;
-    }
-    if (voiceoverPath != null) {
-      inputs.add('-i "$voiceoverPath"');
-      audioInputIndex++;
-    }
-    
-    // Build video filter chain
-    String videoFilter = '';
-    
-    // 1. Concatenate clips if multiple
-    if (clips.length > 1) {
-      List<String> concatInputs = [];
-      for (int i = 0; i < clips.length; i++) {
-        String clipFilter = '[$i:v]';
-        
-        // Apply clip-specific effects
-        if (clips[i].speed != 1.0) {
-          clipFilter += 'setpts=${1.0/clips[i].speed}*PTS';
-        }
-        if (clips[i].isReversed) {
-          clipFilter += ',reverse';
-        }
-        
-        clipFilter += '[v$i]';
-        filters.add(clipFilter);
-        concatInputs.add('[v$i]');
-      }
-      
-      videoFilter = '${concatInputs.join('')}concat=n=${clips.length}:v=1:a=0[baseVideo]';
-      filters.add(videoFilter);
-      videoFilter = '[baseVideo]';
-    } else {
-      // Single clip
-      videoFilter = '[0:v]';
-      
-      if (clips[0].speed != 1.0) {
-        videoFilter += 'setpts=${1.0/clips[0].speed}*PTS,';
-      }
-      if (clips[0].isReversed) {
-        videoFilter += 'reverse,';
-      }
-    }
-    
-    // 2. Apply filter
-    if (selectedFilter != 'none') {
-      videoFilter = _applyVideoFilter(videoFilter, selectedFilter);
-    }
-    
-    // 3. Add text overlays
-    for (final textOverlay in textOverlays) {
-      videoFilter += _buildTextOverlay(textOverlay);
-    }
-    
-    // 4. Scale to standard resolution
-    videoFilter += 'scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2[outv]';
-    
-    if (videoFilter.isNotEmpty) {
-      filters.add(videoFilter);
-    }
-    
-    // Build audio filter chain
-    if (backgroundMusicPath != null || voiceoverPath != null) {
-      List<String> audioInputs = [];
-      
-      // Original audio from video clips
-      for (int i = 0; i < clips.length; i++) {
-        audioInputs.add('[$i:a]volume=$originalVolume[a$i]');
-        filters.add('[$i:a]volume=$originalVolume[a$i]');
-      }
-      
-      // Background music
-      if (backgroundMusicPath != null) {
-        int musicIndex = clips.length;
-        audioInputs.add('[$musicIndex:a]volume=$musicVolume[music]');
-        filters.add('[$musicIndex:a]volume=$musicVolume[music]');
-      }
-      
-      // Mix all audio
-      if (audioInputs.isNotEmpty) {
-        String mixInputs = audioInputs.map((a) => a.split(']').last.replaceAll('[', '')).join('');
-        audioMix = '[$mixInputs]amix=inputs=${audioInputs.length}:duration=longest[outa]';
-        filters.add(audioMix);
-      }
-    }
-    
-    // Build final command
-    String filterComplex = filters.join(';');
-    
-    String command = '${inputs.join(' ')} ';
-    if (filterComplex.isNotEmpty) {
-      command += '-filter_complex "$filterComplex" ';
-    }
-    
-    // Output mapping
-    command += '-map "[outv]" ';
-    if (audioMix.isNotEmpty) {
-      command += '-map "[outa]" ';
-    } else if (clips.isNotEmpty) {
-      command += '-map 0:a? '; // Use original audio if available
-    }
-    
-    // Output settings
-    command += '-c:v libx264 -preset fast -crf 23 ';
-    command += '-c:a aac -b:a 128k ';
-    command += '-movflags +faststart ';
-    command += '-y "$outputPath"';
-    
-    return command;
-  }
-  
-  /// Apply video filters based on selection
-  static String _applyVideoFilter(String input, String filterName) {
-    switch (filterName) {
-      case 'vintage':
-        return '$input,curves=vintage,colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131[filtered]';
-      case 'sunny':
-        return '$input,eq=brightness=0.1:saturation=1.3,colorbalance=rs=0.1:gs=0.05:bs=-0.05[filtered]';
-      case 'cloudy':
-        return '$input,eq=brightness=-0.05:saturation=0.8,colorbalance=rs=-0.05:gs=-0.02:bs=0.05[filtered]';
-      case 'beauty':
-        return '$input,bilateral=sigmaS=10:sigmaR=0.1,eq=brightness=0.05[filtered]';
-      default:
-        return '$input[filtered]';
-    }
-  }
-  
-  /// Build text overlay filter
-  static String _buildTextOverlay(TextOverlay overlay) {
-    // Escape special characters for FFmpeg
-    String text = overlay.text
-        .replaceAll(':', '\\:')
-        .replaceAll("'", "\\'")
-        .replaceAll('"', '\\"');
-    
-    // Convert color from int to hex string
-    String color = '0x${overlay.color.toRadixString(16).padLeft(8, '0')}';
-    
-    // Build drawtext filter
-    String drawtext = ',drawtext='
-        'text=\'$text\':'
-        'fontsize=${overlay.fontSize}:'
-        'fontcolor=$color:'
-        'x=${overlay.position.dx}:'
-        'y=${overlay.position.dy}:'
-        'box=1:boxcolor=black@0.5:boxborderw=5';
-    
-    // Add animation if specified
-    switch (overlay.animation) {
-      case TextAnimation.fade:
-        drawtext += ':alpha=\'if(lt(t,1),t,if(lt(t,${overlay.duration.inSeconds-1}),1,${overlay.duration.inSeconds}-t))\'';
-        break;
-      case TextAnimation.slide:
-        drawtext += ':x=\'if(lt(t,1),W,${overlay.position.dx})\'';
-        break;
-      case TextAnimation.bounce:
-        drawtext += ':y=\'${overlay.position.dy}+50*sin(2*PI*t)\'';
-        break;
-      default:
-        break;
-    }
-    
-    return drawtext;
-  }
-  
-  /// Merge multiple video clips into one
+  /// Merge multiple video clips into one (MOCK VERSION)
   static Future<String> mergeClips(List<String> videoPaths) async {
     if (videoPaths.isEmpty) {
       throw Exception('No video clips to merge');
     }
     
-    if (videoPaths.length == 1) {
-      return videoPaths.first;
-    }
-    
-    final tempDir = await getTemporaryDirectory();
-    final outputPath = path.join(tempDir.path, 'merged_${DateTime.now().millisecondsSinceEpoch}.mp4');
-    
-    // Create concat file
-    final concatFile = File(path.join(tempDir.path, 'concat.txt'));
-    final concatContent = videoPaths.map((p) => "file '$p'").join('\n');
-    await concatFile.writeAsString(concatContent);
-    
-    // Merge using concat demuxer
-    final command = '-f concat -safe 0 -i "${concatFile.path}" -c copy "$outputPath"';
-    
-    final session = await FFmpegKit.execute(command);
-    final returnCode = await session.getReturnCode();
-    
-    if (!ReturnCode.isSuccess(returnCode)) {
-      throw Exception('Failed to merge clips');
-    }
-    
-    // Clean up concat file
-    await concatFile.delete();
-    
-    return outputPath;
+    // Return first clip path as "merged" result
+    return videoPaths.first;
   }
 }

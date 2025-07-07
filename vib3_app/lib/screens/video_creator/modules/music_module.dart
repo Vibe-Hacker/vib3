@@ -925,25 +925,6 @@ class _MusicModuleState extends State<MusicModule>
     });
   }
   
-  void _toggleVoiceoverRecording() {
-    setState(() {
-      _isRecordingVoiceover = !_isRecordingVoiceover;
-    });
-    
-    if (_isRecordingVoiceover) {
-      // Start recording
-      _voiceoverSeconds = 0;
-      _voiceoverTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        setState(() {
-          _voiceoverSeconds++;
-        });
-      });
-    } else {
-      // Stop recording
-      _voiceoverTimer?.cancel();
-      // TODO: Save recording and add to creation state
-    }
-  }
 }
 
 // Data models

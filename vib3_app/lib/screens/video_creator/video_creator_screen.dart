@@ -56,19 +56,12 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
       vsync: this,
     );
     
-    // Initialize creation state
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final creationState = context.read<CreationStateProvider>();
-      if (widget.videoPath != null) {
-        creationState.loadExistingVideo(widget.videoPath!);
-        setState(() {
-          _currentMode = CreatorMode.edit;
-        });
-      }
-      if (widget.audioPath != null) {
-        creationState.setBackgroundMusic(widget.audioPath!);
-      }
-    });
+    // Initialize after widget is built
+    if (widget.videoPath != null) {
+      setState(() {
+        _currentMode = CreatorMode.edit;
+      });
+    }
     
     // Lock to portrait
     SystemChrome.setPreferredOrientations([
@@ -124,9 +117,20 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => CreationStateProvider(),
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: Stack(
+      child: Builder(
+        builder: (providerContext) {
+          // Initialize creation state with video path
+          final creationState = providerContext.read<CreationStateProvider>();
+          if (widget.videoPath != null && creationState.videoClips.isEmpty) {
+            creationState.loadExistingVideo(widget.videoPath!);
+          }
+          if (widget.audioPath != null) {
+            creationState.setBackgroundMusic(widget.audioPath!);
+          }
+          
+          return Scaffold(
+            backgroundColor: Colors.black,
+            body: Stack(
           children: [
             // Main content area
             AnimatedSwitcher(
@@ -175,6 +179,8 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
               ),
           ],
         ),
+          );
+        },
       ),
     );
   }

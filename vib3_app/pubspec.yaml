@@ -48,7 +48,7 @@ dependencies:
   permission_handler: ^11.2.0
   video_thumbnail: ^0.5.3
   flutter_dotenv: ^5.1.0
-  ffmpeg_kit_flutter: ^6.0.3
+  # ffmpeg_kit_flutter_min: ^6.0.3  # Temporarily disabled for testing
 
 dev_dependencies:
   flutter_test:

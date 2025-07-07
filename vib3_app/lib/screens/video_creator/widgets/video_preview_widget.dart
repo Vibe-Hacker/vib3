@@ -34,17 +34,30 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
   }
   
   Future<void> _initializeVideo() async {
-    final creationState = context.read<CreationStateProvider>();
-    if (creationState.videoClips.isEmpty) return;
-    
-    final firstClip = creationState.videoClips[creationState.currentClipIndex];
-    _controller = VideoPlayerController.file(File(firstClip.path));
-    
-    await _controller!.initialize();
-    await _controller!.setLooping(true);
-    
-    if (mounted) {
-      setState(() {});
+    try {
+      final creationState = context.read<CreationStateProvider>();
+      
+      // Debug print
+      print('VideoPreviewWidget: Clips count = ${creationState.videoClips.length}');
+      
+      if (creationState.videoClips.isEmpty) {
+        print('VideoPreviewWidget: No clips available!');
+        return;
+      }
+      
+      final firstClip = creationState.videoClips[creationState.currentClipIndex];
+      print('VideoPreviewWidget: Loading video from ${firstClip.path}');
+      
+      _controller = VideoPlayerController.file(File(firstClip.path));
+      
+      await _controller!.initialize();
+      await _controller!.setLooping(true);
+      
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      print('VideoPreviewWidget: Error initializing video: $e');
     }
   }
   
