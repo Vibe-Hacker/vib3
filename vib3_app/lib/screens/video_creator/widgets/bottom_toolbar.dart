@@ -1,0 +1,113 @@
+import 'package:flutter/material.dart';
+import '../video_creator_screen.dart';
+
+class BottomToolbar extends StatelessWidget {
+  final Function(CreatorMode) onModeSelected;
+  
+  const BottomToolbar({
+    super.key,
+    required this.onModeSelected,
+  });
+  
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.8),
+        border: Border(
+          top: BorderSide(
+            color: Colors.white.withOpacity(0.1),
+          ),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          children: [
+            _buildToolButton(
+              icon: Icons.music_note,
+              label: 'Sounds',
+              onTap: () => onModeSelected(CreatorMode.music),
+            ),
+            _buildToolButton(
+              icon: Icons.text_fields,
+              label: 'Text',
+              onTap: () => onModeSelected(CreatorMode.text),
+            ),
+            _buildToolButton(
+              icon: Icons.emoji_emotions,
+              label: 'Stickers',
+              onTap: () => onModeSelected(CreatorMode.text), // Stickers are in text module
+            ),
+            _buildToolButton(
+              icon: Icons.auto_awesome,
+              label: 'Effects',
+              onTap: () => onModeSelected(CreatorMode.effects),
+            ),
+            _buildToolButton(
+              icon: Icons.color_lens,
+              label: 'Filters',
+              onTap: () => onModeSelected(CreatorMode.filters),
+            ),
+            _buildToolButton(
+              icon: Icons.tune,
+              label: 'Adjust',
+              onTap: () => onModeSelected(CreatorMode.tools),
+            ),
+            _buildToolButton(
+              icon: Icons.mic,
+              label: 'Voiceover',
+              onTap: () => onModeSelected(CreatorMode.music), // Voiceover is in music module
+            ),
+            _buildToolButton(
+              icon: Icons.content_cut,
+              label: 'Trim',
+              onTap: () => onModeSelected(CreatorMode.tools), // Trim is in tools module
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildToolButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

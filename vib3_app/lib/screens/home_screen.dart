@@ -142,6 +142,11 @@ $analysis
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) {
+            // Stop video playback when navigating away
+            if (_currentIndex == 0 && index != 0) {
+              // Notify video feed to pause
+              Provider.of<VideoProvider>(context, listen: false).pauseCurrentVideo();
+            }
             setState(() {
               _currentIndex = index;
             });

@@ -4,7 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'dart:async';
-import 'video_editing_screen.dart';
+import 'video_creator/video_creator_screen.dart';
 
 class VideoRecordingScreen extends StatefulWidget {
   const VideoRecordingScreen({super.key});
@@ -98,10 +98,11 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
           print('📁 Video file size: $fileSize bytes');
           
           if (fileSize > 0) {
-            Navigator.push(
+            // Use new video creator instead of old editing screen
+            Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => VideoEditingScreen(videoPath: video.path),
+                builder: (context) => VideoCreatorScreen(videoPath: video.path),
               ),
             );
           } else {

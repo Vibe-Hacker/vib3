@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'providers/auth_provider.dart';
 import 'providers/video_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/web_home_screen.dart';
+import 'screens/upload_video_screen.dart';
 import 'config/app_config.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
   
   // Set preferred orientations and system UI
   SystemChrome.setPreferredOrientations([
@@ -78,6 +83,17 @@ class VIB3App extends StatelessWidget {
               '/login': (context) => const LoginScreen(),
               '/home': (context) => const HomeScreen(),
               '/web': (context) => const WebHomeScreen(),
+            },
+            onGenerateRoute: (settings) {
+              if (settings.name == '/upload') {
+                final args = settings.arguments as Map<String, dynamic>?;
+                return MaterialPageRoute(
+                  builder: (context) => UploadVideoScreen(
+                    videoPath: args?['videoPath'] ?? '',
+                  ),
+                );
+              }
+              return null;
             },
           );
         },

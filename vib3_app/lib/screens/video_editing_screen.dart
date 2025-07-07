@@ -155,14 +155,26 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
         return;
       }
 
+      print('Initializing video from: ${widget.videoPath}');
+      
       _controller = VideoPlayerController.file(file);
       await _controller!.initialize();
+      await _controller!.setLooping(false);
+      
+      if (!_controller!.value.isInitialized) {
+        _showError('Failed to initialize video player');
+        return;
+      }
       
       _videoDuration = _controller!.value.duration;
       _trimEnd = _videoDuration;
       
-      // Generate timeline frames
-      await _generateTimelineFrames();
+      print('Video duration: $_videoDuration');
+      
+      // Generate timeline frames (non-critical)
+      _generateTimelineFrames().catchError((e) {
+        print('Timeline generation failed: $e');
+      });
       
       setState(() {
         _isInitialized = true;
@@ -172,7 +184,8 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       _startProgressTimer();
       
     } catch (e) {
-      _showError('Failed to load video: $e');
+      print('Video initialization error: $e');
+      _showError('Failed to load video: ${e.toString()}');
     }
   }
 
@@ -181,22 +194,34 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
       const frameCount = 10;
       _timelineFrames.clear();
       
+      // Skip thumbnail generation if video duration is too short
+      if (_videoDuration.inMilliseconds < 1000) {
+        print('Video too short for thumbnails');
+        return;
+      }
+      
       for (int i = 0; i < frameCount; i++) {
-        final position = i * (_videoDuration.inMilliseconds ~/ frameCount);
-        final frame = await vt.VideoThumbnail.thumbnailData(
-          video: widget.videoPath,
-          imageFormat: vt.ImageFormat.JPEG,
-          maxHeight: 60,
-          quality: 50,
-          timeMs: position,
-        );
-        
-        if (frame != null) {
-          _timelineFrames.add(frame);
+        try {
+          final position = i * (_videoDuration.inMilliseconds ~/ frameCount);
+          final frame = await vt.VideoThumbnail.thumbnailData(
+            video: widget.videoPath,
+            imageFormat: vt.ImageFormat.JPEG,
+            maxHeight: 60,
+            quality: 50,
+            timeMs: position,
+          );
+          
+          if (frame != null) {
+            _timelineFrames.add(frame);
+          }
+        } catch (frameError) {
+          print('Error generating frame $i: $frameError');
+          // Continue with next frame
         }
       }
     } catch (e) {
       print('Error generating timeline frames: $e');
+      // Don't fail the whole initialization
     }
   }
 
@@ -310,8 +335,9 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
             // Header
             _buildHeader(),
             
-            // Video preview
-            Expanded(
+            // Video preview - smaller fixed height
+            Container(
+              height: 300, // Fixed height for preview
               child: Stack(
                 children: [
                   // Video player
@@ -471,13 +497,13 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
 
   Widget _buildTimeline() {
     return Container(
-      height: 100,
+      height: 80, // Reduced from 100
       color: Colors.grey[900],
       child: Column(
         children: [
           // Time display
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4), // Reduced vertical padding
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -583,10 +609,10 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   }
 
   Widget _buildTools() {
-    return Container(
-      height: 200,
-      color: Colors.grey[900],
-      child: Column(
+    return Expanded( // Use remaining space
+      child: Container(
+        color: Colors.grey[900],
+        child: Column(
         children: [
           // Tab bar
           Container(
@@ -635,6 +661,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
             child: _buildTabContent(),
           ),
         ],
+        ),
       ),
     );
   }
@@ -662,7 +689,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
 
   Widget _buildTrimTools() {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(12), // Reduced padding
       child: SingleChildScrollView(
         child: Column(
           children: [
@@ -703,7 +730,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
               ),
             ],
           ),
-          SizedBox(height: 16),
+          SizedBox(height: 8), // Reduced spacing
           Row(
             children: [
               Text('Start:', style: TextStyle(color: Colors.white70)),
@@ -780,7 +807,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
           ),
           // Display existing segments
           if (_segments.isNotEmpty) ...[
-            SizedBox(height: 16),
+            SizedBox(height: 8), // Reduced spacing
             Row(
               children: [
                 Text(
@@ -805,7 +832,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
             ),
             SizedBox(height: 8),
             Container(
-              constraints: BoxConstraints(maxHeight: 100),
+              constraints: BoxConstraints(maxHeight: 80), // Reduced max height
               child: ListView.builder(
                 shrinkWrap: true,
                 itemCount: _segments.length,

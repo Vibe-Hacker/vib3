@@ -7,7 +7,8 @@ import '../providers/auth_provider.dart';
 import '../services/upload_service.dart';
 import '../widgets/grok_ai_assistant.dart';
 import 'video_recording_screen.dart';
-import 'video_editing_screen.dart';
+import 'video_creator/video_creator_screen.dart';
+import 'gallery_picker_screen.dart';
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
@@ -88,7 +89,7 @@ class _UploadScreenState extends State<UploadScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => VideoEditingScreen(videoPath: video.path),
+            builder: (context) => VideoCreatorScreen(videoPath: video.path),
           ),
         );
       }
@@ -209,7 +210,7 @@ class _UploadScreenState extends State<UploadScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => VideoEditingScreen(videoPath: _selectedVideo!.path),
+                    builder: (context) => VideoCreatorScreen(videoPath: _selectedVideo!.path),
                   ),
                 );
               },
@@ -278,7 +279,14 @@ class _UploadScreenState extends State<UploadScreen> {
               _UploadButton(
                 icon: Icons.video_library,
                 label: 'Gallery',
-                onTap: _selectVideo,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GalleryPickerScreen(),
+                    ),
+                  );
+                },
               ),
               _UploadButton(
                 icon: Icons.videocam,

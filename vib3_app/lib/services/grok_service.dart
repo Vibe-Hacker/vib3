@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class GrokService {
   static const String _baseUrl = 'https://api.x.ai/v1';
-  static const String _apiKey = 'xai-2c1yfiMnLje8nS8riX1PEZRnMq2uk39bQ9OaRLFnQctyX8DdbeIOnR5s2gEHFl7q94R4gs7aFtFx6pp6';
+  static String get _apiKey => dotenv.env['GROK_API_KEY'] ?? '';
   
   // Grok AI features for VIB3
   static Future<String> generateVideoDescription(String videoContext) async {

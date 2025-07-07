@@ -47,14 +47,11 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   
   // Draggable button positions
   bool _isDragMode = false;
-  Map<String, Offset> _buttonPositions = {
-    'profile': const Offset(280, 150),
-    'like': const Offset(280, 250),
-    'comment': const Offset(280, 350),
-    'share': const Offset(280, 450),
-  };
+  late Map<String, Offset> _buttonPositions;
+  Timer? _longPressTimer;
   String? _draggingButton;
   Offset? _initialDragPosition;
+  Offset? _dragOffset;
 
   @override
   void initState() {
@@ -62,11 +59,32 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     _pageController = PageController(initialPage: 0);
     WidgetsBinding.instance.addObserver(this);
     _isScreenVisible = widget.isVisible;
+    _initButtonPositions();
     _loadButtonPositions();
+    
+    // Register pause callback with provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<VideoProvider>(context, listen: false).registerPauseCallback(() {
+        setState(() {
+          _isScreenVisible = false;
+        });
+      });
+    });
+  }
+  
+  void _initButtonPositions() {
+    final screenWidth = WidgetsBinding.instance.window.physicalSize.width / WidgetsBinding.instance.window.devicePixelRatio;
+    _buttonPositions = {
+      'profile': Offset(screenWidth - 80, 200),
+      'like': Offset(screenWidth - 80, 280),
+      'comment': Offset(screenWidth - 80, 360),
+      'share': Offset(screenWidth - 80, 440),
+    };
   }
 
   @override
   void dispose() {
+    _longPressTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
@@ -363,41 +381,89 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     required Widget child,
     VoidCallback? onTap,
   }) {
-    final position = _buttonPositions[buttonId] ?? const Offset(0, 250);
+    final position = _buttonPositions[buttonId] ?? Offset(300, 250);
     
     return Positioned(
       left: position.dx,
       top: position.dy,
       child: GestureDetector(
-        onLongPress: () {
+        onTapDown: (_) {
+          HapticFeedback.selectionClick();
+        },
+        onLongPressDown: (details) {
           HapticFeedback.mediumImpact();
-          setState(() {
-            _isDragMode = true;
-            _draggingButton = buttonId;
+          // Get the RenderBox to convert positions
+          final RenderBox renderBox = context.findRenderObject() as RenderBox;
+          final localTouchPosition = renderBox.globalToLocal(details.globalPosition);
+          
+          _longPressTimer = Timer(const Duration(milliseconds: 500), () {
+            setState(() {
+              _isDragMode = true;
+              _draggingButton = buttonId;
+              _initialDragPosition = position;
+              // Calculate offset from touch to current button position
+              _dragOffset = Offset(
+                localTouchPosition.dx - position.dx,
+                localTouchPosition.dy - position.dy,
+              );
+            });
+            HapticFeedback.heavyImpact();
           });
         },
-        onPanUpdate: _isDragMode && _draggingButton == buttonId ? (details) {
-          setState(() {
-            _buttonPositions[buttonId] = Offset(
-              position.dx + details.delta.dx,
-              position.dy + details.delta.dy,
-            );
-          });
+        onLongPressUp: () {
+          _longPressTimer?.cancel();
+        },
+        onLongPressCancel: () {
+          _longPressTimer?.cancel();
+        },
+        onLongPressMoveUpdate: (details) {
+          if (_isDragMode && _draggingButton == buttonId && _dragOffset != null) {
+            final RenderBox renderBox = context.findRenderObject() as RenderBox;
+            final localPosition = renderBox.globalToLocal(details.globalPosition);
+            
+            setState(() {
+              // Keep the button at the same relative position to the finger
+              _buttonPositions[buttonId] = Offset(
+                localPosition.dx - _dragOffset!.dx,
+                localPosition.dy - _dragOffset!.dy,
+              );
+            });
+          }
+        },
+        onLongPressEnd: _draggingButton == buttonId ? (details) {
+          if (_isDragMode) {
+            setState(() {
+              _draggingButton = null;
+              _isDragMode = false;
+              _dragOffset = null;
+            });
+            _saveButtonPositions();
+            HapticFeedback.lightImpact();
+          }
         } : null,
-        onPanEnd: _isDragMode ? (details) {
-          setState(() {
-            _draggingButton = null;
-            _isDragMode = false;
-          });
-          _saveButtonPositions();
+        onTap: !_isDragMode ? () {
+          HapticFeedback.lightImpact();
+          onTap?.call();
         } : null,
-        onTap: !_isDragMode ? onTap : null,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: _draggingButton == buttonId ? Duration.zero : const Duration(milliseconds: 200),
           transform: _draggingButton == buttonId 
               ? (Matrix4.identity()..scale(1.1))
               : Matrix4.identity(),
-          child: child,
+          transformAlignment: Alignment.center,
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: _draggingButton == buttonId ? 20 : 10,
+                  spreadRadius: _draggingButton == buttonId ? 5 : 2,
+                ),
+              ],
+            ),
+            child: child,
+          ),
         ),
       ),
     );
@@ -408,6 +474,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUserId = authProvider.currentUser?.id;
     final isOwnVideo = currentUserId != null && currentUserId == video.userId;
+    
+    if (!isCurrentVideo) return [];
     
     return [
       // Profile Button with Follow - Draggable
@@ -596,7 +664,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           onLongPress: () => _showComments(video),
           child: VideoPlayerWidget(
             videoUrl: video.videoUrl!,
-            isPlaying: isCurrentVideo,
+            isPlaying: isCurrentVideo && _isScreenVisible,
           ),
         ),
       );
@@ -669,13 +737,13 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                   width: kIsWeb ? 600 : MediaQuery.of(context).size.width,
                   height: MediaQuery.of(context).size.height,
                   child: Stack(
-                      children: [
+                    children: [
                         // Video player
                         _buildVideoPlayer(video, isCurrentVideo),
                         
                         // Video description overlay
                         Positioned(
-                          bottom: 60,
+                          bottom: 8,
                           left: 0,
                           right: 0,
                           child: Center(
@@ -733,56 +801,11 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                         
                         // Add floating bubble actions here if needed
                         ..._buildFloatingBubbleActions(context, video, index),
-                        
-                        // Drag mode toggle button
-                        if (isCurrentVideo)
-                          Positioned(
-                            top: 60,
-                            right: 20,
-                            child: GestureDetector(
-                              onTap: _toggleDragMode,
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: _isDragMode 
-                                      ? const Color(0xFFFF0080) 
-                                      : Colors.black.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(30),
-                                  border: Border.all(
-                                    color: _isDragMode 
-                                        ? Colors.white 
-                                        : Colors.white.withOpacity(0.3),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      _isDragMode ? Icons.lock_open : Icons.lock,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _isDragMode ? 'Drag Mode' : 'Edit Layout',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   ),
                 ),
-              ),
-            );
+              );
           },
         );
       },

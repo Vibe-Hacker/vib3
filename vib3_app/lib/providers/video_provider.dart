@@ -14,6 +14,7 @@ class VideoProvider extends ChangeNotifier {
   String _debugInfo = 'Not loaded yet';
   int _currentPage = 0;
   final int _pageSize = 20;
+  Function? _pauseVideoCallback;
 
   List<Video> get videos => _videos;
   List<Video> get forYouVideos => _forYouVideos;
@@ -241,6 +242,18 @@ class VideoProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // Register a callback to pause video
+  void registerPauseCallback(Function callback) {
+    _pauseVideoCallback = callback;
+  }
+
+  // Call this when navigating away from video feed
+  void pauseCurrentVideo() {
+    if (_pauseVideoCallback != null) {
+      _pauseVideoCallback!();
     }
   }
 }
