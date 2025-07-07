@@ -99,26 +99,31 @@ class AuthService {
   
   Future<bool> _checkNetworkConnectivity() async {
     try {
-      // Try to resolve a well-known domain
-      final result = await http.get(
-        Uri.parse('https://www.google.com'),
-      ).timeout(const Duration(seconds: 5));
-      
-      return result.statusCode == 200;
-    } catch (e) {
-      print('🚫 Network connectivity check failed: $e');
-      
-      // Try HTTP as fallback
-      try {
-        final result = await http.get(
-          Uri.parse('http://www.google.com'),
-        ).timeout(const Duration(seconds: 5));
-        
-        return result.statusCode == 200 || result.statusCode == 301;
-      } catch (e2) {
-        print('🚫 HTTP fallback also failed: $e2');
-        return false;
+      // Check connectivity using our backend health endpoint
+      for (String baseUrl in AppConfig.backendUrls) {
+        try {
+          final result = await http.get(
+            Uri.parse('$baseUrl/health'),
+            headers: {
+              'Accept': 'application/json',
+            },
+          ).timeout(const Duration(seconds: 5));
+          
+          // If any backend responds, we have connectivity
+          if (result.statusCode == 200 || result.statusCode == 404) {
+            return true;
+          }
+        } catch (e) {
+          // Continue to next backend
+          continue;
+        }
       }
+      
+      print('🚫 Network connectivity check failed: No backends responded');
+      return false;
+    } catch (e) {
+      print('🚫 Network connectivity check error: $e');
+      return false;
     }
   }
 

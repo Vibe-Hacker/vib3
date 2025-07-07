@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/video_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/web_home_screen.dart';
 import 'config/app_config.dart';
 
 void main() {
@@ -55,15 +57,27 @@ class VIB3App extends StatelessWidget {
             theme: themeProvider.currentTheme.toThemeData(),
             home: Consumer<AuthProvider>(
               builder: (context, authProvider, _) {
+                // Always use WebHomeScreen for web platform
+                if (kIsWeb) {
+                  if (authProvider.isAuthenticated) {
+                    return const WebHomeScreen();
+                  }
+                  return const LoginScreen();
+                }
+                
+                // Mobile authenticated
                 if (authProvider.isAuthenticated) {
                   return const HomeScreen();
                 }
+                
+                // Not authenticated - show login
                 return const LoginScreen();
               },
             ),
             routes: {
               '/login': (context) => const LoginScreen(),
               '/home': (context) => const HomeScreen(),
+              '/web': (context) => const WebHomeScreen(),
             },
           );
         },

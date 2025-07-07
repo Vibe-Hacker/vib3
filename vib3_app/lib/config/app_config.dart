@@ -1,13 +1,12 @@
 class AppConfig {
   // Backend URLs (multiple for reliability)
   static const List<String> backendUrls = [
-    'https://vib3-production.up.railway.app',
-    'http://66.33.22.132',         // Railway IP - HTTP fallback for Samsung
-    'https://66.33.22.132',        // Railway IP - HTTPS 
-    'http://192.168.1.100:3000',   // Local HTTP fallback
-    'https://192.168.1.100:3000',  // Local HTTPS fallback
-    'http://10.0.2.2:3000',        // Android emulator localhost
-    'https://vib3.onrender.com',   // Alternative hosting
+    'https://vib3-web-75tal.ondigitalocean.app',  // Digital Ocean primary
+    'http://vib3-web-75tal.ondigitalocean.app',   // HTTP fallback
+    'http://192.168.1.100:3000',                  // Local HTTP fallback
+    'https://192.168.1.100:3000',                 // Local HTTPS fallback
+    'http://10.0.2.2:3000',                       // Android emulator localhost
+    'https://vib3-production.up.railway.app',     // Old Railway backup
   ];
   
   static String get baseUrl => backendUrls[0]; // Default

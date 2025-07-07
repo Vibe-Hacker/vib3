@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../providers/auth_provider.dart';
 import '../providers/video_provider.dart';
 import '../widgets/video_feed.dart';
+import '../widgets/tabbed_video_feed.dart';
 import '../config/app_config.dart';
 import '../services/backend_health_service.dart';
 import 'profile_screen.dart';
@@ -95,18 +97,22 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
       
-      setState(() {
-        apiTestResult = '''
+      if (mounted) {
+        setState(() {
+          apiTestResult = '''
 Status: ${response.statusCode}
 Token: ${token != null ? 'Present' : 'Missing'}
 
 $analysis
 ''';
-      });
+        });
+      }
     } catch (e) {
-      setState(() {
-        apiTestResult = 'API Test Error: $e';
-      });
+      if (mounted) {
+        setState(() {
+          apiTestResult = 'API Test Error: $e';
+        });
+      }
     }
   }
 
@@ -119,7 +125,7 @@ $analysis
         child: IndexedStack(
           index: _currentIndex,
           children: [
-            VideoFeed(isVisible: _currentIndex == 0),
+            TabbedVideoFeed(isVisible: _currentIndex == 0),
             const SearchScreen(),
             const UploadScreen(),
             const NotificationsScreen(),

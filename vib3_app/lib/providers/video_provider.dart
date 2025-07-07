@@ -4,6 +4,9 @@ import '../services/video_service.dart';
 
 class VideoProvider extends ChangeNotifier {
   final List<Video> _videos = [];
+  final List<Video> _forYouVideos = [];
+  final List<Video> _followingVideos = [];
+  final List<Video> _discoverVideos = [];
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMoreVideos = true;
@@ -13,6 +16,9 @@ class VideoProvider extends ChangeNotifier {
   final int _pageSize = 20;
 
   List<Video> get videos => _videos;
+  List<Video> get forYouVideos => _forYouVideos;
+  List<Video> get followingVideos => _followingVideos;
+  List<Video> get discoverVideos => _discoverVideos;
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get hasMoreVideos => _hasMoreVideos;
@@ -149,5 +155,92 @@ class VideoProvider extends ChangeNotifier {
     _videos.removeWhere((video) => video.id == videoId);
     _debugInfo = 'Removed video $videoId. Total videos: ${_videos.length}';
     notifyListeners();
+  }
+
+  Future<void> loadForYouVideos(String token) async {
+    try {
+      print('VideoProvider: Loading For You videos...');
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      // For You uses the main feed algorithm
+      final videos = await VideoService.getAllVideos(token);
+      _forYouVideos.clear();
+      _forYouVideos.addAll(videos);
+      
+      // Also populate main videos list for backward compatibility
+      _videos.clear();
+      _videos.addAll(videos);
+      
+      _debugInfo = 'Loaded ${videos.length} For You videos';
+      
+      notifyListeners();
+    } catch (e) {
+      print('VideoProvider: Error loading For You videos: $e');
+      _error = 'Failed to load videos: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadFollowingVideos(String token) async {
+    try {
+      print('VideoProvider: Loading Following videos...');
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      // Following feed - fallback to all videos for now
+      final videos = await VideoService.getAllVideos(token);
+      _followingVideos.clear();
+      _followingVideos.addAll(videos);
+      
+      // Also populate main videos list for backward compatibility
+      _videos.clear();
+      _videos.addAll(videos);
+      
+      _debugInfo = 'Loaded ${videos.length} Following videos';
+      
+      notifyListeners();
+    } catch (e) {
+      print('VideoProvider: Error loading Following videos: $e');
+      _error = 'Failed to load videos: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadDiscoverVideos(String token) async {
+    try {
+      print('VideoProvider: Loading Discover videos...');
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      // Discover feed - fallback to all videos for now
+      final videos = await VideoService.getAllVideos(token);
+      _discoverVideos.clear();
+      _discoverVideos.addAll(videos);
+      
+      // Also populate main videos list for backward compatibility
+      _videos.clear();
+      _videos.addAll(videos);
+      
+      _debugInfo = 'Loaded ${videos.length} Discover videos';
+      
+      notifyListeners();
+    } catch (e) {
+      print('VideoProvider: Error loading Discover videos: $e');
+      _error = 'Failed to load videos: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

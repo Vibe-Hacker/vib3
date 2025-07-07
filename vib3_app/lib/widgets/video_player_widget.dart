@@ -33,28 +33,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     super.initState();
     print('🎬 VideoPlayerWidget created for URL: ${widget.videoUrl}');
     print('🎬 Initial isPlaying: ${widget.isPlaying}');
-    // Only initialize when playing - no preloading at all
-    if (widget.isPlaying) {
-      _initializeVideo();
-    }
+    // Initialize video immediately
+    _initializeVideo();
   }
 
   @override
   void didUpdateWidget(VideoPlayerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     
-    // Always dispose and recreate when URL changes
+    // Only recreate controller when URL actually changes
     if (oldWidget.videoUrl != widget.videoUrl) {
+      print('🎬 VideoPlayer: URL changed from ${oldWidget.videoUrl} to ${widget.videoUrl}');
       _disposeController();
       _hasError = false;
       _isInitialized = false;
+      _retryCount = 0;
       if (widget.isPlaying) {
         _initializeVideo();
       }
     }
     
-    // Handle play state changes
-    if (oldWidget.isPlaying != widget.isPlaying) {
+    // Handle play state changes without recreating controller
+    else if (oldWidget.isPlaying != widget.isPlaying) {
+      print('🎬 VideoPlayer: Play state changed from ${oldWidget.isPlaying} to ${widget.isPlaying}');
       if (widget.isPlaying && !_isInitialized && !_hasError) {
         _initializeVideo();
       } else if (!widget.isPlaying && _isInitialized) {
@@ -69,7 +70,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     try {
       print('🎬 VideoPlayer: Initializing video: ${widget.videoUrl}');
       
-      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      _controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.videoUrl),
+      );
       
       _controller!.initialize().then((_) {
         if (mounted) {
@@ -79,14 +82,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           });
           
           print('✅ VideoPlayer: Successfully initialized ${widget.videoUrl}');
+          print('📐 Video size: ${_controller!.value.size}');
+          print('⏱️ Duration: ${_controller!.value.duration}');
           
           _controller!.setLooping(true);
           _controller!.seekTo(Duration.zero);
           
+          // Start playing if this widget is marked as playing
           if (widget.isPlaying) {
             _controller!.play();
             print('▶️ VideoPlayer: Started playing');
           }
+          
+          // Add listener to check if actually playing
+          _controller!.addListener(() {
+            if (_controller!.value.isPlaying && !_controller!.value.isBuffering) {
+              print('🎥 Video is actually playing at position: ${_controller!.value.position}');
+            }
+          });
         }
       }).catchError((e) {
         print('❌ VideoPlayer: Error initializing ${widget.videoUrl}: $e');
@@ -201,16 +214,32 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       child: Container(
         width: double.infinity,
         height: double.infinity,
+        color: Colors.black,
         child: Stack(
+          alignment: Alignment.center,
           children: [
-              FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: _controller!.value.size.width,
-                  height: _controller!.value.size.height,
-                  child: VideoPlayer(_controller!),
+            Center(
+              child: AspectRatio(
+                aspectRatio: 9 / 16, // TikTok-style aspect ratio
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.black,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: _controller!.value.size.width,
+                        height: _controller!.value.size.height,
+                        child: VideoPlayer(_controller!),
+                      ),
+                    ),
+                  ),
                 ),
               ),
+            ),
             // Play/Pause icon overlay
             if (_showPlayIcon)
               Center(

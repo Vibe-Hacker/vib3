@@ -93,13 +93,45 @@ class _LoginScreenState extends State<LoginScreen>
         child: Consumer<AuthProvider>(
           builder: (context, authProvider, child) {
             return Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 400, // Max width for web
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF0A0A0A),
+                        const Color(0xFF0A0A0A).withOpacity(0.95),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: const Color(0xFF00CED1).withOpacity(0.3),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00CED1).withOpacity(0.2),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFFFF0080).withOpacity(0.1),
+                        blurRadius: 30,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                       // Pulsing VIB3 Logo
                       AnimatedBuilder(
                         animation: _animationController,
@@ -261,6 +293,8 @@ class _LoginScreenState extends State<LoginScreen>
                     ],
                   ),
                 ),
+              ),
+            ),
               ),
             );
           },

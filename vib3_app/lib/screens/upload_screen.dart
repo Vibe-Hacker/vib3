@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import '../providers/auth_provider.dart';
 import '../services/upload_service.dart';
+import '../widgets/grok_ai_assistant.dart';
 import 'video_recording_screen.dart';
 import 'video_editing_screen.dart';
 
@@ -363,6 +364,24 @@ class _UploadScreenState extends State<UploadScreen> {
               filled: true,
               fillColor: Colors.grey[900],
             ),
+          ),
+          const SizedBox(height: 16),
+
+          // Grok AI Assistant
+          GrokAIAssistant(
+            videoContext: _descriptionController.text.isNotEmpty 
+                ? _descriptionController.text 
+                : 'video upload',
+            onDescriptionGenerated: (description) {
+              setState(() {
+                _descriptionController.text = description;
+              });
+            },
+            onHashtagsGenerated: (hashtags) {
+              setState(() {
+                _descriptionController.text += '\n\n${hashtags.join(' ')}';
+              });
+            },
           ),
           const SizedBox(height: 24),
 
