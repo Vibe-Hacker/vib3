@@ -105,9 +105,9 @@ class _ToolsModuleState extends State<ToolsModule>
     return SingleChildScrollView(
       child: Column(
         children: [
-        // Video preview - fixed height instead of Expanded in ScrollView
-        Container(
-          height: MediaQuery.of(context).size.height * 0.4, // 40% of screen
+          // Video preview - fixed height instead of Expanded in ScrollView
+          Container(
+            height: MediaQuery.of(context).size.height * 0.4, // 40% of screen
             margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             decoration: BoxDecoration(
               color: Colors.grey[900],
