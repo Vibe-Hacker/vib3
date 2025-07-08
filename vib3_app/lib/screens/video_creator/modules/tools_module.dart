@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import '../providers/creation_state_provider.dart';
 import '../widgets/trim_preview_widget.dart';
+import '../widgets/video_frames_timeline.dart';
 
 // Data model for trim segments
 class TrimSegment {
@@ -101,12 +102,12 @@ class _ToolsModuleState extends State<ToolsModule>
     final screenHeight = MediaQuery.of(context).size.height;
     final availableHeight = screenHeight - 200; // Minus tab bar and controls
     
-    return Column(
-      children: [
-        // Video preview - now takes up most of the available space
-        Expanded(
-          flex: 3,
-          child: Container(
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+        // Video preview - fixed height instead of Expanded in ScrollView
+        Container(
+          height: MediaQuery.of(context).size.height * 0.4, // 40% of screen
             margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             decoration: BoxDecoration(
               color: Colors.grey[900],
@@ -162,7 +163,7 @@ class _ToolsModuleState extends State<ToolsModule>
           ),
         ),
         
-        // Visual timeline with thumbnails
+        // Visual timeline with video frames
         Container(
           height: 100,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -173,43 +174,37 @@ class _ToolsModuleState extends State<ToolsModule>
           ),
           child: Stack(
             children: [
-              // Timeline background with frame thumbnails
-              ClipRRect(
-                borderRadius: BorderRadius.circular(11),
-                child: Row(
-                  children: List.generate(10, (index) => 
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.blue.withOpacity(0.2),
-                              Colors.purple.withOpacity(0.2),
-                            ],
-                          ),
-                          border: Border(
-                            right: BorderSide(
-                              color: Colors.white.withOpacity(0.1),
-                              width: 1,
-                            ),
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${index + 1}',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.3),
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
+              // Video frames timeline
+              if (creationState.videoClips.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: VideoFramesTimeline(
+                    videoPath: creationState.videoClips[creationState.currentClipIndex].path,
+                    height: 100,
+                  ),
+                )
+              else
+                // Placeholder when no video
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.blue.withOpacity(0.2),
+                        Colors.purple.withOpacity(0.2),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'No video loaded',
+                      style: TextStyle(
+                        color: Colors.white30,
+                        fontSize: 12,
                       ),
                     ),
                   ),
                 ),
-              ),
               
               // Selected area overlay
               Positioned(
@@ -362,6 +357,30 @@ class _ToolsModuleState extends State<ToolsModule>
                       IconButton(
                         onPressed: () {
                           // Split at current position
+                          final creationState = context.read<CreationStateProvider>();
+                          if (creationState.videoClips.isNotEmpty) {
+                            // Calculate split position
+                            final splitPosition = (_trimStart + _trimEnd) / 2;
+                            
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Split at ${_formatDuration(splitPosition)}'),
+                                duration: const Duration(seconds: 1),
+                              ),
+                            );
+                            
+                            // Add two segments from the split
+                            setState(() {
+                              _trimSegments.add(TrimSegment(
+                                start: Duration(milliseconds: (_trimStart * 10).toInt()),
+                                end: Duration(milliseconds: (splitPosition * 10).toInt()),
+                              ));
+                              _trimSegments.add(TrimSegment(
+                                start: Duration(milliseconds: (splitPosition * 10).toInt()),
+                                end: Duration(milliseconds: (_trimEnd * 10).toInt()),
+                              ));
+                            });
+                          }
                         },
                         icon: const Icon(Icons.content_cut),
                         color: const Color(0xFF00CED1),
@@ -498,7 +517,8 @@ class _ToolsModuleState extends State<ToolsModule>
               },
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
   
