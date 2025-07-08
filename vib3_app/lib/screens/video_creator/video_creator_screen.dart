@@ -189,27 +189,19 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                 ),
               ),
             
-            // Bottom toolbar (main navigation) - show in edit and when returning from other modes
-            if (_currentMode == CreatorMode.edit || 
-                (_currentMode != CreatorMode.camera && _currentMode != CreatorMode.edit))
+            // Bottom toolbar (main navigation) - only show in edit mode
+            if (_currentMode == CreatorMode.edit)
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: AnimatedOpacity(
-                  opacity: _currentMode == CreatorMode.edit ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: IgnorePointer(
-                    ignoring: _currentMode != CreatorMode.edit,
-                    child: BottomToolbar(
-                      onModeSelected: (mode) {
-                        setState(() {
-                          _currentMode = mode;
-                        });
-                        _toolPanelController.forward();
-                      },
-                    ),
-                  ),
+                child: BottomToolbar(
+                  onModeSelected: (mode) {
+                    setState(() {
+                      _currentMode = mode;
+                    });
+                    _toolPanelController.forward();
+                  },
                 ),
               ),
                   ],
