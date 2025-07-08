@@ -27,7 +27,9 @@ class _ToolsModuleState extends State<ToolsModule>
   // Trim state
   double _trimStart = 0.0;
   double _trimEnd = 100.0;
+  double _currentPosition = 0.0; // Current playback position
   final List<TrimSegment> _trimSegments = [];
+  final List<double> _splitPoints = []; // Split points in percentage
   
   // Crop state
   double _cropTop = 0.0;
@@ -131,6 +133,11 @@ class _ToolsModuleState extends State<ToolsModule>
                             : null,
                         trimStart: _trimStart,
                         trimEnd: _trimEnd,
+                        onPositionChanged: (position) {
+                          setState(() {
+                            _currentPosition = position;
+                          });
+                        },
                       ),
                     ),
                   ),
@@ -206,19 +213,64 @@ class _ToolsModuleState extends State<ToolsModule>
                   ),
                 ),
               
-              // Selected area overlay
+              // Split points
+              ..._splitPoints.map((splitPoint) => 
+                Positioned(
+                  left: (splitPoint / 100) * (MediaQuery.of(context).size.width - 32) - 1,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 2,
+                    color: Colors.white,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.cut,
+                            size: 12,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ).toList(),
+              
+              // Current position indicator (playhead)
               Positioned(
-                left: (_trimStart / 100) * (MediaQuery.of(context).size.width - 32),
-                right: ((100 - _trimEnd) / 100) * (MediaQuery.of(context).size.width - 32),
+                left: (_currentPosition / 100) * (MediaQuery.of(context).size.width - 32) - 2,
                 top: 0,
                 bottom: 0,
                 child: Container(
+                  width: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00CED1).withOpacity(0.2),
-                    border: Border(
-                      left: BorderSide(color: const Color(0xFF00CED1), width: 3),
-                      right: BorderSide(color: const Color(0xFF00CED1), width: 3),
-                    ),
+                    color: Colors.red,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -353,65 +405,88 @@ class _ToolsModuleState extends State<ToolsModule>
                   ),
                   Row(
                     children: [
-                      // Split clip button
-                      IconButton(
+                      // Split clip button - TikTok style
+                      ElevatedButton.icon(
                         onPressed: () {
-                          // Split at current position
-                          final creationState = context.read<CreationStateProvider>();
-                          if (creationState.videoClips.isNotEmpty) {
-                            // Calculate split position
-                            final splitPosition = (_trimStart + _trimEnd) / 2;
+                          // Split at current playhead position
+                          if (_currentPosition > 0 && _currentPosition < 100) {
+                            setState(() {
+                              // Add split point if not already exists
+                              if (!_splitPoints.contains(_currentPosition)) {
+                                _splitPoints.add(_currentPosition);
+                                _splitPoints.sort(); // Keep splits in order
+                              }
+                            });
                             
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Split at ${_formatDuration(splitPosition)}'),
+                                content: Text('Split at ${_formatDuration(_currentPosition)}'),
                                 duration: const Duration(seconds: 1),
+                                backgroundColor: const Color(0xFF00CED1),
                               ),
                             );
-                            
-                            // Add two segments from the split
-                            setState(() {
-                              _trimSegments.add(TrimSegment(
-                                start: Duration(milliseconds: (_trimStart * 10).toInt()),
-                                end: Duration(milliseconds: (splitPosition * 10).toInt()),
-                              ));
-                              _trimSegments.add(TrimSegment(
-                                start: Duration(milliseconds: (splitPosition * 10).toInt()),
-                                end: Duration(milliseconds: (_trimEnd * 10).toInt()),
-                              ));
-                            });
                           }
                         },
-                        icon: const Icon(Icons.content_cut),
-                        color: const Color(0xFF00CED1),
-                        tooltip: 'Split clip',
-                      ),
-                      const SizedBox(width: 8),
-                      // Add segment button
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _trimSegments.add(TrimSegment(
-                              start: Duration(milliseconds: (_trimStart * 10).toInt()),
-                              end: Duration(milliseconds: (_trimEnd * 10).toInt()),
-                            ));
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Segment added'),
-                              duration: Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.add, size: 16),
-                        label: const Text('Add'),
+                        icon: const Icon(Icons.content_cut, size: 16),
+                        label: const Text('Split'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00CED1),
+                          backgroundColor: Colors.white,
                           foregroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      // Delete split button
+                      if (_splitPoints.isNotEmpty)
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            // Remove last split point
+                            setState(() {
+                              if (_splitPoints.isNotEmpty) {
+                                _splitPoints.removeLast();
+                              }
+                            });
+                          },
+                          icon: const Icon(Icons.undo, size: 16),
+                          label: const Text('Undo'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red.withOpacity(0.8),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                        ),
                     ],
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Playback position slider for precise control
+              Row(
+                children: [
+                  const Icon(
+                    Icons.play_arrow,
+                    color: Colors.white54,
+                    size: 20,
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: _currentPosition,
+                      max: 100,
+                      activeColor: Colors.red,
+                      inactiveColor: Colors.white.withOpacity(0.2),
+                      onChanged: (value) {
+                        setState(() {
+                          _currentPosition = value;
+                        });
+                        // TODO: Seek video to this position
+                      },
+                    ),
+                  ),
+                  Text(
+                    _formatDuration(_currentPosition),
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                 ],
               ),
@@ -469,52 +544,43 @@ class _ToolsModuleState extends State<ToolsModule>
           ),
         ),
         
-        // Segments list - compact horizontal scroll
-        if (_trimSegments.isNotEmpty)
+        // Show split segments
+        if (_splitPoints.isNotEmpty)
           Container(
-            height: 60,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _trimSegments.length,
-              itemBuilder: (context, index) {
-                final segment = _trimSegments[index];
-                return Container(
-                  width: 120,
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00CED1).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFF00CED1).withOpacity(0.5)),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Clip ${index + 1}',
-                        style: const TextStyle(
-                          color: Color(0xFF00CED1),
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.cut,
+                      color: Color(0xFF00CED1),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Video will be split into ${_splitPoints.length + 1} clips',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
-                      Text(
-                        '${segment.start.inSeconds}s - ${segment.end.inSeconds}s',
-                        style: const TextStyle(color: Colors.white70, fontSize: 10),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _trimSegments.removeAt(index);
-                          });
-                        },
-                        child: const Icon(Icons.close, color: Colors.red, size: 16),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _generateClipInfo(),
+                ),
+              ],
             ),
           ),
         ],
@@ -1051,6 +1117,40 @@ class _ToolsModuleState extends State<ToolsModule>
   String _formatDuration(double value) {
     final seconds = (value / 100 * 60).round(); // Assuming 60 second video
     return '${seconds}s';
+  }
+  
+  List<Widget> _generateClipInfo() {
+    List<Widget> clips = [];
+    double previousPoint = 0.0;
+    
+    for (int i = 0; i <= _splitPoints.length; i++) {
+      final start = previousPoint;
+      final end = i < _splitPoints.length ? _splitPoints[i] : 100.0;
+      
+      clips.add(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF00CED1).withOpacity(0.2),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFF00CED1).withOpacity(0.5)),
+          ),
+          child: Text(
+            'Clip ${i + 1}: ${_formatDuration(start)} - ${_formatDuration(end)}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      );
+      
+      if (i < _splitPoints.length) {
+        previousPoint = _splitPoints[i];
+      }
+    }
+    
+    return clips;
   }
 }
 

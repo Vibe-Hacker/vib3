@@ -7,6 +7,7 @@ class TrimPreviewWidget extends StatefulWidget {
   final double trimStart;
   final double trimEnd;
   final VoidCallback? onPlayPause;
+  final Function(double)? onPositionChanged;
   
   const TrimPreviewWidget({
     super.key,
@@ -14,6 +15,7 @@ class TrimPreviewWidget extends StatefulWidget {
     required this.trimStart,
     required this.trimEnd,
     this.onPlayPause,
+    this.onPositionChanged,
   });
   
   @override
@@ -30,6 +32,17 @@ class _TrimPreviewWidgetState extends State<TrimPreviewWidget> {
     if (widget.videoPath != null) {
       _initializeVideo();
     }
+  }
+  
+  void _setupPositionListener() {
+    _controller?.addListener(() {
+      if (_controller != null && _controller!.value.isInitialized && widget.onPositionChanged != null) {
+        final duration = _controller!.value.duration;
+        final position = _controller!.value.position;
+        final percentage = (position.inMilliseconds / duration.inMilliseconds * 100).clamp(0.0, 100.0);
+        widget.onPositionChanged!(percentage);
+      }
+    });
   }
   
   @override
@@ -60,6 +73,7 @@ class _TrimPreviewWidgetState extends State<TrimPreviewWidget> {
       await _controller!.initialize();
       await _controller!.setLooping(true);
       _seekToTrimStart();
+      _setupPositionListener();
       
       if (mounted) {
         setState(() {});
