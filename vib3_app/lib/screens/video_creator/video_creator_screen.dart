@@ -14,8 +14,8 @@ import 'modules/text_module.dart';
 import 'modules/filters_module.dart';
 import 'modules/tools_module.dart';
 import 'providers/creation_state_provider.dart';
-import 'widgets/video_preview_widget.dart';
-import 'widgets/bottom_toolbar.dart';
+import 'widgets/working_video_preview.dart';
+import 'widgets/fixed_bottom_toolbar.dart';
 import 'widgets/top_toolbar.dart';
 
 /// Main Video Creator Screen - TikTok-style simplicity with all features
@@ -34,17 +34,27 @@ class VideoCreatorScreen extends StatefulWidget {
 }
 
 class _VideoCreatorScreenState extends State<VideoCreatorScreen> 
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   // Animation controllers
   late AnimationController _toolPanelController;
   late AnimationController _transitionController;
   
   // Current mode - start with camera if no initial video
   late CreatorMode _currentMode;
+  bool _isDraggingButtons = false;
+  
+  // Creation state provider - create once and reuse
+  late final CreationStateProvider _creationStateProvider;
   
   @override
   void initState() {
     super.initState();
+    
+    // Add observer for lifecycle management
+    WidgetsBinding.instance.addObserver(this);
+    
+    // Initialize creation state provider
+    _creationStateProvider = CreationStateProvider();
     
     // Initialize animation controllers
     _toolPanelController = AnimationController(
@@ -61,9 +71,15 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
     if (widget.videoPath != null) {
       // Start in edit mode when we have a video
       _currentMode = CreatorMode.edit;
+      // Load the existing video
+      _creationStateProvider.loadExistingVideo(widget.videoPath!);
     } else {
       // Start with camera when no video
       _currentMode = CreatorMode.camera;
+    }
+    
+    if (widget.audioPath != null) {
+      _creationStateProvider.setBackgroundMusic(widget.audioPath!);
     }
     
     // Lock to portrait
@@ -74,8 +90,10 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
   
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _toolPanelController.dispose();
     _transitionController.dispose();
+    _creationStateProvider.dispose();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -85,6 +103,15 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
     super.dispose();
   }
   
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Prevent excessive focus handling
+    if (state == AppLifecycleState.resumed) {
+      // Request focus only once when resuming
+      FocusScope.of(context).requestFocus(FocusNode());
+    }
+  }
+  
   Widget _buildCurrentMode() {
     switch (_currentMode) {
       case CreatorMode.camera:
@@ -92,14 +119,20 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
           onVideoRecorded: (path) {
             // The CameraModule already adds the clip to creation state
             // We just need to switch to edit mode
-            print('VideoCreatorScreen: Switching to edit mode after recording');
+            print('\n=== VideoCreatorScreen: onVideoRecorded ===' );
+            print('Path received: $path');
+            print('Provider instance: ${_creationStateProvider.hashCode}');
+            print('Clips in provider: ${_creationStateProvider.videoClips.length}');
+            
             setState(() {
               _currentMode = CreatorMode.edit;
             });
+            
+            print('Mode changed to: $_currentMode\n');
           },
         );
       case CreatorMode.edit:
-        return VideoPreviewWidget(
+        return WorkingVideoPreview(
           onModeChange: (mode) {
             setState(() {
               _currentMode = mode;
@@ -121,37 +154,29 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
   
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => CreationStateProvider(),
-      child: Builder(
-        builder: (providerContext) {
-          // Initialize creation state with video path immediately
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final creationState = providerContext.read<CreationStateProvider>();
-            if (widget.videoPath != null && creationState.videoClips.isEmpty) {
-              print('VideoCreatorScreen: Loading video from ${widget.videoPath}');
-              creationState.loadExistingVideo(widget.videoPath!);
-            }
-            if (widget.audioPath != null) {
-              creationState.setBackgroundMusic(widget.audioPath!);
-            }
-          });
-          
-          return Scaffold(
-            backgroundColor: Colors.black,
-            body: Consumer<CreationStateProvider>(
-              builder: (context, creationState, child) {
+    return ChangeNotifierProvider.value(
+      value: _creationStateProvider,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Consumer<CreationStateProvider>(
+          builder: (context, creationState, child) {
                 return Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     // Main content area with padding for toolbars
                     Positioned(
                       top: _currentMode != CreatorMode.camera ? 60 : 0, // Space for top toolbar
-                      bottom: _currentMode == CreatorMode.edit ? 100 : 0, // Space for bottom toolbar
+                      bottom: _currentMode == CreatorMode.edit ? 90 : 0, // Space for bottom toolbar
                       left: 0,
                       right: 0,
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: _buildCurrentMode(),
+                      child: IgnorePointer(
+                        ignoring: _currentMode == CreatorMode.edit && _isDraggingButtons,
+                        child: ClipRect(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            child: _buildCurrentMode(),
+                          ),
+                        ),
                       ),
                     ),
             
@@ -203,26 +228,31 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
               ),
             
             // Bottom toolbar (main navigation) - only show in edit mode
+            // Using Align instead of Positioned to ensure it's always on top
             if (_currentMode == CreatorMode.edit)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: BottomToolbar(
-                  onModeSelected: (mode) {
-                    setState(() {
-                      _currentMode = mode;
-                    });
-                    _toolPanelController.forward();
-                  },
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: IgnorePointer(
+                  ignoring: false, // Always allow touches
+                  child: FixedBottomToolbar(
+                    key: const ValueKey('fixed_bottom_toolbar'),
+                    currentMode: _currentMode,
+                    onModeSelected: (mode) {
+                      print('VideoCreatorScreen: Mode selected - $mode');
+                      if (mounted) {
+                        setState(() {
+                          _currentMode = mode;
+                        });
+                        _toolPanelController.forward();
+                      }
+                    },
+                  ),
                 ),
               ),
                   ],
                 );
-              },
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }

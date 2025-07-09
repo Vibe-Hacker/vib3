@@ -76,15 +76,59 @@ class _CameraModuleState extends State<CameraModule>
   
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
+    // Handle app lifecycle changes to properly manage camera resources
+    switch (state) {
+      case AppLifecycleState.inactive:
+        // App is inactive, dispose camera to free resources
+        _handleCameraInactive();
+        break;
+      case AppLifecycleState.paused:
+        // App is in background
+        _handleCameraPaused();
+        break;
+      case AppLifecycleState.resumed:
+        // App is back in foreground
+        _handleCameraResumed();
+        break;
+      case AppLifecycleState.detached:
+        // App is being terminated
+        _handleCameraDetached();
+        break;
     }
-    
-    if (state == AppLifecycleState.inactive) {
-      _cameraController?.dispose();
-    } else if (state == AppLifecycleState.resumed) {
+  }
+  
+  void _handleCameraInactive() {
+    // Stop any ongoing recording
+    if (_isRecording) {
+      _stopRecording();
+    }
+  }
+  
+  void _handleCameraPaused() {
+    // Dispose camera when app goes to background
+    if (_cameraController != null) {
+      _cameraController!.dispose();
+      _cameraController = null;
+      if (mounted) {
+        setState(() {
+          _isInitialized = false;
+        });
+      }
+    }
+  }
+  
+  void _handleCameraResumed() {
+    // Re-initialize camera when app comes back
+    if (!_isInitialized && mounted) {
       _initializeCamera();
     }
+  }
+  
+  void _handleCameraDetached() {
+    // Clean up everything
+    _recordingTimer?.cancel();
+    _countdownTimer?.cancel();
+    _cameraController?.dispose();
   }
   
   Future<void> _initializeCamera() async {
@@ -101,6 +145,12 @@ class _CameraModuleState extends State<CameraModule>
   Future<void> _setupCameraController(int cameraIndex) async {
     if (_cameras.isEmpty) return;
     
+    // Dispose existing controller if any
+    if (_cameraController != null) {
+      await _cameraController!.dispose();
+      _cameraController = null;
+    }
+    
     final camera = _cameras[cameraIndex];
     _cameraController = CameraController(
       camera,
@@ -116,6 +166,9 @@ class _CameraModuleState extends State<CameraModule>
       _minZoom = await _cameraController!.getMinZoomLevel();
       _maxZoom = await _cameraController!.getMaxZoomLevel();
       
+      // Set initial zoom
+      await _cameraController!.setZoomLevel(_minZoom);
+      
       if (mounted) {
         setState(() {
           _isInitialized = true;
@@ -123,6 +176,12 @@ class _CameraModuleState extends State<CameraModule>
       }
     } catch (e) {
       print('Error setting up camera: $e');
+      _cameraController = null;
+      if (mounted) {
+        setState(() {
+          _isInitialized = false;
+        });
+      }
     }
   }
   
