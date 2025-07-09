@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/video_provider.dart';
 import '../widgets/video_feed.dart';
 import '../widgets/tabbed_video_feed.dart';
+import '../widgets/video_feed_components/migration_wrapper.dart';
 import '../config/app_config.dart';
 import '../services/backend_health_service.dart';
 import 'profile_screen.dart';
@@ -125,7 +126,10 @@ $analysis
         child: IndexedStack(
           index: _currentIndex,
           children: [
-            TabbedVideoFeed(isVisible: _currentIndex == 0),
+            VideoFeedMigrationWrapper(
+              isVisible: _currentIndex == 0,
+              useNewArchitecture: VideoFeedConfig.useNewArchitecture,
+            ),
             const SearchScreen(),
             const UploadScreen(),
             const NotificationsScreen(),

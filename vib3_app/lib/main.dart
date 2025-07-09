@@ -11,6 +11,8 @@ import 'screens/home_screen.dart';
 import 'screens/web_home_screen.dart';
 import 'screens/upload_video_screen.dart';
 import 'config/app_config.dart';
+import 'widgets/video_feed_components/state_manager.dart';
+import 'widgets/video_feed_components/migration_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +42,9 @@ void main() async {
     ),
   );
   
+  // Enable new isolated architecture to prevent UI conflicts
+  VideoFeedConfig.enableNewArchitecture();
+  
   runApp(const VIB3App());
 }
 
@@ -53,6 +58,7 @@ class VIB3App extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => VideoProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => VideoFeedStateManager()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
