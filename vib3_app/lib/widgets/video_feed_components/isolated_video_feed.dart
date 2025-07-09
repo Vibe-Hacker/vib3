@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'state_manager.dart';
-import 'actions/action_buttons.dart';
+import 'draggable/draggable_action_buttons.dart';
 import '../video_player_widget.dart';
 import '../../models/video.dart';
 
@@ -88,34 +88,29 @@ class _IsolatedVideoFeedState extends State<IsolatedVideoFeed> {
               },
             ),
             
-            // Action buttons - completely isolated
-            if (!stateManager.isDraggingActions)
-              Positioned(
-                right: 0,
-                bottom: 80, // Above navigation
-                child: VideoActionButtons(
-                  video: widget.videos[stateManager.currentVideoIndex],
-                  isLiked: _likedVideos[widget.videos[stateManager.currentVideoIndex].id] ?? false,
-                  isFollowing: _followedUsers[widget.videos[stateManager.currentVideoIndex].userId] ?? false,
-                  onLike: () {
-                    final video = widget.videos[stateManager.currentVideoIndex];
-                    setState(() {
-                      _likedVideos[video.id] = !(_likedVideos[video.id] ?? false);
-                    });
-                    widget.onLike(video);
-                  },
-                  onComment: () => widget.onComment(widget.videos[stateManager.currentVideoIndex]),
-                  onShare: () => widget.onShare(widget.videos[stateManager.currentVideoIndex]),
-                  onFollow: () {
-                    final userId = widget.videos[stateManager.currentVideoIndex].userId;
-                    setState(() {
-                      _followedUsers[userId] = !(_followedUsers[userId] ?? false);
-                    });
-                    widget.onFollow(userId);
-                  },
-                  onProfile: () => widget.onProfile(widget.videos[stateManager.currentVideoIndex].userId),
-                ),
-              ),
+            // Draggable action buttons - VIB3 themed and moveable
+            DraggableActionButtons(
+              video: widget.videos[stateManager.currentVideoIndex],
+              isLiked: _likedVideos[widget.videos[stateManager.currentVideoIndex].id] ?? false,
+              isFollowing: _followedUsers[widget.videos[stateManager.currentVideoIndex].userId] ?? false,
+              onLike: () {
+                final video = widget.videos[stateManager.currentVideoIndex];
+                setState(() {
+                  _likedVideos[video.id] = !(_likedVideos[video.id] ?? false);
+                });
+                widget.onLike(video);
+              },
+              onComment: () => widget.onComment(widget.videos[stateManager.currentVideoIndex]),
+              onShare: () => widget.onShare(widget.videos[stateManager.currentVideoIndex]),
+              onFollow: () {
+                final userId = widget.videos[stateManager.currentVideoIndex].userId;
+                setState(() {
+                  _followedUsers[userId] = !(_followedUsers[userId] ?? false);
+                });
+                widget.onFollow(userId);
+              },
+              onProfile: () => widget.onProfile(widget.videos[stateManager.currentVideoIndex].userId),
+            ),
           ],
         );
       },

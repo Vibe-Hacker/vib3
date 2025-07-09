@@ -137,10 +137,28 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
                 scale: widget.isLiked ? _scaleAnimation.value : 1.0,
                 child: Column(
                   children: [
-                    Icon(
-                      widget.isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: widget.isLiked ? Colors.red : Colors.white,
-                      size: 32,
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: widget.isLiked ? const LinearGradient(
+                          colors: [Colors.red, Colors.pink],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ) : null,
+                      ),
+                      child: Icon(
+                        widget.isLiked ? Icons.favorite : Icons.favorite_border,
+                        color: widget.isLiked ? Colors.white : Colors.white,
+                        size: 32,
+                        shadows: const [
+                          Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 3,
+                            color: Colors.black45,
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -148,6 +166,14 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 3,
+                            color: Colors.black45,
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -209,42 +235,63 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
           ),
           const SizedBox(height: 20),
           
-          // Music disc
-          _buildActionButton(
-            onTap: () {
-              _animateTap();
-              // Show music info
-            },
-            child: RotationTransition(
-              turns: AlwaysStoppedAnimation(0),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.black,
-                  border: Border.all(
-                    color: Colors.grey[800]!,
-                    width: 8,
-                  ),
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/icons/music_disc.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Colors.grey[900],
-                      child: const Icon(
-                        Icons.music_note,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+          // Music disc (shows music info when tapped)
+          if (widget.video.musicName?.isNotEmpty ?? false)
+            _buildActionButton(
+              onTap: () {
+                _animateTap();
+                // Show music info in a SnackBar
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.music_note, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            widget.video.musicName!,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
                     ),
+                    backgroundColor: Colors.black87,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              },
+              child: RotationTransition(
+                turns: AlwaysStoppedAnimation(0),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF00CED1), // Cyan
+                        Color(0xFF1E90FF), // Blue
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(
+                      color: Colors.black,
+                      width: 3,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.music_note,
+                    color: Colors.white,
+                    size: 24,
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
