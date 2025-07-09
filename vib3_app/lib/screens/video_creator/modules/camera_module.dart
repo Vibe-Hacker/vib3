@@ -94,6 +94,10 @@ class _CameraModuleState extends State<CameraModule>
         // App is being terminated
         _handleCameraDetached();
         break;
+      case AppLifecycleState.hidden:
+        // App is hidden (same as paused for our purposes)
+        _handleCameraPaused();
+        break;
     }
   }
   
