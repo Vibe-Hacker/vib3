@@ -349,18 +349,21 @@ class _CameraModuleState extends State<CameraModule>
       final XFile videoFile = await _cameraController!.stopVideoRecording();
       
       // Add delay to ensure video encoder has fully released the file
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 1000)); // Increased delay
       
       // Validate file with retries
       final file = File(videoFile.path);
       int retryCount = 0;
-      const maxRetries = 3;
+      const maxRetries = 5; // Increased retries
       
       while (retryCount < maxRetries) {
         if (await file.exists()) {
           final fileSize = await file.length();
           if (fileSize > 0) {
-            print('Video saved: ${videoFile.path} (${fileSize} bytes)');
+            print('\n=== VIDEO RECORDING SUCCESS ===');
+            print('Video saved: ${videoFile.path}');
+            print('File size: ${fileSize} bytes');
+            print('==============================\n');
             break;
           }
         }
@@ -368,7 +371,7 @@ class _CameraModuleState extends State<CameraModule>
         retryCount++;
         if (retryCount < maxRetries) {
           print('Waiting for video file to be ready, attempt $retryCount...');
-          await Future.delayed(const Duration(milliseconds: 500));
+          await Future.delayed(const Duration(milliseconds: 1000)); // Increased delay
         } else {
           throw Exception('Video file not ready after $maxRetries attempts');
         }
@@ -387,12 +390,13 @@ class _CameraModuleState extends State<CameraModule>
         // Add clip to provider
         creationState.addVideoClip(videoFile.path);
         
-        // Wait a bit more to ensure all video resources are released
-        await Future.delayed(const Duration(milliseconds: 300));
+        // Wait longer to ensure all video resources are released
+        await Future.delayed(const Duration(seconds: 1));
         
         // Navigate to edit or continue recording
         if (_recordedClips.length == 1 && !_isMultiClipMode()) {
           if (mounted) {
+            print('Navigating to video preview...');
             widget.onVideoRecorded(videoFile.path);
           }
         } else {
