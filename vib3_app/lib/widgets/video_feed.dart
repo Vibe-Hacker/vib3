@@ -74,11 +74,14 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   
   void _initButtonPositions() {
     final screenWidth = WidgetsBinding.instance.window.physicalSize.width / WidgetsBinding.instance.window.devicePixelRatio;
+    // Position buttons with margin from right edge
+    const buttonSize = 80.0;
+    const rightMargin = 20.0;
     _buttonPositions = {
-      'profile': Offset(screenWidth - 80, 200),
-      'like': Offset(screenWidth - 80, 280),
-      'comment': Offset(screenWidth - 80, 360),
-      'share': Offset(screenWidth - 80, 440),
+      'profile': Offset(screenWidth - buttonSize - rightMargin, 200),
+      'like': Offset(screenWidth - buttonSize - rightMargin, 280),
+      'comment': Offset(screenWidth - buttonSize - rightMargin, 360),
+      'share': Offset(screenWidth - buttonSize - rightMargin, 440),
     };
   }
 
@@ -222,14 +225,22 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     if (positionsString != null) {
       try {
         final Map<String, dynamic> positions = jsonDecode(positionsString);
+        final screenSize = MediaQuery.of(context).size;
+        const buttonSize = 80.0;
+        const minMargin = 10.0;
+        
         setState(() {
           positions.forEach((key, value) {
             final parts = value.split(',');
             if (parts.length == 2) {
-              _buttonPositions[key] = Offset(
-                double.parse(parts[0]),
-                double.parse(parts[1]),
-              );
+              double x = double.parse(parts[0]);
+              double y = double.parse(parts[1]);
+              
+              // Ensure loaded positions are within bounds
+              x = x.clamp(minMargin, screenSize.width - buttonSize - minMargin);
+              y = y.clamp(minMargin, screenSize.height - buttonSize - minMargin - 80);
+              
+              _buttonPositions[key] = Offset(x, y);
             }
           });
         });
@@ -476,13 +487,22 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           if (_isDragMode && _draggingButton == buttonId && _dragOffset != null && mounted) {
             final RenderBox renderBox = context.findRenderObject() as RenderBox;
             final localPosition = renderBox.globalToLocal(details.globalPosition);
+            final screenSize = MediaQuery.of(context).size;
+            
+            // Calculate new position
+            double newX = localPosition.dx - _dragOffset!.dx;
+            double newY = localPosition.dy - _dragOffset!.dy;
+            
+            // Define button size (approximate)
+            const buttonSize = 80.0;
+            const minMargin = 10.0;
+            
+            // Apply boundary constraints
+            newX = newX.clamp(minMargin, screenSize.width - buttonSize - minMargin);
+            newY = newY.clamp(minMargin, screenSize.height - buttonSize - minMargin - 80); // Account for bottom nav
             
             setState(() {
-              // Keep the button at the same relative position to the finger
-              _buttonPositions[buttonId] = Offset(
-                localPosition.dx - _dragOffset!.dx,
-                localPosition.dy - _dragOffset!.dy,
-              );
+              _buttonPositions[buttonId] = Offset(newX, newY);
             });
           }
         },
