@@ -143,10 +143,16 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
               builder: (context, creationState, child) {
                 return Stack(
                   children: [
-                    // Main content area
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: _buildCurrentMode(),
+                    // Main content area with padding for toolbars
+                    Positioned(
+                      top: _currentMode != CreatorMode.camera ? 60 : 0, // Space for top toolbar
+                      bottom: _currentMode == CreatorMode.edit ? 100 : 0, // Space for bottom toolbar
+                      left: 0,
+                      right: 0,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: _buildCurrentMode(),
+                      ),
                     ),
             
             // Top toolbar (context-sensitive)

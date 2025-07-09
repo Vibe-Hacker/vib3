@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import '../providers/creation_state_provider.dart';
+import '../../../services/music_service.dart';
 
 class MusicModule extends StatefulWidget {
   const MusicModule({super.key});
@@ -34,33 +35,13 @@ class _MusicModuleState extends State<MusicModule>
   Timer? _beatTimer;
   int _currentBeat = 0;
   
-  // Mock music library
-  final List<MusicTrack> _musicLibrary = [
-    MusicTrack(
-      id: '1',
-      title: 'Summer Vibes',
-      artist: 'DJ Cool',
-      duration: const Duration(seconds: 30),
-      genre: 'Pop',
-      bpm: 120,
-    ),
-    MusicTrack(
-      id: '2', 
-      title: 'Night Drive',
-      artist: 'Synthwave Master',
-      duration: const Duration(seconds: 45),
-      genre: 'Electronic',
-      bpm: 100,
-    ),
-    MusicTrack(
-      id: '3',
-      title: 'Happy Days',
-      artist: 'Upbeat Productions',
-      duration: const Duration(seconds: 25),
-      genre: 'Pop',
-      bpm: 140,
-    ),
-  ];
+  // Music library state
+  List<MusicTrack> _trendingMusic = [];
+  List<MusicTrack> _searchResults = [];
+  List<MusicTrack> _savedMusic = [];
+  bool _isLoadingMusic = false;
+  String? _currentlyPlayingId;
+  String _selectedCategory = 'Trending';
   
   final List<SoundEffectItem> _soundEffects = [
     SoundEffectItem(id: '1', name: 'Applause', category: 'Human'),
@@ -74,6 +55,145 @@ class _MusicModuleState extends State<MusicModule>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _loadTrendingMusic();
+  }
+  
+  Future<void> _loadTrendingMusic() async {
+    setState(() {
+      _isLoadingMusic = true;
+    });
+    
+    try {
+      final music = await MusicService.getTrendingMusic();
+      if (mounted) {
+        setState(() {
+          _trendingMusic = music;
+          _isLoadingMusic = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading trending music: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingMusic = false;
+        });
+      }
+    }
+  }
+  
+  Future<void> _searchMusic(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+      });
+      return;
+    }
+    
+    setState(() {
+      _isLoadingMusic = true;
+    });
+    
+    try {
+      final results = await MusicService.searchMusic(
+        query: query,
+        category: _selectedCategory == 'Trending' ? null : _selectedCategory,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _searchResults = results;
+          _isLoadingMusic = false;
+        });
+      }
+    } catch (e) {
+      print('Error searching music: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingMusic = false;
+        });
+      }
+    }
+  }
+  
+  Future<void> _playMusicPreview(MusicTrack track) async {
+    try {
+      // Stop current playback
+      await _audioPlayer.stop();
+      
+      // Update playing state
+      setState(() {
+        _currentlyPlayingId = track.id;
+      });
+      
+      // Play the preview or full track
+      final audioUrl = track.previewUrl ?? track.audioUrl;
+      if (audioUrl.isNotEmpty) {
+        await _audioPlayer.play(UrlSource(audioUrl));
+        
+        // Stop after 15 seconds if it's a full track
+        if (track.previewUrl == null) {
+          Timer(const Duration(seconds: 15), () async {
+            if (_currentlyPlayingId == track.id) {
+              await _audioPlayer.stop();
+              if (mounted) {
+                setState(() {
+                  _currentlyPlayingId = null;
+                });
+              }
+            }
+          });
+        }
+      }
+      
+      // Listen for completion
+      _audioPlayer.onPlayerComplete.listen((_) {
+        if (mounted && _currentlyPlayingId == track.id) {
+          setState(() {
+            _currentlyPlayingId = null;
+          });
+        }
+      });
+    } catch (e) {
+      print('Error playing music preview: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to play preview: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
+  Future<void> _stopMusicPreview() async {
+    await _audioPlayer.stop();
+    setState(() {
+      _currentlyPlayingId = null;
+    });
+  }
+  
+  Future<void> _loadMusicByCategory(String category) async {
+    setState(() {
+      _isLoadingMusic = true;
+    });
+    
+    try {
+      final music = await MusicService.getMusicByCategory(
+        category: category,
+      );
+      if (mounted) {
+        setState(() {
+          _trendingMusic = music;
+          _isLoadingMusic = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading music by category: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingMusic = false;
+        });
+      }
+    }
   }
   
   @override
@@ -148,6 +268,18 @@ class _MusicModuleState extends State<MusicModule>
               setState(() {
                 _searchQuery = value;
               });
+              // Debounce search
+              if (value.isNotEmpty) {
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (_searchQuery == value) {
+                    _searchMusic(value);
+                  }
+                });
+              } else {
+                setState(() {
+                  _searchResults = [];
+                });
+              }
             },
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
@@ -173,21 +305,24 @@ class _MusicModuleState extends State<MusicModule>
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: ['All', 'Pop', 'Electronic', 'Hip Hop', 'Rock', 'Classical']
-                    .map((genre) => Padding(
+                children: MusicService.musicCategories
+                    .map((category) => Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: FilterChip(
-                            label: Text(genre),
-                            selected: _selectedGenre == genre,
+                            label: Text(category),
+                            selected: _selectedCategory == category,
                             onSelected: (selected) {
                               setState(() {
-                                _selectedGenre = selected ? genre : 'All';
+                                _selectedCategory = selected ? category : 'Trending';
+                                if (selected) {
+                                  _loadMusicByCategory(category);
+                                }
                               });
                             },
                             backgroundColor: Colors.white.withOpacity(0.1),
                             selectedColor: const Color(0xFF00CED1),
                             labelStyle: TextStyle(
-                              color: _selectedGenre == genre 
+                              color: _selectedCategory == category 
                                   ? Colors.black 
                                   : Colors.white,
                             ),
@@ -201,10 +336,39 @@ class _MusicModuleState extends State<MusicModule>
         
         // Music list
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _filteredMusic.length,
-            itemBuilder: (context, index) {
+          child: _isLoadingMusic
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF00CED1),
+                  ),
+                )
+              : _filteredMusic.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.music_off,
+                            size: 64,
+                            color: Colors.white.withOpacity(0.3),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _searchQuery.isNotEmpty
+                                ? 'No music found'
+                                : 'No trending music available',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _filteredMusic.length,
+                      itemBuilder: (context, index) {
               final track = _filteredMusic[index];
               final isSelected = creationState.backgroundMusicPath == track.id;
               
@@ -214,19 +378,18 @@ class _MusicModuleState extends State<MusicModule>
                 onTap: () async {
                   if (isSelected) {
                     creationState.setBackgroundMusic('');
-                    await _audioPlayer.stop();
+                    await _stopMusicPreview();
                   } else {
-                    creationState.setBackgroundMusic(track.id);
-                    // Play preview
-                    // await _audioPlayer.play(UrlSource(track.previewUrl));
+                    creationState.setBackgroundMusic(track.audioUrl);
+                    await _playMusicPreview(track);
                   }
                 },
                 onTrim: () {
                   _showMusicTrimmer(track);
                 },
               );
-            },
-          ),
+                      },
+                    ),
         ),
       ],
     );
@@ -619,13 +782,30 @@ class _MusicModuleState extends State<MusicModule>
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(
-            Icons.music_note,
-            color: Colors.white,
-          ),
+          child: track.coverUrl.isNotEmpty
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    track.coverUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Colors.white.withOpacity(0.1),
+                      child: const Icon(
+                        Icons.music_note,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                )
+              : Container(
+                  color: Colors.white.withOpacity(0.1),
+                  child: const Icon(
+                    Icons.music_note,
+                    color: Colors.white,
+                  ),
+                ),
         ),
         title: Text(
           track.title,
@@ -634,12 +814,27 @@ class _MusicModuleState extends State<MusicModule>
             fontWeight: FontWeight.bold,
           ),
         ),
-        subtitle: Text(
-          '${track.artist} • ${_formatDuration(track.duration)} • ${track.bpm} BPM',
-          style: const TextStyle(
-            color: Colors.white54,
-            fontSize: 12,
-          ),
+        subtitle: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${track.artist} • ${track.formattedDuration}',
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (track.plays > 0)
+              Text(
+                track.formattedPlays,
+                style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 11,
+                ),
+              ),
+          ],
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -653,7 +848,11 @@ class _MusicModuleState extends State<MusicModule>
                 ),
               ),
             Icon(
-              isSelected ? Icons.check_circle : Icons.play_circle,
+              _currentlyPlayingId == track.id 
+                  ? Icons.pause_circle_filled
+                  : isSelected 
+                      ? Icons.check_circle 
+                      : Icons.play_circle,
               color: isSelected ? const Color(0xFF00CED1) : Colors.white54,
             ),
           ],
@@ -664,7 +863,7 @@ class _MusicModuleState extends State<MusicModule>
   
   void _showMusicTrimmer(MusicTrack track) {
     double startTime = 0;
-    double endTime = track.duration.inSeconds.toDouble();
+    double endTime = track.duration.toDouble();
     
     showModalBottomSheet(
       context: context,
@@ -694,7 +893,7 @@ class _MusicModuleState extends State<MusicModule>
                 ),
                 subtitle: Text(
                   _beatSyncEnabled 
-                      ? 'Auto-cut on beat (${track.bpm} BPM)'
+                      ? 'Auto-cut on beat (${track.metadata?['bpm'] ?? 120} BPM)'
                       : 'Sync edits to music beats',
                   style: const TextStyle(color: Colors.white54, fontSize: 12),
                 ),
@@ -733,7 +932,7 @@ class _MusicModuleState extends State<MusicModule>
                     
                     // Trim handles
                     Positioned(
-                      left: (startTime / track.duration.inSeconds) * 
+                      left: (startTime / track.duration) * 
                             (MediaQuery.of(context).size.width - 40),
                       top: 0,
                       bottom: 0,
@@ -743,7 +942,7 @@ class _MusicModuleState extends State<MusicModule>
                       ),
                     ),
                     Positioned(
-                      left: (endTime / track.duration.inSeconds) * 
+                      left: (endTime / track.duration) * 
                             (MediaQuery.of(context).size.width - 40),
                       top: 0,
                       bottom: 0,
@@ -755,9 +954,9 @@ class _MusicModuleState extends State<MusicModule>
                     
                     // Selected region
                     Positioned(
-                      left: (startTime / track.duration.inSeconds) * 
+                      left: (startTime / track.duration) * 
                             (MediaQuery.of(context).size.width - 40),
-                      right: ((track.duration.inSeconds - endTime) / track.duration.inSeconds) * 
+                      right: ((track.duration - endTime) / track.duration) * 
                              (MediaQuery.of(context).size.width - 40),
                       top: 0,
                       bottom: 0,
@@ -825,7 +1024,7 @@ class _MusicModuleState extends State<MusicModule>
                   Slider(
                     value: endTime,
                     min: startTime + 1,
-                    max: track.duration.inSeconds.toDouble(),
+                    max: track.duration.toDouble(),
                     activeColor: const Color(0xFF00CED1),
                     inactiveColor: Colors.white.withOpacity(0.2),
                     onChanged: (value) {
@@ -910,11 +1109,17 @@ class _MusicModuleState extends State<MusicModule>
   }
   
   List<MusicTrack> get _filteredMusic {
-    return _musicLibrary.where((track) {
-      final matchesSearch = track.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          track.artist.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesGenre = _selectedGenre == 'All' || track.genre == _selectedGenre;
-      return matchesSearch && matchesGenre;
+    // If we have search results, use them
+    if (_searchQuery.isNotEmpty && _searchResults.isNotEmpty) {
+      return _searchResults;
+    }
+    
+    // Otherwise show trending music filtered by category
+    return _trendingMusic.where((track) {
+      if (_selectedCategory == 'Trending' || _selectedCategory == 'All') {
+        return true;
+      }
+      return track.category == _selectedCategory;
     }).toList();
   }
   
@@ -932,13 +1137,23 @@ class _MusicModuleState extends State<MusicModule>
   
   void _startBeatSync() {
     // Get current track's BPM
-    final selectedTrack = _musicLibrary.firstWhere(
-      (track) => track.id == context.read<CreationStateProvider>().backgroundMusicPath,
-      orElse: () => _musicLibrary.first,
-    );
+    final backgroundMusicPath = context.read<CreationStateProvider>().backgroundMusicPath;
+    MusicTrack? selectedTrack;
+    try {
+      selectedTrack = _trendingMusic.firstWhere(
+        (track) => track.audioUrl == backgroundMusicPath,
+      );
+    } catch (e) {
+      if (_trendingMusic.isNotEmpty) {
+        selectedTrack = _trendingMusic.first;
+      }
+    }
     
-    // Calculate beat interval
-    final beatInterval = Duration(milliseconds: (60000 / selectedTrack.bpm).round());
+    if (selectedTrack == null) return;
+    
+    // Calculate beat interval (using metadata BPM if available, otherwise default to 120)
+    final bpm = selectedTrack.metadata?['bpm'] ?? 120;
+    final beatInterval = Duration(milliseconds: (60000 / bpm).round());
     
     _beatTimer?.cancel();
     _beatTimer = Timer.periodic(beatInterval, (timer) {
@@ -963,23 +1178,7 @@ class _MusicModuleState extends State<MusicModule>
 }
 
 // Data models
-class MusicTrack {
-  final String id;
-  final String title;
-  final String artist;
-  final Duration duration;
-  final String genre;
-  final int bpm;
-  
-  MusicTrack({
-    required this.id,
-    required this.title,
-    required this.artist,
-    required this.duration,
-    required this.genre,
-    required this.bpm,
-  });
-}
+// MusicTrack is now imported from music_service.dart
 
 class SoundEffectItem {
   final String id;

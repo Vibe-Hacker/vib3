@@ -26,4 +26,13 @@ class AppConfig {
   static const int primaryColor = 0xFFFF0080;
   static const int secondaryColor = 0xFF00F0FF;
   static const int backgroundColor = 0xFF000000;
+  
+  // Auth headers for API requests
+  static Map<String, String> get authHeaders {
+    // In a real app, this would get the token from AuthService
+    return {
+      'Content-Type': 'application/json',
+      // 'Authorization': 'Bearer ${AuthService.token}',
+    };
+  }
 }
