@@ -23,10 +23,12 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
   bool _isPlaying = false;
   bool _showControls = true;
   AudioPlayer? _musicPlayer;
+  bool _isInitializing = false;
   
   @override
   void initState() {
     super.initState();
+    // Initialize video after frame to ensure context is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeVideo();
     });
@@ -44,49 +46,105 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
   
   @override
   void dispose() {
-    _controller?.dispose();
-    _musicPlayer?.dispose();
+    // Pause and dispose video controller
+    if (_controller != null) {
+      _controller!.pause();
+      _controller!.dispose();
+    }
+    
+    // Stop and dispose music player
+    if (_musicPlayer != null) {
+      _musicPlayer!.stop();
+      _musicPlayer!.dispose();
+    }
+    
     super.dispose();
   }
   
   Future<void> _initializeVideo() async {
+    if (_isInitializing) {
+      print('VideoPreviewWidget: Already initializing, skipping...');
+      return;
+    }
+    
+    _isInitializing = true;
+    
     try {
       final creationState = context.read<CreationStateProvider>();
       
       // Debug print
-      print('VideoPreviewWidget: Clips count = ${creationState.videoClips.length}');
-      
       if (creationState.videoClips.isEmpty) {
-        print('VideoPreviewWidget: No clips available!');
-        // Try again after a short delay in case provider is still initializing
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (creationState.videoClips.isNotEmpty) {
-          _initializeVideo();
-        }
+        _isInitializing = false;
         return;
       }
       
       final firstClip = creationState.videoClips[creationState.currentClipIndex];
-      print('VideoPreviewWidget: Loading video from ${firstClip.path}');
+      final videoFile = File(firstClip.path);
+      
+      // Wait a bit to ensure video file is fully written
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      if (!await videoFile.exists()) {
+        print('VideoPreviewWidget: Video file does not exist: ${firstClip.path}');
+        _isInitializing = false;
+        return;
+      }
+      
+      final fileSize = await videoFile.length();
+      if (fileSize == 0) {
+        print('VideoPreviewWidget: Video file is empty');
+        _isInitializing = false;
+        return;
+      }
       
       // Dispose old controller if exists
       if (_controller != null) {
-        await _controller!.dispose();
+        try {
+          await _controller!.pause();
+          await _controller!.dispose();
+        } catch (e) {
+          print('Error disposing old controller: $e');
+        }
+        _controller = null;
       }
       
-      _controller = VideoPlayerController.file(File(firstClip.path));
+      // Add delay to ensure resources are released
+      await Future.delayed(const Duration(milliseconds: 100));
       
+      _controller = VideoPlayerController.file(videoFile);
       await _controller!.initialize();
       await _controller!.setLooping(true);
-      
-      // Set volume
       await _controller!.setVolume(creationState.originalVolume);
       
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _isInitializing = false;
+        });
       }
     } catch (e) {
       print('VideoPreviewWidget: Error initializing video: $e');
+      _isInitializing = false;
+      
+      // Clean up on error
+      if (_controller != null) {
+        try {
+          await _controller!.dispose();
+        } catch (_) {}
+        _controller = null;
+      }
+      
+      if (mounted) {
+        setState(() {});
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error loading video. Please try again.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
   
@@ -135,11 +193,9 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
   Widget build(BuildContext context) {
     final creationState = context.watch<CreationStateProvider>();
     
-    // Re-initialize video if clips change
-    if (creationState.videoClips.isNotEmpty && _controller == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _initializeVideo();
-      });
+    // Initialize immediately if needed
+    if (creationState.videoClips.isNotEmpty && _controller == null && !_isInitializing) {
+      _initializeVideo();
     }
     
     return GestureDetector(

@@ -274,35 +274,89 @@ class _CameraModuleState extends State<CameraModule>
     if (!_isRecording) return;
     
     try {
-      final XFile videoFile = await _cameraController!.stopVideoRecording();
-      _recordingTimer?.cancel();
-      
+      // First update UI state to prevent multiple stop attempts
       setState(() {
         _isRecording = false;
         _isPaused = false;
+      });
+      
+      _recordingTimer?.cancel();
+      
+      // Stop recording and get the file
+      final XFile videoFile = await _cameraController!.stopVideoRecording();
+      
+      // Add delay to ensure video encoder has fully released the file
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Validate file with retries
+      final file = File(videoFile.path);
+      int retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        if (await file.exists()) {
+          final fileSize = await file.length();
+          if (fileSize > 0) {
+            print('Video saved: ${videoFile.path} (${fileSize} bytes)');
+            break;
+          }
+        }
+        
+        retryCount++;
+        if (retryCount < maxRetries) {
+          print('Waiting for video file to be ready, attempt $retryCount...');
+          await Future.delayed(const Duration(milliseconds: 500));
+        } else {
+          throw Exception('Video file not ready after $maxRetries attempts');
+        }
+      }
+      
+      setState(() {
         _recordedClips.add(videoFile.path);
       });
       
       HapticFeedback.heavyImpact();
       
-      // Add to creation state
-      final creationState = context.read<CreationStateProvider>();
-      creationState.addVideoClip(videoFile.path);
-      
-      // Apply speed if needed
-      if (_selectedSpeed != 1.0) {
-        // TODO: Process video with speed change
-      }
-      
-      // Navigate to edit or continue recording
-      if (_recordedClips.length == 1 && !_isMultiClipMode()) {
-        widget.onVideoRecorded(videoFile.path);
-      } else {
-        // Show option to add more clips or finish
-        _showClipOptions();
+      // Add to creation state with proper timing
+      if (mounted) {
+        final creationState = context.read<CreationStateProvider>();
+        
+        // Add clip to provider
+        creationState.addVideoClip(videoFile.path);
+        
+        // Wait a bit more to ensure all video resources are released
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        // Navigate to edit or continue recording
+        if (_recordedClips.length == 1 && !_isMultiClipMode()) {
+          if (mounted) {
+            widget.onVideoRecorded(videoFile.path);
+          }
+        } else {
+          // Show option to add more clips or finish
+          _showClipOptions();
+        }
       }
     } catch (e) {
-      print('Error stopping recording: $e');
+      print('\nERROR stopping recording: $e');
+      print('Stack trace: ${StackTrace.current}');
+      
+      // Reset recording state on error
+      setState(() {
+        _isRecording = false;
+        _isPaused = false;
+      });
+      
+      // Show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Recording error: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
   
