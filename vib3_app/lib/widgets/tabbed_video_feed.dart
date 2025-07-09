@@ -33,7 +33,7 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
     
     // Load initial videos for the first tab
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadVideosForTab(0); // Load "For You" videos initially
+      _loadVideosForTab(0); // Load "Vib3 Pulse" videos initially
     });
   }
 
@@ -59,14 +59,14 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
     }
 
     switch (tabIndex) {
-      case 0: // For You
+      case 0: // Vib3 Pulse
         videoProvider.loadForYouVideos(token);
         break;
-      case 1: // Following
+      case 1: // Vib3 Connect
         videoProvider.loadFollowingVideos(token);
         break;
-      case 2: // Discover
-        videoProvider.loadDiscoverVideos(token);
+      case 2: // Vib3 Circle
+        videoProvider.loadFriendsVideos(token);
         break;
     }
   }
@@ -102,9 +102,9 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
               fontWeight: FontWeight.normal,
             ),
             tabs: const [
-              Tab(text: 'For You'),
-              Tab(text: 'Following'),
-              Tab(text: 'Discover'),
+              Tab(text: 'Vib3 Pulse'),
+              Tab(text: 'Vib3 Connect'),
+              Tab(text: 'Vib3 Circle'),
             ],
           ),
         ),
@@ -113,18 +113,18 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
           child: TabBarView(
             controller: _tabController,
             children: [
-              // For You Feed
+              // Vib3 Pulse Feed
               VideoFeed(
                 isVisible: widget.isVisible && _currentTab == 0,
                 feedType: FeedType.forYou,
               ),
-              // Following Feed
+              // Vib3 Connect Feed
               VideoFeed(
                 isVisible: widget.isVisible && _currentTab == 1,
                 feedType: FeedType.following,
               ),
-              // Discover Feed
-              _buildDiscoverFeed(),
+              // Vib3 Circle Feed
+              _buildFriendsFeed(),
             ],
           ),
         ),
@@ -132,7 +132,7 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
     );
   }
 
-  Widget _buildDiscoverFeed() {
+  Widget _buildFriendsFeed() {
     return Consumer<VideoProvider>(
       builder: (context, videoProvider, child) {
         if (videoProvider.isLoading) {

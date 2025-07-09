@@ -15,7 +15,7 @@ class _WebHomeScreenState extends State<WebHomeScreen> {
   int _selectedIndex = 0;
   int _selectedTab = 0; // 0: Home, 1: Squad, 2: Pulse Feed, 3: Discover, 4: Vibing
   
-  final List<String> _tabTitles = ['Home', 'Squad', 'Pulse Feed', 'Discover', 'Vibing'];
+  final List<String> _tabTitles = ['Home', 'Squad', 'Pulse Feed', 'Vib3 Circle', 'Vibing'];
   
   final List<NavigationItem> _navigationItems = [
     NavigationItem(icon: Icons.star, label: 'Vibe Rooms'),
@@ -240,8 +240,8 @@ class _WebHomeScreenState extends State<WebHomeScreen> {
         return FeedType.forYou;
       case 1: // Squad
         return FeedType.following;
-      case 3: // Discover
-        return FeedType.discover;
+      case 3: // Friends
+        return FeedType.friends;
       default:
         return FeedType.forYou;
     }

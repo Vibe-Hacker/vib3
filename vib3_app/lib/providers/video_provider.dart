@@ -7,6 +7,7 @@ class VideoProvider extends ChangeNotifier {
   final List<Video> _forYouVideos = [];
   final List<Video> _followingVideos = [];
   final List<Video> _discoverVideos = [];
+  final List<Video> _friendsVideos = [];
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMoreVideos = true;
@@ -20,6 +21,7 @@ class VideoProvider extends ChangeNotifier {
   List<Video> get forYouVideos => _forYouVideos;
   List<Video> get followingVideos => _followingVideos;
   List<Video> get discoverVideos => _discoverVideos;
+  List<Video> get friendsVideos => _friendsVideos;
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   bool get hasMoreVideos => _hasMoreVideos;
@@ -160,7 +162,7 @@ class VideoProvider extends ChangeNotifier {
 
   Future<void> loadForYouVideos(String token) async {
     try {
-      print('VideoProvider: Loading For You videos...');
+      print('VideoProvider: Loading Vib3 Pulse videos...');
       _isLoading = true;
       _error = null;
       notifyListeners();
@@ -174,11 +176,11 @@ class VideoProvider extends ChangeNotifier {
       _videos.clear();
       _videos.addAll(videos);
       
-      _debugInfo = 'Loaded ${videos.length} For You videos';
+      _debugInfo = 'Loaded ${videos.length} Vib3 Pulse videos';
       
       notifyListeners();
     } catch (e) {
-      print('VideoProvider: Error loading For You videos: $e');
+      print('VideoProvider: Error loading Vib3 Pulse videos: $e');
       _error = 'Failed to load videos: $e';
       notifyListeners();
     } finally {
@@ -189,7 +191,7 @@ class VideoProvider extends ChangeNotifier {
 
   Future<void> loadFollowingVideos(String token) async {
     try {
-      print('VideoProvider: Loading Following videos...');
+      print('VideoProvider: Loading Vib3 Connect videos...');
       _isLoading = true;
       _error = null;
       notifyListeners();
@@ -203,11 +205,11 @@ class VideoProvider extends ChangeNotifier {
       _videos.clear();
       _videos.addAll(videos);
       
-      _debugInfo = 'Loaded ${videos.length} Following videos';
+      _debugInfo = 'Loaded ${videos.length} Vib3 Connect videos';
       
       notifyListeners();
     } catch (e) {
-      print('VideoProvider: Error loading Following videos: $e');
+      print('VideoProvider: Error loading Vib3 Connect videos: $e');
       _error = 'Failed to load videos: $e';
       notifyListeners();
     } finally {
@@ -237,6 +239,35 @@ class VideoProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       print('VideoProvider: Error loading Discover videos: $e');
+      _error = 'Failed to load videos: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadFriendsVideos(String token) async {
+    try {
+      print('VideoProvider: Loading Vib3 Circle videos...');
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      // Friends feed - fallback to all videos for now
+      final videos = await VideoService.getAllVideos(token);
+      _friendsVideos.clear();
+      _friendsVideos.addAll(videos);
+      
+      // Also populate main videos list for backward compatibility
+      _videos.clear();
+      _videos.addAll(videos);
+      
+      _debugInfo = 'Loaded ${videos.length} Vib3 Circle videos';
+      
+      notifyListeners();
+    } catch (e) {
+      print('VideoProvider: Error loading Vib3 Circle videos: $e');
       _error = 'Failed to load videos: $e';
       notifyListeners();
     } finally {
