@@ -227,7 +227,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
         final Map<String, dynamic> positions = jsonDecode(positionsString);
         final screenSize = MediaQuery.of(context).size;
         const buttonSize = 80.0;
-        const minMargin = 3.0;
+        const minMargin = 1.0;
         
         setState(() {
           positions.forEach((key, value) {
@@ -495,7 +495,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             
             // Define button size (approximate)
             const buttonSize = 80.0;
-            const minMargin = 3.0;
+            const minMargin = 1.0;
             
             // Apply boundary constraints
             newX = newX.clamp(minMargin, screenSize.width - buttonSize - minMargin);
