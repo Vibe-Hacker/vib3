@@ -97,8 +97,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           final videoProvider = Provider.of<VideoProvider>(context, listen: false);
           final token = authProvider.authToken;
           
-          if (token != null) {
-            switch (widget.feedType) {
+          if (token != null && widget.feedType != null) {
+            switch (widget.feedType!) {
               case FeedType.forYou:
                 videoProvider.loadForYouVideos(token);
                 break;
