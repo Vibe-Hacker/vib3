@@ -159,7 +159,7 @@ class _VideoFeedWidgetState extends State<VideoFeedWidget> {
                 // Video player
                 VideoPlayerWidget(
                   videoUrl: video.videoUrl,
-                  isCurrentlyVisible: index == _currentIndex,
+                  isPlaying: index == _currentIndex,
                 ),
                 
                 // Video info overlay

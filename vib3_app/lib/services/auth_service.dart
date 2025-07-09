@@ -3,6 +3,17 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 
 class AuthService {
+  // Add getAuthToken method for repository pattern
+  String? _cachedToken;
+  
+  Future<String?> getAuthToken() async {
+    return _cachedToken;
+  }
+  
+  void setAuthToken(String? token) {
+    _cachedToken = token;
+  }
+  
   Future<Map<String, dynamic>> login(String email, String password) async {
     print('🔐 Login attempt for: $email');
     
@@ -41,6 +52,8 @@ class AuthService {
         
         if (response.statusCode == 200) {
           print('✅ Login successful with backend ${i + 1}');
+          // Cache the token
+          _cachedToken = data['token'];
           return {
             'success': true,
             'token': data['token'],

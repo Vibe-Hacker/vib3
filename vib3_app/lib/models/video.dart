@@ -13,6 +13,7 @@ class Video {
   final DateTime createdAt;
   final DateTime updatedAt;
   final Map<String, dynamic>? user;
+  final String? musicName; // Add musicName field
 
   Video({
     required this.id,
@@ -29,6 +30,7 @@ class Video {
     required this.createdAt,
     required this.updatedAt,
     this.user,
+    this.musicName,
   });
 
   factory Video.fromJson(Map<String, dynamic> json) {
@@ -55,6 +57,7 @@ class Video {
               ? DateTime.parse(json['updatedat']) 
               : DateTime.now()),
       user: json['user'] ?? {'username': json['username']},
+      musicName: json['musicName'] ?? json['music_name'],
     );
   }
 
@@ -74,6 +77,7 @@ class Video {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'user': user,
+      'musicName': musicName,
     };
   }
 
@@ -92,6 +96,7 @@ class Video {
     DateTime? createdAt,
     DateTime? updatedAt,
     Map<String, dynamic>? user,
+    String? musicName,
   }) {
     return Video(
       id: id ?? this.id,
@@ -108,6 +113,7 @@ class Video {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       user: user ?? this.user,
+      musicName: musicName ?? this.musicName,
     );
   }
 }
