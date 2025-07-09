@@ -83,6 +83,39 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   }
 
   @override
+  void didUpdateWidget(VideoFeed oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isVisible != widget.isVisible) {
+      setState(() {
+        _isScreenVisible = widget.isVisible;
+      });
+      
+      // Reload videos when becoming visible again
+      if (widget.isVisible && !oldWidget.isVisible) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+          final token = authProvider.authToken;
+          
+          if (token != null) {
+            switch (widget.feedType) {
+              case FeedType.forYou:
+                videoProvider.loadForYouVideos(token);
+                break;
+              case FeedType.following:
+                videoProvider.loadFollowingVideos(token);
+                break;
+              case FeedType.discover:
+                videoProvider.loadDiscoverVideos(token);
+                break;
+            }
+          }
+        });
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _longPressTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);

@@ -119,10 +119,13 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
     
     try {
       _musicPlayer = AudioPlayer();
-      // For now, play a placeholder sound since we're using mock music IDs
-      // In production, this would load the actual music file
       await _musicPlayer!.setVolume(creationState.musicVolume);
-      // await _musicPlayer!.play(AssetSource('audio/sample_music.mp3'));
+      
+      // Play the actual music URL
+      if (creationState.backgroundMusicPath.startsWith('http')) {
+        await _musicPlayer!.play(UrlSource(creationState.backgroundMusicPath));
+        await _musicPlayer!.setReleaseMode(ReleaseMode.loop); // Loop the music
+      }
     } catch (e) {
       print('Error initializing music: $e');
     }

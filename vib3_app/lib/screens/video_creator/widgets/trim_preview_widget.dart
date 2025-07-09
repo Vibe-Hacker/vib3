@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:provider/provider.dart';
 import 'dart:io';
+import '../providers/creation_state_provider.dart';
 
 class TrimPreviewWidget extends StatefulWidget {
   final String? videoPath;
@@ -24,6 +27,7 @@ class TrimPreviewWidget extends StatefulWidget {
 
 class _TrimPreviewWidgetState extends State<TrimPreviewWidget> {
   VideoPlayerController? _controller;
+  AudioPlayer? _musicPlayer;
   bool _isPlaying = false;
   
   @override
@@ -62,6 +66,7 @@ class _TrimPreviewWidgetState extends State<TrimPreviewWidget> {
   @override
   void dispose() {
     _controller?.dispose();
+    _musicPlayer?.dispose();
     super.dispose();
   }
   
@@ -97,15 +102,46 @@ class _TrimPreviewWidgetState extends State<TrimPreviewWidget> {
     setState(() {
       if (_isPlaying) {
         _controller!.pause();
+        _musicPlayer?.pause();
       } else {
         _controller!.play();
         // Set up listener to loop within trim range
         _controller!.addListener(_checkTrimBounds);
+        
+        // Play background music if available
+        _initializeAndPlayMusic();
       }
       _isPlaying = !_isPlaying;
     });
     
     widget.onPlayPause?.call();
+  }
+  
+  Future<void> _initializeAndPlayMusic() async {
+    final creationState = context.read<CreationStateProvider>();
+    if (creationState.backgroundMusicPath.isEmpty) return;
+    
+    try {
+      if (_musicPlayer == null) {
+        _musicPlayer = AudioPlayer();
+        await _musicPlayer!.setVolume(creationState.musicVolume);
+      }
+      
+      // Play the actual music URL
+      if (creationState.backgroundMusicPath.startsWith('http')) {
+        await _musicPlayer!.play(UrlSource(creationState.backgroundMusicPath));
+        await _musicPlayer!.setReleaseMode(ReleaseMode.loop);
+        
+        // Sync music position with video trim start
+        if (_controller != null && _controller!.value.isInitialized) {
+          final videoDuration = _controller!.value.duration;
+          final musicStartTime = videoDuration * (widget.trimStart / 100);
+          await _musicPlayer!.seek(musicStartTime);
+        }
+      }
+    } catch (e) {
+      print('Error playing music in trim preview: $e');
+    }
   }
   
   void _checkTrimBounds() {
@@ -117,6 +153,11 @@ class _TrimPreviewWidgetState extends State<TrimPreviewWidget> {
     
     if (currentPosition >= endPosition) {
       _seekToTrimStart();
+      // Also reset music position
+      if (_musicPlayer != null && _isPlaying) {
+        final musicStartTime = duration * (widget.trimStart / 100);
+        _musicPlayer!.seek(musicStartTime);
+      }
     }
   }
   
