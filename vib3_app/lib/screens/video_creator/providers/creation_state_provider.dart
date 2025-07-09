@@ -95,6 +95,30 @@ class CreationStateProvider extends ChangeNotifier {
     notifyListeners();
   }
   
+  // Update clip speed
+  void updateClipSpeed(int index, double speed) {
+    if (index >= 0 && index < _videoClips.length) {
+      _videoClips[index].speed = speed;
+      notifyListeners();
+    }
+  }
+  
+  // Update clip property
+  void updateClipProperty(int index, String property, dynamic value) {
+    if (index >= 0 && index < _videoClips.length) {
+      switch (property) {
+        case 'isReversed':
+          _videoClips[index].isReversed = value as bool;
+          break;
+        case 'speed':
+          _videoClips[index].speed = value as double;
+          break;
+        // Add more properties as needed
+      }
+      notifyListeners();
+    }
+  }
+
   // Set current clip
   void setCurrentClip(int index) {
     if (index >= 0 && index < _videoClips.length) {

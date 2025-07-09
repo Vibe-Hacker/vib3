@@ -168,10 +168,9 @@ class _ToolsModuleState extends State<ToolsModule>
               ],
             ),
           ),
-        ),
-        
-        // Visual timeline with video frames
-        Container(
+          
+          // Visual timeline with video frames
+          Container(
           height: 100,
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
@@ -542,6 +541,7 @@ class _ToolsModuleState extends State<ToolsModule>
               ),
             ],
           ),
+        ),
         
         // Show split segments
         if (_splitPoints.isNotEmpty)
@@ -763,8 +763,7 @@ class _ToolsModuleState extends State<ToolsModule>
                   
                   // Update clip speed
                   if (creationState.videoClips.isNotEmpty) {
-                    creationState.videoClips[creationState.currentClipIndex].speed = value;
-                    creationState.notifyListeners();
+                    creationState.updateClipSpeed(creationState.currentClipIndex, value);
                   }
                 },
               ),
@@ -984,8 +983,7 @@ class _ToolsModuleState extends State<ToolsModule>
                 
                 // Update clip
                 if (creationState.videoClips.isNotEmpty) {
-                  creationState.videoClips[creationState.currentClipIndex].isReversed = _isReversed;
-                  creationState.notifyListeners();
+                  creationState.updateClipProperty(creationState.currentClipIndex, 'isReversed', _isReversed);
                 }
               },
               icon: Icon(
