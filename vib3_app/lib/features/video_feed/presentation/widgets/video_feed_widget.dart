@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/video_feed_provider.dart';
 import '../../domain/entities/video_entity.dart';
@@ -254,6 +255,70 @@ class _VideoFeedWidgetState extends State<VideoFeedWidget> {
                   right: 16,
                   child: Column(
                     children: [
+                      // Profile button with follow indicator
+                      GestureDetector(
+                        onTap: () {
+                          // Navigate to user profile
+                        },
+                        child: Stack(
+                          alignment: Alignment.bottomCenter,
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: video.userAvatar != null
+                                    ? Image.network(
+                                        video.userAvatar!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          color: Colors.grey[800],
+                                          child: const Icon(
+                                            Icons.person,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      )
+                                    : Container(
+                                        color: Colors.grey[800],
+                                        child: const Icon(
+                                          Icons.person,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            if (!video.isFollowing)
+                              Transform.translate(
+                                offset: const Offset(0, 8),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.add,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
                       // Like button
                       _ActionButton(
                         icon: video.isLiked ? Icons.favorite : Icons.favorite_border,
@@ -283,6 +348,43 @@ class _VideoFeedWidgetState extends State<VideoFeedWidget> {
                           // Share video
                         },
                       ),
+                      const SizedBox(height: 20),
+                      
+                      // Music disc
+                      GestureDetector(
+                        onTap: () {
+                          // Show music info
+                        },
+                        child: RotationTransition(
+                          turns: AlwaysStoppedAnimation(0),
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.black,
+                              border: Border.all(
+                                color: Colors.grey[800]!,
+                                width: 8,
+                              ),
+                            ),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/icons/music_disc.png',
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: Colors.grey[900],
+                                  child: const Icon(
+                                    Icons.music_note,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -295,7 +397,7 @@ class _VideoFeedWidgetState extends State<VideoFeedWidget> {
   }
 }
 
-class _ActionButton extends StatelessWidget {
+class _ActionButton extends StatefulWidget {
   final IconData icon;
   final Color color;
   final int count;
@@ -309,30 +411,60 @@ class _ActionButton extends StatelessWidget {
   });
   
   @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+  }
+  
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+  
+  void _handleTap() {
+    // Add haptic feedback
+    HapticFeedback.lightImpact();
+    // Animate the button
+    _animationController.forward().then((_) {
+      _animationController.reverse();
+    });
+    // Call the original onTap
+    widget.onTap();
+  }
+  
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 32,
-            shadows: const [
-              Shadow(
-                offset: Offset(1, 1),
-                blurRadius: 3,
-                color: Colors.black45,
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _formatCount(count),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              shadows: [
+      onTap: _handleTap,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Column(
+          children: [
+            Icon(
+              widget.icon,
+              color: widget.color,
+              size: 32,
+              shadows: const [
                 Shadow(
                   offset: Offset(1, 1),
                   blurRadius: 3,
@@ -340,8 +472,23 @@ class _ActionButton extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              _formatCount(widget.count),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                shadows: [
+                  Shadow(
+                    offset: Offset(1, 1),
+                    blurRadius: 3,
+                    color: Colors.black45,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
