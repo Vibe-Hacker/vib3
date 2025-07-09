@@ -74,7 +74,10 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
         children: [
           // Profile button
           _buildActionButton(
-            onTap: widget.onProfile,
+            onTap: () {
+              _animateTap();
+              widget.onProfile();
+            },
             child: Stack(
               alignment: Alignment.bottomCenter,
               children: [
@@ -156,7 +159,10 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
           
           // Comment button
           _buildActionButton(
-            onTap: widget.onComment,
+            onTap: () {
+              _animateTap();
+              widget.onComment();
+            },
             child: Column(
               children: [
                 const Icon(
@@ -179,7 +185,10 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
           
           // Share button
           _buildActionButton(
-            onTap: widget.onShare,
+            onTap: () {
+              _animateTap();
+              widget.onShare();
+            },
             child: Column(
               children: [
                 const Icon(
@@ -198,6 +207,44 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
               ],
             ),
           ),
+          const SizedBox(height: 20),
+          
+          // Music disc
+          _buildActionButton(
+            onTap: () {
+              _animateTap();
+              // Show music info
+            },
+            child: RotationTransition(
+              turns: AlwaysStoppedAnimation(0),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black,
+                  border: Border.all(
+                    color: Colors.grey[800]!,
+                    width: 8,
+                  ),
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/icons/music_disc.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey[900],
+                      child: const Icon(
+                        Icons.music_note,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -210,9 +257,15 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        child: child,
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, _) => Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            child: child,
+          ),
+        ),
       ),
     );
   }
