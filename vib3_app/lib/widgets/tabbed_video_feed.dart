@@ -24,10 +24,20 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
+        // Pause current video before switching tabs
+        final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+        videoProvider.pauseCurrentVideo();
+        
         setState(() {
           _currentTab = _tabController.index;
         });
-        _loadVideosForTab(_tabController.index);
+        
+        // Small delay before loading new videos to ensure proper cleanup
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            _loadVideosForTab(_tabController.index);
+          }
+        });
       }
     });
     

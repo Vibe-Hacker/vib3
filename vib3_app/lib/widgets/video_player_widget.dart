@@ -76,50 +76,61 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     try {
       print('🎬 VideoPlayer: Initializing video: ${widget.videoUrl}');
       
+      // Dispose any existing controller first
+      if (_controller != null) {
+        await _controller!.dispose();
+        _controller = null;
+      }
+      
       _controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.videoUrl),
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: false,
+          allowBackgroundPlayback: false,
+        ),
       );
       
-      _controller!.initialize().then((_) {
-        if (mounted) {
-          setState(() {
-            _isInitialized = true;
-            _hasError = false;
-          });
-          
-          print('✅ VideoPlayer: Successfully initialized ${widget.videoUrl}');
-          print('📐 Video size: ${_controller!.value.size}');
-          print('⏱️ Duration: ${_controller!.value.duration}');
-          
-          _controller!.setLooping(true);
-          _controller!.seekTo(Duration.zero);
-          
-          // Start playing if this widget is marked as playing
-          if (widget.isPlaying) {
-            _controller!.play();
-            print('▶️ VideoPlayer: Started playing');
-          }
-          
-          // Add listener to check if actually playing
-          _controller!.addListener(() {
-            if (_controller!.value.isPlaying && !_controller!.value.isBuffering) {
-              print('🎥 Video is actually playing at position: ${_controller!.value.position}');
-            }
-          });
-        }
-      }).catchError((e) {
-        print('❌ VideoPlayer: Error initializing ${widget.videoUrl}: $e');
-        if (mounted) {
-          setState(() {
-            _hasError = true;
-            _isInitialized = false;
-          });
-        }
+      await _controller!.initialize().timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw Exception('Video initialization timeout');
+        },
+      );
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isInitialized = true;
+        _hasError = false;
       });
       
+      print('✅ VideoPlayer: Successfully initialized ${widget.videoUrl}');
+      print('📐 Video size: ${_controller!.value.size}');
+      print('⏱️ Duration: ${_controller!.value.duration}');
+      
+      _controller!.setLooping(true);
+      await _controller!.seekTo(Duration.zero);
+      
+      // Start playing if this widget is marked as playing
+      if (widget.isPlaying && mounted) {
+        await _controller!.play();
+        print('▶️ VideoPlayer: Started playing');
+      }
+      
     } catch (e) {
-      print('❌ VideoPlayer: Controller creation error: $e');
-      if (mounted) {
+      print('❌ VideoPlayer: Error initializing ${widget.videoUrl}: $e');
+      
+      if (_retryCount < _maxRetries && mounted) {
+        _retryCount++;
+        print('🔄 Retrying video initialization (attempt $_retryCount/$_maxRetries)...');
+        
+        // Wait before retry
+        await Future.delayed(Duration(milliseconds: 500 * _retryCount));
+        
+        if (mounted && widget.isPlaying) {
+          _initializeVideo();
+        }
+      } else if (mounted) {
         setState(() {
           _hasError = true;
           _isInitialized = false;
@@ -173,12 +184,31 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
-  void _disposeController() {
-    if (_controller != null) {
-      _controller!.dispose();
+  void _disposeController() async {
+    print('🗑️ VideoPlayer: Disposing controller');
+    
+    try {
+      // First pause the video if playing
+      await _controller?.pause();
+      
+      // Dispose the controller
+      await _controller?.dispose();
+      
       _controller = null;
+      
+      if (mounted) {
+        setState(() {
+          _isInitialized = false;
+          _hasError = false;
+          _retryCount = 0;
+        });
+      }
+    } catch (e) {
+      print('⚠️ Error disposing video controller: $e');
+      // Force null even if dispose failed
+      _controller = null;
+      _isInitialized = false;
     }
-    _isInitialized = false;
   }
 
   @override
