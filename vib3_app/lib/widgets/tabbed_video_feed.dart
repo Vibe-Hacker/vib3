@@ -77,7 +77,7 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
       children: [
         // Tab Bar with VIB3 styling
         Container(
-          height: 48,
+          height: 56, // Increased height to accommodate wrapped text
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.8),
             border: Border(
@@ -91,20 +91,50 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
             controller: _tabController,
             indicatorColor: const Color(0xFF00CED1),
             indicatorWeight: 3,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.grey[400],
+            labelColor: const Color(0xFF00CED1), // VIB3 cyan color
+            unselectedLabelColor: const Color(0xFF00CED1).withOpacity(0.5), // Dimmed cyan
             labelStyle: const TextStyle(
-              fontSize: 16,
+              fontSize: 14, // Slightly smaller font
               fontWeight: FontWeight.bold,
+              height: 1.2,
             ),
             unselectedLabelStyle: const TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.normal,
+              height: 1.2,
             ),
-            tabs: const [
-              Tab(text: 'Vib3 Pulse'),
-              Tab(text: 'Vib3 Connect'),
-              Tab(text: 'Vib3 Circle'),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 8), // Reduce padding
+            tabs: [
+              Tab(
+                child: Container(
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Vib3\nPulse',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(height: 1.1),
+                  ),
+                ),
+              ),
+              Tab(
+                child: Container(
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Vib3\nConnect',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(height: 1.1),
+                  ),
+                ),
+              ),
+              Tab(
+                child: Container(
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Vib3\nCircle',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(height: 1.1),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
