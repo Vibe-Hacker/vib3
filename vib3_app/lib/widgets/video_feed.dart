@@ -19,7 +19,7 @@ import '../screens/profile_screen.dart';
 import '../config/app_config.dart';
 import 'video_player_widget.dart';
 
-enum FeedType { forYou, following, discover }
+enum FeedType { forYou, following, friends }
 
 class VideoFeed extends StatefulWidget {
   final bool isVisible;
@@ -90,27 +90,48 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
         _isScreenVisible = widget.isVisible;
       });
       
-      // Reload videos when becoming visible again
+      // Handle visibility changes
       if (widget.isVisible && !oldWidget.isVisible) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final authProvider = Provider.of<AuthProvider>(context, listen: false);
-          final videoProvider = Provider.of<VideoProvider>(context, listen: false);
-          final token = authProvider.authToken;
-          
-          if (token != null && widget.feedType != null) {
-            switch (widget.feedType!) {
-              case FeedType.forYou:
-                videoProvider.loadForYouVideos(token);
-                break;
-              case FeedType.following:
-                videoProvider.loadFollowingVideos(token);
-                break;
-              case FeedType.discover:
-                videoProvider.loadDiscoverVideos(token);
-                break;
+        // Tab is becoming visible
+        print('VideoFeed: Becoming visible for ${widget.feedType}');
+        
+        // Don't reload videos if we already have them
+        final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+        bool hasVideos = false;
+        
+        switch (widget.feedType!) {
+          case FeedType.forYou:
+            hasVideos = videoProvider.forYouVideos.isNotEmpty;
+            break;
+          case FeedType.following:
+            hasVideos = videoProvider.followingVideos.isNotEmpty;
+            break;
+          case FeedType.friends:
+            hasVideos = videoProvider.friendsVideos.isNotEmpty;
+            break;
+        }
+        
+        if (!hasVideos) {
+          // Only reload if we don't have videos
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+            final token = authProvider.authToken;
+            
+            if (token != null) {
+              switch (widget.feedType!) {
+                case FeedType.forYou:
+                  videoProvider.loadForYouVideos(token);
+                  break;
+                case FeedType.following:
+                  videoProvider.loadFollowingVideos(token);
+                  break;
+                case FeedType.friends:
+                  videoProvider.loadFriendsVideos(token);
+                  break;
+              }
             }
-          }
-        });
+          });
+        }
       }
     }
   }
@@ -430,17 +451,19 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           final localTouchPosition = renderBox.globalToLocal(details.globalPosition);
           
           _longPressTimer = Timer(const Duration(milliseconds: 500), () {
-            setState(() {
-              _isDragMode = true;
-              _draggingButton = buttonId;
-              _initialDragPosition = position;
-              // Calculate offset from touch to current button position
-              _dragOffset = Offset(
-                localTouchPosition.dx - position.dx,
-                localTouchPosition.dy - position.dy,
-              );
-            });
-            HapticFeedback.heavyImpact();
+            if (mounted) {
+              setState(() {
+                _isDragMode = true;
+                _draggingButton = buttonId;
+                _initialDragPosition = position;
+                // Calculate offset from touch to current button position
+                _dragOffset = Offset(
+                  localTouchPosition.dx - position.dx,
+                  localTouchPosition.dy - position.dy,
+                );
+              });
+              HapticFeedback.heavyImpact();
+            }
           });
         },
         onLongPressUp: () {
@@ -450,7 +473,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           _longPressTimer?.cancel();
         },
         onLongPressMoveUpdate: (details) {
-          if (_isDragMode && _draggingButton == buttonId && _dragOffset != null) {
+          if (_isDragMode && _draggingButton == buttonId && _dragOffset != null && mounted) {
             final RenderBox renderBox = context.findRenderObject() as RenderBox;
             final localPosition = renderBox.globalToLocal(details.globalPosition);
             
@@ -464,7 +487,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           }
         },
         onLongPressEnd: _draggingButton == buttonId ? (details) {
-          if (_isDragMode) {
+          if (_isDragMode && mounted) {
             setState(() {
               _draggingButton = null;
               _isDragMode = false;
@@ -728,9 +751,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           videos = videoProvider.followingVideos.isNotEmpty 
               ? videoProvider.followingVideos 
               : videoProvider.videos;
-        } else if (widget.feedType == FeedType.discover) {
-          videos = videoProvider.discoverVideos.isNotEmpty 
-              ? videoProvider.discoverVideos 
+        } else if (widget.feedType == FeedType.friends) {
+          videos = videoProvider.friendsVideos.isNotEmpty 
+              ? videoProvider.friendsVideos 
               : videoProvider.videos;
         } else {
           videos = videoProvider.videos;

@@ -60,14 +60,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _initializeVideo();
       } else if (!widget.isPlaying && _isInitialized) {
         _controller?.pause();
-        // Dispose controller after a delay to free resources
-        Future.delayed(const Duration(seconds: 2), () {
+        // Don't dispose immediately when pausing - user might come back
+        Future.delayed(const Duration(seconds: 5), () {
           if (mounted && !widget.isPlaying) {
             _disposeController();
           }
         });
-      } else if (widget.isPlaying && _isInitialized) {
-        _controller?.play();
+      } else if (widget.isPlaying && _isInitialized && _controller != null) {
+        // Resume playing
+        print('▶️ VideoPlayer: Resuming playback');
+        _controller!.play();
+        setState(() {
+          _isPaused = false;
+          _showPlayIcon = false;
+        });
       }
     }
   }
