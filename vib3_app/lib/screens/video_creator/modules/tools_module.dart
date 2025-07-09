@@ -542,7 +542,6 @@ class _ToolsModuleState extends State<ToolsModule>
               ),
             ],
           ),
-        ),
         
         // Show split segments
         if (_splitPoints.isNotEmpty)
