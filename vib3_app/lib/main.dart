@@ -51,8 +51,8 @@ void main() async {
   // Enable new isolated architecture to prevent UI conflicts
   VideoFeedConfig.enableNewArchitecture();
   
-  // Enable new repository pattern for video feeds
-  FeatureFlags.enableNewVideoArchitecture();
+  // Disable the repository pattern for now - use isolated components instead
+  // FeatureFlags.enableNewVideoArchitecture();
   
   runApp(const VIB3App());
 }

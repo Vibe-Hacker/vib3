@@ -78,8 +78,8 @@ class _IsolatedVideoFeedState extends State<IsolatedVideoFeed> {
                     
                     // Video info overlay - doesn't interfere with buttons
                     Positioned(
-                      bottom: 20,
-                      left: 20,
+                      bottom: 80, // Above bottom navigation
+                      left: 16,
                       right: 100, // Leave space for action buttons
                       child: _buildVideoInfo(video),
                     ),
@@ -129,6 +129,13 @@ class _IsolatedVideoFeedState extends State<IsolatedVideoFeed> {
             color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            shadows: [
+              Shadow(
+                offset: Offset(1, 1),
+                blurRadius: 3,
+                color: Colors.black45,
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 8),
@@ -140,6 +147,13 @@ class _IsolatedVideoFeedState extends State<IsolatedVideoFeed> {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
+              shadows: [
+                Shadow(
+                  offset: Offset(1, 1),
+                  blurRadius: 3,
+                  color: Colors.black45,
+                ),
+              ],
             ),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
@@ -162,6 +176,13 @@ class _IsolatedVideoFeedState extends State<IsolatedVideoFeed> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                        color: Colors.black45,
+                      ),
+                    ],
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
