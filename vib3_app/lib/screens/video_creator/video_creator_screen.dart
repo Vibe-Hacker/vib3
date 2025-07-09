@@ -166,7 +166,7 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                     // Main content area with padding for toolbars
                     Positioned(
                       top: _currentMode != CreatorMode.camera ? 60 : 0, // Space for top toolbar
-                      bottom: _currentMode == CreatorMode.edit ? 90 : 0, // Space for bottom toolbar
+                      bottom: _currentMode != CreatorMode.camera ? 90 : 0, // Space for bottom toolbar when not in camera
                       left: 0,
                       right: 0,
                       child: IgnorePointer(
@@ -227,9 +227,9 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                 ),
               ),
             
-            // Bottom toolbar (main navigation) - only show in edit mode
+            // Bottom toolbar (main navigation) - show in edit mode and feature modes
             // Using Align instead of Positioned to ensure it's always on top
-            if (_currentMode == CreatorMode.edit)
+            if (_currentMode != CreatorMode.camera)
               Align(
                 alignment: Alignment.bottomCenter,
                 child: IgnorePointer(
