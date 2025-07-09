@@ -85,11 +85,14 @@ class VIB3App extends StatelessWidget {
               '/web': (context) => const WebHomeScreen(),
             },
             onGenerateRoute: (settings) {
+              print('Route requested: ${settings.name} with args: ${settings.arguments}');
               if (settings.name == '/upload') {
                 final args = settings.arguments as Map<String, dynamic>?;
+                final videoPath = args?['videoPath'] ?? '';
+                print('Creating UploadVideoScreen with videoPath: $videoPath');
                 return MaterialPageRoute(
                   builder: (context) => UploadVideoScreen(
-                    videoPath: args?['videoPath'] ?? '',
+                    videoPath: videoPath,
                   ),
                 );
               }

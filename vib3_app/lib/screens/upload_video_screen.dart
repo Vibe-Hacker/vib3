@@ -53,6 +53,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   @override
   void initState() {
     super.initState();
+    print('UploadVideoScreen initState - videoPath: ${widget.videoPath}');
     _generateCoverOptions();
   }
   
@@ -70,6 +71,19 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   }
   
   Future<void> _uploadVideo() async {
+    print('_uploadVideo called');
+    
+    if (widget.videoPath.isEmpty) {
+      print('Error: No video path provided');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No video path provided'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     if (_captionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

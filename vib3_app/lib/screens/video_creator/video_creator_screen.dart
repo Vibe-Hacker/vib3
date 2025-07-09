@@ -166,18 +166,25 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                   onBack: () {
                     if (_currentMode == CreatorMode.camera) {
                       Navigator.pop(context);
+                    } else if (_currentMode == CreatorMode.edit) {
+                      // From edit mode, go back to previous screen
+                      Navigator.pop(context);
                     } else {
+                      // From other modes, return to edit mode
                       setState(() {
                         _currentMode = CreatorMode.edit;
                       });
                     }
                   },
                   onNext: () {
+                    print('TopToolbar Next pressed - Current mode: $_currentMode');
                     if (_currentMode == CreatorMode.edit) {
                       // Only navigate to upload from edit mode
+                      print('Navigating to upload from edit mode');
                       _navigateToUpload();
                     } else {
                       // From other modes, return to edit mode
+                      print('Returning to edit mode from $_currentMode');
                       setState(() {
                         _currentMode = CreatorMode.edit;
                       });
@@ -237,101 +244,140 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
     }
   }
   
-  void _navigateToUpload() {
+  void _navigateToUpload() async {
+    print('_navigateToUpload called');
     final creationState = context.read<CreationStateProvider>();
+    
+    // Check if there are video clips to export
+    if (creationState.videoClips.isEmpty) {
+      print('No video clips to export');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No video to export'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    print('Video clips found: ${creationState.videoClips.length}');
+    
     double exportProgress = 0.0;
+    bool exportComplete = false;
     
     // Show export progress dialog
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => Center(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            margin: const EdgeInsets.symmetric(horizontal: 40),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF00CED1).withOpacity(0.3)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Exporting Video',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Start export if not already started
+            if (!exportComplete && exportProgress == 0.0) {
+              Future.delayed(Duration.zero, () async {
+                try {
+                  final exportedPath = await creationState.exportFinalVideo(
+                    onProgress: (progress) {
+                      if (mounted) {
+                        setDialogState(() {
+                          exportProgress = progress;
+                        });
+                      }
+                    },
+                  );
+                  
+                  exportComplete = true;
+                  
+                  if (mounted) {
+                    print('Export complete, navigating to upload with path: $exportedPath');
+                    Navigator.pop(dialogContext); // Close loading dialog
+                    
+                    // Navigate to upload screen
+                    Navigator.pushNamed(
+                      context,
+                      '/upload',
+                      arguments: {'videoPath': exportedPath},
+                    ).then((_) {
+                      print('Navigation to upload completed');
+                    }).catchError((error) {
+                      print('Navigation error: $error');
+                    });
+                  }
+                } catch (error) {
+                  if (mounted) {
+                    Navigator.pop(dialogContext); // Close loading dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Export failed: $error'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              });
+            }
+            
+            return Center(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                margin: const EdgeInsets.symmetric(horizontal: 40),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF00CED1).withOpacity(0.3)),
                 ),
-                const SizedBox(height: 20),
-                Stack(
-                  alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(
-                      width: 80,
-                      height: 80,
-                      child: CircularProgressIndicator(
-                        value: exportProgress,
-                        strokeWidth: 6,
-                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00CED1)),
-                        backgroundColor: Colors.white.withOpacity(0.1),
+                    const Text(
+                      'Exporting Video',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text(
-                      '${(exportProgress * 100).toInt()}%',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(height: 20),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 80,
+                          height: 80,
+                          child: CircularProgressIndicator(
+                            value: exportProgress > 0 ? exportProgress : null,
+                            strokeWidth: 6,
+                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00CED1)),
+                            backgroundColor: Colors.white.withOpacity(0.1),
+                          ),
+                        ),
+                        if (exportProgress > 0)
+                          Text(
+                            '${(exportProgress * 100).toInt()}%',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Processing your masterpiece...',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 14,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Processing your masterpiece...',
-                  style: TextStyle(
-                    color: Colors.white54,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-    
-    // Export with progress callback
-    creationState.exportFinalVideo(
-      onProgress: (progress) {
-        if (mounted) {
-          setState(() {
-            exportProgress = progress;
-          });
-        }
+              ),
+            );
+          },
+        );
       },
-    ).then((exportedPath) {
-      Navigator.pop(context); // Close loading
-      
-      // Navigate to upload screen
-      Navigator.pushNamed(
-        context,
-        '/upload',
-        arguments: {'videoPath': exportedPath},
-      );
-    }).catchError((error) {
-      Navigator.pop(context); // Close loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Export failed: $error'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    });
+    );
   }
 }
 
