@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
 import 'package:provider/provider.dart';
-import 'dart:io';
 import '../providers/creation_state_provider.dart';
 import '../video_creator_screen.dart';
+import 'simple_video_player.dart';
 
 class WorkingVideoPreview extends StatefulWidget {
   final Function(CreatorMode) onModeChange;
@@ -18,193 +17,230 @@ class WorkingVideoPreview extends StatefulWidget {
 }
 
 class _WorkingVideoPreviewState extends State<WorkingVideoPreview> {
-  VideoPlayerController? _controller;
-  bool _isPlaying = false;
-  bool _hasError = false;
+  String? _videoPath;
+  bool _isLoading = true;
+  int _retryCount = 0;
+  static const int _maxRetries = 10;
   
   @override
   void initState() {
     super.initState();
-    // Small delay to ensure provider is ready
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        _initVideo();
-      }
+    // Start loading video path after frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadVideoPath();
     });
   }
   
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
+  void _loadVideoPath() {
+    final provider = context.read<CreationStateProvider>();
+    
+    print('\n=== WorkingVideoPreview: Loading video path ===');
+    print('Provider clips count: ${provider.videoClips.length}');
+    print('Retry count: $_retryCount');
+    
+    if (provider.videoClips.isNotEmpty) {
+      final path = provider.videoClips.first.path;
+      print('Video path found: $path');
+      
+      setState(() {
+        _videoPath = path;
+        _isLoading = false;
+      });
+    } else if (_retryCount < _maxRetries) {
+      // Retry after delay
+      _retryCount++;
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _loadVideoPath();
+        }
+      });
+    } else {
+      // Max retries reached
+      print('Max retries reached, no video found');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
   
-  Future<void> _initVideo() async {
-    try {
-      print('\n=== WorkingVideoPreview: _initVideo START ===');
-      final provider = context.read<CreationStateProvider>();
-      print('Provider clips count: ${provider.videoClips.length}');
-      
-      if (provider.videoClips.isEmpty) {
-        print('No video clips available, waiting...');
-        // Wait and retry
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (mounted && context.read<CreationStateProvider>().videoClips.isNotEmpty) {
-          print('Clips now available, retrying...');
-          _initVideo();
-        }
-        return;
-      }
-      
-      final videoPath = provider.videoClips.first.path;
-      print('Video path: $videoPath');
-      
-      final videoFile = File(videoPath);
-      
-      // Wait to ensure file is ready
-      await Future.delayed(const Duration(milliseconds: 300));
-      
-      // Check file exists and size
-      if (!await videoFile.exists()) {
-        throw Exception('Video file does not exist at path: $videoPath');
-      }
-      
-      final fileSize = await videoFile.length();
-      print('Video file size: $fileSize bytes');
-      
-      if (fileSize == 0) {
-        throw Exception('Video file is empty');
-      }
-      
-      // Dispose old controller if exists
-      if (_controller != null) {
-        await _controller!.dispose();
-        _controller = null;
-      }
-      
-      print('Creating video controller...');
-      // Create controller with error handling
-      _controller = VideoPlayerController.file(
-        videoFile,
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-      );
-      
-      print('Initializing video controller...');
-      await _controller!.initialize();
-      
-      print('Video initialized successfully');
-      print('Video dimensions: ${_controller!.value.size}');
-      print('Duration: ${_controller!.value.duration}');
-      
-      await _controller!.setLooping(true);
-      
-      if (mounted) {
-        setState(() {});
-        _controller!.play();
-        _isPlaying = true;
-        print('Video playback started');
-      }
-      
-      print('=== WorkingVideoPreview: _initVideo SUCCESS ===\n');
-    } catch (e, stack) {
-      print('\n=== WorkingVideoPreview: ERROR ===');
-      print('Error: $e');
-      print('Stack trace: $stack');
-      print('=================================\n');
-      
-      if (mounted) {
-        setState(() {
-          _hasError = true;
-        });
-        
-        // Show error to user
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Video loading error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
-    }
+  void _handleVideoError() {
+    print('Video playback error, showing error state');
+    // Could navigate back to camera or show error UI
   }
   
   @override
   Widget build(BuildContext context) {
     final creationState = context.watch<CreationStateProvider>();
     
-    return Stack(
-      children: [
-        // Background
-        Container(color: Colors.black),
-        
-        // Video or loading
-        if (_hasError)
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  color: Colors.red,
-                  size: 60,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Error loading video',
-                  style: TextStyle(color: Colors.white),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _hasError = false;
-                    });
-                    _initVideo();
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          )
-        else if (_controller != null && _controller!.value.isInitialized)
-          Center(
-            child: AspectRatio(
-              aspectRatio: _controller!.value.aspectRatio,
-              child: VideoPlayer(_controller!),
-            ),
-          )
-        else
-          const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFF00CED1),
-            ),
-          ),
-        
-        // Play/Pause button
-        if (_controller != null && _controller!.value.isInitialized)
-          Positioned(
-            bottom: 100,
-            right: 20,
-            child: FloatingActionButton(
-              backgroundColor: const Color(0xFF00CED1),
-              onPressed: () {
-                setState(() {
-                  if (_isPlaying) {
-                    _controller!.pause();
-                  } else {
-                    _controller!.play();
-                  }
-                  _isPlaying = !_isPlaying;
-                });
-              },
-              child: Icon(
-                _isPlaying ? Icons.pause : Icons.play_arrow,
-                color: Colors.white,
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Video player or loading state
+          if (_isLoading)
+            const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    color: Color(0xFF00CED1),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading video...',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
+            )
+          else if (_videoPath != null)
+            SimpleVideoPlayer(
+              videoPath: _videoPath!,
+              onError: _handleVideoError,
+            )
+          else
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.videocam_off,
+                    color: Colors.white30,
+                    size: 80,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No video available',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      widget.onModeChange(CreatorMode.camera);
+                    },
+                    icon: const Icon(Icons.videocam),
+                    label: const Text('Record Video'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00CED1),
+                    ),
+                  ),
+                ],
               ),
             ),
+          
+          // Top toolbar with back button
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 16,
+            child: IconButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              icon: const Icon(Icons.arrow_back),
+              color: Colors.white,
+              iconSize: 28,
+            ),
           ),
-      ],
+          
+          // Bottom controls
+          if (_videoPath != null && !_isLoading)
+            Positioned(
+              bottom: 20,
+              left: 20,
+              right: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Re-record button
+                  _buildControlButton(
+                    icon: Icons.refresh,
+                    label: 'Re-record',
+                    onTap: () {
+                      widget.onModeChange(CreatorMode.camera);
+                    },
+                  ),
+                  
+                  // Effects button
+                  _buildControlButton(
+                    icon: Icons.auto_awesome,
+                    label: 'Effects',
+                    onTap: () {
+                      widget.onModeChange(CreatorMode.effects);
+                    },
+                  ),
+                  
+                  // Music button
+                  _buildControlButton(
+                    icon: Icons.music_note,
+                    label: 'Music',
+                    onTap: () {
+                      widget.onModeChange(CreatorMode.music);
+                    },
+                  ),
+                  
+                  // Next/Save button
+                  _buildControlButton(
+                    icon: Icons.check,
+                    label: 'Next',
+                    isPrimary: true,
+                    onTap: () {
+                      // Navigate to publish screen or save
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Ready to publish!'),
+                          backgroundColor: Color(0xFF00CED1),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildControlButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: isPrimary 
+                  ? const Color(0xFF00CED1)
+                  : Colors.white.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: isPrimary ? const Color(0xFF00CED1) : Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
