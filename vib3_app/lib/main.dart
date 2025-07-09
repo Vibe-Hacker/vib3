@@ -13,12 +13,18 @@ import 'screens/upload_video_screen.dart';
 import 'config/app_config.dart';
 import 'widgets/video_feed_components/state_manager.dart';
 import 'widgets/video_feed_components/migration_wrapper.dart';
+import 'core/di/service_locator.dart';
+import 'core/config/feature_flags.dart';
+import 'features/video_feed/presentation/providers/video_feed_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Load environment variables
   await dotenv.load(fileName: ".env");
+  
+  // Initialize service locator for dependency injection
+  await ServiceLocator.init();
   
   // Set preferred orientations and system UI
   SystemChrome.setPreferredOrientations([
@@ -45,6 +51,9 @@ void main() async {
   // Enable new isolated architecture to prevent UI conflicts
   VideoFeedConfig.enableNewArchitecture();
   
+  // Enable new repository pattern for video feeds
+  FeatureFlags.enableNewVideoArchitecture();
+  
   runApp(const VIB3App());
 }
 
@@ -59,6 +68,9 @@ class VIB3App extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => VideoProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => VideoFeedStateManager()),
+        // Add new video feed provider if feature flag is enabled
+        if (FeatureFlags.useNewVideoArchitecture)
+          ChangeNotifierProvider(create: (_) => VideoFeedProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
