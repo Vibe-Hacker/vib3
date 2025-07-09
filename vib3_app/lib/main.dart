@@ -48,10 +48,8 @@ void main() async {
     ),
   );
   
-  // Enable new isolated architecture to prevent UI conflicts
-  VideoFeedConfig.enableNewArchitecture();
-  
-  // Disable the repository pattern for now - use isolated components instead
+  // Disable new architectures - use original working version
+  // VideoFeedConfig.enableNewArchitecture();
   // FeatureFlags.enableNewVideoArchitecture();
   
   runApp(const VIB3App());
