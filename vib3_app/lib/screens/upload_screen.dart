@@ -11,7 +11,12 @@ import 'video_creator/video_creator_screen.dart';
 import 'gallery_picker_screen.dart';
 
 class UploadScreen extends StatefulWidget {
-  const UploadScreen({super.key});
+  final Map<String, dynamic>? arguments;
+  
+  const UploadScreen({
+    super.key,
+    this.arguments,
+  });
 
   @override
   State<UploadScreen> createState() => _UploadScreenState();
@@ -19,6 +24,7 @@ class UploadScreen extends StatefulWidget {
 
 class _UploadScreenState extends State<UploadScreen> {
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _hashtagsController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedVideo;
   VideoPlayerController? _videoController;
@@ -27,10 +33,31 @@ class _UploadScreenState extends State<UploadScreen> {
   bool _allowDuet = true;
   bool _allowStitch = true;
   String _privacy = 'public';
+  String? _selectedMusicName;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check if we received video path and music from navigation
+    if (widget.arguments != null) {
+      final videoPath = widget.arguments!['videoPath'] as String?;
+      final musicName = widget.arguments!['musicName'] as String?;
+      
+      if (videoPath != null) {
+        _selectedVideo = XFile(videoPath);
+        _initializeVideoPlayer();
+      }
+      
+      if (musicName != null) {
+        _selectedMusicName = musicName;
+      }
+    }
+  }
 
   @override
   void dispose() {
     _descriptionController.dispose();
+    _hashtagsController.dispose();
     _videoController?.dispose();
     super.dispose();
   }
@@ -148,6 +175,8 @@ class _UploadScreenState extends State<UploadScreen> {
         allowDuet: _allowDuet,
         allowStitch: _allowStitch,
         token: token,
+        hashtags: _hashtagsController.text.trim(),
+        musicName: _selectedMusicName,
       );
 
       if (success) {
@@ -375,6 +404,41 @@ class _UploadScreenState extends State<UploadScreen> {
           ),
           const SizedBox(height: 16),
 
+          // Hashtags input
+          const Text(
+            'Hashtags',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _hashtagsController,
+            style: const TextStyle(color: Colors.white),
+            maxLines: 1,
+            decoration: InputDecoration(
+              hintText: '#vib3 #fyp #viral (separate with spaces)',
+              hintStyle: TextStyle(color: Colors.grey[500]),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey[700]!),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey[700]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFF00CED1)),
+              ),
+              filled: true,
+              fillColor: Colors.grey[900],
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Grok AI Assistant
           GrokAIAssistant(
             videoContext: _descriptionController.text.isNotEmpty 
@@ -387,7 +451,7 @@ class _UploadScreenState extends State<UploadScreen> {
             },
             onHashtagsGenerated: (hashtags) {
               setState(() {
-                _descriptionController.text += '\n\n${hashtags.join(' ')}';
+                _hashtagsController.text = hashtags.join(' ');
               });
             },
           ),

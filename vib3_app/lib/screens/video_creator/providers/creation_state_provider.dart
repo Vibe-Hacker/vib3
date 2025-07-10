@@ -16,6 +16,7 @@ class CreationStateProvider extends ChangeNotifier {
   
   // Audio tracks
   String? _backgroundMusicPath;
+  String? _backgroundMusicName;
   String? _voiceoverPath;
   final List<SoundEffect> _soundEffects = [];
   
@@ -43,6 +44,7 @@ class CreationStateProvider extends ChangeNotifier {
   
   // Getters
   String get backgroundMusicPath => _backgroundMusicPath ?? '';
+  String? get backgroundMusicName => _backgroundMusicName;
   String? get voiceoverPath => _voiceoverPath;
   String get selectedFilter => _selectedFilter;
   double get originalVolume => _originalVolume;
@@ -59,11 +61,14 @@ class CreationStateProvider extends ChangeNotifier {
   
   // Add video clip
   void addVideoClip(String path, {Duration? trimStart, Duration? trimEnd}) {
-    _videoClips.add(VideoClip(
+    print('CreationStateProvider: Adding video clip: $path');
+    final clip = VideoClip(
       path: path,
       trimStart: trimStart ?? Duration.zero,
       trimEnd: trimEnd,
-    ));
+    );
+    _videoClips.add(clip);
+    print('CreationStateProvider: Total clips now: ${_videoClips.length}');
     notifyListeners();
   }
   
@@ -128,8 +133,9 @@ class CreationStateProvider extends ChangeNotifier {
   }
   
   // Audio management
-  void setBackgroundMusic(String path) {
+  void setBackgroundMusic(String path, {String? musicName}) {
     _backgroundMusicPath = path;
+    _backgroundMusicName = musicName;
     notifyListeners();
   }
   

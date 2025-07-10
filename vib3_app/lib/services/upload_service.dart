@@ -12,6 +12,8 @@ class UploadService {
     required bool allowDuet,
     required bool allowStitch,
     required String token,
+    String? hashtags,
+    String? musicName,
   }) async {
     try {
       // Create multipart request
@@ -37,6 +39,14 @@ class UploadService {
       request.fields['allowComments'] = allowComments.toString();
       request.fields['allowDuet'] = allowDuet.toString();
       request.fields['allowStitch'] = allowStitch.toString();
+      
+      // Add hashtags and music info if provided
+      if (hashtags != null && hashtags.isNotEmpty) {
+        request.fields['hashtags'] = hashtags;
+      }
+      if (musicName != null && musicName.isNotEmpty) {
+        request.fields['musicName'] = musicName;
+      }
 
       // Send request
       final response = await request.send();

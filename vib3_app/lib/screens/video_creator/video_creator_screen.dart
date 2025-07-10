@@ -333,7 +333,10 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                     Navigator.pushNamed(
                       context,
                       '/upload',
-                      arguments: {'videoPath': exportedPath},
+                      arguments: {
+                        'videoPath': exportedPath,
+                        'musicName': creationState.backgroundMusicName,
+                      },
                     ).then((_) {
                       print('Navigation to upload completed');
                     }).catchError((error) {

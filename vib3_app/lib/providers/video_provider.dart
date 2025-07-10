@@ -401,6 +401,7 @@ class VideoProvider extends ChangeNotifier {
           updatedAt: video.updatedAt,
           user: video.user,
           musicName: video.musicName,
+          hashtags: video.hashtags,
         );
       }
     }

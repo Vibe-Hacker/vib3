@@ -834,7 +834,52 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                                       color: Colors.white,
                                       fontSize: 12,
                                     ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
+                                  if (video.hashtags != null && video.hashtags!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Wrap(
+                                      spacing: 4,
+                                      runSpacing: 2,
+                                      children: video.hashtags!.take(5).map((tag) {
+                                        final displayTag = tag.startsWith('#') ? tag : '#$tag';
+                                        return Text(
+                                          displayTag,
+                                          style: const TextStyle(
+                                            color: Color(0xFF00CED1),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                  if (video.musicName != null && video.musicName!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.music_note,
+                                          size: 12,
+                                          color: Color(0xFF00CED1),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            video.musicName!,
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 11,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),

@@ -14,6 +14,7 @@ class Video {
   final DateTime updatedAt;
   final Map<String, dynamic>? user;
   final String? musicName; // Add musicName field
+  final List<String>? hashtags; // Add hashtags field
 
   Video({
     required this.id,
@@ -31,6 +32,7 @@ class Video {
     required this.updatedAt,
     this.user,
     this.musicName,
+    this.hashtags,
   });
 
   factory Video.fromJson(Map<String, dynamic> json) {
@@ -58,6 +60,9 @@ class Video {
               : DateTime.now()),
       user: json['user'] ?? {'username': json['username']},
       musicName: json['musicName'] ?? json['music_name'],
+      hashtags: json['hashtags'] != null 
+          ? List<String>.from(json['hashtags']) 
+          : null,
     );
   }
 
@@ -78,6 +83,7 @@ class Video {
       'updatedAt': updatedAt.toIso8601String(),
       'user': user,
       'musicName': musicName,
+      'hashtags': hashtags,
     };
   }
 
@@ -97,6 +103,7 @@ class Video {
     DateTime? updatedAt,
     Map<String, dynamic>? user,
     String? musicName,
+    List<String>? hashtags,
   }) {
     return Video(
       id: id ?? this.id,
@@ -114,6 +121,7 @@ class Video {
       updatedAt: updatedAt ?? this.updatedAt,
       user: user ?? this.user,
       musicName: musicName ?? this.musicName,
+      hashtags: hashtags ?? this.hashtags,
     );
   }
 }

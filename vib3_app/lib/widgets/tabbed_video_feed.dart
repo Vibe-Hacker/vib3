@@ -23,7 +23,9 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
+      if (_tabController.indexIsChanging || !_tabController.indexIsChanging && _tabController.index != _currentTab) {
+        final previousTab = _currentTab;
+        
         // Pause current video before switching tabs
         final videoProvider = Provider.of<VideoProvider>(context, listen: false);
         videoProvider.pauseCurrentVideo();

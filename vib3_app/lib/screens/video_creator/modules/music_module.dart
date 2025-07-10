@@ -377,10 +377,13 @@ class _MusicModuleState extends State<MusicModule>
                 isSelected: isSelected,
                 onTap: () async {
                   if (isSelected) {
-                    creationState.setBackgroundMusic('');
+                    creationState.setBackgroundMusic('', musicName: null);
                     await _stopMusicPreview();
                   } else {
-                    creationState.setBackgroundMusic(track.audioUrl);
+                    creationState.setBackgroundMusic(
+                      track.audioUrl,
+                      musicName: track.name,
+                    );
                     await _playMusicPreview(track);
                   }
                 },

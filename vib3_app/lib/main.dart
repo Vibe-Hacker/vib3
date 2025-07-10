@@ -105,10 +105,12 @@ class VIB3App extends StatelessWidget {
               if (settings.name == '/upload') {
                 final args = settings.arguments as Map<String, dynamic>?;
                 final videoPath = args?['videoPath'] ?? '';
-                print('Creating UploadVideoScreen with videoPath: $videoPath');
+                final musicName = args?['musicName'];
+                print('Creating UploadVideoScreen with videoPath: $videoPath, musicName: $musicName');
                 return MaterialPageRoute(
                   builder: (context) => UploadVideoScreen(
                     videoPath: videoPath,
+                    musicName: musicName,
                   ),
                 );
               }

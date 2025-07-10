@@ -7,10 +7,12 @@ import 'dart:io';
 
 class UploadVideoScreen extends StatefulWidget {
   final String videoPath;
+  final String? musicName;
   
   const UploadVideoScreen({
     super.key,
     required this.videoPath,
+    this.musicName,
   });
 
   @override
@@ -121,6 +123,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
         'allowStitch': _allowStitch,
         'allowDownload': _allowDownload,
         'coverImage': _coverImagePath,
+        'musicName': widget.musicName,
       };
       
       // TODO: Actually upload to server
@@ -430,6 +433,36 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
           ),
           
           const Divider(color: Colors.white12),
+          
+          // Music info if available
+          if (widget.musicName != null && widget.musicName!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.music_note,
+                    color: Color(0xFF00CED1),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Music: ${widget.musicName}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          
+          if (widget.musicName != null && widget.musicName!.isNotEmpty)
+            const Divider(color: Colors.white12),
           
           // Privacy settings
           _buildPrivacySection(),
