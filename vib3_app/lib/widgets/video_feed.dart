@@ -697,6 +697,75 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     ];
   }
 
+  Widget _buildEmptyState() {
+    String message;
+    String submessage;
+    IconData icon;
+    
+    switch (widget.feedType) {
+      case FeedType.following:
+        icon = Icons.people_outline;
+        message = 'No posts from accounts you follow';
+        submessage = 'Follow some creators to see their content here';
+        break;
+      case FeedType.friends:
+        icon = Icons.group_outlined;
+        message = 'No posts from your VIB3 Circle';
+        submessage = 'Connect with creators who follow you back';
+        break;
+      default:
+        icon = Icons.videocam_off;
+        message = 'No videos available';
+        submessage = 'Check back later for new content';
+    }
+    
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          size: 80,
+          color: Colors.white.withOpacity(0.3),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          message,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          submessage,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.7),
+            fontSize: 14,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        if (widget.feedType == FeedType.following || widget.feedType == FeedType.friends)
+          Padding(
+            padding: const EdgeInsets.only(top: 24),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                // Navigate to discover/explore
+                Navigator.pushNamed(context, '/discover');
+              },
+              icon: const Icon(Icons.explore),
+              label: const Text('Discover Creators'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00CED1),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildVideoPlayer(Video video, bool isCurrentVideo) {
     if (video.videoUrl != null && video.videoUrl!.isNotEmpty && isCurrentVideo) {
       return Positioned.fill(
@@ -733,13 +802,11 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               ? videoProvider.forYouVideos 
               : videoProvider.videos;
         } else if (widget.feedType == FeedType.following) {
-          videos = videoProvider.followingVideos.isNotEmpty 
-              ? videoProvider.followingVideos 
-              : videoProvider.videos;
+          // Don't fallback to all videos for following feed
+          videos = videoProvider.followingVideos;
         } else if (widget.feedType == FeedType.friends) {
-          videos = videoProvider.friendsVideos.isNotEmpty 
-              ? videoProvider.friendsVideos 
-              : videoProvider.videos;
+          // Don't fallback to all videos for friends feed
+          videos = videoProvider.friendsVideos;
         } else {
           videos = videoProvider.videos;
         }
@@ -753,11 +820,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
         }
 
         if (videos.isEmpty) {
-          return const Center(
-            child: Text(
-              'No videos available',
-              style: TextStyle(color: Colors.white, fontSize: 18),
-            ),
+          return Center(
+            child: _buildEmptyState(),
           );
         }
 

@@ -14,11 +14,21 @@ class VideoService {
     final cachedTime = _cache[key]!['timestamp'] as DateTime;
     return DateTime.now().difference(cachedTime) < _cacheExpiry;
   }
-  static Future<List<Video>> getAllVideos(String token) async {
+  static Future<List<Video>> getFollowingVideos(String token) async {
+    return getAllVideos(token, feed: 'following');
+  }
+  
+  static Future<List<Video>> getFriendsVideos(String token) async {
+    // Friends feed shows videos from mutual followers
+    // We'll need to implement this on the backend
+    return getAllVideos(token, feed: 'friends');
+  }
+  
+  static Future<List<Video>> getAllVideos(String token, {String feed = 'foryou'}) async {
     // Check cache first
-    const cacheKey = 'getAllVideos';
+    final cacheKey = 'getAllVideos_$feed';
     if (_isCacheValid(cacheKey)) {
-      print('📦 Using cached videos');
+      print('📦 Using cached videos for $feed');
       return (_cache[cacheKey]!['data'] as List<Video>);
     }
     
@@ -26,9 +36,10 @@ class VideoService {
     // First, let's test with a simple direct approach
     try {
       final testResponse = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=20&page=0'),
+        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=20&page=0&feed=$feed'),
         headers: {
           'Accept': 'application/json',
+          if (token != 'no-token') 'Authorization': 'Bearer $token',
         },
       ).timeout(const Duration(seconds: 10));
 
@@ -131,7 +142,7 @@ class VideoService {
     try {
       // Try the main endpoint with high limit first
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=20'),
+        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=20&feed=$feed'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

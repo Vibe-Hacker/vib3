@@ -205,8 +205,8 @@ class VideoProvider extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      // Following feed - fallback to all videos for now
-      final videos = await VideoService.getAllVideos(token);
+      // Following feed - only videos from accounts I follow
+      final videos = await VideoService.getFollowingVideos(token);
       _followingVideos.clear();
       _followingVideos.addAll(videos);
       
@@ -263,8 +263,8 @@ class VideoProvider extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      // Friends feed - fallback to all videos for now
-      final videos = await VideoService.getAllVideos(token);
+      // Friends feed - only videos from mutual followers
+      final videos = await VideoService.getFriendsVideos(token);
       _friendsVideos.clear();
       _friendsVideos.addAll(videos);
       
