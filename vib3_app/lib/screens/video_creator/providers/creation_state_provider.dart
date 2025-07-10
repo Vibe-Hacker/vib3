@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
 import '../../../services/video_export_service.dart';
+import '../modules/duet_module.dart';
 
 /// Manages the entire video creation state
 class CreationStateProvider extends ChangeNotifier {
@@ -42,7 +43,15 @@ class CreationStateProvider extends ChangeNotifier {
   bool _beautyMode = false;
   double _beautyIntensity = 0.5;
   
+  // Duet/Stitch settings
+  String? _duetOriginalVideoPath;
+  DuetLayout _duetLayout = DuetLayout.sideBySide;
+  bool _duetUserOnLeft = true;
+  String? _stitchOriginalVideoPath;
+  List<StitchClip> _stitchClips = [];
+  
   // Getters
+  String? get backgroundMusic => _backgroundMusicPath;
   String get backgroundMusicPath => _backgroundMusicPath ?? '';
   String? get backgroundMusicName => _backgroundMusicName;
   String? get voiceoverPath => _voiceoverPath;
@@ -55,6 +64,7 @@ class CreationStateProvider extends ChangeNotifier {
   bool get beautyMode => _beautyMode;
   double get beautyIntensity => _beautyIntensity;
   List<VideoEffect> get effects => _effects;
+  List<VideoEffect> get appliedEffects => _effects; // Alias for compatibility
   List<TextOverlay> get textOverlays => _textOverlays;
   List<StickerOverlay> get stickers => _stickers;
   bool get beatSyncEnabled => _beatSyncEnabled;
@@ -286,6 +296,38 @@ class CreationStateProvider extends ChangeNotifier {
     }
   }
   
+  // Duet management
+  void setDuetInfo({
+    required String originalVideoPath,
+    required DuetLayout layout,
+    required bool userOnLeft,
+  }) {
+    _duetOriginalVideoPath = originalVideoPath;
+    _duetLayout = layout;
+    _duetUserOnLeft = userOnLeft;
+    _recordingMode = RecordingMode.duet;
+    notifyListeners();
+  }
+  
+  String? get duetOriginalVideoPath => _duetOriginalVideoPath;
+  DuetLayout get duetLayout => _duetLayout;
+  bool get duetUserOnLeft => _duetUserOnLeft;
+  
+  // Stitch management
+  void setStitchOriginalVideo(String path) {
+    _stitchOriginalVideoPath = path;
+    _recordingMode = RecordingMode.stitch;
+    notifyListeners();
+  }
+  
+  void addStitchClip(StitchClip clip) {
+    _stitchClips.add(clip);
+    notifyListeners();
+  }
+  
+  String? get stitchOriginalVideoPath => _stitchOriginalVideoPath;
+  List<StitchClip> get stitchClips => _stitchClips;
+  
   // Clear all edits
   void clearAll() {
     _videoClips.clear();
@@ -297,6 +339,9 @@ class CreationStateProvider extends ChangeNotifier {
     _textOverlays.clear();
     _stickers.clear();
     _selectedFilter = 'none';
+    _duetOriginalVideoPath = null;
+    _stitchOriginalVideoPath = null;
+    _stitchClips.clear();
     _originalVolume = 1.0;
     _musicVolume = 0.7;
     notifyListeners();
@@ -399,6 +444,8 @@ enum RecordingMode {
   photo,
   story,
   live,
+  duet,
+  stitch,
 }
 
 enum VideoQuality {
@@ -415,4 +462,19 @@ enum TextAnimation {
   bounce,
   slide,
   zoom,
+}
+
+// Stitch clip
+class StitchClip {
+  final String videoPath;
+  final Duration startTime;
+  final Duration endTime;
+  final bool isOriginal;
+  
+  StitchClip({
+    required this.videoPath,
+    required this.startTime,
+    required this.endTime,
+    required this.isOriginal,
+  });
 }

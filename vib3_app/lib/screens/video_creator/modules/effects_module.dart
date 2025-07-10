@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/creation_state_provider.dart';
+import 'green_screen_module.dart';
 
 class EffectsModule extends StatefulWidget {
   const EffectsModule({super.key});
@@ -131,7 +132,15 @@ class _EffectsModuleState extends State<EffectsModule>
               _selectedEffect = isSelected ? null : effect.id;
             });
             
-            if (!isSelected) {
+            // Special handling for green screen
+            if (effect.id == 'green_screen' && !isSelected) {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const GreenScreenModule(),
+              );
+            } else if (!isSelected) {
               creationState.addEffect(
                 VideoEffect(
                   type: effect.id,

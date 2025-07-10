@@ -18,6 +18,8 @@ import '../widgets/grok_ai_assistant.dart';
 import '../screens/profile_screen.dart';
 import '../config/app_config.dart';
 import 'video_player_widget.dart';
+import '../screens/video_creator/modules/duet_module.dart';
+import '../screens/video_creator/modules/stitch_module.dart';
 
 enum FeedType { forYou, following, friends }
 
@@ -73,6 +75,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       // Initialize likes and follows
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.authToken;
+      print('VideoFeed initState - token: ${token != null ? 'present' : 'null'}');
       if (token != null) {
         Provider.of<VideoProvider>(context, listen: false).initializeLikesAndFollows(token);
       }
@@ -127,6 +130,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             final authProvider = Provider.of<AuthProvider>(context, listen: false);
             final token = authProvider.authToken;
             
+            print('VideoFeed visibility change - feedType: ${widget.feedType}, token: ${token != null ? 'present' : 'null'}');
+            
             if (token != null) {
               switch (widget.feedType!) {
                 case FeedType.forYou:
@@ -139,6 +144,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                   videoProvider.loadFriendsVideos(token);
                   break;
               }
+            } else {
+              print('VideoFeed: No auth token available!');
             }
           });
         }
@@ -158,6 +165,36 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     setState(() {
       _currentIndex = index;
     });
+    
+    // Load more videos when near the end
+    final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.authToken;
+    
+    // Get the appropriate video list based on feed type
+    List<Video> currentVideos = [];
+    switch (widget.feedType) {
+      case FeedType.forYou:
+        currentVideos = videoProvider.forYouVideos;
+        break;
+      case FeedType.following:
+        currentVideos = videoProvider.followingVideos;
+        break;
+      case FeedType.friends:
+        currentVideos = videoProvider.friendsVideos;
+        break;
+      default:
+        currentVideos = videoProvider.videos;
+    }
+    
+    // If we're within 3 videos of the end, load more
+    if (index >= currentVideos.length - 3 && 
+        !videoProvider.isLoadingMore && 
+        videoProvider.hasMoreVideos &&
+        token != null) {
+      print('📜 Loading more videos - current index: $index, total: ${currentVideos.length}');
+      videoProvider.loadMoreVideos(token, feedType: widget.feedType);
+    }
   }
 
   void _handleLike(Video video) async {
@@ -276,12 +313,52 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     }
   }
   
+  void _startDuet(Video video) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DuetModule(
+          originalVideoPath: video.videoUrl!,
+          onVideoRecorded: (path) {
+            Navigator.pop(context);
+            // Navigate to video creator for editing
+            Navigator.pushNamed(
+              context, 
+              '/video-creator',
+              arguments: {'videoPath': path},
+            );
+          },
+        ),
+      ),
+    );
+  }
+  
+  void _startStitch(Video video) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StitchModule(
+          originalVideoPath: video.videoUrl!,
+          onVideoRecorded: (path) {
+            Navigator.pop(context);
+            // Navigate to video creator for editing
+            Navigator.pushNamed(
+              context, 
+              '/video-creator',
+              arguments: {'videoPath': path},
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   void _shareVideo(Video video) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: 250,
+        height: 350,
         decoration: const BoxDecoration(
           color: Color(0xFF1A1A1A),
           borderRadius: BorderRadius.only(
@@ -318,6 +395,24 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
                 children: [
+                  _buildShareOption(
+                    icon: Icons.copy_all,
+                    label: 'Duet',
+                    color: const Color(0xFF00CED1),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _startDuet(video);
+                    },
+                  ),
+                  _buildShareOption(
+                    icon: Icons.cut,
+                    label: 'Stitch',
+                    color: const Color(0xFFFF0080),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _startStitch(video);
+                    },
+                  ),
                   _buildShareOption(
                     icon: Icons.link,
                     label: 'Copy Link',
@@ -372,6 +467,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    Color? color,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -382,7 +478,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.grey[800],
+              color: color ?? Colors.grey[800],
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -818,6 +914,63 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             ),
           );
         }
+        
+        // Show error if there is one
+        if (videoProvider.error != null && videos.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.red,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Failed to load videos',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  videoProvider.error!,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Retry loading
+                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                    final token = authProvider.authToken;
+                    if (token != null) {
+                      if (widget.feedType == FeedType.forYou) {
+                        videoProvider.loadForYouVideos(token);
+                      } else if (widget.feedType == FeedType.following) {
+                        videoProvider.loadFollowingVideos(token);
+                      } else if (widget.feedType == FeedType.friends) {
+                        videoProvider.loadFriendsVideos(token);
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00CED1),
+                    foregroundColor: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
 
         if (videos.isEmpty) {
           return Center(
@@ -829,8 +982,19 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           controller: _pageController,
           scrollDirection: Axis.vertical,
           onPageChanged: _onPageChanged,
-          itemCount: videos.length,
+          itemCount: videos.length + (videoProvider.isLoadingMore ? 1 : 0),
           itemBuilder: (context, index) {
+            // Show loading indicator at the end
+            if (index >= videos.length) {
+              return Container(
+                color: Colors.black,
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFFFF0080),
+                  ),
+                ),
+              );
+            }
             final video = videos[index];
             final isCurrentVideo = index == _currentIndex;
             final videoProvider = Provider.of<VideoProvider>(context);
