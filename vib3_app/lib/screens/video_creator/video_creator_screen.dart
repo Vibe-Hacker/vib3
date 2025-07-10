@@ -105,10 +105,17 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
   
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Prevent excessive focus handling
-    if (state == AppLifecycleState.resumed) {
-      // Request focus only once when resuming
-      FocusScope.of(context).requestFocus(FocusNode());
+    // Prevent excessive focus handling by removing focus request
+    // The repeated focus changes were causing the window focus loop
+    if (!mounted) return;
+    
+    // Only handle critical state changes
+    if (state == AppLifecycleState.paused) {
+      // Save any pending state if needed
+    } else if (state == AppLifecycleState.detached) {
+      // Clean up resources
+      _toolPanelController.dispose();
+      _transitionController.dispose();
     }
   }
   

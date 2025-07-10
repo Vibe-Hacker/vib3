@@ -27,6 +27,8 @@ class _WorkingVideoPreviewState extends State<WorkingVideoPreview> {
     super.initState();
     // Start loading video path after frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Clear any focus to prevent window focus loops
+      FocusManager.instance.primaryFocus?.unfocus();
       _loadVideoPath();
     });
   }

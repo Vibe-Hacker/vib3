@@ -23,6 +23,8 @@ class CameraModule extends StatefulWidget {
 
 class _CameraModuleState extends State<CameraModule> 
     with WidgetsBindingObserver, TickerProviderStateMixin {
+  // Focus management
+  bool _isHandlingLifecycle = false;
   // Camera
   CameraController? _cameraController;
   List<CameraDescription> _cameras = [];
@@ -76,11 +78,18 @@ class _CameraModuleState extends State<CameraModule>
   
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Prevent excessive focus handling by debouncing lifecycle events
+    if (!mounted || _isHandlingLifecycle) return;
+    
+    _isHandlingLifecycle = true;
+    
     // Handle app lifecycle changes to properly manage camera resources
     switch (state) {
       case AppLifecycleState.inactive:
-        // App is inactive, dispose camera to free resources
-        _handleCameraInactive();
+        // App is inactive, only stop recording if active
+        if (_isRecording) {
+          _handleCameraInactive();
+        }
         break;
       case AppLifecycleState.paused:
         // App is in background
@@ -99,6 +108,11 @@ class _CameraModuleState extends State<CameraModule>
         _handleCameraPaused();
         break;
     }
+    
+    // Reset flag after a delay
+    Future.delayed(const Duration(milliseconds: 300), () {
+      _isHandlingLifecycle = false;
+    });
   }
   
   void _handleCameraInactive() {
@@ -123,8 +137,13 @@ class _CameraModuleState extends State<CameraModule>
   
   void _handleCameraResumed() {
     // Re-initialize camera when app comes back
+    // Add a delay to prevent rapid re-initialization
     if (!_isInitialized && mounted) {
-      _initializeCamera();
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && !_isInitialized) {
+          _initializeCamera();
+        }
+      });
     }
   }
   
@@ -347,6 +366,11 @@ class _CameraModuleState extends State<CameraModule>
       
       // Stop recording and get the file
       final XFile videoFile = await _cameraController!.stopVideoRecording();
+      
+      // Clear focus to prevent window focus loop
+      if (mounted) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
       
       // Add delay to ensure video encoder has fully released the file
       await Future.delayed(const Duration(milliseconds: 2000)); // Further increased delay for MediaCodec
