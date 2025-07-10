@@ -84,4 +84,26 @@ class UserService {
       return false;
     }
   }
+  
+  static Future<User?> getCurrentUserProfile(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/user/profile'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return User.fromJson(data);
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error getting current user profile: $e');
+      return null;
+    }
+  }
 }

@@ -392,6 +392,7 @@ class VideoProvider extends ChangeNotifier {
         videoList[index] = Video(
           id: video.id,
           userId: video.userId,
+          username: video.username,
           videoUrl: video.videoUrl,
           thumbnailUrl: video.thumbnailUrl,
           description: video.description,
