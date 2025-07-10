@@ -3,11 +3,32 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/comment.dart';
 
+enum CommentSort {
+  newest,
+  mostLiked,
+  oldest,
+}
+
 class CommentService {
-  static Future<List<Comment>> getVideoComments(String videoId, String token) async {
+  static Future<List<Comment>> getVideoComments(
+    String videoId, 
+    String token, {
+    CommentSort sortBy = CommentSort.newest,
+    int offset = 0,
+    int limit = 20,
+  }) async {
     try {
+      final queryParams = {
+        'sort': sortBy.toString().split('.').last,
+        'offset': offset.toString(),
+        'limit': limit.toString(),
+      };
+      
+      final uri = Uri.parse('${AppConfig.baseUrl}/api/videos/$videoId/comments')
+          .replace(queryParameters: queryParams);
+      
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/videos/$videoId/comments'),
+        uri,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -27,17 +48,28 @@ class CommentService {
     }
   }
 
-  static Future<Comment?> postComment(String videoId, String text, String token) async {
+  static Future<Comment?> postComment({
+    required String videoId,
+    required String text,
+    required String token,
+    String? parentId,
+  }) async {
     try {
+      final body = {
+        'text': text,
+      };
+      
+      if (parentId != null) {
+        body['parentId'] = parentId;
+      }
+      
       final response = await http.post(
         Uri.parse('${AppConfig.baseUrl}/api/videos/$videoId/comments'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'text': text,
-        }),
+        body: jsonEncode(body),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {

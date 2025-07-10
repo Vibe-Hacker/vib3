@@ -20,6 +20,8 @@ import '../config/app_config.dart';
 import 'video_player_widget.dart';
 import '../screens/video_creator/modules/duet_module.dart';
 import '../screens/video_creator/modules/stitch_module.dart';
+import 'double_tap_like_animation.dart';
+import 'comments_sheet.dart';
 
 enum FeedType { forYou, following, friends }
 
@@ -224,14 +226,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   void _showComments(Video video) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        height: 400,
-        color: Colors.black,
-        child: Center(
-          child: Text('Comments for ${video.description ?? 'this video'}', 
-            style: const TextStyle(color: Colors.white)),
-        ),
-      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => CommentsSheet(video: video),
     );
   }
 
@@ -865,12 +862,15 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   Widget _buildVideoPlayer(Video video, bool isCurrentVideo) {
     if (video.videoUrl != null && video.videoUrl!.isNotEmpty && isCurrentVideo) {
       return Positioned.fill(
-        child: GestureDetector(
+        child: DoubleTapLikeWrapper(
           onDoubleTap: () => _handleLike(video),
-          onLongPress: () => _showComments(video),
-          child: VideoPlayerWidget(
-            videoUrl: video.videoUrl!,
-            isPlaying: isCurrentVideo && _isScreenVisible,
+          isLiked: Provider.of<VideoProvider>(context).isVideoLiked(video.id),
+          child: GestureDetector(
+            onLongPress: () => _showComments(video),
+            child: VideoPlayerWidget(
+              videoUrl: video.videoUrl!,
+              isPlaying: isCurrentVideo && _isScreenVisible,
+            ),
           ),
         ),
       );
