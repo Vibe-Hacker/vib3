@@ -22,6 +22,7 @@ import '../screens/video_creator/modules/duet_module.dart';
 import '../screens/video_creator/modules/stitch_module.dart';
 import 'double_tap_like_animation.dart';
 import 'comments_sheet.dart';
+import 'swipe_gesture_detector.dart';
 
 enum FeedType { forYou, following, friends }
 
@@ -460,6 +461,66 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     );
   }
   
+  void _saveVideo(Video video) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.authToken;
+    
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to save videos')),
+      );
+      return;
+    }
+    
+    // TODO: Implement save video API call
+    HapticFeedback.mediumImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Video saved to your collection!'),
+        backgroundColor: Color(0xFF00CED1),
+      ),
+    );
+  }
+  
+  void _markNotInterested(Video video) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.authToken;
+    
+    if (token == null) return;
+    
+    // TODO: Implement not interested API call
+    HapticFeedback.mediumImpact();
+    
+    // Move to next video immediately
+    if (_currentIndex < Provider.of<VideoProvider>(context, listen: false).videos.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('We\'ll show you fewer videos like this'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+  
+  void _showMoreLikeThis(Video video) async {
+    // TODO: Implement recommendation algorithm update
+    HapticFeedback.mediumImpact();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Finding more videos like this...'),
+        backgroundColor: Color(0xFFFF1493),
+      ),
+    );
+    
+    // Could navigate to a filtered feed or update recommendations
+  }
+  
   Widget _buildShareOption({
     required IconData icon,
     required String label,
@@ -862,14 +923,21 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   Widget _buildVideoPlayer(Video video, bool isCurrentVideo) {
     if (video.videoUrl != null && video.videoUrl!.isNotEmpty && isCurrentVideo) {
       return Positioned.fill(
-        child: DoubleTapLikeWrapper(
-          onDoubleTap: () => _handleLike(video),
-          isLiked: Provider.of<VideoProvider>(context).isVideoLiked(video.id),
-          child: GestureDetector(
-            onLongPress: () => _showComments(video),
-            child: VideoPlayerWidget(
-              videoUrl: video.videoUrl!,
-              isPlaying: isCurrentVideo && _isScreenVisible,
+        child: VideoSwipeActions(
+          onLike: () => _handleLike(video),
+          onShare: () => _shareVideo(video),
+          onSave: () => _saveVideo(video),
+          onNotInterested: () => _markNotInterested(video),
+          onShowMore: () => _showMoreLikeThis(video),
+          child: DoubleTapLikeWrapper(
+            onDoubleTap: () => _handleLike(video),
+            isLiked: Provider.of<VideoProvider>(context).isVideoLiked(video.id),
+            child: GestureDetector(
+              onLongPress: () => _showComments(video),
+              child: VideoPlayerWidget(
+                videoUrl: video.videoUrl!,
+                isPlaying: isCurrentVideo && _isScreenVisible,
+              ),
             ),
           ),
         ),
