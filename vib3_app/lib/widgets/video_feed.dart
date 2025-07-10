@@ -237,7 +237,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               double y = double.parse(parts[1]);
               
               // Ensure loaded positions are within bounds
-              x = x.clamp(minMargin, screenSize.width - buttonSize - minMargin);
+              x = x.clamp(minMargin, screenSize.width - (buttonSize / 2));
               y = y.clamp(minMargin, screenSize.height - buttonSize - minMargin - 80);
               
               _buttonPositions[key] = Offset(x, y);
@@ -498,7 +498,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             const minMargin = 0.0;
             
             // Apply boundary constraints
-            newX = newX.clamp(minMargin, screenSize.width - buttonSize - minMargin);
+            // Allow button to go partially off-screen on the right (half the button width)
+            newX = newX.clamp(minMargin, screenSize.width - (buttonSize / 2));
             newY = newY.clamp(minMargin, screenSize.height - buttonSize - minMargin - 80); // Account for bottom nav
             
             setState(() {
