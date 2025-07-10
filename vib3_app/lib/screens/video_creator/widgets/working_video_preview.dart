@@ -131,19 +131,7 @@ class _WorkingVideoPreviewState extends State<WorkingVideoPreview> {
               ),
             ),
           
-          // Top toolbar with back button
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            left: 16,
-            child: IconButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              icon: const Icon(Icons.arrow_back),
-              color: Colors.white,
-              iconSize: 28,
-            ),
-          ),
+          // Back button removed - TopToolbar in VideoCreatorScreen handles navigation
           
           // Bottom controls
           if (_videoPath != null && !_isLoading)
