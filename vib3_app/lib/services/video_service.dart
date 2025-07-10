@@ -1771,16 +1771,6 @@ class VideoService {
     ];
   }
 
-  static Future<List<Video>> getFollowingVideos(String token) async {
-    try {
-      // For now, just return all videos since the backend doesn't have separate following endpoint
-      print('VideoService: getFollowingVideos - using getAllVideos as fallback');
-      return getAllVideos(token);
-    } catch (e) {
-      print('Error getting following videos: $e');
-      return getAllVideos(token);
-    }
-  }
 
   static Future<List<Video>> getDiscoverVideos(String token) async {
     try {
