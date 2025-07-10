@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import '../providers/creation_state_provider.dart';
 import '../../../services/music_service.dart';
+import 'voice_effects_module.dart';
 
 class MusicModule extends StatefulWidget {
   const MusicModule({super.key});
@@ -499,13 +500,33 @@ class _MusicModuleState extends State<MusicModule>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Voice Effects',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Voice Effects',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => const VoiceEffectsModule(),
+                      );
+                    },
+                    icon: const Icon(Icons.tune, size: 16),
+                    label: const Text('More Effects'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF00CED1),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               Wrap(
@@ -522,6 +543,21 @@ class _MusicModuleState extends State<MusicModule>
                               ? effect.toLowerCase() 
                               : 'none';
                         });
+                        
+                        // Apply voice effect
+                        if (_selectedVoiceEffect != 'none') {
+                          final creationState = context.read<CreationStateProvider>();
+                          creationState.addEffect(
+                            VideoEffect(
+                              type: 'voice_effect',
+                              parameters: {
+                                'effectId': _selectedVoiceEffect,
+                                'pitch': _getEffectPitch(_selectedVoiceEffect),
+                                'speed': _getEffectSpeed(_selectedVoiceEffect),
+                              },
+                            ),
+                          );
+                        }
                       },
                       backgroundColor: Colors.white.withOpacity(0.1),
                       selectedColor: const Color(0xFF00CED1),
@@ -1176,6 +1212,40 @@ class _MusicModuleState extends State<MusicModule>
     setState(() {
       _currentBeat = 0;
     });
+  }
+  
+  double _getEffectPitch(String effect) {
+    switch (effect) {
+      case 'chipmunk':
+        return 1.5;
+      case 'deep':
+        return 0.6;
+      case 'robot':
+        return 1.0;
+      case 'echo':
+        return 1.0;
+      case 'reverb':
+        return 1.0;
+      default:
+        return 1.0;
+    }
+  }
+  
+  double _getEffectSpeed(String effect) {
+    switch (effect) {
+      case 'chipmunk':
+        return 1.2;
+      case 'deep':
+        return 0.9;
+      case 'robot':
+        return 1.0;
+      case 'echo':
+        return 1.0;
+      case 'reverb':
+        return 1.0;
+      default:
+        return 1.0;
+    }
   }
   
 }

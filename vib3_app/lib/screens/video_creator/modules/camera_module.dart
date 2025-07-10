@@ -8,6 +8,7 @@ import '../providers/creation_state_provider.dart';
 import '../widgets/camera_controls.dart';
 import '../widgets/recording_timer.dart';
 import '../widgets/beauty_slider.dart';
+import 'beauty_filters_module.dart';
 
 class CameraModule extends StatefulWidget {
   final Function(String) onVideoRecorded;
@@ -726,10 +727,12 @@ class _CameraModuleState extends State<CameraModule>
               });
             },
             onBeautyToggle: () {
-              creationState.setBeautyMode(!creationState.beautyMode);
-              setState(() {
-                _showBeautyControls = creationState.beautyMode;
-              });
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const BeautyFiltersModule(),
+              );
             },
             onGallery: () {
               // TODO: Open gallery picker
