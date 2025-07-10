@@ -391,8 +391,6 @@ class VideoProvider extends ChangeNotifier {
           videoUrl: video.videoUrl,
           thumbnailUrl: video.thumbnailUrl,
           description: video.description,
-          hashtags: video.hashtags,
-          audioName: video.audioName,
           likesCount: newLikeCount,
           commentsCount: video.commentsCount,
           sharesCount: video.sharesCount,
@@ -402,6 +400,7 @@ class VideoProvider extends ChangeNotifier {
           createdAt: video.createdAt,
           updatedAt: video.updatedAt,
           user: video.user,
+          musicName: video.musicName,
         );
       }
     }
