@@ -109,10 +109,18 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
       }
       
       // Add delay to ensure resources are released
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 500)); // Increased delay
       
       _controller = VideoPlayerController.file(videoFile);
-      await _controller!.initialize();
+      
+      // Initialize with timeout to prevent hanging
+      await _controller!.initialize().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw Exception('Video initialization timeout');
+        },
+      );
+      
       await _controller!.setLooping(true);
       await _controller!.setVolume(creationState.originalVolume);
       

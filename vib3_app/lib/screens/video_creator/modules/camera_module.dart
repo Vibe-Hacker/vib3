@@ -349,7 +349,7 @@ class _CameraModuleState extends State<CameraModule>
       final XFile videoFile = await _cameraController!.stopVideoRecording();
       
       // Add delay to ensure video encoder has fully released the file
-      await Future.delayed(const Duration(milliseconds: 1000)); // Increased delay
+      await Future.delayed(const Duration(milliseconds: 2000)); // Further increased delay for MediaCodec
       
       // Validate file with retries
       final file = File(videoFile.path);
@@ -371,7 +371,7 @@ class _CameraModuleState extends State<CameraModule>
         retryCount++;
         if (retryCount < maxRetries) {
           print('Waiting for video file to be ready, attempt $retryCount...');
-          await Future.delayed(const Duration(milliseconds: 1000)); // Increased delay
+          await Future.delayed(const Duration(milliseconds: 1500)); // Increased retry delay
         } else {
           throw Exception('Video file not ready after $maxRetries attempts');
         }
@@ -391,7 +391,7 @@ class _CameraModuleState extends State<CameraModule>
         creationState.addVideoClip(videoFile.path);
         
         // Wait longer to ensure all video resources are released
-        await Future.delayed(const Duration(seconds: 1));
+        await Future.delayed(const Duration(seconds: 2)); // Increased to 2 seconds
         
         // Navigate to edit or continue recording
         if (_recordedClips.length == 1 && !_isMultiClipMode()) {
