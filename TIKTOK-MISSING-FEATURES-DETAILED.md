@@ -60,6 +60,16 @@
   - [ ] Favorites/Collections organization
   - [ ] Delete account option
 
+- [ ] **Profile Video Grid**
+  - [ ] Click thumbnail to play video in full screen
+  - [ ] Scroll vertically to navigate through profile's videos only
+  - [ ] Maintain profile video context while scrolling
+  - [ ] Exit button to return to profile grid view
+  - [ ] Show video index (e.g., "Video 5 of 127")
+  - [ ] Swipe down to exit back to profile
+  - [ ] Preload adjacent videos for smooth scrolling
+  - [ ] Remember scroll position when returning to grid
+
 - [ ] **Profile Analytics**
   - [ ] Video views graph
   - [ ] Follower growth chart
