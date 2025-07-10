@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/creation_state_provider.dart';
 import 'green_screen_module.dart';
+import 'ar_effects_module.dart';
 
 class EffectsModule extends StatefulWidget {
   const EffectsModule({super.key});
@@ -139,6 +140,15 @@ class _EffectsModuleState extends State<EffectsModule>
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (context) => const GreenScreenModule(),
+              );
+            } 
+            // Special handling for AR effects
+            else if ((effect.id == 'face_mask' || effect.id == '3d_objects') && !isSelected) {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const AREffectsModule(),
               );
             } else if (!isSelected) {
               creationState.addEffect(
