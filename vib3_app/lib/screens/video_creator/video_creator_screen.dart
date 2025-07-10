@@ -253,6 +253,7 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                         _toolPanelController.forward();
                       }
                     },
+                    onNext: _currentMode == CreatorMode.edit ? _navigateToUpload : null,
                   ),
                 ),
               ),

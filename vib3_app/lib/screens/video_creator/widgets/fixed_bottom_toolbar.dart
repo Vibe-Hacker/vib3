@@ -6,11 +6,13 @@ import '../video_creator_screen.dart';
 class FixedBottomToolbar extends StatelessWidget {
   final Function(CreatorMode) onModeSelected;
   final CreatorMode? currentMode;
+  final VoidCallback? onNext;
   
   const FixedBottomToolbar({
     super.key,
     required this.onModeSelected,
     this.currentMode,
+    this.onNext,
   });
   
   @override
@@ -60,6 +62,9 @@ class FixedBottomToolbar extends StatelessWidget {
                 label: 'Tools',
                 mode: CreatorMode.tools,
               ),
+              // Add Next button when in edit mode
+              if (currentMode == CreatorMode.edit)
+                _buildNextButton(context),
             ],
           ),
         ),
@@ -129,6 +134,55 @@ class FixedBottomToolbar extends StatelessWidget {
                   color: isSelected ? const Color(0xFF00CED1) : Colors.white,
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildNextButton(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          print('\\n=== FixedBottomToolbar: Next Button Tap ===');
+          print('Attempting to navigate to upload screen');
+          print('==========================================\\n');
+          
+          if (onNext != null) {
+            onNext!();
+          } else {
+            print('ERROR: onNext callback not provided');
+          }
+        },
+        child: Container(
+          color: Colors.transparent,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00CED1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_forward,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Next',
+                style: TextStyle(
+                  color: Color(0xFF00CED1),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/creation_state_provider.dart';
 import '../video_creator_screen.dart';
-import 'simple_video_player.dart';
+import 'enhanced_video_preview.dart';
 
 class WorkingVideoPreview extends StatefulWidget {
   final Function(CreatorMode) onModeChange;
@@ -96,7 +96,7 @@ class _WorkingVideoPreviewState extends State<WorkingVideoPreview> {
               ),
             )
           else if (_videoPath != null)
-            SimpleVideoPlayer(
+            EnhancedVideoPreview(
               videoPath: _videoPath!,
               onError: _handleVideoError,
             )
@@ -133,62 +133,8 @@ class _WorkingVideoPreviewState extends State<WorkingVideoPreview> {
               ),
             ),
           
-          // Back button removed - TopToolbar in VideoCreatorScreen handles navigation
-          
-          // Bottom controls
-          if (_videoPath != null && !_isLoading)
-            Positioned(
-              bottom: 20,
-              left: 20,
-              right: 20,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Re-record button
-                  _buildControlButton(
-                    icon: Icons.refresh,
-                    label: 'Re-record',
-                    onTap: () {
-                      widget.onModeChange(CreatorMode.camera);
-                    },
-                  ),
-                  
-                  // Effects button
-                  _buildControlButton(
-                    icon: Icons.auto_awesome,
-                    label: 'Effects',
-                    onTap: () {
-                      widget.onModeChange(CreatorMode.effects);
-                    },
-                  ),
-                  
-                  // Music button
-                  _buildControlButton(
-                    icon: Icons.music_note,
-                    label: 'Music',
-                    onTap: () {
-                      widget.onModeChange(CreatorMode.music);
-                    },
-                  ),
-                  
-                  // Next/Save button
-                  _buildControlButton(
-                    icon: Icons.check,
-                    label: 'Next',
-                    isPrimary: true,
-                    onTap: () {
-                      // Navigate to publish screen or save
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Ready to publish!'),
-                          backgroundColor: Color(0xFF00CED1),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+          // Remove bottom controls - FixedBottomToolbar in VideoCreatorScreen handles these
+          // This prevents duplicate buttons and confusion
         ],
       ),
     );
