@@ -33,6 +33,15 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadUserVideos();
+    _refreshUserStats();
+  }
+  
+  Future<void> _refreshUserStats() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (widget.userId == null || widget.userId == authProvider.currentUser?.id) {
+      // Refresh current user's stats
+      await authProvider.refreshUserStats();
+    }
   }
 
   @override

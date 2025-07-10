@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/user_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   User? _currentUser;
@@ -233,6 +234,30 @@ class AuthProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> refreshUserStats() async {
+    if (_authToken == null || _currentUser == null) return;
+    
+    try {
+      print('AuthProvider: Refreshing user stats...');
+      final updatedUser = await UserService.getCurrentUserProfile(_authToken!);
+      
+      if (updatedUser != null) {
+        _currentUser = updatedUser;
+        
+        // Update stored user data
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('user_followers', updatedUser.followers);
+        await prefs.setInt('user_following', updatedUser.following);
+        await prefs.setInt('user_totalLikes', updatedUser.totalLikes);
+        
+        print('AuthProvider: User stats refreshed - followers: ${updatedUser.followers}, following: ${updatedUser.following}, totalLikes: ${updatedUser.totalLikes}');
+        notifyListeners();
+      }
+    } catch (e) {
+      print('AuthProvider: Error refreshing user stats: $e');
     }
   }
 

@@ -69,6 +69,13 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           _isScreenVisible = false;
         });
       });
+      
+      // Initialize likes and follows
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.authToken;
+      if (token != null) {
+        Provider.of<VideoProvider>(context, listen: false).initializeLikesAndFollows(token);
+      }
     });
   }
   
@@ -164,38 +171,16 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       return;
     }
 
-    // Optimistic UI update
-    setState(() {
-      _likedVideos[video.id] = !(_likedVideos[video.id] ?? false);
-    });
-
-    try {
-      // Call the actual API
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/api/videos/${video.id}/like'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode != 200) {
-        // Revert on failure
-        setState(() {
-          _likedVideos[video.id] = !(_likedVideos[video.id] ?? false);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to like video: ${response.statusCode}')),
-        );
-      }
-    } catch (e) {
-      // Revert on error
-      setState(() {
-        _likedVideos[video.id] = !(_likedVideos[video.id] ?? false);
-      });
+    final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+    final success = await videoProvider.toggleLike(video.id, token);
+    
+    if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        const SnackBar(content: Text('Failed to update like')),
       );
+    } else {
+      // Refresh user stats after like
+      authProvider.refreshUserStats();
     }
   }
 
@@ -278,37 +263,16 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       return;
     }
 
-    // Optimistic UI update
-    setState(() {
-      _followedUsers[video.userId] = !(_followedUsers[video.userId] ?? false);
-    });
-
-    try {
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/api/users/${video.userId}/follow'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode != 200) {
-        // Revert on failure
-        setState(() {
-          _followedUsers[video.userId] = !(_followedUsers[video.userId] ?? false);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to follow user: ${response.statusCode}')),
-        );
-      }
-    } catch (e) {
-      // Revert on error
-      setState(() {
-        _followedUsers[video.userId] = !(_followedUsers[video.userId] ?? false);
-      });
+    final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+    final success = await videoProvider.toggleFollow(video.userId, token);
+    
+    if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        const SnackBar(content: Text('Failed to update follow')),
       );
+    } else {
+      // Refresh user stats after follow
+      authProvider.refreshUserStats();
     }
   }
   
@@ -598,12 +562,12 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                       height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: _followedUsers[video.userId] ?? false 
+                        color: Provider.of<VideoProvider>(context).isUserFollowed(video.userId)
                             ? Colors.blue : Colors.red,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
                       child: Icon(
-                        _followedUsers[video.userId] ?? false 
+                        Provider.of<VideoProvider>(context).isUserFollowed(video.userId)
                             ? Icons.check : Icons.add,
                         color: Colors.white,
                         size: 12,
@@ -628,7 +592,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
-                  colors: _likedVideos[video.id] ?? false
+                  colors: Provider.of<VideoProvider>(context).isVideoLiked(video.id)
                       ? [Colors.red, Colors.pink]
                       : [const Color(0xFFFF0080), const Color(0xFFFF4081)],
                 ),
@@ -641,7 +605,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                 ],
               ),
               child: Icon(
-                _likedVideos[video.id] ?? false 
+                Provider.of<VideoProvider>(context).isVideoLiked(video.id)
                     ? Icons.favorite : Icons.favorite_border,
                 color: Colors.white,
                 size: 28,
@@ -805,7 +769,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           itemBuilder: (context, index) {
             final video = videos[index];
             final isCurrentVideo = index == _currentIndex;
-            final isLiked = _likedVideos[video.id] ?? false;
+            final videoProvider = Provider.of<VideoProvider>(context);
+            final isLiked = videoProvider.isVideoLiked(video.id);
             
             return Container(
               color: Colors.black,
