@@ -23,6 +23,7 @@ import '../screens/video_creator/modules/stitch_module.dart';
 import 'double_tap_like_animation.dart';
 import 'comments_sheet.dart';
 import 'swipe_gesture_detector.dart';
+import 'share_sheet.dart';
 
 enum FeedType { forYou, following, friends }
 
@@ -355,108 +356,11 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: 350,
-        decoration: const BoxDecoration(
-          color: Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[600],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'Share this VIB3',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 4,
-                padding: const EdgeInsets.all(16),
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                children: [
-                  _buildShareOption(
-                    icon: Icons.copy_all,
-                    label: 'Duet',
-                    color: const Color(0xFF00CED1),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _startDuet(video);
-                    },
-                  ),
-                  _buildShareOption(
-                    icon: Icons.cut,
-                    label: 'Stitch',
-                    color: const Color(0xFFFF0080),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _startStitch(video);
-                    },
-                  ),
-                  _buildShareOption(
-                    icon: Icons.link,
-                    label: 'Copy Link',
-                    onTap: () {
-                      // Copy link to clipboard
-                      final link = '${AppConfig.baseUrl}/video/${video.id}';
-                      Clipboard.setData(ClipboardData(text: link));
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Link copied to clipboard!')),
-                      );
-                    },
-                  ),
-                  _buildShareOption(
-                    icon: Icons.message,
-                    label: 'Message',
-                    onTap: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Opening messages...')),
-                      );
-                    },
-                  ),
-                  _buildShareOption(
-                    icon: Icons.email,
-                    label: 'Email',
-                    onTap: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Opening email...')),
-                      );
-                    },
-                  ),
-                  _buildShareOption(
-                    icon: Icons.more_horiz,
-                    label: 'More',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Platform specific share sheet
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      isScrollControlled: true,
+      builder: (context) => ShareSheet(
+        video: video,
+        onDuet: () => _startDuet(video),
+        onStitch: () => _startStitch(video),
       ),
     );
   }
@@ -521,43 +425,6 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     // Could navigate to a filtered feed or update recommendations
   }
   
-  Widget _buildShareOption({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    Color? color,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: color ?? Colors.grey[800],
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildDraggableButton({
     required String buttonId,
