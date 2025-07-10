@@ -14,15 +14,6 @@ class VideoService {
     final cachedTime = _cache[key]!['timestamp'] as DateTime;
     return DateTime.now().difference(cachedTime) < _cacheExpiry;
   }
-  static Future<List<Video>> getFollowingVideos(String token) async {
-    return getAllVideos(token, feed: 'following');
-  }
-  
-  static Future<List<Video>> getFriendsVideos(String token) async {
-    // Friends feed shows videos from mutual followers
-    // We'll need to implement this on the backend
-    return getAllVideos(token, feed: 'friends');
-  }
   
   static Future<List<Video>> getAllVideos(String token, {String feed = 'foryou'}) async {
     // Check cache first
@@ -106,6 +97,7 @@ class VideoService {
               final video = Video(
                 id: json['_id']?.toString() ?? 'video_$i',
                 userId: json['userId']?.toString() ?? json['userid']?.toString() ?? '',
+                username: json['username']?.toString() ?? json['user']?['username']?.toString() ?? 'user',
                 videoUrl: videoUrl,
                 description: json['title']?.toString() ?? json['description']?.toString() ?? 'Video ${i + 1}',
                 likesCount: _parseIntSafely(json['likeCount'] ?? json['likecount'] ?? json['likes'] ?? 0),
@@ -1492,81 +1484,6 @@ class VideoService {
     }
   }
 
-  // Get user's followed users for sync
-  static Future<List<String>> getUserFollowedUsers(String token) async {
-    try {
-      // Only use endpoints that are likely to work and not return HTML
-      final endpoints = [
-        '/api/user/followed-users', // New simplified endpoint that returns just user IDs
-        '/api/user/following',
-      ];
-      
-      for (String endpoint in endpoints) {
-        try {
-          final response = await http.get(
-            Uri.parse('${AppConfig.baseUrl}$endpoint'),
-            headers: {
-              'Authorization': 'Bearer $token',
-              'Content-Type': 'application/json',
-            },
-          ).timeout(const Duration(seconds: 10));
-
-          if (response.statusCode == 200) {
-            // Check if response is HTML (common error case)
-            if (response.body.trim().startsWith('<') || response.body.contains('<!DOCTYPE')) {
-              print('❌ Endpoint $endpoint returned HTML instead of JSON');
-              continue;
-            }
-            
-            final data = jsonDecode(response.body);
-            print('✅ Following endpoint $endpoint returned: ${response.statusCode}');
-            
-            List<String> userIds = [];
-            
-            // Handle different response formats
-            if (data is List) {
-              for (var item in data) {
-                if (item is Map && item['_id'] != null) {
-                  userIds.add(item['_id'].toString());
-                } else if (item is String) {
-                  userIds.add(item);
-                }
-              }
-            } else if (data is Map) {
-              if (data['following'] is List) {
-                for (var item in data['following']) {
-                  if (item is Map && item['_id'] != null) {
-                    userIds.add(item['_id'].toString());
-                  } else if (item is String) {
-                    userIds.add(item);
-                  }
-                }
-              } else if (data['users'] is List) {
-                for (var item in data['users']) {
-                  if (item is Map && item['_id'] != null) {
-                    userIds.add(item['_id'].toString());
-                  } else if (item is String) {
-                    userIds.add(item);
-                  }
-                }
-              }
-            }
-            
-            return userIds;
-          }
-        } catch (e) {
-          print('❌ Endpoint $endpoint failed: $e');
-          continue;
-        }
-      }
-      
-      print('❌ All following endpoints failed');
-      return [];
-    } catch (e) {
-      print('❌ Error getting followed users: $e');
-      return [];
-    }
-  }
 
   // Check if current user is following a specific user
   static Future<bool> isFollowingUser(String userId, String token) async {
@@ -1644,6 +1561,7 @@ class VideoService {
     return Video(
       id: json['_id']?.toString() ?? '',
       userId: json['userId']?.toString() ?? json['userid']?.toString() ?? '',
+      username: json['username']?.toString() ?? json['user']?['username']?.toString() ?? 'user',
       videoUrl: videoUrl,
       description: json['title']?.toString() ?? json['description']?.toString() ?? '',
       likesCount: _parseIntSafely(json['likeCount'] ?? json['likecount'] ?? json['likes'] ?? 0),
@@ -1697,6 +1615,7 @@ class VideoService {
       Video(
         id: 'mock_1',
         userId: 'user_1',
+        username: 'vib3_official',
         videoUrl: 'https://example.com/mock_video_1.mp4',
         description: 'Welcome to VIB3! 🎉 Create amazing short videos with our editing tools',
         likesCount: 1250,
@@ -1716,6 +1635,7 @@ class VideoService {
       Video(
         id: 'mock_2',
         userId: 'user_2',
+        username: 'dancer_pro',
         videoUrl: 'https://example.com/mock_video_2.mp4',
         description: 'Dance moves that will blow your mind! 💃 #trending #dance',
         likesCount: 892,
@@ -1735,6 +1655,7 @@ class VideoService {
       Video(
         id: 'mock_3',
         userId: 'user_3',
+        username: 'chef_master',
         videoUrl: 'https://example.com/mock_video_3.mp4',
         description: 'Amazing cooking hack you need to try! 🍳 #cooking #lifehack',
         likesCount: 2340,
@@ -1754,6 +1675,7 @@ class VideoService {
       Video(
         id: 'mock_4',
         userId: 'user_4',
+        username: 'pet_lover',
         videoUrl: 'https://example.com/mock_video_4.mp4',
         description: 'Cute puppy learns new tricks! 🐶 So adorable #pets #cute',
         likesCount: 3456,
@@ -1773,6 +1695,7 @@ class VideoService {
       Video(
         id: 'mock_5',
         userId: 'user_5',
+        username: 'street_artist',
         videoUrl: 'https://example.com/mock_video_5.mp4',
         description: 'Street art masterpiece creation! 🎨 #art #creative #street',
         likesCount: 1876,

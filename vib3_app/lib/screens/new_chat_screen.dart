@@ -436,10 +436,10 @@ class _UserTile extends StatelessWidget {
                 )
               : null,
         ),
-        child: user.profilePicture != null
+        child: user.profileImageUrl != null
             ? ClipOval(
                 child: Image.network(
-                  user.profilePicture!,
+                  user.profileImageUrl!,
                   width: 48,
                   height: 48,
                   fit: BoxFit.cover,
@@ -469,7 +469,7 @@ class _UserTile extends StatelessWidget {
               ),
       ),
       title: Text(
-        user.displayName ?? user.username,
+        user.username,
         style: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.w500,

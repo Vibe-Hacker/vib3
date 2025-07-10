@@ -786,22 +786,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
                   children: [
                     _buildStatItem(
                       icon: Icons.play_arrow,
-                      value: _formatCount(video.viewCount),
+                      value: _formatCount(video.viewsCount),
                     ),
                     const SizedBox(width: 16),
                     _buildStatItem(
                       icon: Icons.favorite,
-                      value: _formatCount(video.likes),
+                      value: _formatCount(video.likesCount),
                     ),
                     const SizedBox(width: 16),
                     _buildStatItem(
                       icon: Icons.comment,
-                      value: _formatCount(video.commentCount),
+                      value: _formatCount(video.commentsCount),
                     ),
                     const SizedBox(width: 16),
                     _buildStatItem(
                       icon: Icons.share,
-                      value: _formatCount(video.shares),
+                      value: _formatCount(video.sharesCount),
                     ),
                   ],
                 ),

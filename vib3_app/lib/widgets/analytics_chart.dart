@@ -141,7 +141,7 @@ class AnalyticsChart extends StatelessWidget {
           ],
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              tooltipBgColor: const Color(0xFF1A1A1A),
+              getTooltipColor: (touchedSpot) => const Color(0xFF1A1A1A),
               tooltipRoundedRadius: 8,
               tooltipPadding: const EdgeInsets.all(8),
               tooltipMargin: 8,

@@ -1,117 +1,87 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
-import '../models/user_model.dart';
+import '../models/user.dart';
 
 class UserService {
-  // Get current user profile with stats
-  static Future<User?> getCurrentUserProfile(String token) async {
+  static Future<List<User>> searchUsers(String query, String token) async {
     try {
+      if (query.isEmpty) return [];
+      
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/auth/me'),
+        Uri.parse('${AppConfig.baseUrl}/api/users/search?q=${Uri.encodeComponent(query)}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
-
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data['user'] != null) {
-          final userData = data['user'];
-          
-          // Ensure we have the totalLikes field from server
-          return User.fromJson({
-            ...userData,
-            'totalLikes': userData['totalLikes'] ?? 0,
-          });
-        }
+        final List<dynamic> usersJson = data['users'] ?? data ?? [];
+        return usersJson.map((json) => User.fromJson(json)).toList();
       }
-      return null;
+      
+      return [];
     } catch (e) {
-      print('Error getting current user profile: $e');
-      return null;
+      print('Error searching users: $e');
+      return [];
     }
   }
-
-  // Update user stats after certain actions
-  static Future<void> updateUserStats(String token) async {
+  
+  static Future<User?> getUserById(String userId, String token) async {
     try {
-      // Fetch updated user data from server
-      final user = await getCurrentUserProfile(token);
-      if (user != null) {
-        // The auth provider will be updated by the caller
-        print('User stats fetched: followers=${user.followers}, following=${user.following}, totalLikes=${user.totalLikes}');
-      }
-    } catch (e) {
-      print('Error updating user stats: $e');
-    }
-  }
-
-  // Get user profile by ID (for viewing other users)
-  static Future<User?> getUserProfile(String userId, String token) async {
-    try {
-      // For now, we'll use the videos endpoint to get user data
-      // In the future, the backend should have a dedicated user profile endpoint
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/videos?userId=$userId'),
+        Uri.parse('${AppConfig.baseUrl}/api/users/$userId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
-
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data['videos'] != null && data['videos'].isNotEmpty) {
-          // Extract user data from the first video
-          final firstVideo = data['videos'][0];
-          if (firstVideo['user'] != null) {
-            return User.fromJson(firstVideo['user']);
-          }
-        }
+        return User.fromJson(data);
       }
+      
       return null;
     } catch (e) {
-      print('Error getting user profile: $e');
+      print('Error getting user: $e');
       return null;
     }
   }
-
-  // Update profile (bio, display name, etc.)
-  static Future<bool> updateProfile(String token, Map<String, dynamic> updates) async {
+  
+  static Future<bool> followUser(String userId, String token) async {
     try {
-      // This endpoint needs to be implemented on the backend
-      final response = await http.put(
-        Uri.parse('${AppConfig.baseUrl}/api/user/profile'),
+      final response = await http.post(
+        Uri.parse('${AppConfig.baseUrl}/api/users/$userId/follow'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode(updates),
       );
-
+      
       return response.statusCode == 200;
     } catch (e) {
-      print('Error updating profile: $e');
+      print('Error following user: $e');
       return false;
     }
   }
-
-  // Get user's total likes count
-  static Future<int> getUserTotalLikes(String userId, String token) async {
+  
+  static Future<bool> unfollowUser(String userId, String token) async {
     try {
-      // The /api/auth/me endpoint already calculates totalLikes
-      if (userId == 'current') {
-        final user = await getCurrentUserProfile(token);
-        return user?.totalLikes ?? 0;
-      }
+      final response = await http.delete(
+        Uri.parse('${AppConfig.baseUrl}/api/users/$userId/follow'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
       
-      // For other users, we'd need a dedicated endpoint
-      return 0;
+      return response.statusCode == 200;
     } catch (e) {
-      print('Error getting user total likes: $e');
-      return 0;
+      print('Error unfollowing user: $e');
+      return false;
     }
   }
 }

@@ -50,6 +50,8 @@ dependencies:
   flutter_dotenv: ^5.1.0
   get_it: ^8.0.2  # Dependency injection for clean architecture
   fl_chart: ^0.68.0  # For analytics charts
+  timeago: ^3.6.1  # Time formatting
+  intl: ^0.19.0  # Internationalization
   # ffmpeg_kit_flutter_min: ^6.0.3  # Temporarily disabled for testing
 
 dev_dependencies:

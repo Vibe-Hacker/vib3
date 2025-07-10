@@ -756,7 +756,7 @@ class _CommentsSheetState extends State<CommentsSheet> {
                       ],
                       const SizedBox(width: 8),
                       Text(
-                        timeago.format(comment.createdAt),
+                        timeago.format(comment.createdAt, locale: 'en'),
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 12,

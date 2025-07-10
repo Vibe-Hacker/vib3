@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/video.dart';
 import '../services/video_service.dart';
 import '../services/user_service.dart';
+import '../widgets/video_feed.dart'; // For FeedType enum
 
 class VideoProvider extends ChangeNotifier {
   final List<Video> _videos = [];
@@ -69,74 +70,68 @@ class VideoProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadMoreVideos(String token) async {
+  Future<void> loadMoreVideos(String token, {FeedType? feedType}) async {
     if (_isLoadingMore) return;
 
     try {
-      print('VideoProvider: Loading more videos (cycling existing ${_videos.length} videos)...');
+      print('VideoProvider: Loading more videos...');
       _isLoadingMore = true;
       _error = null;
       notifyListeners();
 
-      // Try to get more videos from server with different strategies
+      // Get more videos based on feed type
       List<Video> newVideos = [];
       
-      // Strategy 1: Try pagination
-      newVideos = await VideoService.getVideosPage(token, _currentPage, _pageSize);
-      print('VideoProvider: Page $_currentPage returned ${newVideos.length} videos');
+      // For now, recycle existing videos for infinite scroll
+      // In a real implementation, you'd load from server with pagination
+      List<Video> currentVideos;
       
-      // Strategy 2: If no new videos and it's early pages, try different limits
-      if (newVideos.isEmpty && _currentPage < 3) {
-        print('VideoProvider: Trying with different page size...');
-        newVideos = await VideoService.getVideosPage(token, _currentPage, 100);
-        print('VideoProvider: Larger page size returned ${newVideos.length} videos');
+      switch (feedType) {
+        case FeedType.forYou:
+          currentVideos = _forYouVideos;
+          break;
+        case FeedType.following:
+          currentVideos = _followingVideos;
+          break;
+        case FeedType.friends:
+          currentVideos = _friendsVideos;
+          break;
+        default:
+          currentVideos = _videos;
       }
       
-      // Strategy 3: If still no videos, try getting all videos again (server might not support pagination)
-      if (newVideos.isEmpty && _currentPage < 2) {
-        print('VideoProvider: Trying to get all videos (server might not support pagination)...');
-        newVideos = await VideoService.getAllVideos(token);
-        print('VideoProvider: getAllVideos returned ${newVideos.length} videos');
-      }
-      
-      if (newVideos.isNotEmpty) {
-        // Add new unique videos
-        int addedCount = 0;
-        for (final video in newVideos) {
-          if (!_videos.any((existing) => existing.id == video.id)) {
-            _videos.add(video);
-            addedCount++;
-          }
-        }
-        print('VideoProvider: Added $addedCount new unique videos');
-        _currentPage++;
+      if (currentVideos.isNotEmpty) {
+        // For infinite scroll, duplicate existing videos
+        // In production, you'd fetch new videos from server
+        final recycledVideos = List<Video>.from(currentVideos);
         
-        // Only recycle if we truly have no new content after multiple attempts
-        if (addedCount == 0 && _currentPage > 2) {
-          print('VideoProvider: No new unique videos found, starting to recycle');
-          final existingVideos = List<Video>.from(_videos.take(_videos.length ~/ 2));
-          _videos.addAll(existingVideos);
+        // Shuffle for variety
+        recycledVideos.shuffle();
+        
+        // Add to appropriate list
+        switch (feedType) {
+          case FeedType.forYou:
+            _forYouVideos.addAll(recycledVideos);
+            break;
+          case FeedType.following:
+            _followingVideos.addAll(recycledVideos);
+            break;
+          case FeedType.friends:
+            _friendsVideos.addAll(recycledVideos);
+            break;
+          default:
+            _videos.addAll(recycledVideos);
         }
-      } else if (_videos.isNotEmpty) {
-        // Only recycle as last resort
-        final existingVideos = List<Video>.from(_videos);
-        _videos.addAll(existingVideos);
-        print('VideoProvider: No new videos available, recycling ${existingVideos.length} videos');
+        
+        print('VideoProvider: Recycled ${recycledVideos.length} videos for infinite scroll');
+        _debugInfo = 'Total videos: ${currentVideos.length} (infinite scroll enabled)';
       }
       
-      _debugInfo = 'Total videos: ${_videos.length} (cycling for infinite scroll)';
-      _hasMoreVideos = true; // Always true for infinite cycling
-      
+      _hasMoreVideos = true; // Always true for infinite scroll
       notifyListeners();
+      
     } catch (e) {
       print('VideoProvider: Error loading more videos: $e');
-      // Don't show error for infinite scroll - just keep cycling existing videos
-      if (_videos.isNotEmpty) {
-        final existingVideos = List<Video>.from(_videos);
-        _videos.addAll(existingVideos);
-        _debugInfo = 'Cycling ${existingVideos.length} videos (server error)';
-        notifyListeners();
-      }
     } finally {
       _isLoadingMore = false;
       notifyListeners();
@@ -177,7 +172,7 @@ class VideoProvider extends ChangeNotifier {
       notifyListeners();
 
       // For You uses the main feed algorithm
-      final videos = await VideoService.getAllVideos(token);
+      final videos = await VideoService.getAllVideos(token, feed: 'foryou');
       _forYouVideos.clear();
       _forYouVideos.addAll(videos);
       
@@ -188,9 +183,12 @@ class VideoProvider extends ChangeNotifier {
       _debugInfo = 'Loaded ${videos.length} Vib3 Pulse videos';
       
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('VideoProvider: Error loading Vib3 Pulse videos: $e');
-      _error = 'Failed to load videos: $e';
+      print('Stack trace: $stackTrace');
+      _error = e.toString();
+      _forYouVideos.clear();
+      _videos.clear();
       notifyListeners();
     } finally {
       _isLoading = false;
@@ -206,7 +204,7 @@ class VideoProvider extends ChangeNotifier {
       notifyListeners();
 
       // Following feed - only videos from accounts I follow
-      final videos = await VideoService.getFollowingVideos(token);
+      final videos = await VideoService.getFollowingVideos(token, offset: 0, limit: 20);
       _followingVideos.clear();
       _followingVideos.addAll(videos);
       
@@ -217,9 +215,12 @@ class VideoProvider extends ChangeNotifier {
       _debugInfo = 'Loaded ${videos.length} Vib3 Connect videos';
       
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('VideoProvider: Error loading Vib3 Connect videos: $e');
-      _error = 'Failed to load videos: $e';
+      print('Stack trace: $stackTrace');
+      _error = e.toString();
+      _followingVideos.clear();
+      _videos.clear();
       notifyListeners();
     } finally {
       _isLoading = false;
@@ -264,7 +265,7 @@ class VideoProvider extends ChangeNotifier {
       notifyListeners();
 
       // Friends feed - only videos from mutual followers
-      final videos = await VideoService.getFriendsVideos(token);
+      final videos = await VideoService.getFriendsVideos(token, offset: 0, limit: 20);
       _friendsVideos.clear();
       _friendsVideos.addAll(videos);
       
@@ -275,9 +276,12 @@ class VideoProvider extends ChangeNotifier {
       _debugInfo = 'Loaded ${videos.length} Vib3 Circle videos';
       
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('VideoProvider: Error loading Vib3 Circle videos: $e');
-      _error = 'Failed to load videos: $e';
+      print('Stack trace: $stackTrace');
+      _error = e.toString();
+      _friendsVideos.clear();
+      _videos.clear();
       notifyListeners();
     } finally {
       _isLoading = false;
@@ -427,6 +431,7 @@ class VideoProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       print('VideoProvider: Error initializing likes and follows: $e');
+      // Don't set error state here as it's not critical for video loading
     }
   }
 }
