@@ -11,6 +11,8 @@ import 'qr_code_screen.dart';
 import 'analytics_screen.dart';
 import 'add_friends_screen.dart';
 import 'messages_screen.dart';
+import 'profile_video_viewer.dart';
+import 'collections_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId; // Optional userId to view other users' profiles
@@ -596,10 +598,41 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   void _playVideo(Video video) {
-    // TODO: Implement video player navigation
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Playing: ${video.description ?? 'Video'}')),
-    );
+    // Find the index of this video in the current list
+    final currentVideos = _getCurrentVideoList();
+    final videoIndex = currentVideos.indexOf(video);
+    
+    if (videoIndex != -1) {
+      // Get the username for display
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authProvider.currentUser;
+      final username = user?.username ?? 'unknown';
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfileVideoViewer(
+            videos: currentVideos,
+            initialIndex: videoIndex,
+            username: username,
+          ),
+        ),
+      );
+    }
+  }
+  
+  List<Video> _getCurrentVideoList() {
+    // Return the appropriate video list based on current tab
+    switch (_tabController.index) {
+      case 0:
+        return userVideos;
+      case 1:
+        return starredVideos;
+      case 2:
+        return privateVideos;
+      default:
+        return userVideos;
+    }
   }
 
   void _showOptionsMenu(BuildContext context) {
@@ -668,7 +701,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               title: 'Saved',
               onTap: () {
                 Navigator.pop(context);
-                // Navigate to saved videos
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CollectionsScreen(),
+                  ),
+                );
               },
             ),
             _buildMenuItem(

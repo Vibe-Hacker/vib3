@@ -24,6 +24,7 @@ import 'double_tap_like_animation.dart';
 import 'comments_sheet.dart';
 import 'swipe_gesture_detector.dart';
 import 'share_sheet.dart';
+import 'save_video_dialog.dart';
 
 enum FeedType { forYou, following, friends }
 
@@ -376,13 +377,11 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       return;
     }
     
-    // TODO: Implement save video API call
-    HapticFeedback.mediumImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Video saved to your collection!'),
-        backgroundColor: Color(0xFF00CED1),
-      ),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => SaveVideoDialog(video: video),
     );
   }
   
@@ -710,6 +709,34 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           ),
           child: const Icon(
             Icons.share,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+      ),
+      
+      // Save Button - Draggable
+      _buildDraggableButton(
+        buttonId: 'save',
+        onTap: () => _saveVideo(video),
+        child: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF9370DB), Color(0xFF8B7FDB)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF9370DB).withOpacity(0.5),
+                blurRadius: 15,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.bookmark_border,
             color: Colors.white,
             size: 28,
           ),
