@@ -32,11 +32,15 @@ class VideoService {
       return (_cache[cacheKey]!['data'] as List<Video>);
     }
     
+    print('🔍 VideoService.getAllVideos called with:');
+    print('   Token: ${token.length > 10 ? '${token.substring(0, 10)}...' : token}');
+    print('   Feed: $feed');
+    print('   URL: ${AppConfig.baseUrl}/api/videos?limit=20&page=0&feed=$feed');
     
     // First, let's test with a simple direct approach
     try {
       final testResponse = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=20&page=0&feed=$feed'),
+        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=50&page=0&feed=$feed'),
         headers: {
           'Accept': 'application/json',
           if (token != 'no-token') 'Authorization': 'Bearer $token',
@@ -48,14 +52,17 @@ class VideoService {
         if (testResponse.body.trim().startsWith('<') || testResponse.body.contains('<!DOCTYPE')) {
           print('❌ Video endpoint returned HTML instead of JSON');
           print('📄 HTML Response: ${testResponse.body.substring(0, 200)}...');
-          print('🔧 Backend appears to be down or misconfigured - using mock data');
+          print('🔧 Backend appears to be down or misconfigured');
           BackendHealthService.reportHtmlResponse('/api/videos');
-          return _getMockVideos();
+          throw Exception('Backend returned HTML instead of JSON - server may be down');
         }
         
         final data = jsonDecode(testResponse.body);
+        print('📡 Response data keys: ${data.keys}');
+        
         if (data['videos'] != null) {
           final List<dynamic> videosJson = data['videos'];
+          print('📹 Found ${videosJson.length} videos in response');
           
           // Create a simple list without complex parsing to see if we get all videos
           final videos = <Video>[];
@@ -142,7 +149,7 @@ class VideoService {
     try {
       // Try the main endpoint with high limit first
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=20&feed=$feed'),
+        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=50&feed=$feed'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -185,17 +192,31 @@ class VideoService {
             
             print('🎯 Successfully parsed ${videos.length} videos (${parseErrors} parse errors)');
             return videos;
+          } else {
+            // No videos in response
+            print('⚠️ No videos array in response');
+            return [];
           }
         }
+      } else {
+        // Non-200 status code
+        print('❌ Main endpoint failed with status ${response.statusCode}');
+        print('❌ Response body: ${response.body}');
+        throw Exception('API returned status ${response.statusCode}: ${response.body}');
       }
       
-      print('❌ Main endpoint failed, falling back to mock data');
-      return _getMockVideos();
-      
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Error in getAllVideos: $e');
+      print('📍 Error type: ${e.runtimeType}');
+      print('📍 Stack trace: $stackTrace');
       print('🔧 Using mock data due to server error');
-      return _getMockVideos();
+      
+      // Return empty list for following/friends feeds on error
+      if (feed == 'following' || feed == 'friends') {
+        return [];
+      }
+      // For other feeds, also return empty list instead of mock data
+      return [];
     }
   }
   
@@ -1780,6 +1801,136 @@ class VideoService {
     } catch (e) {
       print('Error getting discover videos: $e');
       return getAllVideos(token);
+    }
+  }
+  
+  static Future<List<Video>> getFollowingVideos(String token, {int offset = 0, int limit = 20}) async {
+    try {
+      final queryParams = {
+        'offset': offset.toString(),
+        'limit': limit.toString(),
+        'sort': 'newest', // Chronological order for following feed
+      };
+      
+      final uri = Uri.parse('${AppConfig.baseUrl}/api/videos/following')
+          .replace(queryParameters: queryParams);
+      
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> videosJson = data['videos'] ?? data ?? [];
+        
+        print('VideoService: getFollowingVideos - loaded ${videosJson.length} videos from followed users');
+        
+        final videos = videosJson.map((json) => Video.fromJson(json)).toList();
+        
+        // Sort by creation date for chronological order
+        videos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        
+        return videos;
+      } else if (response.statusCode == 404) {
+        // Endpoint might not exist yet, fall back to filtering all videos
+        print('VideoService: getFollowingVideos - endpoint not found, using fallback filter');
+        
+        // Get all videos and filter by followed users
+        final allVideos = await getAllVideos(token);
+        
+        // TODO: Filter by followed users once we have that data
+        // For now, return a subset of videos as a demo
+        return allVideos.take(limit).toList();
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error getting following videos: $e');
+      // Fall back to getting all videos
+      final allVideos = await getAllVideos(token);
+      return allVideos.take(limit).toList();
+    }
+  }
+  
+  static Future<List<Video>> getFriendsVideos(String token, {int offset = 0, int limit = 20}) async {
+    try {
+      final queryParams = {
+        'offset': offset.toString(),
+        'limit': limit.toString(),
+        'sort': 'newest',
+      };
+      
+      final uri = Uri.parse('${AppConfig.baseUrl}/api/videos/friends')
+          .replace(queryParameters: queryParams);
+      
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> videosJson = data['videos'] ?? data ?? [];
+        
+        print('VideoService: getFriendsVideos - loaded ${videosJson.length} videos from friends');
+        
+        final videos = videosJson.map((json) => Video.fromJson(json)).toList();
+        
+        // Sort by creation date for chronological order
+        videos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        
+        return videos;
+      } else if (response.statusCode == 404) {
+        // Endpoint might not exist yet
+        print('VideoService: getFriendsVideos - endpoint not found');
+        return [];
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error getting friends videos: $e');
+      return [];
+    }
+  }
+  
+  static Future<List<String>> getUserFollowedUsers(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/user/following'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> followingList = data['following'] ?? [];
+        
+        // Extract user IDs from the following list
+        final followedUserIds = followingList
+            .map((item) => item is String ? item : item['userId']?.toString() ?? '')
+            .where((id) => id.isNotEmpty)
+            .toList();
+        
+        print('VideoService: getUserFollowedUsers - user follows ${followedUserIds.length} users');
+        return followedUserIds;
+      } else if (response.statusCode == 404) {
+        print('VideoService: getUserFollowedUsers - endpoint not found');
+        return [];
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error getting followed users: $e');
+      return [];
     }
   }
 }
