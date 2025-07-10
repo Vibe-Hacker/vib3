@@ -10,7 +10,7 @@ import 'edit_profile_screen.dart';
 import 'qr_code_screen.dart';
 import 'analytics_screen.dart';
 import 'add_friends_screen.dart';
-import 'messages_screen.dart';
+import 'dm_messages_screen.dart';
 import 'profile_video_viewer.dart';
 import 'collections_screen.dart';
 
@@ -206,7 +206,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const MessagesScreen()),
+                MaterialPageRoute(builder: (context) => const DMMessagesScreen()),
               );
             },
           ),
