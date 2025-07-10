@@ -2558,7 +2558,7 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
             });
         }
 
-        const { title, description, username, userId } = req.body;
+        const { title, description, username, userId, hashtags, musicName } = req.body;
 
         console.log(`🎬 Processing video upload: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB)`);
         console.log('🔍 Upload user association debug:', {
@@ -2693,6 +2693,8 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
                 views: 0,
                 likes: [],
                 comments: [],
+                hashtags: hashtags ? (Array.isArray(hashtags) ? hashtags : hashtags.split(',').map(tag => tag.trim()).filter(tag => tag)) : [],
+                musicName: musicName || '',
                 createdAt: new Date(),
                 updatedAt: new Date()
             };
@@ -2756,7 +2758,7 @@ app.post('/api/videos', requireAuth, async (req, res) => {
         return res.status(503).json({ error: 'Database not connected' });
     }
     
-    const { title, description, videoUrl, thumbnailUrl, duration, hashtags, privacy = 'public' } = req.body;
+    const { title, description, videoUrl, thumbnailUrl, duration, hashtags, musicName, privacy = 'public' } = req.body;
     
     if (!title || !videoUrl) {
         return res.status(400).json({ error: 'Title and video URL required' });
@@ -2781,6 +2783,7 @@ app.post('/api/videos', requireAuth, async (req, res) => {
             thumbnailUrl: thumbnailUrl || '',
             duration: duration || 0,
             hashtags: parsedHashtags,
+            musicName: musicName || '',
             privacy,
             views: 0,
             status: 'published',
