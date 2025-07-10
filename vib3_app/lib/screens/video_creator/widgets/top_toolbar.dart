@@ -4,13 +4,11 @@ import '../video_creator_screen.dart';
 class TopToolbar extends StatelessWidget {
   final CreatorMode currentMode;
   final VoidCallback onBack;
-  final VoidCallback onNext;
   
   const TopToolbar({
     super.key,
     required this.currentMode,
     required this.onBack,
-    required this.onNext,
   });
   
   @override
@@ -55,18 +53,8 @@ class TopToolbar extends StatelessWidget {
             ),
           ),
           
-          // Next button
-          TextButton(
-            onPressed: onNext,
-            child: const Text(
-              'Next',
-              style: TextStyle(
-                color: Color(0xFF00CED1),
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+          // Empty space to balance the layout
+          const SizedBox(width: 48),
         ],
       ),
     );

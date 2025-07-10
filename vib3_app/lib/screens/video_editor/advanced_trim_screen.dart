@@ -342,6 +342,26 @@ class _AdvancedTrimScreenState extends State<AdvancedTrimScreen> {
                                   ),
                                 ],
                               ),
+                              
+                              const SizedBox(height: 16),
+                              
+                              // Delete button
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: _deleteSelectedSegment,
+                                  icon: const Icon(Icons.delete),
+                                  label: const Text('Delete Selected Segment'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -622,6 +642,55 @@ class _AdvancedTrimScreenState extends State<AdvancedTrimScreen> {
         content: Text('Trim saved'),
         backgroundColor: Color(0xFF00CED1),
       ),
+    );
+  }
+  
+  void _deleteSelectedSegment() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          title: const Text(
+            'Delete Segment',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Text(
+            'Delete the segment from ${_formatDuration(_startTrim)} to ${_formatDuration(_endTrim)}?\n\nThis will remove this portion from your video.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white54),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                Navigator.pop(context, {
+                  'action': 'delete',
+                  'startTrim': _startTrim,
+                  'endTrim': _endTrim,
+                });
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Segment deleted'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              },
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

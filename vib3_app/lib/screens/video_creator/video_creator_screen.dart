@@ -17,6 +17,7 @@ import 'providers/creation_state_provider.dart';
 import 'widgets/working_video_preview.dart';
 import 'widgets/fixed_bottom_toolbar.dart';
 import 'widgets/top_toolbar.dart';
+import '../publish_screen.dart';
 
 /// Main Video Creator Screen - TikTok-style simplicity with all features
 class VideoCreatorScreen extends StatefulWidget {
@@ -208,29 +209,6 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                       });
                     }
                   },
-                  onNext: () {
-                    print('TopToolbar Next pressed - Current mode: $_currentMode');
-                    if (_currentMode == CreatorMode.edit) {
-                      // Only navigate to upload from edit mode
-                      print('Navigating to upload from edit mode');
-                      _navigateToUpload();
-                    } else {
-                      // From other modes, return to edit mode
-                      print('Returning to edit mode from $_currentMode');
-                      setState(() {
-                        _currentMode = CreatorMode.edit;
-                      });
-                      
-                      // Show confirmation
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(_getConfirmationMessage()),
-                          duration: const Duration(seconds: 1),
-                          backgroundColor: const Color(0xFF00CED1),
-                        ),
-                      );
-                    }
-                  },
                 ),
               ),
             
@@ -330,16 +308,17 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                     print('Export complete, navigating to upload with path: $exportedPath');
                     Navigator.pop(dialogContext); // Close loading dialog
                     
-                    // Navigate to upload screen
-                    Navigator.pushNamed(
+                    // Navigate to publish screen
+                    Navigator.push(
                       context,
-                      '/upload',
-                      arguments: {
-                        'videoPath': exportedPath,
-                        'musicName': creationState.backgroundMusicName,
-                      },
+                      MaterialPageRoute(
+                        builder: (context) => PublishScreen(
+                          videoPath: exportedPath,
+                          musicName: creationState.backgroundMusicName,
+                        ),
+                      ),
                     ).then((_) {
-                      print('Navigation to upload completed');
+                      print('Navigation to publish completed');
                     }).catchError((error) {
                       print('Navigation error: $error');
                     });
