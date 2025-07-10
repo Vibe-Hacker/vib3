@@ -382,7 +382,7 @@ class _MusicModuleState extends State<MusicModule>
                   } else {
                     creationState.setBackgroundMusic(
                       track.audioUrl,
-                      musicName: track.name,
+                      musicName: '${track.title} - ${track.artist}',
                     );
                     await _playMusicPreview(track);
                   }
