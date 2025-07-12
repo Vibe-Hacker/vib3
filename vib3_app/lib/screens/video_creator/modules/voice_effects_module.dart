@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:io';
 import '../providers/creation_state_provider.dart';
+import '../../../services/voice_effects_processor.dart';
 
 class VoiceEffectsModule extends StatefulWidget {
   const VoiceEffectsModule({super.key});

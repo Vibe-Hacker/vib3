@@ -5880,6 +5880,199 @@ app.use('*', (req, res) => {
     });
 });
 
+// ================ MUSIC API ENDPOINTS ================
+
+// Get trending music
+app.get('/api/music/trending', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+        
+        console.log(`🎵 Getting trending music - page: ${page}, limit: ${limit}`);
+        
+        if (!db) {
+            return res.json({ tracks: _getMockTrendingMusic() });
+        }
+        
+        // Get popular music tracks from database
+        const tracks = await db.collection('music_tracks')
+            .find({ isActive: true })
+            .sort({ usageCount: -1, createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+        
+        if (tracks.length === 0) {
+            // Seed with initial trending tracks
+            await _seedMusicDatabase();
+            const seededTracks = await db.collection('music_tracks')
+                .find({ isActive: true })
+                .sort({ usageCount: -1 })
+                .limit(limit)
+                .toArray();
+            return res.json({ tracks: seededTracks });
+        }
+        
+        res.json({ tracks });
+    } catch (error) {
+        console.error('Error getting trending music:', error);
+        res.json({ tracks: _getMockTrendingMusic() });
+    }
+});
+
+// Search music
+app.get('/api/music/search', async (req, res) => {
+    try {
+        const query = req.query.q || '';
+        const category = req.query.category;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+        
+        console.log(`🔍 Searching music: "${query}" category: ${category}`);
+        
+        if (!db) {
+            return res.json({ tracks: _getMockSearchResults(query) });
+        }
+        
+        const searchFilter = {
+            isActive: true,
+            $or: [
+                { title: { $regex: query, $options: 'i' } },
+                { artist: { $regex: query, $options: 'i' } },
+                { tags: { $regex: query, $options: 'i' } }
+            ]
+        };
+        
+        if (category && category !== 'All') {
+            searchFilter.category = category;
+        }
+        
+        const tracks = await db.collection('music_tracks')
+            .find(searchFilter)
+            .sort({ usageCount: -1, createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+        
+        res.json({ tracks });
+    } catch (error) {
+        console.error('Error searching music:', error);
+        res.json({ tracks: _getMockSearchResults(req.query.q || '') });
+    }
+});
+
+// Get music by category
+app.get('/api/music/category/:category', async (req, res) => {
+    try {
+        const category = req.params.category;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+        
+        console.log(`🎼 Getting music for category: ${category}`);
+        
+        if (!db) {
+            return res.json({ tracks: _getMockCategoryMusic(category) });
+        }
+        
+        const tracks = await db.collection('music_tracks')
+            .find({ category, isActive: true })
+            .sort({ usageCount: -1, createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+        
+        res.json({ tracks });
+    } catch (error) {
+        console.error('Error getting category music:', error);
+        res.json({ tracks: _getMockCategoryMusic(req.params.category) });
+    }
+});
+
+// Helper functions for music
+function _getMockTrendingMusic() {
+    return [
+        {
+            _id: 'trending_1',
+            title: 'Summer Vibes',
+            artist: 'VIB3 Music',
+            duration: 45,
+            url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+            thumbnailUrl: '',
+            category: 'Trending',
+            isOriginal: true,
+            usageCount: 15420,
+            isPopular: true,
+            tags: ['summer', 'upbeat', 'trending']
+        },
+        {
+            _id: 'trending_2',
+            title: 'Lo-Fi Chill',
+            artist: 'VIB3 Music',
+            duration: 60,
+            url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+            thumbnailUrl: '',
+            category: 'Chill',
+            isOriginal: true,
+            usageCount: 8932,
+            isPopular: true,
+            tags: ['lofi', 'chill', 'relaxing']
+        }
+    ];
+}
+
+function _getMockSearchResults(query) {
+    const allTracks = _getMockTrendingMusic();
+    return allTracks.filter(track => 
+        track.title.toLowerCase().includes(query.toLowerCase()) ||
+        track.artist.toLowerCase().includes(query.toLowerCase()) ||
+        track.tags.some(tag => tag.includes(query.toLowerCase()))
+    );
+}
+
+function _getMockCategoryMusic(category) {
+    const categoryTracks = {
+        'Trending': _getMockTrendingMusic(),
+        'Pop': [
+            { _id: 'pop_1', title: 'Pop Anthem', artist: 'VIB3 Pop', category: 'Pop', usageCount: 5432 }
+        ]
+    };
+    return categoryTracks[category] || [];
+}
+
+async function _seedMusicDatabase() {
+    if (!db) return;
+    
+    const seedTracks = [
+        {
+            title: 'Upbeat Summer Vibes',
+            artist: 'VIB3 Music',
+            description: 'Perfect for beach and summer content',
+            category: 'Trending',
+            url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+            duration: 45,
+            isOriginal: true,
+            isActive: true,
+            usageCount: Math.floor(Math.random() * 20000) + 5000,
+            playCount: Math.floor(Math.random() * 50000) + 10000,
+            createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
+            tags: ['summer', 'upbeat', 'trending', 'beach']
+        }
+    ];
+    
+    try {
+        const existing = await db.collection('music_tracks').countDocuments();
+        if (existing === 0) {
+            await db.collection('music_tracks').insertMany(seedTracks);
+            console.log('✅ Music database seeded');
+        }
+    } catch (error) {
+        console.error('Error seeding music database:', error);
+    }
+}
+
 // Error handling - MUST be last middleware BEFORE server.listen
 app.use((err, req, res, next) => {
     console.error('ERROR CAUGHT:', err.message);

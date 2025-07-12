@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
 import '../models/video.dart';
 import 'qr_share_dialog.dart';
 
@@ -196,87 +200,216 @@ class _ShareSheetState extends State<ShareSheet> with SingleTickerProviderStateM
     );
   }
   
-  void _shareToSystem() {
-    // TODO: Implement system share sheet
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Opening share menu...')),
-    );
+  void _shareToSystem() async {
+    final videoUrl = 'https://vib3.app/v/${widget.video.id}';
+    final shareText = '${widget.video.description ?? "Check out this VIB3!"}\n\n$videoUrl';
+    
+    try {
+      await Share.share(
+        shareText,
+        subject: 'Check out this VIB3!',
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error sharing: $e')),
+      );
+    }
   }
   
-  void _shareToWhatsApp() {
-    // TODO: Implement WhatsApp share
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sharing to WhatsApp...')),
-    );
+  void _shareToWhatsApp() async {
+    final videoUrl = 'https://vib3.app/v/${widget.video.id}';
+    final shareText = '${widget.video.description ?? "Check out this VIB3!"} $videoUrl';
+    final whatsappUrl = 'whatsapp://send?text=${Uri.encodeComponent(shareText)}';
+    
+    try {
+      if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
+        await launchUrl(Uri.parse(whatsappUrl));
+        Navigator.pop(context);
+      } else {
+        // Fallback to web WhatsApp
+        final webUrl = 'https://wa.me/?text=${Uri.encodeComponent(shareText)}';
+        await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('WhatsApp not available')),
+      );
+    }
   }
   
-  void _shareToInstagram() {
-    // TODO: Implement Instagram share
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sharing to Instagram...')),
-    );
+  void _shareToInstagram() async {
+    final videoUrl = 'https://vib3.app/v/${widget.video.id}';
+    try {
+      // Instagram doesn't support direct URL sharing, but we can open the app
+      await launchUrl(Uri.parse('instagram://'), mode: LaunchMode.externalApplication);
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Opened Instagram - share manually: $videoUrl')),
+      );
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Instagram not available')),
+      );
+    }
   }
   
-  void _shareToTwitter() {
-    // TODO: Implement Twitter share
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sharing to Twitter...')),
-    );
+  void _shareToTwitter() async {
+    final videoUrl = 'https://vib3.app/v/${widget.video.id}';
+    final text = '${widget.video.description ?? "Check out this VIB3!"} $videoUrl #VIB3';
+    final twitterUrl = 'twitter://post?message=${Uri.encodeComponent(text)}';
+    
+    try {
+      if (await canLaunchUrl(Uri.parse(twitterUrl))) {
+        await launchUrl(Uri.parse(twitterUrl));
+      } else {
+        // Fallback to web Twitter
+        final webUrl = 'https://twitter.com/intent/tweet?text=${Uri.encodeComponent(text)}';
+        await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+      }
+      Navigator.pop(context);
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Twitter not available')),
+      );
+    }
   }
   
-  void _shareToFacebook() {
-    // TODO: Implement Facebook share
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sharing to Facebook...')),
-    );
+  void _shareToFacebook() async {
+    final videoUrl = 'https://vib3.app/v/${widget.video.id}';
+    final facebookUrl = 'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(videoUrl)}';
+    
+    try {
+      await launchUrl(Uri.parse(facebookUrl), mode: LaunchMode.externalApplication);
+      Navigator.pop(context);
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Facebook not available')),
+      );
+    }
   }
   
-  void _shareToSnapchat() {
-    // TODO: Implement Snapchat share
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sharing to Snapchat...')),
-    );
+  void _shareToSnapchat() async {
+    final videoUrl = 'https://vib3.app/v/${widget.video.id}';
+    try {
+      await launchUrl(Uri.parse('snapchat://'), mode: LaunchMode.externalApplication);
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Opened Snapchat - share manually: $videoUrl')),
+      );
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Snapchat not available')),
+      );
+    }
   }
   
-  void _shareToTelegram() {
-    // TODO: Implement Telegram share
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sharing to Telegram...')),
-    );
+  void _shareToTelegram() async {
+    final videoUrl = 'https://vib3.app/v/${widget.video.id}';
+    final shareText = '${widget.video.description ?? "Check out this VIB3!"} $videoUrl';
+    final telegramUrl = 'tg://msg?text=${Uri.encodeComponent(shareText)}';
+    
+    try {
+      if (await canLaunchUrl(Uri.parse(telegramUrl))) {
+        await launchUrl(Uri.parse(telegramUrl));
+      } else {
+        // Fallback to web Telegram
+        final webUrl = 'https://t.me/share/url?url=${Uri.encodeComponent(videoUrl)}&text=${Uri.encodeComponent(widget.video.description ?? "Check out this VIB3!")}';
+        await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+      }
+      Navigator.pop(context);
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Telegram not available')),
+      );
+    }
   }
   
-  void _shareViaSMS() {
-    // TODO: Implement SMS share
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Opening SMS...')),
-    );
+  void _shareViaSMS() async {
+    final videoUrl = 'https://vib3.app/v/${widget.video.id}';
+    final shareText = '${widget.video.description ?? "Check out this VIB3!"} $videoUrl';
+    final smsUrl = 'sms:?body=${Uri.encodeComponent(shareText)}';
+    
+    try {
+      await launchUrl(Uri.parse(smsUrl));
+      Navigator.pop(context);
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('SMS not available')),
+      );
+    }
   }
   
-  void _shareViaEmail() {
-    // TODO: Implement email share
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Opening email...')),
-    );
+  void _shareViaEmail() async {
+    final videoUrl = 'https://vib3.app/v/${widget.video.id}';
+    final subject = 'Check out this VIB3!';
+    final body = '${widget.video.description ?? "Check out this amazing VIB3!"}\n\n$videoUrl';
+    final emailUrl = 'mailto:?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
+    
+    try {
+      await launchUrl(Uri.parse(emailUrl));
+      Navigator.pop(context);
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email not available')),
+      );
+    }
   }
   
-  void _saveVideo() {
-    // TODO: Implement video download
+  void _saveVideo() async {
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Saving video...'),
-        backgroundColor: Color(0xFF9370DB),
-      ),
-    );
+    
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Downloading video...'),
+          backgroundColor: Color(0xFF9370DB),
+        ),
+      );
+      
+      // Get application documents directory
+      final appDir = await getApplicationDocumentsDirectory();
+      final videoFileName = 'vib3_${widget.video.id}.mp4';
+      final savePath = '${appDir.path}/$videoFileName';
+      
+      // Download the video file
+      final dio = Dio();
+      await dio.download(
+        widget.video.videoUrl!,
+        savePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            final progress = (received / total * 100).toStringAsFixed(0);
+            print('Download progress: $progress%');
+          }
+        },
+      );
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Video saved to: $savePath'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save video: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
   
   void _reportVideo() {

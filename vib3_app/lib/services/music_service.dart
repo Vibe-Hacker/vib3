@@ -41,21 +41,179 @@ class MusicService {
     int limit = 20,
   }) async {
     try {
+      // First try to get from our backend
       final response = await http.get(
         Uri.parse('$baseUrl/api/music/trending?page=$page&limit=$limit'),
-      );
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return (data['tracks'] as List)
-            .map((track) => MusicTrack.fromJson(track))
-            .toList();
+        if (data['tracks'] != null) {
+          return (data['tracks'] as List)
+              .map((track) => MusicTrack.fromJson(track))
+              .toList();
+        }
       }
-      throw Exception('Failed to load trending music');
+      
+      // If backend fails, try to get from external sources
+      return await _fetchFromExternalSources();
     } catch (e) {
       print('Error fetching trending music: $e');
       return _getMockTrendingMusic(); // Fallback to mock data
     }
+  }
+  
+  // Fetch from external music APIs
+  static Future<List<MusicTrack>> _fetchFromExternalSources() async {
+    try {
+      // Try multiple sources in order of preference
+      
+      // 1. Try Free Music Archive API
+      final fmaResults = await _fetchFromFMA();
+      if (fmaResults.isNotEmpty) return fmaResults;
+      
+      // 2. Try Jamendo API
+      final jamendoResults = await _fetchFromJamendo();
+      if (jamendoResults.isNotEmpty) return jamendoResults;
+      
+      // 3. Try AudioJungle API (if available)
+      final audioJungleResults = await _fetchFromAudioJungle();
+      if (audioJungleResults.isNotEmpty) return audioJungleResults;
+      
+      // 4. Fallback to curated list
+      return _getCuratedTrendingTracks();
+    } catch (e) {
+      print('Error fetching from external sources: $e');
+      return _getMockTrendingMusic();
+    }
+  }
+  
+  static Future<List<MusicTrack>> _fetchFromFMA() async {
+    try {
+      // Free Music Archive has CC licensed music
+      final response = await http.get(
+        Uri.parse('https://freemusicarchive.org/api/get/tracks.json?limit=20&page=1'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 5));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final tracks = <MusicTrack>[];
+        
+        if (data['dataset'] != null) {
+          for (final track in data['dataset']) {
+            tracks.add(MusicTrack(
+              id: track['track_id']?.toString() ?? '',
+              title: track['track_title'] ?? 'Unknown Title',
+              artist: track['artist_name'] ?? 'Unknown Artist',
+              duration: _parseDuration(track['track_duration']),
+              url: track['track_url'] ?? '',
+              thumbnailUrl: track['track_image_file'] ?? '',
+              category: 'Trending',
+              isOriginal: false,
+              usageCount: 0,
+              isPopular: true,
+              source: 'FMA',
+            ));
+          }
+        }
+        
+        return tracks;
+      }
+    } catch (e) {
+      print('FMA API error: $e');
+    }
+    return [];
+  }
+  
+  static Future<List<MusicTrack>> _fetchFromJamendo() async {
+    try {
+      // Jamendo has CC licensed music
+      final response = await http.get(
+        Uri.parse('https://api.jamendo.com/v3.0/tracks/?client_id=YOUR_CLIENT_ID&format=json&limit=20&featured=1'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 5));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final tracks = <MusicTrack>[];
+        
+        if (data['results'] != null) {
+          for (final track in data['results']) {
+            tracks.add(MusicTrack(
+              id: track['id']?.toString() ?? '',
+              title: track['name'] ?? 'Unknown Title',
+              artist: track['artist_name'] ?? 'Unknown Artist',
+              duration: track['duration']?.toInt() ?? 30,
+              url: track['audio'] ?? '',
+              thumbnailUrl: track['image'] ?? '',
+              category: 'Trending',
+              isOriginal: false,
+              usageCount: 0,
+              isPopular: true,
+              source: 'Jamendo',
+            ));
+          }
+        }
+        
+        return tracks;
+      }
+    } catch (e) {
+      print('Jamendo API error: $e');
+    }
+    return [];
+  }
+  
+  static Future<List<MusicTrack>> _fetchFromAudioJungle() async {
+    // AudioJungle requires API key and has paid content
+    // This would require proper licensing integration
+    return [];
+  }
+  
+  static List<MusicTrack> _getCuratedTrendingTracks() {
+    // Curated list of trending-style tracks that work well for social media
+    return [
+      MusicTrack(
+        id: 'trending_1',
+        title: 'Upbeat Summer Vibes',
+        artist: 'VIB3 Music',
+        duration: 45,
+        url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Placeholder
+        thumbnailUrl: '',
+        category: 'Trending',
+        isOriginal: true,
+        usageCount: 15420,
+        isPopular: true,
+        source: 'VIB3',
+      ),
+      MusicTrack(
+        id: 'trending_2',
+        title: 'Chill Lo-Fi Beats',
+        artist: 'VIB3 Music',
+        duration: 60,
+        url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Placeholder
+        thumbnailUrl: '',
+        category: 'Chill',
+        isOriginal: true,
+        usageCount: 8932,
+        isPopular: true,
+        source: 'VIB3',
+      ),
+      MusicTrack(
+        id: 'trending_3',
+        title: 'Electronic Dance Energy',
+        artist: 'VIB3 Music',
+        duration: 30,
+        url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Placeholder
+        thumbnailUrl: '',
+        category: 'Electronic',
+        isOriginal: true,
+        usageCount: 12653,
+        isPopular: true,
+        source: 'VIB3',
+      ),
+    ];
   }
   
   // Search music by query
