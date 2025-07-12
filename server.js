@@ -160,7 +160,10 @@ app.get('/videos-random', async (req, res) => {
                 video.shareCount = await db.collection('shares').countDocuments({ videoId: video._id.toString() });
                 video.views = await db.collection('views').countDocuments({ videoId: video._id.toString() });
                 video.feedType = 'foryou';
-                video.thumbnailUrl = video.videoUrl + '#t=1';
+                // Use actual thumbnail URL if available, otherwise fallback
+                if (!video.thumbnailUrl || video.thumbnailUrl === '') {
+                    video.thumbnailUrl = video.videoUrl + '#t=1';
+                }
             } catch (e) {
                 console.log('User lookup error:', e);
             }
@@ -1801,6 +1804,9 @@ const upload = multer({
 
 // MongoDB connection
 const { MongoClient, ObjectId } = require('mongodb');
+const fs = require('fs').promises;
+const os = require('os');
+const ffmpeg = require('fluent-ffmpeg');
 let db = null;
 let client = null;
 
@@ -2748,6 +2754,280 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
             error: userMessage,
             code: errorCode,
             technical: error.message // For debugging
+        });
+    }
+});
+
+// Helper function to generate video thumbnail using FFmpeg
+async function generateVideoThumbnail(videoUrl, videoId) {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'vib3-thumb-'));
+    const tempVideoPath = path.join(tempDir, `${videoId}.mp4`);
+    
+    try {
+        // Download video temporarily
+        console.log('📥 Downloading video for thumbnail generation...');
+        const https = require('https');
+        const file = await fs.open(tempVideoPath, 'w');
+        
+        await new Promise((resolve, reject) => {
+            https.get(videoUrl, (response) => {
+                const stream = file.createWriteStream();
+                response.pipe(stream);
+                stream.on('finish', () => {
+                    stream.close();
+                    resolve();
+                });
+            }).on('error', reject);
+        });
+        
+        await file.close();
+        
+        // Generate thumbnails at different timestamps
+        console.log('🎬 Extracting thumbnail frames...');
+        const thumbnails = await generateMultipleThumbnails(tempVideoPath, tempDir, videoId);
+        
+        // Select best thumbnail (for now, use the second one if available)
+        const bestThumb = thumbnails.length >= 2 ? thumbnails[1] : thumbnails[0];
+        
+        if (!bestThumb) {
+            throw new Error('No thumbnail generated');
+        }
+        
+        // Read thumbnail file
+        const thumbnailBuffer = await fs.readFile(bestThumb);
+        
+        // Upload to Spaces
+        const thumbnailKey = `thumbnails/${Date.now()}-${videoId}.jpg`;
+        const uploadParams = {
+            Bucket: BUCKET_NAME,
+            Key: thumbnailKey,
+            Body: thumbnailBuffer,
+            ContentType: 'image/jpeg',
+            ACL: 'public-read'
+        };
+        
+        const uploadResult = await s3.upload(uploadParams).promise();
+        let thumbnailUrl = uploadResult.Location;
+        
+        if (thumbnailUrl && !thumbnailUrl.startsWith('https://')) {
+            thumbnailUrl = `https://${BUCKET_NAME}.${process.env.DO_SPACES_ENDPOINT || 'nyc3.digitaloceanspaces.com'}/${thumbnailKey}`;
+        }
+        
+        console.log('✅ Thumbnail generated and uploaded:', thumbnailUrl);
+        return thumbnailUrl;
+        
+    } catch (error) {
+        console.error('Thumbnail generation error:', error);
+        throw error;
+    } finally {
+        // Cleanup temp files
+        try {
+            await fs.rm(tempDir, { recursive: true, force: true });
+        } catch (e) {
+            console.error('Failed to cleanup temp dir:', e);
+        }
+    }
+}
+
+// Generate multiple thumbnails at different timestamps
+function generateMultipleThumbnails(videoPath, outputDir, videoId) {
+    return new Promise((resolve, reject) => {
+        const thumbnails = [];
+        const timestamps = ['00:00:01', '00:00:02', '00:00:03'];
+        let completed = 0;
+        
+        timestamps.forEach((timestamp, index) => {
+            const outputPath = path.join(outputDir, `${videoId}_${index}.jpg`);
+            
+            ffmpeg(videoPath)
+                .seekInput(timestamp)
+                .frames(1)
+                .size('720x1280')
+                .autopad()
+                .output(outputPath)
+                .on('end', () => {
+                    thumbnails.push(outputPath);
+                    completed++;
+                    if (completed === timestamps.length) {
+                        resolve(thumbnails);
+                    }
+                })
+                .on('error', (err) => {
+                    console.error(`Thumbnail generation failed at ${timestamp}:`, err);
+                    completed++;
+                    if (completed === timestamps.length) {
+                        resolve(thumbnails);
+                    }
+                })
+                .run();
+        });
+    });
+}
+
+// New video upload endpoint with thumbnail generation for Flutter app
+app.post('/api/videos/upload', requireAuth, upload.fields([
+    { name: 'video', maxCount: 1 },
+    { name: 'thumbnail', maxCount: 1 }
+]), async (req, res) => {
+    try {
+        const videoFile = req.files?.video?.[0];
+        const thumbnailFile = req.files?.thumbnail?.[0];
+        
+        if (!videoFile) {
+            return res.status(400).json({ 
+                error: 'No video file provided',
+                code: 'NO_FILE'
+            });
+        }
+
+        const { description, privacy, allowComments, allowDuet, allowStitch, hashtags, musicName } = req.body;
+
+        console.log(`🎬 Processing video upload with thumbnail: ${videoFile.originalname} (${(videoFile.size / 1024 / 1024).toFixed(2)}MB)`);
+        
+        // Check for bypass flag for development/testing
+        const bypassProcessing = req.body.bypassProcessing === 'true' || 
+                                  process.env.BYPASS_VIDEO_PROCESSING === 'true';
+        
+        let conversionResult;
+        
+        if (bypassProcessing) {
+            console.log('⚡ BYPASSING video processing');
+            conversionResult = {
+                success: true,
+                buffer: videoFile.buffer,
+                originalSize: videoFile.size,
+                convertedSize: videoFile.size,
+                skipped: true,
+                bypassed: true
+            };
+        } else {
+            // Convert video to standard H.264 MP4
+            console.log('📋 Converting video to standard MP4...');
+            conversionResult = await videoProcessor.convertToStandardMp4(videoFile.buffer, videoFile.originalname);
+        }
+        
+        let finalBuffer, finalMimeType;
+        
+        if (conversionResult.success) {
+            finalBuffer = conversionResult.buffer;
+            finalMimeType = 'video/mp4';
+        } else {
+            console.log('⚠️ Video conversion failed, using original file');
+            finalBuffer = conversionResult.originalBuffer || videoFile.buffer;
+            finalMimeType = videoFile.mimetype;
+        }
+
+        // Generate unique filenames
+        const timestamp = Date.now();
+        const randomId = crypto.randomBytes(16).toString('hex');
+        const videoFileName = `videos/${timestamp}-${randomId}.mp4`;
+        
+        // Upload video to DigitalOcean Spaces
+        console.log('📋 Uploading video to DigitalOcean Spaces...');
+        const videoUploadParams = {
+            Bucket: BUCKET_NAME,
+            Key: videoFileName,
+            Body: finalBuffer,
+            ContentType: finalMimeType,
+            ACL: 'public-read'
+        };
+
+        const videoUploadResult = await s3.upload(videoUploadParams).promise();
+        let videoUrl = videoUploadResult.Location;
+        
+        // Normalize URL format
+        if (videoUrl && !videoUrl.startsWith('https://')) {
+            videoUrl = `https://${BUCKET_NAME}.${process.env.DO_SPACES_ENDPOINT || 'nyc3.digitaloceanspaces.com'}/${videoFileName}`;
+        }
+
+        console.log('✅ Video uploaded to:', videoUrl);
+
+        // Handle thumbnail
+        let thumbnailUrl = null;
+        
+        if (thumbnailFile) {
+            // Client provided thumbnail - upload it
+            console.log('📸 Uploading client-provided thumbnail...');
+            const thumbnailFileName = `thumbnails/${timestamp}-${randomId}.jpg`;
+            
+            const thumbnailUploadParams = {
+                Bucket: BUCKET_NAME,
+                Key: thumbnailFileName,
+                Body: thumbnailFile.buffer,
+                ContentType: 'image/jpeg',
+                ACL: 'public-read'
+            };
+
+            const thumbnailUploadResult = await s3.upload(thumbnailUploadParams).promise();
+            thumbnailUrl = thumbnailUploadResult.Location;
+            
+            if (thumbnailUrl && !thumbnailUrl.startsWith('https://')) {
+                thumbnailUrl = `https://${BUCKET_NAME}.${process.env.DO_SPACES_ENDPOINT || 'nyc3.digitaloceanspaces.com'}/${thumbnailFileName}`;
+            }
+            
+            console.log('✅ Thumbnail uploaded to:', thumbnailUrl);
+        } else {
+            // No client thumbnail - generate server-side
+            console.log('🎬 Generating thumbnail server-side...');
+            
+            try {
+                // Generate actual thumbnail using FFmpeg
+                thumbnailUrl = await generateVideoThumbnail(videoUrl, randomId);
+                console.log('✅ Server-generated thumbnail:', thumbnailUrl);
+            } catch (thumbError) {
+                console.error('Thumbnail generation failed:', thumbError);
+                // Fallback to video frame
+                thumbnailUrl = videoUrl + '#t=1';
+                console.log('⚠️ Using video frame as thumbnail fallback');
+            }
+        }
+
+        // Save to database
+        let videoRecord = null;
+        if (db) {
+            const video = {
+                userId: req.user.userId,
+                username: req.user.username || 'unknown',
+                description: description || '',
+                videoUrl,
+                thumbnailUrl: thumbnailUrl || '',
+                fileName: videoFileName,
+                originalFilename: videoFile.originalname,
+                fileSize: finalBuffer.length,
+                originalFileSize: videoFile.size,
+                processed: conversionResult.success,
+                privacy: privacy || 'public',
+                allowComments: allowComments === 'true',
+                allowDuet: allowDuet === 'true',
+                allowStitch: allowStitch === 'true',
+                hashtags: hashtags ? hashtags.split(' ').map(tag => tag.trim()).filter(tag => tag) : [],
+                musicName: musicName || '',
+                views: 0,
+                likes: 0,
+                comments: 0,
+                shares: 0,
+                status: 'published',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+
+            const result = await db.collection('videos').insertOne(video);
+            video._id = result.insertedId;
+            videoRecord = video;
+            
+            console.log('✅ Video record saved to database');
+        }
+
+        res.status(201).json({
+            success: true,
+            video: videoRecord
+        });
+
+    } catch (error) {
+        console.error('❌ Video upload error:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Failed to upload video'
         });
     }
 });
@@ -5417,6 +5697,76 @@ app.get('/api/admin/cleanup/status', async (req, res) => {
 });
 
 // Error handling moved to end of file
+
+// Process existing videos to generate thumbnails
+app.post('/api/admin/process-thumbnails', requireAuth, async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    try {
+        console.log('🎬 Starting thumbnail generation for existing videos...');
+        
+        // Find videos without thumbnails
+        const videos = await db.collection('videos').find({ 
+            $or: [
+                { thumbnailUrl: null },
+                { thumbnailUrl: { $exists: false } },
+                { thumbnailUrl: '' }
+            ]
+        }).toArray();
+        
+        console.log(`Found ${videos.length} videos without thumbnails`);
+        
+        // Process in background
+        processVideosInBackground(videos);
+        
+        res.json({ 
+            message: 'Thumbnail processing started in background',
+            videosToProcess: videos.length
+        });
+        
+    } catch (error) {
+        console.error('Process thumbnails error:', error);
+        res.status(500).json({ error: 'Failed to start processing' });
+    }
+});
+
+// Background processor for thumbnails
+async function processVideosInBackground(videos) {
+    let processed = 0;
+    let failed = 0;
+    
+    for (const video of videos) {
+        try {
+            console.log(`Processing video ${video._id}...`);
+            
+            if (!video.videoUrl) {
+                console.log(`Skipping ${video._id} - no video URL`);
+                failed++;
+                continue;
+            }
+            
+            // Generate thumbnail
+            const thumbnailUrl = await generateVideoThumbnail(video.videoUrl, video._id.toString());
+            
+            // Update database
+            await db.collection('videos').updateOne(
+                { _id: video._id },
+                { $set: { thumbnailUrl } }
+            );
+            
+            processed++;
+            console.log(`✓ Generated thumbnail for ${video._id} (${processed}/${videos.length})`);
+            
+        } catch (error) {
+            console.error(`✗ Failed to generate thumbnail for ${video._id}:`, error.message);
+            failed++;
+        }
+    }
+    
+    console.log(`✅ Thumbnail processing complete: ${processed} processed, ${failed} failed`);
+}
 
 // Nuclear likes reset endpoint
 app.post('/api/admin/reset-likes', async (req, res) => {
