@@ -64,9 +64,6 @@ dependencies:
   flutter_ffmpeg: ^0.4.2  # Audio effects processing
   just_audio: ^0.9.37  # Audio playback and effects
   
-  # Real-time Filters & Effects
-  photofilters: ^3.0.2  # Image filters and effects
-  
   # Sharing & External Apps
   share_plus: ^7.2.2  # Native sharing
   url_launcher: ^6.2.2  # Launch external apps
