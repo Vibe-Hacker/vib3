@@ -58,7 +58,6 @@ dependencies:
   # AR Effects & Real-time Processing
   google_mlkit_face_detection: ^0.10.0  # Face tracking for AR effects
   google_mlkit_selfie_segmentation: ^0.5.0  # Background effects
-  camera: ^0.11.2  # Already included but ensure latest
   image: ^4.1.7  # Image processing for effects
   
   # Audio Processing
@@ -71,7 +70,6 @@ dependencies:
   # Sharing & External Apps
   share_plus: ^7.2.2  # Native sharing
   url_launcher: ^6.2.2  # Launch external apps
-  path_provider: ^2.1.2  # Already included
   dio: ^5.4.0  # HTTP downloads for video saving
 
 dev_dependencies:
