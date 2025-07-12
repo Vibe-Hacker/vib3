@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../models/video.dart';
 import '../services/video_service.dart';
+import 'dart:async';
 
 class VideoThumbnail extends StatefulWidget {
   final Video video;
@@ -22,71 +23,93 @@ class VideoThumbnail extends StatefulWidget {
 }
 
 class _VideoThumbnailState extends State<VideoThumbnail> {
-  VideoPlayerController? _controller;
+  VideoPlayerController? _thumbnailController;
   bool _isInitialized = false;
-  bool _hasError = false;
+  bool _isThumbnailLoading = false;
+  Timer? _initTimer;
 
   @override
   void initState() {
     super.initState();
-    _initializeVideoPlayer();
+    // Only initialize if we don't have a thumbnail URL
+    if ((widget.video.thumbnailUrl == null || widget.video.thumbnailUrl!.isEmpty) &&
+        widget.video.videoUrl != null && widget.video.videoUrl!.isNotEmpty) {
+      _loadVideoThumbnail();
+    }
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _initTimer?.cancel();
+    _thumbnailController?.dispose();
     super.dispose();
   }
-
-  Future<void> _initializeVideoPlayer() async {
-    if (widget.video.videoUrl == null || widget.video.videoUrl!.isEmpty) {
-      setState(() {
-        _hasError = true;
-      });
-      return;
-    }
-
+  
+  Future<void> _loadVideoThumbnail() async {
+    if (_isThumbnailLoading) return;
+    
+    setState(() {
+      _isThumbnailLoading = true;
+    });
+    
     try {
-      _controller = VideoPlayerController.networkUrl(
+      _thumbnailController = VideoPlayerController.networkUrl(
         Uri.parse(widget.video.videoUrl!),
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true,
+          allowBackgroundPlayback: false,
+        ),
       );
-
-      await _controller!.initialize();
       
-      if (mounted) {
+      // Set a longer timeout for initialization (some videos take longer)
+      _initTimer = Timer(const Duration(seconds: 8), () {
+        if (!_isInitialized && mounted) {
+          // Timeout - dispose controller and show fallback
+          _thumbnailController?.dispose();
+          _thumbnailController = null;
+          setState(() {
+            _isThumbnailLoading = false;
+          });
+        }
+      });
+      
+      await _thumbnailController!.initialize();
+      
+      if (mounted && _thumbnailController!.value.isInitialized) {
         setState(() {
           _isInitialized = true;
+          _isThumbnailLoading = false;
         });
+        _initTimer?.cancel();
+        
+        // Try to seek to first frame, then try 1 second if that fails
+        try {
+          await _thumbnailController!.seekTo(Duration.zero);
+        } catch (e) {
+          // If seeking to start fails, try seeking to 1 second
+          try {
+            await _thumbnailController!.seekTo(Duration(seconds: 1));
+          } catch (e2) {
+            // If both fail, just continue without seeking
+          }
+        }
       }
     } catch (e) {
-      print('Error initializing video player for thumbnail: $e');
+      // Silently fail and show fallback
       if (mounted) {
         setState(() {
-          _hasError = true;
+          _isThumbnailLoading = false;
         });
       }
     }
   }
 
   Widget _buildThumbnail() {
-    // Priority 1: Use video player first frame if initialized
-    if (_isInitialized && _controller != null) {
+    // Priority 1: Use video player frame if initialized
+    if (_isInitialized && _thumbnailController != null) {
       return AspectRatio(
-        aspectRatio: _controller!.value.aspectRatio,
-        child: VideoPlayer(_controller!),
-      );
-    }
-    
-    // Show loading state while video is initializing
-    if (_controller != null && !_isInitialized && !_hasError) {
-      return Container(
-        color: Colors.grey[800],
-        child: const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFFF0080),
-            strokeWidth: 2,
-          ),
-        ),
+        aspectRatio: _thumbnailController!.value.aspectRatio,
+        child: VideoPlayer(_thumbnailController!),
       );
     }
     
@@ -113,69 +136,125 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
       );
     }
     
-    // Priority 3: Try to generate thumbnail from video URL
-    if (widget.video.videoUrl != null && widget.video.videoUrl!.isNotEmpty && !_hasError) {
+    // Priority 3: Show loading while fetching video thumbnail
+    if (_isThumbnailLoading) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+        ),
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.5)),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    // Priority 4: For DigitalOcean Spaces videos, try common thumbnail patterns
+    if (widget.video.videoUrl != null && widget.video.videoUrl!.isNotEmpty) {
       final videoUrl = widget.video.videoUrl!;
-      // Generate thumbnail URL by replacing video with thumbnail
-      String thumbnailUrl = videoUrl;
       
-      // Common thumbnail URL patterns
-      if (videoUrl.contains('.mp4')) {
-        thumbnailUrl = videoUrl.replaceAll('.mp4', '_thumb.jpg');
-      } else if (videoUrl.contains('.mov')) {
-        thumbnailUrl = videoUrl.replaceAll('.mov', '_thumb.jpg');
-      } else {
-        thumbnailUrl = '$videoUrl.jpg'; // Append .jpg
+      // Try multiple thumbnail URL patterns
+      List<String> thumbnailPatterns = [];
+      
+      if (videoUrl.contains('vib3-videos.nyc3.digitaloceanspaces.com')) {
+        // For DigitalOcean Spaces, thumbnails might be in a different folder
+        if (videoUrl.contains('.mp4')) {
+          // Try replacing videos with thumbnails folder
+          thumbnailPatterns.add(videoUrl.replaceAll('/videos/', '/thumbnails/').replaceAll('.mp4', '.jpg'));
+          thumbnailPatterns.add(videoUrl.replaceAll('/videos/', '/thumbnails/').replaceAll('.mp4', '_thumb.jpg'));
+          // Try same folder with _thumb suffix
+          thumbnailPatterns.add(videoUrl.replaceAll('.mp4', '_thumb.jpg'));
+          thumbnailPatterns.add(videoUrl.replaceAll('.mp4', '-thumb.jpg'));
+          // Try just replacing extension
+          thumbnailPatterns.add(videoUrl.replaceAll('.mp4', '.jpg'));
+        }
       }
       
-      return Image.network(
-        thumbnailUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildFallbackThumbnail();
-        },
-      );
+      // If we have patterns to try, use the first one with fallback
+      if (thumbnailPatterns.isNotEmpty) {
+        return Image.network(
+          thumbnailPatterns.first,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            // If first pattern fails, just show fallback
+            // In production, you could try other patterns
+            return _buildFallbackThumbnail();
+          },
+        );
+      }
     }
     
     return _buildFallbackThumbnail();
   }
 
   Widget _buildFallbackThumbnail() {
+    // Create a unique gradient based on video ID for variety
+    final int hashCode = widget.video.id.hashCode;
+    final List<List<Color>> gradients = [
+      [Color(0xFFFF0080), Color(0xFF7928CA)], // Pink to Purple
+      [Color(0xFF00F0FF), Color(0xFF0080FF)], // Cyan to Blue
+      [Color(0xFFFF0080), Color(0xFFFF4040)], // Pink to Red
+      [Color(0xFF00CED1), Color(0xFF00F0FF)], // Dark Turquoise to Cyan
+      [Color(0xFF7928CA), Color(0xFF4B0082)], // Purple to Indigo
+      [Color(0xFFFF1493), Color(0xFFFF69B4)], // Deep Pink to Hot Pink
+    ];
+    
+    final gradientIndex = hashCode.abs() % gradients.length;
+    final selectedGradient = gradients[gradientIndex];
+    
     return Container(
-      color: Colors.grey[800],
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: selectedGradient,
+        ),
+      ),
       child: Stack(
         children: [
-          // Gradient background
+          // Semi-transparent overlay for better icon visibility
           Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFFFF0080).withOpacity(0.3),
-                  Colors.grey[800]!,
-                ],
+            color: Colors.black.withOpacity(0.2),
+          ),
+          // Play icon
+          Center(
+            child: Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.4),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 32,
               ),
             ),
           ),
-          // Play icon
-          const Center(
-            child: Icon(
-              Icons.play_circle_outline,
-              color: Colors.white,
-              size: 40,
-            ),
-          ),
-          // VIB3 logo in corner
+          // VIB3 watermark
           Positioned(
-            bottom: 4,
-            left: 4,
-            child: Text(
-              'VIB3',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 8,
-                fontWeight: FontWeight.bold,
+            bottom: 8,
+            right: 8,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'VIB3',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
               ),
             ),
           ),
@@ -226,7 +305,11 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
                 top: 4,
                 left: 4,
                 child: GestureDetector(
-                  onTap: () => _showDeleteDialog(context),
+                  onTap: () {
+                    if (widget.onDelete != null) {
+                      widget.onDelete!();
+                    }
+                  },
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
@@ -326,16 +409,6 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
                 ),
               ),
             ),
-            
-            // Play icon overlay (only show if not using video player thumbnail)
-            if (!_isInitialized || _hasError)
-              const Center(
-                child: Icon(
-                  Icons.play_circle_outline,
-                  color: Colors.white,
-                  size: 30,
-                ),
-              ),
           ],
         ),
       ),

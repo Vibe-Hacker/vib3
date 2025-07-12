@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import 'video_creator/video_creator_screen.dart';
 
@@ -26,15 +27,30 @@ class _GalleryPickerScreenState extends State<GalleryPickerScreen> {
   }
   
   Future<void> _checkPermissionAndLoadMedia() async {
-    // Check gallery permission
-    final status = await Permission.photos.status;
+    // For Android 13+ (API 33+), we need different permissions
+    Permission permission;
+    if (Platform.isAndroid) {
+      final androidInfo = await DeviceInfoPlugin().androidInfo;
+      if (androidInfo.version.sdkInt >= 33) {
+        // Android 13+ uses granular media permissions
+        permission = Permission.videos;
+      } else {
+        // Older Android versions use storage permission
+        permission = Permission.storage;
+      }
+    } else {
+      // iOS uses photos permission
+      permission = Permission.photos;
+    }
+    
+    final status = await permission.status;
     if (status.isGranted) {
       setState(() {
         _hasPermission = true;
       });
       await _loadMediaFiles();
     } else {
-      final result = await Permission.photos.request();
+      final result = await permission.request();
       if (result.isGranted) {
         setState(() {
           _hasPermission = true;

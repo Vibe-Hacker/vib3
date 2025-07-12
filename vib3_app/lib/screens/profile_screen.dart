@@ -94,31 +94,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
     if (token == null) return;
 
-    // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text('Delete Video', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'Are you sure you want to delete this video? This action cannot be undone.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
     // Optimistically remove video from UI immediately
     setState(() {
       userVideos.removeWhere((v) => v.id == video.id);
@@ -158,7 +133,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
-
+    
+    print('ProfileScreen: User data - ${user?.username}');
+    print('ProfileScreen: User stats - followers: ${user?.followers}, following: ${user?.following}, totalLikes: ${user?.totalLikes}');
+    print('ProfileScreen: User info - bio: ${user?.bio}, displayName: ${user?.displayName}');
+    
     if (user == null) {
       return Scaffold(
         backgroundColor: Colors.black,
@@ -249,7 +228,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   
                   // Username and display name
                   Text(
-                    user.displayName ?? user.username,
+                    user?.displayName?.isNotEmpty == true ? user!.displayName! : (user?.username ?? 'User'),
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -257,7 +236,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     ),
                   ),
                   Text(
-                    '@${user.username}',
+                    '@${user?.username ?? 'user'}',
                     style: const TextStyle(
                       fontSize: 14,
                       color: Colors.grey,
@@ -266,11 +245,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   const SizedBox(height: 8),
                   
                   // Bio
-                  if (user.bio != null)
+                  if (user?.bio != null && user!.bio!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 40),
                       child: Text(
-                        user.bio!,
+                        user!.bio!,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 14,
@@ -286,19 +265,19 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildFloatingStat('Vibing', user.following, 
+                        _buildFloatingStat('Vibing', user?.following ?? 0, 
                           gradientColors: const [Color(0xFF00CED1), Color(0xFF40E0D0)],
                           onTap: () {
                             // TODO: Implement following screen
                           },
                         ),
-                        _buildFloatingStat('VIB3RS', user.followers,
+                        _buildFloatingStat('VIB3RS', user?.followers ?? 0,
                           gradientColors: const [Color(0xFFFF1493), Color(0xFFFF6B9D)],
                           onTap: () {
                             // TODO: Implement followers screen
                           },
                         ),
-                        _buildFloatingStat('VIB3S', user.totalLikes,
+                        _buildFloatingStat('VIB3S', user?.totalLikes ?? 0,
                           gradientColors: const [Color(0xFFFFD700), Color(0xFFFFA500)],
                         ),
                       ],
@@ -362,7 +341,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   const SizedBox(height: 8),
                   
                   // Add bio link
-                  if (user.bio == null || user.bio!.isEmpty)
+                  if (user?.bio == null || user!.bio!.isEmpty)
                     TextButton(
                       onPressed: () {
                         Navigator.push(
@@ -1126,7 +1105,7 @@ class _FloatingProfilePictureState extends State<_FloatingProfilePicture>
       ),
       child: Center(
         child: Text(
-          widget.user.username[0].toUpperCase(),
+          widget.user.username.isNotEmpty ? widget.user.username[0].toUpperCase() : 'U',
           style: const TextStyle(
             fontSize: 48,
             fontWeight: FontWeight.bold,
