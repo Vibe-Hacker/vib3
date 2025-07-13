@@ -115,6 +115,36 @@ class UserService {
     }
   }
   
+  static Future<List<String>> getUserFollowers(String userId, String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/users/$userId/followers'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final List<dynamic> followers = data['followers'] ?? [];
+        return followers.map((item) {
+          if (item is String) {
+            return item;
+          } else if (item is Map<String, dynamic>) {
+            return item['_id'] ?? item['id'] ?? '';
+          }
+          return '';
+        }).where((id) => id.isNotEmpty).toList();
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error getting user followers list: $e');
+      return [];
+    }
+  }
+  
   static Future<User?> getCurrentUserProfile(String token) async {
     try {
       print('🔍 UserService: Getting user profile from backend');

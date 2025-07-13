@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
+import 'package:provider/provider.dart';
 import 'dart:io';
 import '../models/video.dart';
+import '../services/upload_service.dart';
+import '../providers/auth_provider.dart';
 
 class PublishScreen extends StatefulWidget {
   final String videoPath;
@@ -481,32 +484,80 @@ class _PublishScreenState extends State<PublishScreen> {
     
     HapticFeedback.mediumImpact();
     
-    // Simulate upload process
-    await Future.delayed(const Duration(seconds: 2));
-    
-    // TODO: Implement actual video upload
-    
-    setState(() {
-      _isPublishing = false;
-    });
-    
-    // Show success and navigate to home
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Video posted successfully!'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-        ),
+    try {
+      // Get auth token
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.authToken;
+      
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+      
+      // Prepare video description (title + description + hashtags)
+      String fullDescription = _titleController.text.trim();
+      if (_descriptionController.text.trim().isNotEmpty) {
+        fullDescription += '\n\n${_descriptionController.text.trim()}';
+      }
+      
+      // Add hashtags to description
+      String hashtagsString = '';
+      if (_selectedHashtags.isNotEmpty) {
+        hashtagsString = _selectedHashtags.join(' ');
+        fullDescription += '\n\n$hashtagsString';
+      }
+      
+      // Upload video
+      final success = await UploadService.uploadVideo(
+        videoFile: File(widget.videoPath),
+        description: fullDescription,
+        privacy: _isPublic ? 'public' : 'private',
+        allowComments: _allowComments,
+        allowDuet: _allowDuet,
+        allowStitch: _allowStitch,
+        token: token,
+        hashtags: hashtagsString,
+        musicName: widget.musicName,
       );
       
-      // Navigate back to home
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      setState(() {
+        _isPublishing = false;
+      });
+      
+      if (success) {
+        // Show success and navigate to home
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Video posted successfully!'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // Navigate back to home
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        }
+      } else {
+        throw Exception('Failed to upload video');
+      }
+    } catch (e) {
+      setState(() {
+        _isPublishing = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Upload failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

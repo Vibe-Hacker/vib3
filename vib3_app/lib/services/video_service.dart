@@ -15,6 +15,14 @@ class VideoService {
     return DateTime.now().difference(cachedTime) < _cacheExpiry;
   }
   
+  static void clearFollowingCache() {
+    _cache.removeWhere((key, value) => 
+      key.contains('following_videos_filtered') || 
+      key.contains('friends_videos_filtered')
+    );
+    print('VideoService: Cleared following/friends cache');
+  }
+  
   static Future<List<Video>> getAllVideos(String token, {String feed = 'foryou', int offset = 0, int limit = 20}) async {
     // Check cache first
     final cacheKey = 'getAllVideos_${feed}_${offset}_$limit';
@@ -1834,6 +1842,7 @@ class VideoService {
   
   static Future<List<Video>> getFriendsVideos(String token, {int offset = 0, int limit = 20}) async {
     try {
+      // First try the dedicated friends endpoint
       final queryParams = {
         'offset': offset.toString(),
         'limit': limit.toString(),
@@ -1863,13 +1872,84 @@ class VideoService {
         videos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         
         return videos;
-      } else if (response.statusCode == 404) {
-        // Endpoint might not exist yet
-        print('VideoService: getFriendsVideos - endpoint not found');
+      }
+      
+      // Fallback: Use client-side filtering for mutual followers
+      print('VideoService: getFriendsVideos - using client-side filtering (status: ${response.statusCode})');
+      
+      // Get current user info to get their ID
+      final currentUser = await UserService.getCurrentUserProfile(token);
+      if (currentUser == null) {
+        print('VideoService: Could not get current user profile');
         return [];
       }
       
-      return [];
+      // Get the list of users the current user is following
+      final followingUserIds = await UserService.getUserFollowing(currentUser.id, token);
+      
+      // Get the list of users who follow the current user
+      final followerUserIds = await UserService.getUserFollowers(currentUser.id, token);
+      
+      if (followingUserIds.isEmpty || followerUserIds.isEmpty) {
+        print('VideoService: User has no mutual followers (following: ${followingUserIds.length}, followers: ${followerUserIds.length})');
+        return [];
+      }
+      
+      // Find mutual followers (users who follow each other)
+      final mutualFollowerIds = followingUserIds.where((userId) => 
+        followerUserIds.contains(userId)
+      ).toList();
+      
+      print('VideoService: Found ${mutualFollowerIds.length} mutual followers');
+      
+      if (mutualFollowerIds.isEmpty) {
+        return [];
+      }
+      
+      // Store filtered videos in cache if not already cached
+      final cacheKey = 'friends_videos_filtered';
+      if (!_isCacheValid(cacheKey)) {
+        // Get ALL available videos using the multi-request approach to ensure we have enough
+        final allVideos = await _fetchAllVideosByMakingMultipleRequests(token);
+        
+        print('VideoService: Got ${allVideos.length} total videos to filter from');
+        
+        // Filter videos to only include those from mutual followers
+        final friendsVideos = allVideos.where((video) => 
+          mutualFollowerIds.contains(video.userId)
+        ).toList();
+        
+        print('VideoService: Found ${friendsVideos.length} videos from mutual followers');
+        
+        // Sort by creation date for chronological order
+        friendsVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        
+        // Cache the filtered videos
+        _cache[cacheKey] = {
+          'data': friendsVideos,
+          'timestamp': DateTime.now(),
+        };
+      }
+      
+      // Get cached filtered videos
+      final friendsVideos = (_cache[cacheKey]!['data'] as List<Video>);
+      
+      // Apply pagination
+      final startIndex = offset;
+      final endIndex = (offset + limit).clamp(0, friendsVideos.length);
+      
+      if (startIndex >= friendsVideos.length) {
+        // For infinite scroll, wrap around to the beginning
+        if (friendsVideos.isNotEmpty) {
+          final wrappedIndex = startIndex % friendsVideos.length;
+          final wrappedEnd = (wrappedIndex + limit).clamp(0, friendsVideos.length);
+          return friendsVideos.sublist(wrappedIndex, wrappedEnd);
+        }
+        return [];
+      }
+      
+      return friendsVideos.sublist(startIndex, endIndex);
+      
     } catch (e) {
       print('Error getting friends videos: $e');
       return [];
