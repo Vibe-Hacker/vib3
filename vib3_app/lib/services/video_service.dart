@@ -1959,35 +1959,101 @@ class VideoService {
   
   static Future<List<String>> getUserFollowedUsers(String token) async {
     try {
+      // Get current user profile to get their ID
+      final currentUser = await UserService.getCurrentUserProfile(token);
+      if (currentUser == null) {
+        print('VideoService: Could not get current user profile');
+        return [];
+      }
+      
+      // Use UserService to get following list
+      final followingList = await UserService.getUserFollowing(currentUser.id, token);
+      print('VideoService: getUserFollowedUsers - user follows ${followingList.length} users');
+      return followingList;
+    } catch (e) {
+      print('Error getting followed users: $e');
+      return [];
+    }
+  }
+  
+  static Future<List<Video>> getUserLikedVideos(String token) async {
+    try {
+      // Get current user to get their liked videos
+      final currentUser = await UserService.getCurrentUserProfile(token);
+      if (currentUser == null) {
+        print('VideoService: Could not get current user profile for liked videos');
+        return [];
+      }
+      
+      // Try the liked videos endpoint
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/user/following'),
+        Uri.parse('${AppConfig.baseUrl}/api/users/${currentUser.id}/liked-videos'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
-
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List<dynamic> followingList = data['following'] ?? [];
+        final List<dynamic> videosJson = data['videos'] ?? data ?? [];
         
-        // Extract user IDs from the following list
-        final followedUserIds = followingList
-            .map((item) => item is String ? item : item['userId']?.toString() ?? '')
-            .where((id) => id.isNotEmpty)
-            .toList();
+        print('VideoService: getUserLikedVideos - found ${videosJson.length} liked videos');
         
-        print('VideoService: getUserFollowedUsers - user follows ${followedUserIds.length} users');
-        return followedUserIds;
-      } else if (response.statusCode == 404) {
-        print('VideoService: getUserFollowedUsers - endpoint not found');
+        final videos = videosJson.map((json) => Video.fromJson(json)).toList();
+        return videos;
+      } else {
+        print('VideoService: getUserLikedVideos - endpoint returned ${response.statusCode}');
+        // As a fallback, we'll return empty list but the app will still work
         return [];
       }
-      
-      return [];
     } catch (e) {
-      print('Error getting followed users: $e');
+      print('Error getting liked videos: $e');
       return [];
     }
+  }
+  
+  static Future<bool> likeVideo(String videoId, String token) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.baseUrl}/api/videos/$videoId/like'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print('Error liking video: $e');
+      return false;
+    }
+  }
+  
+  static Future<bool> unlikeVideo(String videoId, String token) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${AppConfig.baseUrl}/api/videos/$videoId/like'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error unliking video: $e');
+      return false;
+    }
+  }
+  
+  static Future<bool> followUser(String userId, String token) async {
+    // Delegate to UserService
+    return UserService.followUser(userId, token);
+  }
+  
+  static Future<bool> unfollowUser(String userId, String token) async {
+    // Delegate to UserService
+    return UserService.unfollowUser(userId, token);
   }
 }

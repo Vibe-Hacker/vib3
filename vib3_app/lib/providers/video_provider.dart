@@ -399,6 +399,9 @@ class VideoProvider extends ChangeNotifier {
           _followedUserIds.remove(userId);
         }
         notifyListeners();
+      } else {
+        // Clear following/friends cache when follow state changes
+        VideoService.clearFollowingCache();
       }
       
       return success;

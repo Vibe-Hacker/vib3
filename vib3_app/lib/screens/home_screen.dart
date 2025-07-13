@@ -44,7 +44,10 @@ class _HomeScreenState extends State<HomeScreen> {
       
       if (token != null) {
         print('HomeScreen: Loading videos...');
-        Provider.of<VideoProvider>(context, listen: false).loadAllVideos(token);
+        final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+        videoProvider.loadAllVideos(token);
+        // Initialize likes and follows
+        videoProvider.initializeLikesAndFollows(token);
       } else {
         print('HomeScreen: No token available, loading videos without auth...');
         // Try loading videos without authentication
