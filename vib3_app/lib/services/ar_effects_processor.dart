@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:google_mlkit_selfie_segmentation/google_mlkit_selfie_segmentation.dart';
@@ -93,11 +94,14 @@ class AREffectsProcessor {
 
       // Apply face-based effects
       for (final face in faces) {
-        image = await _applyFaceEffect(image, face, _currentEffect!);
+        final processedImage = await _applyFaceEffect(image, face, _currentEffect!);
+        if (processedImage != null) {
+          image = processedImage;
+        }
       }
 
       // Convert back to ui.Image
-      final pngBytes = img.encodePng(image);
+      final pngBytes = img.encodePng(image!);
       final codec = await ui.instantiateImageCodec(pngBytes);
       final frame = await codec.getNextFrame();
       return frame.image;
@@ -318,8 +322,7 @@ class AREffectsProcessor {
       x: leftEye.x.toInt(),
       y: leftEye.y.toInt(),
       radius: 35,
-      color: img.ColorRgb8(255, 255, 255),
-      thickness: 3);
+      color: img.ColorRgb8(255, 255, 255));
     
     img.fillCircle(image,
       x: leftEye.x.toInt(),
@@ -331,8 +334,7 @@ class AREffectsProcessor {
       x: rightEye.x.toInt(),
       y: rightEye.y.toInt(),
       radius: 35,
-      color: img.ColorRgb8(255, 255, 255),
-      thickness: 3);
+      color: img.ColorRgb8(255, 255, 255));
     
     img.fillCircle(image,
       x: rightEye.x.toInt(),
@@ -372,7 +374,14 @@ class AREffectsProcessor {
     
     // Composite based on segmentation mask
     // This is a simplified version - in practice you'd use the actual mask data
-    return img.composite(image, blurredImage, blend: img.BlendMode.multiply);
+    // Apply blur effect by overlaying
+    for (int y = 0; y < image.height; y++) {
+      for (int x = 0; x < image.width; x++) {
+        final blurPixel = blurredImage.getPixel(x, y);
+        image.setPixel(x, y, blurPixel);
+      }
+    }
+    return image;
   }
 
   img.Image _applyGalaxyBackground(img.Image image, SegmentationMask mask) {
@@ -384,7 +393,7 @@ class AREffectsProcessor {
     for (int i = 0; i < 100; i++) {
       final x = (i * 37) % width;
       final y = (i * 73) % height;
-      img.setPixel(image, x, y, img.ColorRgb8(255, 255, 255));
+      image.setPixel(x, y, img.ColorRgb8(255, 255, 255));
     }
     
     return image;
@@ -393,7 +402,16 @@ class AREffectsProcessor {
   img.Image _applyNeonOutline(img.Image image, SegmentationMask mask) {
     // Apply neon glow effect around person outline
     final outlined = img.sobel(image);
-    return img.composite(image, outlined, blend: img.BlendMode.screen);
+    // Apply outline effect
+    for (int y = 0; y < image.height; y++) {
+      for (int x = 0; x < image.width; x++) {
+        final outlinePixel = outlined.getPixel(x, y);
+        if (outlinePixel.r > 0 || outlinePixel.g > 0 || outlinePixel.b > 0) {
+          image.setPixel(x, y, outlinePixel);
+        }
+      }
+    }
+    return image;
   }
 
   img.Image _applyFloatingHearts(img.Image image, List<Face> faces) {
@@ -450,11 +468,11 @@ class AREffectsProcessor {
   void _drawButterfly(img.Image image, int x, int y) {
     // Simple butterfly using ellipses
     img.drawCircle(image, x: x, y: y, radius: 8, 
-      color: img.ColorRgb8(255, 165, 0), thickness: 2);
+      color: img.ColorRgb8(255, 165, 0));
     img.drawCircle(image, x: x - 6, y: y - 3, radius: 4, 
-      color: img.ColorRgb8(255, 165, 0), thickness: 2);
+      color: img.ColorRgb8(255, 165, 0));
     img.drawCircle(image, x: x + 6, y: y - 3, radius: 4, 
-      color: img.ColorRgb8(255, 165, 0), thickness: 2);
+      color: img.ColorRgb8(255, 165, 0));
   }
 
   // Generic fallback methods
@@ -484,7 +502,7 @@ class AREffectsProcessor {
   // Helper methods
   InputImage? _convertCameraImage(CameraImage cameraImage) {
     try {
-      final WriteBuffer allBytes = WriteBuffer();
+      final allBytes = WriteBuffer();
       for (final Plane plane in cameraImage.planes) {
         allBytes.putUint8List(plane.bytes);
       }
@@ -507,7 +525,7 @@ class AREffectsProcessor {
 
       final planeData = cameraImage.planes.map(
         (Plane plane) {
-          return InputImagePlaneMetadata(
+          return InputImageMetadata(
             bytesPerRow: plane.bytesPerRow,
             height: plane.height,
             width: plane.width,
@@ -515,7 +533,7 @@ class AREffectsProcessor {
         },
       ).toList();
 
-      final InputImageData inputImageData = InputImageData(
+      final inputImageData = InputImageMetadata(
         size: imageSize,
         imageRotation: imageRotation,
         inputImageFormat: inputImageFormat,
@@ -524,7 +542,7 @@ class AREffectsProcessor {
 
       return InputImage.fromBytes(
         bytes: bytes,
-        inputImageData: inputImageData,
+        metadata: inputImageData,
       );
     } catch (e) {
       print('Error converting camera image: $e');

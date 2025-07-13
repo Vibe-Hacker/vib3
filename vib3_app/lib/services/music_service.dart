@@ -107,14 +107,13 @@ class MusicService {
               id: track['track_id']?.toString() ?? '',
               title: track['track_title'] ?? 'Unknown Title',
               artist: track['artist_name'] ?? 'Unknown Artist',
-              duration: _parseDuration(track['track_duration']),
-              url: track['track_url'] ?? '',
-              thumbnailUrl: track['track_image_file'] ?? '',
+              duration: int.tryParse(track['track_duration']?.toString() ?? '0') ?? 30,
+              coverUrl: track['track_image_file'] ?? 'https://picsum.photos/200',
+              audioUrl: track['track_url'] ?? '',
               category: 'Trending',
-              isOriginal: false,
-              usageCount: 0,
-              isPopular: true,
-              source: 'FMA',
+              isOriginalSound: false,
+              plays: 0,
+              likes: 0,
             ));
           }
         }
@@ -146,13 +145,12 @@ class MusicService {
               title: track['name'] ?? 'Unknown Title',
               artist: track['artist_name'] ?? 'Unknown Artist',
               duration: track['duration']?.toInt() ?? 30,
-              url: track['audio'] ?? '',
-              thumbnailUrl: track['image'] ?? '',
+              coverUrl: track['image'] ?? 'https://picsum.photos/200',
+              audioUrl: track['audio'] ?? '',
               category: 'Trending',
-              isOriginal: false,
-              usageCount: 0,
-              isPopular: true,
-              source: 'Jamendo',
+              isOriginalSound: false,
+              plays: 0,
+              likes: 0,
             ));
           }
         }
@@ -179,39 +177,36 @@ class MusicService {
         title: 'Upbeat Summer Vibes',
         artist: 'VIB3 Music',
         duration: 45,
-        url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Placeholder
-        thumbnailUrl: '',
+        coverUrl: 'https://picsum.photos/200?random=1',
+        audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Placeholder
         category: 'Trending',
-        isOriginal: true,
-        usageCount: 15420,
-        isPopular: true,
-        source: 'VIB3',
+        isOriginalSound: true,
+        plays: 15420,
+        likes: 5000,
       ),
       MusicTrack(
         id: 'trending_2',
         title: 'Chill Lo-Fi Beats',
         artist: 'VIB3 Music',
         duration: 60,
-        url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Placeholder
-        thumbnailUrl: '',
+        coverUrl: 'https://picsum.photos/200?random=2',
+        audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Placeholder
         category: 'Chill',
-        isOriginal: true,
-        usageCount: 8932,
-        isPopular: true,
-        source: 'VIB3',
+        isOriginalSound: true,
+        plays: 8932,
+        likes: 3000,
       ),
       MusicTrack(
         id: 'trending_3',
         title: 'Electronic Dance Energy',
         artist: 'VIB3 Music',
         duration: 30,
-        url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Placeholder
-        thumbnailUrl: '',
+        coverUrl: 'https://picsum.photos/200?random=3',
+        audioUrl: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // Placeholder
         category: 'Electronic',
-        isOriginal: true,
-        usageCount: 12653,
-        isPopular: true,
-        source: 'VIB3',
+        isOriginalSound: true,
+        plays: 12653,
+        likes: 4500,
       ),
     ];
   }

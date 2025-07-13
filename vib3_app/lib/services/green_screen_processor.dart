@@ -262,7 +262,7 @@ class GreenScreenProcessor {
     // Value calculation
     final value = maxVal * 100;
     
-    return [hue, saturation, value];
+    return [hue, saturation.toDouble(), value];
   }
 
   // Advanced chroma key with spill suppression

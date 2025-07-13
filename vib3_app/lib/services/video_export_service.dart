@@ -312,11 +312,11 @@ class VideoExportService {
       final duration = overlay.duration ?? 5;
       
       filterComplex += 'drawtext='
-          'text=\\'${overlay.text}\\':'
-          'x=${overlay.x}:y=${overlay.y}:'
-          'fontsize=${overlay.fontSize}:'
-          'fontcolor=${overlay.color}:'
-          'enable=\\'between(t,$startTime,${startTime + duration})\\'';
+          'text=\'${overlay.text}\':'
+          'x=${overlay.position.dx.toInt()}:y=${overlay.position.dy.toInt()}:'
+          'fontsize=${overlay.fontSize.toInt()}:'
+          'fontcolor=${overlay.color.substring(1)}:'
+          'enable=\'between(t,$startTime,${startTime + duration})\'';
       
       if (i < textOverlays.length - 1 || stickers.isNotEmpty) {
         filterComplex += ',';
