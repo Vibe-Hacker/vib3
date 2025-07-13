@@ -182,14 +182,19 @@ class _EffectsModuleState extends State<EffectsModule>
                   size: 40,
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  effect.name,
-                  style: TextStyle(
-                    color: isSelected ? const Color(0xFF00CED1) : Colors.white,
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    effect.name,
+                    style: TextStyle(
+                      color: isSelected ? const Color(0xFF00CED1) : Colors.white,
+                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -451,13 +456,16 @@ class _EffectsModuleState extends State<EffectsModule>
             ),
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              _buildLayoutOption(Icons.splitscreen, 'Vertical'),
-              _buildLayoutOption(Icons.view_stream, 'Horizontal'),
-              _buildLayoutOption(Icons.grid_view, 'Grid'),
-              _buildLayoutOption(Icons.picture_in_picture, 'PiP'),
-            ],
+          Expanded(
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _buildLayoutOption(Icons.splitscreen, 'Vertical'),
+                _buildLayoutOption(Icons.view_stream, 'Horizontal'),
+                _buildLayoutOption(Icons.grid_view, 'Grid'),
+                _buildLayoutOption(Icons.picture_in_picture, 'PiP'),
+              ],
+            ),
           ),
         ],
       ),
@@ -489,6 +497,8 @@ class _EffectsModuleState extends State<EffectsModule>
                   color: Colors.white,
                   fontSize: 10,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ],
           ),
