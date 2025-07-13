@@ -94,7 +94,7 @@ class AREffectsProcessor {
 
       // Apply face-based effects
       for (final face in faces) {
-        final processedImage = await _applyFaceEffect(image, face, _currentEffect!);
+        final processedImage = await _applyFaceEffect(image!, face, _currentEffect!);
         if (processedImage != null) {
           image = processedImage;
         }
@@ -523,21 +523,11 @@ class AREffectsProcessor {
 
       final InputImageFormat inputImageFormat = InputImageFormat.nv21;
 
-      final planeData = cameraImage.planes.map(
-        (Plane plane) {
-          return InputImageMetadata(
-            bytesPerRow: plane.bytesPerRow,
-            height: plane.height,
-            width: plane.width,
-          );
-        },
-      ).toList();
-
       final inputImageData = InputImageMetadata(
         size: imageSize,
-        imageRotation: imageRotation,
-        inputImageFormat: inputImageFormat,
-        planeData: planeData,
+        rotation: imageRotation,
+        format: inputImageFormat,
+        bytesPerRow: cameraImage.planes[0].bytesPerRow,
       );
 
       return InputImage.fromBytes(

@@ -308,14 +308,14 @@ class VideoExportService {
     // Add text overlays
     for (int i = 0; i < textOverlays.length; i++) {
       final overlay = textOverlays[i];
-      final startTime = overlay.startTime ?? 0;
-      final duration = overlay.duration ?? 5;
+      final startTime = overlay.startTime?.inSeconds ?? 0;
+      final duration = overlay.duration?.inSeconds ?? 5;
       
       filterComplex += 'drawtext='
           'text=\'${overlay.text}\':'
           'x=${overlay.position.dx.toInt()}:y=${overlay.position.dy.toInt()}:'
           'fontsize=${overlay.fontSize.toInt()}:'
-          'fontcolor=${overlay.color.substring(1)}:'
+          'fontcolor=#${overlay.color.toRadixString(16).substring(2)}:'
           'enable=\'between(t,$startTime,${startTime + duration})\'';
       
       if (i < textOverlays.length - 1 || stickers.isNotEmpty) {
