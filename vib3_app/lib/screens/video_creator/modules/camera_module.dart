@@ -153,11 +153,31 @@ class _CameraModuleState extends State<CameraModule>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    
+    // Stop any active streams
+    if (_arEffectsEnabled || _filtersEnabled) {
+      try {
+        _cameraController?.stopImageStream();
+      } catch (e) {
+        print('Error stopping image stream in dispose: $e');
+      }
+    }
+    
+    // Stop recording if active
+    if (_isRecording) {
+      try {
+        _cameraController?.stopVideoRecording();
+      } catch (e) {
+        print('Error stopping recording in dispose: $e');
+      }
+    }
+    
     _cameraController?.dispose();
     _recordingTimer?.cancel();
     _countdownTimer?.cancel();
     _arProcessor?.dispose();
     _voiceProcessor?.dispose();
+    _speechToText?.dispose();
     super.dispose();
   }
   
@@ -253,11 +273,30 @@ class _CameraModuleState extends State<CameraModule>
   Future<void> _setupCameraController(int cameraIndex) async {
     if (_cameras.isEmpty) return;
     
+    // Mark as not initialized during transition
+    if (mounted) {
+      setState(() {
+        _isInitialized = false;
+      });
+    }
+    
     // Dispose existing controller if any
     if (_cameraController != null) {
-      await _cameraController!.dispose();
+      try {
+        // Make sure to stop recording if active
+        if (_isRecording) {
+          await _cameraController!.stopVideoRecording();
+          _isRecording = false;
+        }
+        await _cameraController!.dispose();
+      } catch (e) {
+        print('Error disposing camera controller: $e');
+      }
       _cameraController = null;
     }
+    
+    // Small delay to ensure proper cleanup
+    await Future.delayed(const Duration(milliseconds: 100));
     
     final camera = _cameras[cameraIndex];
     _cameraController = CameraController(
@@ -277,9 +316,13 @@ class _CameraModuleState extends State<CameraModule>
       // Set initial zoom
       await _cameraController!.setZoomLevel(_minZoom);
       
+      // Restore flash mode
+      await _cameraController!.setFlashMode(_flashMode);
+      
       if (mounted) {
         setState(() {
           _isInitialized = true;
+          _zoomLevel = _minZoom;
         });
       }
     } catch (e) {
@@ -306,6 +349,20 @@ class _CameraModuleState extends State<CameraModule>
   
   Future<void> _toggleCamera() async {
     if (_cameras.length < 2) return;
+    
+    // Stop any active image streams before switching
+    if (_arEffectsEnabled || _filtersEnabled) {
+      try {
+        await _cameraController?.stopImageStream();
+      } catch (e) {
+        print('Error stopping image stream: $e');
+      }
+      setState(() {
+        _arEffectsEnabled = false;
+        _filtersEnabled = false;
+        _processedFrame = null;
+      });
+    }
     
     setState(() {
       _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras.length;
