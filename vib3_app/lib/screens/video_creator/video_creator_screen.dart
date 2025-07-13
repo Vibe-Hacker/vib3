@@ -273,7 +273,7 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
   
   void _navigateToUpload() async {
     print('_navigateToUpload called');
-    final creationState = context.read<CreationStateProvider>();
+    final creationState = _creationStateProvider;
     
     // Check if there are video clips to export
     if (creationState.videoClips.isEmpty) {
