@@ -114,15 +114,17 @@ class SpeechToTextService {
   }
   
   /// Handle speech recognition results
-  void _handleSpeechResult(stt.SpeechRecognitionResult result) {
+  void _handleSpeechResult(dynamic result) {
     _currentText = result.recognizedWords;
     
     // Update live text
     onLiveTextUpdated?.call(_currentText);
     
-    // Check if this is a final result (when confidence is high enough)
-    final isFinal = result.confidence > 0.8 || result.recognizedWords.endsWith('.') || 
-                    result.recognizedWords.endsWith('!') || result.recognizedWords.endsWith('?');
+    // Check if this is a final result
+    final isFinal = result.finalResult == true || 
+                    result.recognizedWords.endsWith('.') || 
+                    result.recognizedWords.endsWith('!') || 
+                    result.recognizedWords.endsWith('?');
     
     if (isFinal) {
       // Segment caption when we get a final result
