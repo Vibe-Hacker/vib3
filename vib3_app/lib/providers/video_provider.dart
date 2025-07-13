@@ -74,7 +74,7 @@ class VideoProvider extends ChangeNotifier {
     if (_isLoadingMore) return;
 
     try {
-      print('VideoProvider: Loading more videos...');
+      print('VideoProvider: Loading more videos for feed type: $feedType');
       _isLoadingMore = true;
       _error = null;
       notifyListeners();
@@ -82,49 +82,75 @@ class VideoProvider extends ChangeNotifier {
       // Get more videos based on feed type
       List<Video> newVideos = [];
       
-      // For now, recycle existing videos for infinite scroll
-      // In a real implementation, you'd load from server with pagination
-      List<Video> currentVideos;
-      
       switch (feedType) {
         case FeedType.forYou:
-          currentVideos = _forYouVideos;
+          // For "For You" feed, get more videos from server
+          final offset = _forYouVideos.length;
+          newVideos = await VideoService.getAllVideos(token, feed: 'foryou', offset: offset, limit: _pageSize);
+          
+          if (newVideos.isNotEmpty) {
+            _forYouVideos.addAll(newVideos);
+            print('VideoProvider: Loaded ${newVideos.length} new ForYou videos (total: ${_forYouVideos.length})');
+          } else {
+            // If no new videos, recycle existing ones for infinite scroll
+            if (_forYouVideos.isNotEmpty) {
+              final recycledVideos = List<Video>.from(_forYouVideos);
+              recycledVideos.shuffle();
+              _forYouVideos.addAll(recycledVideos);
+              print('VideoProvider: Recycled ${recycledVideos.length} ForYou videos for infinite scroll');
+            }
+          }
           break;
+          
         case FeedType.following:
-          currentVideos = _followingVideos;
+          // For following feed, get more videos with pagination
+          final offset = _followingVideos.length;
+          newVideos = await VideoService.getFollowingVideos(token, offset: offset, limit: _pageSize);
+          
+          if (newVideos.isNotEmpty) {
+            _followingVideos.addAll(newVideos);
+            print('VideoProvider: Loaded ${newVideos.length} new Following videos (total: ${_followingVideos.length})');
+          } else if (_followingVideos.isNotEmpty) {
+            // When we run out of new videos, the service will wrap around for infinite scroll
+            newVideos = await VideoService.getFollowingVideos(token, offset: offset, limit: _pageSize);
+            if (newVideos.isNotEmpty) {
+              _followingVideos.addAll(newVideos);
+              print('VideoProvider: Wrapped around - loaded ${newVideos.length} Following videos for infinite scroll');
+            }
+          }
           break;
+          
         case FeedType.friends:
-          currentVideos = _friendsVideos;
+          // For friends feed, get more videos with pagination
+          final offset = _friendsVideos.length;
+          newVideos = await VideoService.getFriendsVideos(token, offset: offset, limit: _pageSize);
+          
+          if (newVideos.isNotEmpty) {
+            _friendsVideos.addAll(newVideos);
+            print('VideoProvider: Loaded ${newVideos.length} new Friends videos (total: ${_friendsVideos.length})');
+          } else {
+            // If no new videos, recycle existing ones for infinite scroll
+            if (_friendsVideos.isNotEmpty) {
+              final recycledVideos = List<Video>.from(_friendsVideos);
+              recycledVideos.shuffle();
+              _friendsVideos.addAll(recycledVideos);
+              print('VideoProvider: Recycled ${recycledVideos.length} Friends videos for infinite scroll');
+            }
+          }
           break;
+          
         default:
-          currentVideos = _videos;
-      }
-      
-      if (currentVideos.isNotEmpty) {
-        // For infinite scroll, duplicate existing videos
-        // In production, you'd fetch new videos from server
-        final recycledVideos = List<Video>.from(currentVideos);
-        
-        // Shuffle for variety
-        recycledVideos.shuffle();
-        
-        // Add to appropriate list
-        switch (feedType) {
-          case FeedType.forYou:
-            _forYouVideos.addAll(recycledVideos);
-            break;
-          case FeedType.following:
-            _followingVideos.addAll(recycledVideos);
-            break;
-          case FeedType.friends:
-            _friendsVideos.addAll(recycledVideos);
-            break;
-          default:
+          // Default case - load more from all videos
+          final offset = _videos.length;
+          newVideos = await VideoService.getAllVideos(token, offset: offset, limit: _pageSize);
+          
+          if (newVideos.isNotEmpty) {
+            _videos.addAll(newVideos);
+          } else if (_videos.isNotEmpty) {
+            final recycledVideos = List<Video>.from(_videos);
+            recycledVideos.shuffle();
             _videos.addAll(recycledVideos);
-        }
-        
-        print('VideoProvider: Recycled ${recycledVideos.length} videos for infinite scroll');
-        _debugInfo = 'Total videos: ${currentVideos.length} (infinite scroll enabled)';
+          }
       }
       
       _hasMoreVideos = true; // Always true for infinite scroll
@@ -132,6 +158,7 @@ class VideoProvider extends ChangeNotifier {
       
     } catch (e) {
       print('VideoProvider: Error loading more videos: $e');
+      _error = 'Failed to load more videos';
     } finally {
       _isLoadingMore = false;
       notifyListeners();
@@ -389,24 +416,9 @@ class VideoProvider extends ChangeNotifier {
       if (index != -1) {
         final video = videoList[index];
         final newLikeCount = increment ? video.likesCount + 1 : video.likesCount - 1;
-        videoList[index] = Video(
-          id: video.id,
-          userId: video.userId,
-          username: video.username,
-          videoUrl: video.videoUrl,
-          thumbnailUrl: video.thumbnailUrl,
-          description: video.description,
+        videoList[index] = video.copyWith(
           likesCount: newLikeCount,
-          commentsCount: video.commentsCount,
-          sharesCount: video.sharesCount,
-          viewsCount: video.viewsCount,
-          duration: video.duration,
-          isPrivate: video.isPrivate,
-          createdAt: video.createdAt,
-          updatedAt: video.updatedAt,
-          user: video.user,
-          musicName: video.musicName,
-          hashtags: video.hashtags,
+          isLiked: increment,
         );
       }
     }

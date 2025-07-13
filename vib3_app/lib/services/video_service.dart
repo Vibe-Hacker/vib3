@@ -15,23 +15,24 @@ class VideoService {
     return DateTime.now().difference(cachedTime) < _cacheExpiry;
   }
   
-  static Future<List<Video>> getAllVideos(String token, {String feed = 'foryou'}) async {
+  static Future<List<Video>> getAllVideos(String token, {String feed = 'foryou', int offset = 0, int limit = 20}) async {
     // Check cache first
-    final cacheKey = 'getAllVideos_$feed';
+    final cacheKey = 'getAllVideos_${feed}_${offset}_$limit';
     if (_isCacheValid(cacheKey)) {
-      print('📦 Using cached videos for $feed');
+      print('📦 Using cached videos for $feed (offset: $offset, limit: $limit)');
       return (_cache[cacheKey]!['data'] as List<Video>);
     }
     
     print('🔍 VideoService.getAllVideos called with:');
     print('   Token: ${token.length > 10 ? '${token.substring(0, 10)}...' : token}');
     print('   Feed: $feed');
-    print('   URL: ${AppConfig.baseUrl}/api/videos?limit=20&page=0&feed=$feed');
+    print('   Offset: $offset, Limit: $limit');
+    print('   URL: ${AppConfig.baseUrl}/api/videos?limit=$limit&offset=$offset&feed=$feed');
     
     // First, let's test with a simple direct approach
     try {
       final testResponse = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=50&page=0&feed=$feed'),
+        Uri.parse('${AppConfig.baseUrl}/api/videos?limit=$limit&offset=$offset&feed=$feed'),
         headers: {
           'Accept': 'application/json',
           if (token != 'no-token') 'Authorization': 'Bearer $token',
@@ -1729,6 +1730,7 @@ class VideoService {
   
   static Future<List<Video>> getFollowingVideos(String token, {int offset = 0, int limit = 20}) async {
     try {
+      // First try the dedicated following endpoint
       final queryParams = {
         'offset': offset.toString(),
         'limit': limit.toString(),
@@ -1758,24 +1760,75 @@ class VideoService {
         videos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         
         return videos;
-      } else if (response.statusCode == 404) {
-        // Endpoint might not exist yet, fall back to filtering all videos
-        print('VideoService: getFollowingVideos - endpoint not found, using fallback filter');
-        
-        // Get all videos and filter by followed users
-        final allVideos = await getAllVideos(token);
-        
-        // TODO: Filter by followed users once we have that data
-        // For now, return a subset of videos as a demo
-        return allVideos.take(limit).toList();
       }
       
-      return [];
+      // Fallback: Use client-side filtering
+      print('VideoService: getFollowingVideos - using client-side filtering (status: ${response.statusCode})');
+      
+      // Get current user info to get their ID
+      final currentUser = await UserService.getCurrentUserProfile(token);
+      if (currentUser == null) {
+        print('VideoService: Could not get current user profile');
+        return [];
+      }
+      
+      // Get the list of users the current user is following
+      final followingUserIds = await UserService.getUserFollowing(currentUser.id, token);
+      
+      if (followingUserIds.isEmpty) {
+        print('VideoService: User is not following anyone');
+        return [];
+      }
+      
+      print('VideoService: User is following ${followingUserIds.length} users');
+      
+      // Store filtered videos in cache if not already cached
+      final cacheKey = 'following_videos_filtered';
+      if (!_isCacheValid(cacheKey)) {
+        // Get ALL available videos using the multi-request approach to ensure we have enough
+        final allVideos = await _fetchAllVideosByMakingMultipleRequests(token);
+        
+        print('VideoService: Got ${allVideos.length} total videos to filter from');
+        
+        // Filter videos to only include those from followed users
+        final followingVideos = allVideos.where((video) => 
+          followingUserIds.contains(video.userId)
+        ).toList();
+        
+        print('VideoService: Found ${followingVideos.length} videos from followed users');
+        
+        // Sort by creation date for chronological order
+        followingVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        
+        // Cache the filtered videos
+        _cache[cacheKey] = {
+          'data': followingVideos,
+          'timestamp': DateTime.now(),
+        };
+      }
+      
+      // Get cached filtered videos
+      final followingVideos = (_cache[cacheKey]!['data'] as List<Video>);
+      
+      // Apply pagination
+      final startIndex = offset;
+      final endIndex = (offset + limit).clamp(0, followingVideos.length);
+      
+      if (startIndex >= followingVideos.length) {
+        // For infinite scroll, wrap around to the beginning
+        if (followingVideos.isNotEmpty) {
+          final wrappedIndex = startIndex % followingVideos.length;
+          final wrappedEnd = (wrappedIndex + limit).clamp(0, followingVideos.length);
+          return followingVideos.sublist(wrappedIndex, wrappedEnd);
+        }
+        return [];
+      }
+      
+      return followingVideos.sublist(startIndex, endIndex);
+      
     } catch (e) {
       print('Error getting following videos: $e');
-      // Fall back to getting all videos
-      final allVideos = await getAllVideos(token);
-      return allVideos.take(limit).toList();
+      return [];
     }
   }
   

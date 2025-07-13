@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
-import '../models/user.dart';
+import '../models/user_model.dart';
 
 class UserService {
   static Future<List<User>> searchUsers(String query, String token) async {
@@ -85,10 +85,10 @@ class UserService {
     }
   }
   
-  static Future<User?> getCurrentUserProfile(String token) async {
+  static Future<List<String>> getUserFollowing(String userId, String token) async {
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/user/profile'),
+        Uri.parse('${AppConfig.baseUrl}/api/users/$userId/following'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -97,12 +97,51 @@ class UserService {
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return User.fromJson(data);
+        final List<dynamic> following = data['following'] ?? [];
+        return following.map((item) {
+          if (item is String) {
+            return item;
+          } else if (item is Map<String, dynamic>) {
+            return item['_id'] ?? item['id'] ?? '';
+          }
+          return '';
+        }).where((id) => id.isNotEmpty).toList();
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error getting user following list: $e');
+      return [];
+    }
+  }
+  
+  static Future<User?> getCurrentUserProfile(String token) async {
+    try {
+      print('🔍 UserService: Getting user profile from backend');
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}${AppConfig.profileEndpoint}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      print('📡 UserService: Response status: ${response.statusCode}');
+      print('📄 UserService: Response body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ UserService: Parsed user data: $data');
+        
+        // Check if the response has a nested 'user' object
+        final userData = data['user'] ?? data;
+        
+        return User.fromJson(userData);
       }
       
       return null;
     } catch (e) {
-      print('Error getting current user profile: $e');
+      print('❌ UserService: Error getting current user profile: $e');
       return null;
     }
   }
