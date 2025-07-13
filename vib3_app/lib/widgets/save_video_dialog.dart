@@ -72,23 +72,22 @@ class _SaveVideoDialogState extends State<SaveVideoDialog> {
     
     // Check if video is in favorites
     try {
-      final collections = await CollectionService.getCollections(token);
+      final collections = await CollectionService.getUserCollections(token);
       final favoritesCollection = collections.firstWhere(
-        (c) => c.name.toLowerCase() == 'favorites' || c.isFavorites == true,
+        (c) => c.name.toLowerCase() == 'favorites',
         orElse: () => Collection(
           id: '',
           name: '',
-          videoCount: 0,
-          thumbnails: [],
           userId: '',
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         ),
       );
       
       if (favoritesCollection.id.isNotEmpty) {
         // Check if video is in favorites collection
         setState(() {
-          _isInFavorites = favoritesCollection.videoIds?.contains(widget.video.id) ?? false;
+          _isInFavorites = favoritesCollection.videoIds.contains(widget.video.id);
         });
       }
     } catch (e) {
@@ -181,14 +180,14 @@ class _SaveVideoDialogState extends State<SaveVideoDialog> {
       
       if (token != null) {
         // Create the collection and add the video
-        final success = await CollectionService.createCollection(
+        final newCollection = await CollectionService.createCollection(
           name: result['name'],
           description: result['description'] ?? '',
           isPrivate: result['isPrivate'] ?? true,
           token: token,
         );
         
-        if (success && mounted) {
+        if (newCollection != null && mounted) {
           // Refresh collections
           _loadCollections();
           

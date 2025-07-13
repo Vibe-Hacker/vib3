@@ -928,24 +928,15 @@ class _CameraModuleState extends State<CameraModule>
               });
               // Add captions to creation state
               final creationState = context.read<CreationStateProvider>();
+              final recordingStartTime = DateTime.now();
               for (final caption in captions) {
                 creationState.addTextOverlay(TextOverlay(
                   text: caption.text,
                   position: const Offset(0.5, 0.8), // Bottom center
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    shadows: [
-                      Shadow(
-                        offset: Offset(1, 1),
-                        blurRadius: 3,
-                        color: Colors.black,
-                      ),
-                    ],
-                  ),
-                  startTime: caption.startTime.difference(DateTime.now()).inSeconds.toDouble(),
-                  endTime: caption.endTime.difference(DateTime.now()).inSeconds.toDouble(),
+                  fontSize: 16,
+                  color: Colors.white.value,
+                  startTime: caption.startTime.difference(recordingStartTime),
+                  duration: caption.endTime.difference(caption.startTime),
                 ));
               }
             },

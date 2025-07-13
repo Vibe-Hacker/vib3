@@ -120,7 +120,11 @@ class SpeechToTextService {
     // Update live text
     onLiveTextUpdated?.call(_currentText);
     
-    if (result.finalResult) {
+    // Check if this is a final result (when confidence is high enough)
+    final isFinal = result.confidence > 0.8 || result.recognizedWords.endsWith('.') || 
+                    result.recognizedWords.endsWith('!') || result.recognizedWords.endsWith('?');
+    
+    if (isFinal) {
       // Segment caption when we get a final result
       _segmentCaption();
     }
@@ -222,7 +226,7 @@ class SpeechToTextService {
     if (!_isInitialized) {
       await initialize();
     }
-    return _isInitialized && await _speech.hasPermission();
+    return _isInitialized;
   }
   
   /// Request microphone permission
@@ -231,12 +235,8 @@ class SpeechToTextService {
       await initialize();
     }
     
-    final hasPermission = await _speech.hasPermission();
-    if (!hasPermission) {
-      // Permission will be requested when initialize() is called
-      return await initialize();
-    }
-    return true;
+    // Permission is requested during initialize()
+    return _isInitialized;
   }
   
   bool get isListening => _isListening;
