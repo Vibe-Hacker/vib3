@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/video.dart';
 import 'backend_health_service.dart';
+import 'user_service.dart';
 
 class VideoService {
   // Simple cache to avoid repeated API calls

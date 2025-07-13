@@ -105,7 +105,7 @@ class UserService {
             return item['_id'] ?? item['id'] ?? '';
           }
           return '';
-        }).where((id) => id.isNotEmpty).toList();
+        }).where((id) => id.isNotEmpty).toList().cast<String>();
       }
       
       return [];
@@ -135,7 +135,7 @@ class UserService {
             return item['_id'] ?? item['id'] ?? '';
           }
           return '';
-        }).where((id) => id.isNotEmpty).toList();
+        }).where((id) => id.isNotEmpty).toList().cast<String>();
       }
       
       return [];
