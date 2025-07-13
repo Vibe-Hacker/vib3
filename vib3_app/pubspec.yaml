@@ -68,6 +68,9 @@ dependencies:
   share_plus: ^7.2.2  # Native sharing
   url_launcher: ^6.2.2  # Launch external apps
   dio: ^5.4.0  # HTTP downloads for video saving
+  
+  # Speech Recognition
+  speech_to_text: ^7.0.0  # Auto-captions
 
 dev_dependencies:
   flutter_test:

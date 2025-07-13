@@ -19,6 +19,7 @@ class CameraControls extends StatefulWidget {
   final Function(int) onTimerSelected;
   final VoidCallback onGridToggle;
   final VoidCallback onBeautyToggle;
+  final VoidCallback? onFiltersToggle;
   final VoidCallback onGallery;
   
   const CameraControls({
@@ -39,6 +40,7 @@ class CameraControls extends StatefulWidget {
     required this.onTimerSelected,
     required this.onGridToggle,
     required this.onBeautyToggle,
+    this.onFiltersToggle,
     required this.onGallery,
   });
   
@@ -124,6 +126,15 @@ class _CameraControlsState extends State<CameraControls> {
                     isSelected: widget.beautyMode,
                     onTap: widget.onBeautyToggle,
                   ),
+                  
+                  // Filters
+                  if (widget.onFiltersToggle != null)
+                    _buildControlButton(
+                      label: 'Filters',
+                      icon: Icons.photo_filter,
+                      isSelected: false,
+                      onTap: widget.onFiltersToggle!,
+                    ),
                   
                   // Grid
                   _buildControlButton(

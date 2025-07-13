@@ -66,6 +66,11 @@ class VideoExportService {
     return videoPaths.first;
   }
   
+  /// Combine multiple clips into one (instance method for camera module)
+  Future<String> combineClips(List<String> videoPaths) async {
+    return mergeClips(videoPaths);
+  }
+  
   /// Apply voice effects to audio (placeholder)
   static Future<String> applyVoiceEffects(String videoPath, List<VideoEffect> voiceEffects) async {
     print('ℹ️ Voice effects processing requires FFmpeg - returning original video');

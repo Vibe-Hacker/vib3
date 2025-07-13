@@ -3,7 +3,12 @@ import 'package:provider/provider.dart';
 import '../providers/creation_state_provider.dart';
 
 class FiltersModule extends StatefulWidget {
-  const FiltersModule({super.key});
+  final Function(String?, double)? onFilterChanged;
+  
+  const FiltersModule({
+    super.key,
+    this.onFilterChanged,
+  });
   
   @override
   State<FiltersModule> createState() => _FiltersModuleState();
@@ -177,6 +182,7 @@ class _FiltersModuleState extends State<FiltersModule>
                 _selectedFilter = null;
               });
               creationState.setFilter('none');
+              widget.onFilterChanged?.call(null, 0);
             },
             child: _buildFilterTile(
               name: 'None',
@@ -205,6 +211,7 @@ class _FiltersModuleState extends State<FiltersModule>
               _filterIntensity = filter.intensity;
             });
             creationState.setFilter(filter.id);
+            widget.onFilterChanged?.call(filter.id, filter.intensity);
           },
           child: _buildFilterTile(
             name: filter.name,
@@ -373,6 +380,9 @@ class _FiltersModuleState extends State<FiltersModule>
                   _filterIntensity = value;
                 });
                 // Apply intensity change
+                if (_selectedFilter != null) {
+                  widget.onFilterChanged?.call(_selectedFilter, value);
+                }
               },
               activeColor: const Color(0xFF00CED1),
               inactiveColor: Colors.white.withOpacity(0.2),

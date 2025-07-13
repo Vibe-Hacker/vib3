@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -9,9 +10,14 @@ import '../providers/creation_state_provider.dart';
 import '../widgets/camera_controls.dart';
 import '../widgets/recording_timer.dart';
 import '../widgets/beauty_slider.dart';
+import '../widgets/auto_captions_widget.dart';
 import 'beauty_filters_module.dart';
+import 'filters_module.dart';
 import '../../../services/ar_effects_processor.dart';
 import '../../../services/voice_effects_processor.dart';
+import '../../../services/real_time_filter_processor.dart';
+import '../../../services/video_export_service.dart';
+import '../../../services/speech_to_text_service.dart';
 
 // Custom painter for rendering AR effects on camera frames
 class ARFramePainter extends CustomPainter {
@@ -109,8 +115,13 @@ class _CameraModuleState extends State<CameraModule>
   // AR Effects and Real-time Processing
   AREffectsProcessor? _arProcessor;
   VoiceEffectsProcessor? _voiceProcessor;
+  RealTimeFilterProcessor? _filterProcessor;
   ui.Image? _processedFrame;
   bool _arEffectsEnabled = false;
+  bool _filtersEnabled = false;
+  
+  // Auto-captions
+  List<Caption>? _generatedCaptions;
   
   @override
   void initState() {
@@ -131,7 +142,9 @@ class _CameraModuleState extends State<CameraModule>
       _voiceProcessor = VoiceEffectsProcessor();
       await _voiceProcessor!.initialize();
       
-      print('✅ AR and Voice processors initialized');
+      _filterProcessor = RealTimeFilterProcessor();
+      
+      print('✅ AR, Voice, and Filter processors initialized');
     } catch (e) {
       print('❌ Error initializing processors: $e');
     }
@@ -281,8 +294,14 @@ class _CameraModuleState extends State<CameraModule>
   }
   
   void _setupGestureRecognition() {
-    // TODO: Implement hand gesture recognition for hands-free recording
-    // This would use ML Kit or similar for gesture detection
+    // Hand gesture recognition for hands-free recording
+    // Currently using double-tap as a simulation
+    // In production, this would integrate with ML Kit's hand gesture detection
+    // to recognize specific gestures like:
+    // - Open palm to start recording
+    // - Closed fist to stop recording
+    // - Peace sign to switch camera
+    // For now, double-tap gesture is enabled in the camera preview
   }
   
   Future<void> _toggleCamera() async {
@@ -616,11 +635,48 @@ class _CameraModuleState extends State<CameraModule>
     );
   }
   
-  void _combineClipsAndProceed() {
-    // TODO: Combine multiple clips into one video
-    // For now, just use the first clip
-    if (_recordedClips.isNotEmpty) {
+  void _combineClipsAndProceed() async {
+    if (_recordedClips.isEmpty) return;
+    
+    // If only one clip, no need to combine
+    if (_recordedClips.length == 1) {
       widget.onVideoRecorded(_recordedClips.first);
+      return;
+    }
+    
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF00CED1),
+        ),
+      ),
+    );
+    
+    try {
+      // Use video export service to combine clips
+      final videoExport = VideoExportService();
+      final outputPath = await videoExport.combineClips(_recordedClips);
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        widget.onVideoRecorded(outputPath);
+      }
+    } catch (e) {
+      print('Error combining clips: $e');
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to combine clips: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        // Fallback to first clip
+        widget.onVideoRecorded(_recordedClips.first);
+      }
     }
   }
   
@@ -641,6 +697,21 @@ class _CameraModuleState extends State<CameraModule>
   
   // Real-time AR effects preview
   Widget _buildARPreview() {
+    return Stack(
+      children: [
+        CameraPreview(_cameraController!),
+        if (_processedFrame != null)
+          Positioned.fill(
+            child: CustomPaint(
+              painter: ARFramePainter(_processedFrame!),
+            ),
+          ),
+      ],
+    );
+  }
+  
+  // Real-time filter preview
+  Widget _buildFilterPreview() {
     return Stack(
       children: [
         CameraPreview(_cameraController!),
@@ -685,17 +756,78 @@ class _CameraModuleState extends State<CameraModule>
   
   // Process individual camera frames for AR effects
   Future<void> _processARFrame(CameraImage image) async {
-    if (_arProcessor == null || !_arEffectsEnabled || !mounted) return;
+    if (!mounted) return;
     
     try {
-      final processedFrame = await _arProcessor!.processFrame(image);
+      ui.Image? processedFrame;
+      
+      // Process with AR effects if enabled
+      if (_arEffectsEnabled && _arProcessor != null) {
+        processedFrame = await _arProcessor!.processFrame(image);
+      }
+      // Process with filters if enabled
+      else if (_filtersEnabled && _filterProcessor != null) {
+        processedFrame = await _filterProcessor!.processFrame(image);
+      }
+      
       if (processedFrame != null && mounted) {
         setState(() {
           _processedFrame = processedFrame;
         });
       }
     } catch (e) {
-      print('❌ AR frame processing error: $e');
+      print('❌ Frame processing error: $e');
+    }
+  }
+  
+  // Toggle filters on/off
+  void _toggleFilters(bool enable) {
+    setState(() {
+      _filtersEnabled = enable;
+      if (!enable) {
+        _processedFrame = null;
+      }
+    });
+    
+    if (enable && _cameraController != null && !_arEffectsEnabled) {
+      try {
+        _cameraController!.startImageStream(_processARFrame);
+        print('✅ Filters enabled - processing camera stream');
+      } catch (e) {
+        print('❌ Error starting filter stream: $e');
+        setState(() {
+          _filtersEnabled = false;
+        });
+      }
+    } else if (!enable && !_arEffectsEnabled && _cameraController != null) {
+      try {
+        _cameraController!.stopImageStream();
+        print('⏹️ Filters disabled');
+      } catch (e) {
+        print('❌ Error stopping filter stream: $e');
+      }
+    }
+  }
+  
+  // Apply filter settings
+  void applyFilter(String? filterId, {double intensity = 1.0}) {
+    if (_filterProcessor != null) {
+      _filterProcessor!.setFilter(filterId, intensity: intensity);
+      if (filterId != null && !_filtersEnabled) {
+        _toggleFilters(true);
+      } else if (filterId == null && _filtersEnabled) {
+        _toggleFilters(false);
+      }
+    }
+  }
+  
+  // Apply beauty settings
+  void applyBeautySettings(Map<String, double> settings) {
+    if (_filterProcessor != null) {
+      _filterProcessor!.setBeautySettings(settings);
+      if (settings.values.any((v) => v != 0) && !_filtersEnabled) {
+        _toggleFilters(true);
+      }
     }
   }
   
@@ -723,7 +855,9 @@ class _CameraModuleState extends State<CameraModule>
             onDoubleTap: _handleGesture, // Hands-free gesture simulation
             child: _arEffectsEnabled 
                 ? _buildARPreview() 
-                : CameraPreview(_cameraController!),
+                : _filtersEnabled
+                    ? _buildFilterPreview()
+                    : CameraPreview(_cameraController!),
           ),
         ),
         
@@ -780,6 +914,43 @@ class _CameraModuleState extends State<CameraModule>
               ),
             ),
           ),
+        
+        // Auto-captions widget
+        Positioned(
+          top: 100,
+          left: 0,
+          right: 0,
+          child: AutoCaptionsWidget(
+            isRecording: _isRecording,
+            onCaptionsGenerated: (captions) {
+              setState(() {
+                _generatedCaptions = captions;
+              });
+              // Add captions to creation state
+              final creationState = context.read<CreationStateProvider>();
+              for (final caption in captions) {
+                creationState.addTextOverlay(TextOverlay(
+                  text: caption.text,
+                  position: const Offset(0.5, 0.8), // Bottom center
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                        color: Colors.black,
+                      ),
+                    ],
+                  ),
+                  startTime: caption.startTime.difference(DateTime.now()).inSeconds.toDouble(),
+                  endTime: caption.endTime.difference(DateTime.now()).inSeconds.toDouble(),
+                ));
+              }
+            },
+          ),
+        ),
         
         // Beauty controls
         if (_showBeautyControls)
@@ -864,11 +1035,57 @@ class _CameraModuleState extends State<CameraModule>
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
-                builder: (context) => const BeautyFiltersModule(),
+                builder: (context) => BeautyFiltersModule(
+                  onBeautySettingsChanged: (settings) {
+                    applyBeautySettings(settings);
+                  },
+                ),
               );
             },
-            onGallery: () {
-              // TODO: Open gallery picker
+            onFiltersToggle: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => FiltersModule(
+                  onFilterChanged: (filterId, intensity) {
+                    applyFilter(filterId, intensity: intensity);
+                  },
+                ),
+              );
+            },
+            onGallery: () async {
+              // Open gallery picker
+              try {
+                final picker = ImagePicker();
+                final XFile? video = await picker.pickVideo(
+                  source: ImageSource.gallery,
+                );
+                
+                if (video != null && mounted) {
+                  // Add selected video to clips
+                  setState(() {
+                    _recordedClips.add(video.path);
+                  });
+                  
+                  // Add to creation state
+                  final creationState = context.read<CreationStateProvider>();
+                  creationState.addVideoClip(video.path);
+                  
+                  // Navigate to edit
+                  widget.onVideoRecorded(video.path);
+                }
+              } catch (e) {
+                print('Error picking video from gallery: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Failed to access gallery'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
           ),
         ),

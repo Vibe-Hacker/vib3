@@ -4,7 +4,12 @@ import 'package:provider/provider.dart';
 import '../providers/creation_state_provider.dart';
 
 class BeautyFiltersModule extends StatefulWidget {
-  const BeautyFiltersModule({super.key});
+  final Function(Map<String, double>)? onBeautySettingsChanged;
+  
+  const BeautyFiltersModule({
+    super.key,
+    this.onBeautySettingsChanged,
+  });
   
   @override
   State<BeautyFiltersModule> createState() => _BeautyFiltersModuleState();
@@ -149,6 +154,17 @@ class _BeautyFiltersModuleState extends State<BeautyFiltersModule> {
     // Enable beauty mode
     creationState.setBeautyMode(true);
     creationState.setBeautyIntensity(_smoothness);
+    
+    // Prepare beauty settings map
+    final settings = {
+      'smooth': _smoothness,
+      'brightness': _brightness - 0.5, // Convert to -0.5 to 0.5 range
+      'contrast': _contrast - 0.5,
+      'saturation': 0.0, // Default saturation
+    };
+    
+    // Call the callback to apply settings
+    widget.onBeautySettingsChanged?.call(settings);
     
     // Add beauty effect with all parameters
     creationState.addEffect(

@@ -5,6 +5,7 @@ import '../models/collection.dart';
 import '../models/video.dart';
 import '../services/collection_service.dart';
 import '../providers/auth_provider.dart';
+import '../screens/create_collection_dialog.dart';
 
 class SaveVideoDialog extends StatefulWidget {
   final Video video;
@@ -70,10 +71,32 @@ class _SaveVideoDialogState extends State<SaveVideoDialog> {
     if (token == null) return;
     
     // Check if video is in favorites
-    // TODO: Implement check favorite status API
-    setState(() {
-      _isInFavorites = false; // Default for now
-    });
+    try {
+      final collections = await CollectionService.getCollections(token);
+      final favoritesCollection = collections.firstWhere(
+        (c) => c.name.toLowerCase() == 'favorites' || c.isFavorites == true,
+        orElse: () => Collection(
+          id: '',
+          name: '',
+          videoCount: 0,
+          thumbnails: [],
+          userId: '',
+          createdAt: DateTime.now(),
+        ),
+      );
+      
+      if (favoritesCollection.id.isNotEmpty) {
+        // Check if video is in favorites collection
+        setState(() {
+          _isInFavorites = favoritesCollection.videoIds?.contains(widget.video.id) ?? false;
+        });
+      }
+    } catch (e) {
+      print('Error checking favorite status: $e');
+      setState(() {
+        _isInFavorites = false;
+      });
+    }
   }
   
   Future<void> _toggleFavorite() async {
@@ -144,9 +167,40 @@ class _SaveVideoDialogState extends State<SaveVideoDialog> {
     }
   }
   
-  void _createNewCollection() {
+  void _createNewCollection() async {
     Navigator.pop(context);
-    // TODO: Navigate to create collection with video pre-added
+    // Show create collection dialog
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => const CreateCollectionDialog(),
+    );
+    
+    if (result != null) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.authToken;
+      
+      if (token != null) {
+        // Create the collection and add the video
+        final success = await CollectionService.createCollection(
+          name: result['name'],
+          description: result['description'] ?? '',
+          isPrivate: result['isPrivate'] ?? true,
+          token: token,
+        );
+        
+        if (success && mounted) {
+          // Refresh collections
+          _loadCollections();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Created collection "${result['name']}"'),
+              backgroundColor: const Color(0xFF00CED1),
+            ),
+          );
+        }
+      }
+    }
   }
   
   @override
