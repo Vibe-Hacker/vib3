@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class AnalyticsChart extends StatelessWidget {
-  final List<FlSpot> data;
+  final List<double> data;
   final Color color;
   final double height;
+  final int period;
   
   const AnalyticsChart({
     super.key,
     required this.data,
-    required this.color,
+    this.color = const Color(0xFF00CED1),
     this.height = 200,
+    this.period = 7,
   });
   
   @override
@@ -29,6 +31,11 @@ class AnalyticsChart extends StatelessWidget {
         ),
       );
     }
+    
+    // Convert double list to FlSpot list
+    final spots = data.asMap().entries.map((entry) {
+      return FlSpot(entry.key.toDouble(), entry.value);
+    }).toList();
     
     return Container(
       height: height,
@@ -67,7 +74,7 @@ class AnalyticsChart extends StatelessWidget {
                   }
                   
                   return Text(
-                    value.toInt().toString(),
+                    _getDayLabel(value.toInt()),
                     style: const TextStyle(
                       color: Colors.white54,
                       fontSize: 10,
@@ -110,7 +117,7 @@ class AnalyticsChart extends StatelessWidget {
           maxY: _getMaxY(),
           lineBarsData: [
             LineChartBarData(
-              spots: data,
+              spots: spots,
               isCurved: true,
               color: color,
               barWidth: 3,
@@ -142,7 +149,7 @@ class AnalyticsChart extends StatelessWidget {
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
               getTooltipColor: (touchedSpot) => const Color(0xFF1A1A1A),
-              tooltipRoundedRadius: 8,
+              tooltipBorder: const BorderSide(color: Colors.transparent),
               tooltipPadding: const EdgeInsets.all(8),
               tooltipMargin: 8,
               getTooltipItems: (touchedSpots) {
@@ -188,7 +195,7 @@ class AnalyticsChart extends StatelessWidget {
   double _getMaxY() {
     if (data.isEmpty) return 10;
     
-    double maxValue = data.map((spot) => spot.y).reduce((a, b) => a > b ? a : b);
+    double maxValue = data.reduce((a, b) => a > b ? a : b);
     return maxValue * 1.2; // Add 20% padding
   }
   
@@ -199,5 +206,16 @@ class AnalyticsChart extends StatelessWidget {
       return '${(value / 1000).toStringAsFixed(1)}K';
     }
     return value.toStringAsFixed(0);
+  }
+  
+  String _getDayLabel(int index) {
+    if (period == 7) {
+      final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      return days[index % 7];
+    } else if (period == 30) {
+      return 'Day ${index + 1}';
+    } else {
+      return 'Week ${(index ~/ 7) + 1}';
+    }
   }
 }
