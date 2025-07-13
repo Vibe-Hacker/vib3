@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import '../screens/video_creator/providers/creation_state_provider.dart';
@@ -10,7 +11,6 @@ import 'green_screen_processor.dart';
 
 /// Real video export service with FFmpeg processing
 class VideoExportService {
-  static final FlutterFFmpeg _ffmpeg = FlutterFFmpeg();
   static final VoiceEffectsProcessor _voiceProcessor = VoiceEffectsProcessor();
   static final AREffectsProcessor _arProcessor = AREffectsProcessor();
   static final GreenScreenProcessor _greenScreenProcessor = GreenScreenProcessor();
@@ -114,9 +114,10 @@ class VideoExportService {
     await concatFile.writeAsString(concatContent);
     
     final command = '-f concat -safe 0 -i \${concatFile.path} -c copy \$outputPath';
-    final rc = await _ffmpeg.execute(command);
+    final session = await FFmpegKit.execute(command);
+    final returnCode = await session.getReturnCode();
     
-    if (rc != 0) {
+    if (!ReturnCode.isSuccess(returnCode)) {
       throw Exception('Failed to merge video clips');
     }
     
@@ -185,9 +186,10 @@ class VideoExportService {
     }
     
     final command = '-i \$videoPath -af "\$audioFilters" -c:v copy \$outputPath';
-    final rc = await _ffmpeg.execute(command);
+    final session = await FFmpegKit.execute(command);
+    final returnCode = await session.getReturnCode();
     
-    if (rc != 0) {
+    if (!ReturnCode.isSuccess(returnCode)) {
       print('❌ Voice effects processing failed');
       return videoPath; // Return original if processing fails
     }
@@ -227,8 +229,9 @@ class VideoExportService {
             '[1:v][ckout]overlay[out]" '
             '-map "[out]" -map 0:a -c:a copy \$outputPath';
         
-        final rc = await _ffmpeg.execute(command);
-        if (rc == 0) {
+        final session = await FFmpegKit.execute(command);
+        final returnCode = await session.getReturnCode();
+        if (ReturnCode.isSuccess(returnCode)) {
           print('✅ Green screen effect applied');
           return outputPath;
         }
@@ -255,9 +258,10 @@ class VideoExportService {
         '[a0][a1]amix=inputs=2:duration=first[aout]" '
         '-map 0:v -map "[aout]" -c:v copy \$outputPath';
     
-    final rc = await _ffmpeg.execute(command);
+    final session = await FFmpegKit.execute(command);
+    final returnCode = await session.getReturnCode();
     
-    if (rc != 0) {
+    if (!ReturnCode.isSuccess(returnCode)) {
       print('❌ Background music processing failed');
       return videoPath;
     }
@@ -275,9 +279,10 @@ class VideoExportService {
         '-filter_complex "[0:a][1:a]amix=inputs=2:duration=first[aout]" '
         '-map 0:v -map "[aout]" -c:v copy \$outputPath';
     
-    final rc = await _ffmpeg.execute(command);
+    final session = await FFmpegKit.execute(command);
+    final returnCode = await session.getReturnCode();
     
-    if (rc != 0) {
+    if (!ReturnCode.isSuccess(returnCode)) {
       print('❌ Voiceover processing failed');
       return videoPath;
     }
@@ -327,9 +332,10 @@ class VideoExportService {
     
     if (filterComplex.isNotEmpty) {
       final command = '-i \$videoPath -vf "\$filterComplex" -c:a copy \$outputPath';
-      final rc = await _ffmpeg.execute(command);
+      final session = await FFmpegKit.execute(command);
+      final returnCode = await session.getReturnCode();
       
-      if (rc != 0) {
+      if (!ReturnCode.isSuccess(returnCode)) {
         print('❌ Overlay processing failed');
         return videoPath;
       }
@@ -372,9 +378,10 @@ class VideoExportService {
     }
     
     final command = '-i \$videoPath -vf "\$videoFilter" -c:a copy \$outputPath';
-    final rc = await _ffmpeg.execute(command);
+    final session = await FFmpegKit.execute(command);
+    final returnCode = await session.getReturnCode();
     
-    if (rc != 0) {
+    if (!ReturnCode.isSuccess(returnCode)) {
       print('❌ Color filter processing failed');
       return videoPath;
     }
@@ -386,7 +393,7 @@ class VideoExportService {
   /// Get video information
   static Future<Map<String, dynamic>> getVideoInfo(String videoPath) async {
     final command = '-i \$videoPath -hide_banner';
-    final output = await _ffmpeg.execute(command);
+    final session = await FFmpegKit.execute(command);
     
     // Parse FFmpeg output for video information
     // This is a simplified version - would need proper parsing
