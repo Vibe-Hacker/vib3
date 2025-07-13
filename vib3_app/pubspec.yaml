@@ -61,7 +61,7 @@ dependencies:
   image: ^4.1.7  # Image processing for effects
   
   # Audio Processing
-  ffmpeg_kit_flutter: ^6.0.3  # Audio/video effects processing
+  ffmpeg_kit_flutter_min: ^6.0.3  # Audio/video effects processing (minimal version)
   just_audio: ^0.9.37  # Audio playback and effects
   
   # Sharing & External Apps
