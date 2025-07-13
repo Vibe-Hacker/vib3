@@ -198,10 +198,21 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                   currentMode: _currentMode,
                   onBack: () {
                     if (_currentMode == CreatorMode.camera) {
-                      Navigator.pop(context);
+                      // Properly return to the previous screen
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        // If we can't pop, we're at the root, so use pushReplacement to go home
+                        Navigator.pushReplacementNamed(context, '/');
+                      }
                     } else if (_currentMode == CreatorMode.edit) {
                       // From edit mode, go back to previous screen
-                      Navigator.pop(context);
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        // If we can't pop, we're at the root, so use pushReplacement to go home
+                        Navigator.pushReplacementNamed(context, '/');
+                      }
                     } else {
                       // From other modes, return to edit mode
                       setState(() {

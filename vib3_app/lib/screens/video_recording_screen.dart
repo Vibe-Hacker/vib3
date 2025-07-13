@@ -261,7 +261,15 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
                   children: [
                   // Close button
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      // Properly return to the previous screen
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        // If we can't pop, we're at the root, so use pushReplacement to go home
+                        Navigator.pushReplacementNamed(context, '/');
+                      }
+                    },
                     icon: const Icon(Icons.close, color: Colors.white, size: 28),
                   ),
                   
