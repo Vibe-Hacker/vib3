@@ -4,11 +4,59 @@ import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 import '../providers/creation_state_provider.dart';
 import '../widgets/camera_controls.dart';
 import '../widgets/recording_timer.dart';
 import '../widgets/beauty_slider.dart';
 import 'beauty_filters_module.dart';
+import '../../../services/ar_effects_processor.dart';
+import '../../../services/voice_effects_processor.dart';
+
+// Custom painter for rendering AR effects on camera frames
+class ARFramePainter extends CustomPainter {
+  final ui.Image image;
+  
+  ARFramePainter(this.image);
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..filterQuality = FilterQuality.high
+      ..isAntiAlias = true;
+    
+    // Calculate the scale to fit the image to the canvas
+    final imageAspectRatio = image.width / image.height;
+    final canvasAspectRatio = size.width / size.height;
+    
+    double scale;
+    double offsetX = 0;
+    double offsetY = 0;
+    
+    if (imageAspectRatio > canvasAspectRatio) {
+      // Image is wider, scale by height
+      scale = size.height / image.height;
+      offsetX = (size.width - (image.width * scale)) / 2;
+    } else {
+      // Image is taller, scale by width
+      scale = size.width / image.width;
+      offsetY = (size.height - (image.height * scale)) / 2;
+    }
+    
+    // Draw the processed AR frame
+    canvas.drawImageRect(
+      image,
+      Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+      Rect.fromLTWH(offsetX, offsetY, image.width * scale, image.height * scale),
+      paint,
+    );
+  }
+  
+  @override
+  bool shouldRepaint(ARFramePainter oldDelegate) {
+    return oldDelegate.image != image;
+  }
+}
 
 class CameraModule extends StatefulWidget {
   final Function(String) onVideoRecorded;
@@ -58,14 +106,35 @@ class _CameraModuleState extends State<CameraModule>
   // Gesture detection
   DateTime? _lastGestureTime;
   
+  // AR Effects and Real-time Processing
+  AREffectsProcessor? _arProcessor;
+  VoiceEffectsProcessor? _voiceProcessor;
+  ui.Image? _processedFrame;
+  bool _arEffectsEnabled = false;
+  
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
+    _initializeProcessors();
     
     // Setup gesture recognition for hands-free recording
     _setupGestureRecognition();
+  }
+  
+  Future<void> _initializeProcessors() async {
+    try {
+      _arProcessor = AREffectsProcessor();
+      await _arProcessor!.initialize();
+      
+      _voiceProcessor = VoiceEffectsProcessor();
+      await _voiceProcessor!.initialize();
+      
+      print('✅ AR and Voice processors initialized');
+    } catch (e) {
+      print('❌ Error initializing processors: $e');
+    }
   }
   
   @override
@@ -74,6 +143,8 @@ class _CameraModuleState extends State<CameraModule>
     _cameraController?.dispose();
     _recordingTimer?.cancel();
     _countdownTimer?.cancel();
+    _arProcessor?.dispose();
+    _voiceProcessor?.dispose();
     super.dispose();
   }
   
@@ -568,6 +639,66 @@ class _CameraModuleState extends State<CameraModule>
     _lastGestureTime = now;
   }
   
+  // Real-time AR effects preview
+  Widget _buildARPreview() {
+    return Stack(
+      children: [
+        CameraPreview(_cameraController!),
+        if (_processedFrame != null)
+          Positioned.fill(
+            child: CustomPaint(
+              painter: ARFramePainter(_processedFrame!),
+            ),
+          ),
+      ],
+    );
+  }
+  
+  // Toggle AR effects on/off
+  void _toggleAREffects() {
+    setState(() {
+      _arEffectsEnabled = !_arEffectsEnabled;
+    });
+    
+    if (_arEffectsEnabled && _cameraController != null) {
+      try {
+        _cameraController!.startImageStream(_processARFrame);
+        print('✅ AR effects enabled - processing camera stream');
+      } catch (e) {
+        print('❌ Error starting AR stream: $e');
+        setState(() {
+          _arEffectsEnabled = false;
+        });
+      }
+    } else if (_cameraController != null) {
+      try {
+        _cameraController!.stopImageStream();
+        setState(() {
+          _processedFrame = null;
+        });
+        print('⏹️ AR effects disabled');
+      } catch (e) {
+        print('❌ Error stopping AR stream: $e');
+      }
+    }
+  }
+  
+  // Process individual camera frames for AR effects
+  Future<void> _processARFrame(CameraImage image) async {
+    if (_arProcessor == null || !_arEffectsEnabled || !mounted) return;
+    
+    try {
+      final processedFrame = await _arProcessor!.processFrame(image);
+      if (processedFrame != null && mounted) {
+        setState(() {
+          _processedFrame = processedFrame;
+        });
+      }
+    } catch (e) {
+      print('❌ AR frame processing error: $e');
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized || _cameraController == null) {
@@ -590,7 +721,9 @@ class _CameraModuleState extends State<CameraModule>
               _setZoom(_zoomLevel * details.scale);
             },
             onDoubleTap: _handleGesture, // Hands-free gesture simulation
-            child: CameraPreview(_cameraController!),
+            child: _arEffectsEnabled 
+                ? _buildARPreview() 
+                : CameraPreview(_cameraController!),
           ),
         ),
         
