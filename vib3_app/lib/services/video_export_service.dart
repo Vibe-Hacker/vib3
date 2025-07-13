@@ -92,12 +92,12 @@ class VideoExportService {
       }
       
       onProgress?.call(1.0);
-      print('✅ Video export completed: \$processedVideoPath');
+      print('✅ Video export completed: $processedVideoPath');
       return processedVideoPath;
       
     } catch (e) {
-      print('❌ Video export failed: \$e');
-      throw Exception('Video export failed: \$e');
+      print('❌ Video export failed: $e');
+      throw Exception('Video export failed: $e');
     }
   }
   
@@ -106,14 +106,14 @@ class VideoExportService {
     if (videoPaths.length == 1) return videoPaths.first;
     
     final tempDir = await getTemporaryDirectory();
-    final outputPath = path.join(tempDir.path, 'merged_\${DateTime.now().millisecondsSinceEpoch}.mp4');
+    final outputPath = path.join(tempDir.path, 'merged_${DateTime.now().millisecondsSinceEpoch}.mp4');
     
     // Create concat file for FFmpeg
     final concatFile = File(path.join(tempDir.path, 'concat.txt'));
-    final concatContent = videoPaths.map((p) => "file '\$p'").join('\\n');
+    final concatContent = videoPaths.map((p) => "file '$p'").join('\n');
     await concatFile.writeAsString(concatContent);
     
-    final command = '-f concat -safe 0 -i \${concatFile.path} -c copy \$outputPath';
+    final command = '-f concat -safe 0 -i ${concatFile.path} -c copy $outputPath';
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
     
@@ -130,7 +130,7 @@ class VideoExportService {
     if (voiceEffects.isEmpty) return videoPath;
     
     final tempDir = await getTemporaryDirectory();
-    final outputPath = path.join(tempDir.path, 'voice_effects_\${DateTime.now().millisecondsSinceEpoch}.mp4');
+    final outputPath = path.join(tempDir.path, 'voice_effects_${DateTime.now().millisecondsSinceEpoch}.mp4');
     
     // Build FFmpeg filter chain for voice effects
     String audioFilters = '';
@@ -144,27 +144,27 @@ class VideoExportService {
         case 'chipmunk':
           final pitch = (params['pitch'] as double?) ?? 1.5;
           final speed = (params['speed'] as double?) ?? 1.2;
-          audioFilters += 'atempo=\$speed,asetrate=44100*\$pitch,aresample=44100,';
+          audioFilters += 'atempo=$speed,asetrate=44100*$pitch,aresample=44100,';
           break;
           
         case 'deep':
           final pitch = (params['pitch'] as double?) ?? 0.6;
           final speed = (params['speed'] as double?) ?? 0.9;
-          audioFilters += 'atempo=\$speed,asetrate=44100*\$pitch,aresample=44100,';
+          audioFilters += 'atempo=$speed,asetrate=44100*$pitch,aresample=44100,';
           break;
           
         case 'robot':
           // Ring modulation effect for robot voice
-          audioFilters += 'amodulate=f=10:d=\${intensity * 100},';
+          audioFilters += 'amodulate=f=10:d=${intensity * 100},';
           break;
           
         case 'echo':
           final delay = (params['echoDelay'] as double?) ?? 0.2;
-          audioFilters += 'aecho=0.8:0.9:\${(delay * 1000).toInt()}:0.3,';
+          audioFilters += 'aecho=0.8:0.9:${(delay * 1000).toInt()}:0.3,';
           break;
           
         case 'reverb':
-          audioFilters += 'afreqshift=shift=\${intensity * 100},reverb,';
+          audioFilters += 'afreqshift=shift=${intensity * 100},reverb,';
           break;
           
         case 'whisper':
@@ -176,7 +176,7 @@ class VideoExportService {
           break;
           
         default:
-          print('⚠️ Unknown voice effect: \$effectId');
+          print('⚠️ Unknown voice effect: $effectId');
       }
     }
     
@@ -185,7 +185,7 @@ class VideoExportService {
       audioFilters = audioFilters.substring(0, audioFilters.length - 1);
     }
     
-    final command = '-i \$videoPath -af "\$audioFilters" -c:v copy \$outputPath';
+    final command = '-i $videoPath -af "$audioFilters" -c:v copy $outputPath';
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
     
@@ -214,7 +214,7 @@ class VideoExportService {
     if (greenScreenEffects.isEmpty) return videoPath;
     
     final tempDir = await getTemporaryDirectory();
-    final outputPath = path.join(tempDir.path, 'greenscreen_\${DateTime.now().millisecondsSinceEpoch}.mp4');
+    final outputPath = path.join(tempDir.path, 'greenscreen_${DateTime.now().millisecondsSinceEpoch}.mp4');
     
     for (final effect in greenScreenEffects) {
       final params = effect.parameters;
@@ -223,11 +223,11 @@ class VideoExportService {
       final smoothing = (params['smoothing'] as double?) ?? 0.1;
       
       if (backgroundPath != null) {
-        final command = '-i \$videoPath -i \$backgroundPath '
+        final command = '-i $videoPath -i $backgroundPath '
             '-filter_complex "'
-            '[0:v]chromakey=0x00ff00:\$threshold:\$smoothing[ckout];'
+            '[0:v]chromakey=0x00ff00:$threshold:$smoothing[ckout];'
             '[1:v][ckout]overlay[out]" '
-            '-map "[out]" -map 0:a -c:a copy \$outputPath';
+            '-map "[out]" -map 0:a -c:a copy $outputPath';
         
         final session = await FFmpegKit.execute(command);
         final returnCode = await session.getReturnCode();
@@ -249,14 +249,14 @@ class VideoExportService {
     double musicVolume
   ) async {
     final tempDir = await getTemporaryDirectory();
-    final outputPath = path.join(tempDir.path, 'with_music_\${DateTime.now().millisecondsSinceEpoch}.mp4');
+    final outputPath = path.join(tempDir.path, 'with_music_${DateTime.now().millisecondsSinceEpoch}.mp4');
     
-    final command = '-i \$videoPath -i \$musicPath '
+    final command = '-i $videoPath -i $musicPath '
         '-filter_complex "'
-        '[0:a]volume=\$originalVolume[a0];'
-        '[1:a]volume=\$musicVolume[a1];'
+        '[0:a]volume=$originalVolume[a0];'
+        '[1:a]volume=$musicVolume[a1];'
         '[a0][a1]amix=inputs=2:duration=first[aout]" '
-        '-map 0:v -map "[aout]" -c:v copy \$outputPath';
+        '-map 0:v -map "[aout]" -c:v copy $outputPath';
     
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
@@ -273,11 +273,11 @@ class VideoExportService {
   /// Add voiceover audio
   static Future<String> _addVoiceover(String videoPath, String voiceoverPath) async {
     final tempDir = await getTemporaryDirectory();
-    final outputPath = path.join(tempDir.path, 'with_voiceover_\${DateTime.now().millisecondsSinceEpoch}.mp4');
+    final outputPath = path.join(tempDir.path, 'with_voiceover_${DateTime.now().millisecondsSinceEpoch}.mp4');
     
-    final command = '-i \$videoPath -i \$voiceoverPath '
+    final command = '-i $videoPath -i $voiceoverPath '
         '-filter_complex "[0:a][1:a]amix=inputs=2:duration=first[aout]" '
-        '-map 0:v -map "[aout]" -c:v copy \$outputPath';
+        '-map 0:v -map "[aout]" -c:v copy $outputPath';
     
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
@@ -300,7 +300,7 @@ class VideoExportService {
     if (textOverlays.isEmpty && stickers.isEmpty) return videoPath;
     
     final tempDir = await getTemporaryDirectory();
-    final outputPath = path.join(tempDir.path, 'with_overlays_\${DateTime.now().millisecondsSinceEpoch}.mp4');
+    final outputPath = path.join(tempDir.path, 'with_overlays_${DateTime.now().millisecondsSinceEpoch}.mp4');
     
     String filterComplex = '';
     int inputIndex = 1;
@@ -316,7 +316,7 @@ class VideoExportService {
           'x=${overlay.x}:y=${overlay.y}:'
           'fontsize=${overlay.fontSize}:'
           'fontcolor=${overlay.color}:'
-          'enable=\\'between(t,\$startTime,\${startTime + duration})\\'';
+          'enable=\\'between(t,$startTime,${startTime + duration})\\'';
       
       if (i < textOverlays.length - 1 || stickers.isNotEmpty) {
         filterComplex += ',';
@@ -331,7 +331,7 @@ class VideoExportService {
     }
     
     if (filterComplex.isNotEmpty) {
-      final command = '-i \$videoPath -vf "\$filterComplex" -c:a copy \$outputPath';
+      final command = '-i $videoPath -vf "$filterComplex" -c:a copy $outputPath';
       final session = await FFmpegKit.execute(command);
       final returnCode = await session.getReturnCode();
       
@@ -350,7 +350,7 @@ class VideoExportService {
   /// Apply color filter using FFmpeg
   static Future<String> _applyColorFilter(String videoPath, String filterName) async {
     final tempDir = await getTemporaryDirectory();
-    final outputPath = path.join(tempDir.path, 'filtered_\${DateTime.now().millisecondsSinceEpoch}.mp4');
+    final outputPath = path.join(tempDir.path, 'filtered_${DateTime.now().millisecondsSinceEpoch}.mp4');
     
     String videoFilter = '';
     
@@ -377,7 +377,7 @@ class VideoExportService {
         return videoPath; // No filter applied
     }
     
-    final command = '-i \$videoPath -vf "\$videoFilter" -c:a copy \$outputPath';
+    final command = '-i $videoPath -vf "$videoFilter" -c:a copy $outputPath';
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
     
@@ -386,13 +386,13 @@ class VideoExportService {
       return videoPath;
     }
     
-    print('✅ Color filter "\$filterName" applied successfully');
+    print('✅ Color filter "$filterName" applied successfully');
     return outputPath;
   }
   
   /// Get video information
   static Future<Map<String, dynamic>> getVideoInfo(String videoPath) async {
-    final command = '-i \$videoPath -hide_banner';
+    final command = '-i $videoPath -hide_banner';
     final session = await FFmpegKit.execute(command);
     
     // Parse FFmpeg output for video information

@@ -279,6 +279,7 @@ class CreationStateProvider extends ChangeNotifier {
     try {
       final exportedPath = await VideoExportService.exportVideo(
         clips: _videoClips,
+        effects: _effects,
         backgroundMusicPath: _backgroundMusicPath,
         voiceoverPath: _voiceoverPath,
         textOverlays: _textOverlays,

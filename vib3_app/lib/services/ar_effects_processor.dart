@@ -250,8 +250,8 @@ class AREffectsProcessor {
     if (landmarks[FaceLandmarkType.noseBase] != null) {
       final nose = landmarks[FaceLandmarkType.noseBase]!.position;
       img.fillCircle(image, 
-        centerX: nose.x.toInt(), 
-        centerY: nose.y.toInt(), 
+        x: nose.x.toInt(), 
+        y: nose.y.toInt(), 
         radius: 8, 
         color: img.ColorRgb8(0, 0, 0));
     }
@@ -281,14 +281,14 @@ class AREffectsProcessor {
     
     // Draw sunglasses lenses
     img.fillCircle(image,
-      centerX: leftEye.x.toInt(),
-      centerY: leftEye.y.toInt(),
+      x: leftEye.x.toInt(),
+      y: leftEye.y.toInt(),
       radius: 25,
       color: img.ColorRgb8(0, 0, 0)); // Black lens
     
     img.fillCircle(image,
-      centerX: rightEye.x.toInt(),
-      centerY: rightEye.y.toInt(),
+      x: rightEye.x.toInt(),
+      y: rightEye.y.toInt(),
       radius: 25,
       color: img.ColorRgb8(0, 0, 0)); // Black lens
     
@@ -315,28 +315,28 @@ class AREffectsProcessor {
     
     // Draw enlarged eyes
     img.drawCircle(image,
-      centerX: leftEye.x.toInt(),
-      centerY: leftEye.y.toInt(),
+      x: leftEye.x.toInt(),
+      y: leftEye.y.toInt(),
       radius: 35,
       color: img.ColorRgb8(255, 255, 255),
       thickness: 3);
     
     img.fillCircle(image,
-      centerX: leftEye.x.toInt(),
-      centerY: leftEye.y.toInt(),
+      x: leftEye.x.toInt(),
+      y: leftEye.y.toInt(),
       radius: 15,
       color: img.ColorRgb8(0, 0, 0)); // Pupil
     
     img.drawCircle(image,
-      centerX: rightEye.x.toInt(),
-      centerY: rightEye.y.toInt(),
+      x: rightEye.x.toInt(),
+      y: rightEye.y.toInt(),
       radius: 35,
       color: img.ColorRgb8(255, 255, 255),
       thickness: 3);
     
     img.fillCircle(image,
-      centerX: rightEye.x.toInt(),
-      centerY: rightEye.y.toInt(),
+      x: rightEye.x.toInt(),
+      y: rightEye.y.toInt(),
       radius: 15,
       color: img.ColorRgb8(0, 0, 0)); // Pupil
 
@@ -349,16 +349,16 @@ class AREffectsProcessor {
     
     if (leftCheek != null) {
       img.fillCircle(image,
-        centerX: leftCheek.x.toInt(),
-        centerY: leftCheek.y.toInt(),
+        x: leftCheek.x.toInt(),
+        y: leftCheek.y.toInt(),
         radius: 20,
         color: img.ColorRgb8(255, 182, 193)); // Light pink
     }
     
     if (rightCheek != null) {
       img.fillCircle(image,
-        centerX: rightCheek.x.toInt(),
-        centerY: rightCheek.y.toInt(),
+        x: rightCheek.x.toInt(),
+        y: rightCheek.y.toInt(),
         radius: 20,
         color: img.ColorRgb8(255, 182, 193)); // Light pink
     }
@@ -430,7 +430,7 @@ class AREffectsProcessor {
     for (int i = 0; i < 50; i++) {
       final x = (i * 67) % width;
       final y = (i * 89) % height;
-      img.fillCircle(image, centerX: x, centerY: y, radius: 2, 
+      img.fillCircle(image, x: x, y: y, radius: 2, 
         color: img.ColorRgb8(255, 255, 255));
     }
     
@@ -439,9 +439,9 @@ class AREffectsProcessor {
 
   void _drawHeart(img.Image image, int x, int y) {
     // Simple heart shape using circles and triangle
-    img.fillCircle(image, centerX: x - 5, centerY: y, radius: 5, 
+    img.fillCircle(image, x: x - 5, y: y, radius: 5, 
       color: img.ColorRgb8(255, 20, 147));
-    img.fillCircle(image, centerX: x + 5, centerY: y, radius: 5, 
+    img.fillCircle(image, x: x + 5, y: y, radius: 5, 
       color: img.ColorRgb8(255, 20, 147));
     // Triangle for bottom of heart
     // Simplified version - in practice would use proper triangle drawing
@@ -449,11 +449,11 @@ class AREffectsProcessor {
 
   void _drawButterfly(img.Image image, int x, int y) {
     // Simple butterfly using ellipses
-    img.drawCircle(image, centerX: x, centerY: y, radius: 8, 
+    img.drawCircle(image, x: x, y: y, radius: 8, 
       color: img.ColorRgb8(255, 165, 0), thickness: 2);
-    img.drawCircle(image, centerX: x - 6, centerY: y - 3, radius: 4, 
+    img.drawCircle(image, x: x - 6, y: y - 3, radius: 4, 
       color: img.ColorRgb8(255, 165, 0), thickness: 2);
-    img.drawCircle(image, centerX: x + 6, centerY: y - 3, radius: 4, 
+    img.drawCircle(image, x: x + 6, y: y - 3, radius: 4, 
       color: img.ColorRgb8(255, 165, 0), thickness: 2);
   }
 
