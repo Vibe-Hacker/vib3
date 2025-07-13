@@ -177,7 +177,6 @@ class _CameraModuleState extends State<CameraModule>
     _countdownTimer?.cancel();
     _arProcessor?.dispose();
     _voiceProcessor?.dispose();
-    _speechToText?.dispose();
     super.dispose();
   }
   
