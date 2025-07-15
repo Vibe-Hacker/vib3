@@ -6,6 +6,7 @@ import 'dart:io';
 import '../models/video.dart';
 import '../services/upload_service.dart';
 import '../providers/auth_provider.dart';
+import '../services/video_player_manager.dart';
 
 class PublishScreen extends StatefulWidget {
   final String videoPath;
@@ -50,14 +51,26 @@ class _PublishScreenState extends State<PublishScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeVideo();
+    // Clean up all video resources before initializing preview
+    VideoPlayerManager.nuclearCleanup().then((_) {
+      _initializeVideo();
+    });
   }
   
   Future<void> _initializeVideo() async {
     _videoController = VideoPlayerController.file(File(widget.videoPath));
     await _videoController.initialize();
     _videoController.setLooping(true);
-    _videoController.play();
+    
+    // Register with VideoPlayerManager
+    VideoPlayerManager.instance.registerController(_videoController);
+    
+    // Clean up all other video controllers to prevent buffer overflow
+    await VideoPlayerManager.instance.cleanupAllExcept(_videoController);
+    
+    // Use manager to play the video
+    await VideoPlayerManager.instance.playVideo(_videoController);
+    
     setState(() {});
   }
   
@@ -65,6 +78,12 @@ class _PublishScreenState extends State<PublishScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    
+    // Unregister from VideoPlayerManager
+    VideoPlayerManager.instance.unregisterController(_videoController);
+    
+    // Properly dispose video controller
+    _videoController.pause();
     _videoController.dispose();
     super.dispose();
   }
@@ -507,7 +526,7 @@ class _PublishScreenState extends State<PublishScreen> {
       }
       
       // Upload video
-      final success = await UploadService.uploadVideo(
+      final result = await UploadService.uploadVideo(
         videoFile: File(widget.videoPath),
         description: fullDescription,
         privacy: _isPublic ? 'public' : 'private',
@@ -523,7 +542,7 @@ class _PublishScreenState extends State<PublishScreen> {
         _isPublishing = false;
       });
       
-      if (success) {
+      if (result['success'] == true) {
         // Show success and navigate to home
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -543,7 +562,13 @@ class _PublishScreenState extends State<PublishScreen> {
           Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
         }
       } else {
-        throw Exception('Failed to upload video');
+        final error = result['error'] ?? 'Failed to upload video';
+        final details = result['details'];
+        print('🔴 Upload failed - Error: $error');
+        if (details != null) {
+          print('🔴 Details: $details');
+        }
+        throw Exception(error);
       }
     } catch (e) {
       setState(() {
