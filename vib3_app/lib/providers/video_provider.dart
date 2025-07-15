@@ -1,8 +1,11 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../models/video.dart';
 import '../services/video_service.dart';
 import '../services/user_service.dart';
 import '../widgets/video_feed.dart'; // For FeedType enum
+import '../services/recommendation_engine.dart';
+import '../providers/auth_provider.dart';
 
 class VideoProvider extends ChangeNotifier {
   final List<Video> _videos = [];
@@ -193,21 +196,69 @@ class VideoProvider extends ChangeNotifier {
 
   Future<void> loadForYouVideos(String token) async {
     try {
-      print('VideoProvider: Loading Vib3 Pulse videos...');
+      print('VideoProvider: Loading Vib3 Pulse videos with recommendation algorithm...');
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      // For You uses the main feed algorithm
-      final videos = await VideoService.getAllVideos(token, feed: 'foryou');
-      _forYouVideos.clear();
-      _forYouVideos.addAll(videos);
+      // Get user ID from token/auth
+      final authProvider = _getAuthProvider();
+      final userId = authProvider?.currentUser?.id ?? 'anonymous';
+      
+      // Try to get personalized videos from backend first
+      List<Video> allVideos;
+      try {
+        // Try the personalized endpoint if we have a real user ID
+        if (userId != 'anonymous') {
+          allVideos = await VideoService.getPersonalizedVideos(userId, token, limit: 100);
+          print('VideoProvider: Got ${allVideos.length} personalized videos from backend');
+        } else {
+          // Fallback to regular feed for anonymous users
+          allVideos = await VideoService.getAllVideos(token, feed: 'foryou', limit: 100);
+          print('VideoProvider: Got ${allVideos.length} videos from server (anonymous user)');
+        }
+      } catch (e) {
+        // Fallback to regular feed on error
+        print('VideoProvider: Personalized endpoint failed, falling back to regular feed');
+        allVideos = await VideoService.getAllVideos(token, feed: 'foryou', limit: 100);
+      }
+      
+      // Use recommendation engine to personalize the feed
+      try {
+        final recommendationEngine = RecommendationEngine();
+        print('VideoProvider: Sending ${allVideos.length} candidate videos to recommendation engine');
+        
+        final personalizedVideos = await recommendationEngine.getRecommendations(
+          userId: userId,
+          candidateVideos: allVideos,
+          count: min(50, allVideos.length), // Don't ask for more than available
+        );
+        
+        print('VideoProvider: Recommendation engine returned ${personalizedVideos.length} videos');
+        
+        if (personalizedVideos.isEmpty && allVideos.isNotEmpty) {
+          // If recommendation engine returns nothing but we have videos, use all videos
+          print('VideoProvider: Recommendation engine returned empty, using all ${allVideos.length} videos');
+          _forYouVideos.clear();
+          _forYouVideos.addAll(allVideos);
+        } else {
+          _forYouVideos.clear();
+          _forYouVideos.addAll(personalizedVideos);
+        }
+        
+        print('VideoProvider: Final ForYou video count: ${_forYouVideos.length}');
+      } catch (e) {
+        print('VideoProvider: Recommendation engine error: $e, falling back to all videos');
+        print('Stack trace: ${StackTrace.current}');
+        _forYouVideos.clear();
+        _forYouVideos.addAll(allVideos);
+      }
       
       // Also populate main videos list for backward compatibility
       _videos.clear();
-      _videos.addAll(videos);
+      _videos.addAll(_forYouVideos);
       
-      _debugInfo = 'Loaded ${videos.length} Vib3 Pulse videos';
+      _debugInfo = 'Loaded ${_forYouVideos.length} personalized Vib3 Pulse videos';
       
       notifyListeners();
     } catch (e, stackTrace) {
@@ -222,6 +273,7 @@ class VideoProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  
 
   Future<void> loadFollowingVideos(String token) async {
     try {
@@ -402,6 +454,10 @@ class VideoProvider extends ChangeNotifier {
       } else {
         // Clear following/friends cache when follow state changes
         VideoService.clearFollowingCache();
+        
+        // Reload following and friends feeds to reflect the change
+        loadFollowingVideos(token);
+        loadFriendsVideos(token);
       }
       
       return success;
@@ -448,6 +504,18 @@ class VideoProvider extends ChangeNotifier {
     } catch (e) {
       print('VideoProvider: Error initializing likes and follows: $e');
       // Don't set error state here as it's not critical for video loading
+    }
+  }
+  
+  // Helper method to get AuthProvider
+  AuthProvider? _getAuthProvider() {
+    try {
+      // This will be called from within a build context
+      // For now, return null and let the recommendation engine handle anonymous users
+      return null;
+    } catch (e) {
+      print('VideoProvider: Could not get AuthProvider: $e');
+      return null;
     }
   }
 }

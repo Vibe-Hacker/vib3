@@ -68,7 +68,7 @@ class VideoService {
           // Create a simple list without complex parsing to see if we get all videos
           final videos = <Video>[];
           
-          for (var i = 0; i < videosJson.length && i < 20; i++) {
+          for (var i = 0; i < videosJson.length; i++) {
             try {
               final json = videosJson[i];
               
@@ -1976,18 +1976,12 @@ class VideoService {
     }
   }
   
-  static Future<List<Video>> getUserLikedVideos(String token) async {
+  static Future<List<Video>> getPersonalizedVideos(String userId, String token, {int offset = 0, int limit = 50}) async {
     try {
-      // Get current user to get their liked videos
-      final currentUser = await UserService.getCurrentUserProfile(token);
-      if (currentUser == null) {
-        print('VideoService: Could not get current user profile for liked videos');
-        return [];
-      }
+      print('VideoService: Getting personalized videos for user: $userId');
       
-      // Try the liked videos endpoint
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/users/${currentUser.id}/liked-videos'),
+        Uri.parse('${AppConfig.baseUrl}/api/videos/foryou/$userId?limit=$limit&offset=$offset'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -1996,64 +1990,22 @@ class VideoService {
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List<dynamic> videosJson = data['videos'] ?? data ?? [];
+        final videosJson = data['videos'] as List<dynamic>;
         
-        print('VideoService: getUserLikedVideos - found ${videosJson.length} liked videos');
+        print('VideoService: Got ${videosJson.length} personalized videos from backend');
         
-        final videos = videosJson.map((json) => Video.fromJson(json)).toList();
-        return videos;
+        return videosJson.map((json) => 
+          Video.fromJson(json as Map<String, dynamic>)
+        ).toList();
       } else {
-        print('VideoService: getUserLikedVideos - endpoint returned ${response.statusCode}');
-        // As a fallback, we'll return empty list but the app will still work
-        return [];
+        print('VideoService: Failed to get personalized videos (${response.statusCode}), falling back to regular feed');
+        // Fallback to regular feed if personalized endpoint fails
+        return await getAllVideos(token, feed: 'foryou', offset: offset, limit: limit);
       }
     } catch (e) {
-      print('Error getting liked videos: $e');
-      return [];
+      print('VideoService: Error getting personalized videos: $e');
+      // Fallback to regular feed on error
+      return await getAllVideos(token, feed: 'foryou', offset: offset, limit: limit);
     }
-  }
-  
-  static Future<bool> likeVideo(String videoId, String token) async {
-    try {
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/api/videos/$videoId/like'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-      
-      return response.statusCode == 200 || response.statusCode == 201;
-    } catch (e) {
-      print('Error liking video: $e');
-      return false;
-    }
-  }
-  
-  static Future<bool> unlikeVideo(String videoId, String token) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('${AppConfig.baseUrl}/api/videos/$videoId/like'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-      
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Error unliking video: $e');
-      return false;
-    }
-  }
-  
-  static Future<bool> followUser(String userId, String token) async {
-    // Delegate to UserService
-    return UserService.followUser(userId, token);
-  }
-  
-  static Future<bool> unfollowUser(String userId, String token) async {
-    // Delegate to UserService
-    return UserService.unfollowUser(userId, token);
   }
 }

@@ -5110,6 +5110,54 @@ app.get('/api/users/:userId', async (req, res) => {
     }
 });
 
+// Get user following list
+app.get('/api/users/:userId/following', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { userId } = req.params;
+    
+    try {
+        const following = await db.collection('follows')
+            .find({ followerId: userId })
+            .toArray();
+        
+        const followingIds = following.map(f => f.followingId);
+        
+        console.log(`User ${userId} is following ${followingIds.length} users`);
+        res.json({ following: followingIds });
+        
+    } catch (error) {
+        console.error('Get user following error:', error);
+        res.status(500).json({ error: 'Failed to get following list' });
+    }
+});
+
+// Get user followers list
+app.get('/api/users/:userId/followers', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const { userId } = req.params;
+    
+    try {
+        const followers = await db.collection('follows')
+            .find({ followingId: userId })
+            .toArray();
+        
+        const followerIds = followers.map(f => f.followerId);
+        
+        console.log(`User ${userId} has ${followerIds.length} followers`);
+        res.json({ followers: followerIds });
+        
+    } catch (error) {
+        console.error('Get user followers error:', error);
+        res.status(500).json({ error: 'Failed to get followers list' });
+    }
+});
+
 // Search users
 app.get('/api/search/users', async (req, res) => {
     if (!db) {
