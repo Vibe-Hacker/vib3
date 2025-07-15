@@ -6073,6 +6073,10 @@ async function _seedMusicDatabase() {
     }
 }
 
+// Load recommendation endpoints
+const recommendationEndpoints = require('./recommendation-endpoints');
+recommendationEndpoints(app, db);
+
 // Error handling - MUST be last middleware BEFORE server.listen
 app.use((err, req, res, next) => {
     console.error('ERROR CAUGHT:', err.message);
