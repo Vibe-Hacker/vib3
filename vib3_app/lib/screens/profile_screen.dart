@@ -72,7 +72,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       
       print('ProfileScreen: Loaded ${videos.length} videos for user $targetUserId');
       for (final video in videos) {
-        print('Video: ${video.id}, thumbnail: ${video.thumbnailUrl}');
+        print('Video: ${video.id}');
+        print('  - description: ${video.description}');
+        print('  - videoUrl: ${video.videoUrl}');
+        print('  - thumbnailUrl: ${video.thumbnailUrl}');
       }
       
       setState(() {
@@ -555,8 +558,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     return GridView.builder(
       padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4, // Unique 4-column layout
-        childAspectRatio: 3 / 4, // Good for 4 columns
+        crossAxisCount: 4, // Unique 4-column layout to differentiate from competitors
+        childAspectRatio: 3 / 4, // Custom aspect ratio for 4-column grid
         crossAxisSpacing: 4,
         mainAxisSpacing: 4,
       ),

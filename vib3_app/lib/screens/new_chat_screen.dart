@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/user_service.dart';
 import '../services/chat_service.dart';
-import '../models/user.dart';
+import '../models/user_model.dart';
 import 'dm_chat_screen.dart';
 
 class NewChatScreen extends StatefulWidget {
@@ -436,10 +436,10 @@ class _UserTile extends StatelessWidget {
                 )
               : null,
         ),
-        child: user.profileImageUrl != null
+        child: user.profilePicture != null
             ? ClipOval(
                 child: Image.network(
-                  user.profileImageUrl!,
+                  user.profilePicture!,
                   width: 48,
                   height: 48,
                   fit: BoxFit.cover,

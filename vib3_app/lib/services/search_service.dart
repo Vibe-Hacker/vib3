@@ -268,11 +268,18 @@ class SearchService {
 
   static Future<Map<String, dynamic>> getTrendingContent(String token) async {
     try {
+      // Check if this is a known HTML endpoint
+      if (BackendHealthService.isHtmlEndpoint('/api/trending')) {
+        print('ℹ️ Using mock trending data (endpoint known to return HTML)');
+        return _getMockTrendingContent();
+      }
+      
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/trending'),
+        Uri.parse('${AppConfig.baseUrl}/api/trending'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       );
 
@@ -280,8 +287,8 @@ class SearchService {
         // Check if response is HTML (common error case)
         if (response.body.trim().startsWith('<') || response.body.contains('<!DOCTYPE')) {
           print('❌ Trending endpoint returned HTML instead of JSON');
-          BackendHealthService.reportHtmlResponse('/trending');
-          throw FormatException('Trending endpoint returned HTML instead of JSON');
+          BackendHealthService.reportHtmlResponse('/api/trending');
+          return _getMockTrendingContent();
         }
         
         final data = jsonDecode(response.body);
@@ -309,38 +316,39 @@ class SearchService {
           'hashtags': hashtags,
         };
       } else {
+        print('⚠️ Trending endpoint returned ${response.statusCode}');
         // Return mock data if endpoint doesn't exist
-        return {
-          'videos': <Video>[],
-          'hashtags': [
-            'viral',
-            'trending',
-            'funny',
-            'dance',
-            'music',
-            'pets',
-            'food',
-            'travel',
-          ],
-        };
+        return _getMockTrendingContent();
       }
     } catch (e) {
       print('Trending content error: $e');
       // Return mock data
-      return {
-        'videos': <Video>[],
-        'hashtags': [
-          'viral',
-          'trending',
-          'funny',
-          'dance',
-          'music',
-          'pets',
-          'food',
-          'travel',
-        ],
-      };
+      return _getMockTrendingContent();
     }
+  }
+  
+  static Map<String, dynamic> _getMockTrendingContent() {
+    return {
+      'videos': <Video>[],
+      'hashtags': [
+        'viral',
+        'trending',
+        'funny',
+        'dance',
+        'music',
+        'pets',
+        'food',
+        'travel',
+        'vib3',
+        'fyp',
+        'foryou',
+        'comedy',
+        'sports',
+        'gaming',
+        'fashion',
+        'art',
+      ],
+    };
   }
 
   static Future<List<String>> getSearchSuggestions(String query, String token) async {

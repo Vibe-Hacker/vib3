@@ -63,7 +63,13 @@ class VIB3App extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => VideoProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, VideoProvider>(
+          create: (_) => VideoProvider(),
+          update: (_, authProvider, videoProvider) {
+            videoProvider?.setAuthProvider(authProvider);
+            return videoProvider ?? VideoProvider();
+          },
+        ),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => VideoFeedStateManager()),
         // Add new video feed provider if feature flag is enabled

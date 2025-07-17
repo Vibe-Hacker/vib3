@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:provider/provider.dart';
 import '../models/video.dart';
 import '../services/video_service.dart';
+import '../services/runtime_thumbnail_service.dart';
+import '../services/thumbnail_generation_service.dart';
+import '../providers/auth_provider.dart';
 import 'dart:async';
 
 class VideoThumbnail extends StatefulWidget {
@@ -27,14 +31,58 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
   bool _isInitialized = false;
   bool _isThumbnailLoading = false;
   Timer? _initTimer;
+  String? _runtimeThumbnailUrl;
+  bool _isCheckingThumbnail = false;
 
   @override
   void initState() {
     super.initState();
-    // Only initialize if we don't have a thumbnail URL
-    if ((widget.video.thumbnailUrl == null || widget.video.thumbnailUrl!.isEmpty) &&
-        widget.video.videoUrl != null && widget.video.videoUrl!.isNotEmpty) {
-      _loadVideoThumbnail();
+    // DISABLED: VideoPlayerController for thumbnails causes decoder overload
+    // Instead, we'll use static images or fallback thumbnails
+    // Check for runtime thumbnail generation
+    _checkForRuntimeThumbnail();
+  }
+  
+  Future<void> _checkForRuntimeThumbnail() async {
+    if (widget.video.thumbnailUrl == null && widget.video.videoUrl != null) {
+      setState(() {
+        _isCheckingThumbnail = true;
+      });
+      
+      try {
+        // First try runtime thumbnail service
+        final thumbnailUrl = await RuntimeThumbnailService.getOrGenerateThumbnail(
+          widget.video.videoUrl!
+        );
+        
+        if (mounted && thumbnailUrl != null) {
+          setState(() {
+            _runtimeThumbnailUrl = thumbnailUrl;
+            _isCheckingThumbnail = false;
+          });
+        } else {
+          // If that fails, try requesting from backend
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          final generatedUrl = await ThumbnailGenerationService.requestThumbnail(
+            widget.video.id,
+            widget.video.videoUrl!,
+            authProvider.authToken,
+          );
+          
+          if (mounted) {
+            setState(() {
+              _runtimeThumbnailUrl = generatedUrl;
+              _isCheckingThumbnail = false;
+            });
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isCheckingThumbnail = false;
+          });
+        }
+      }
     }
   }
 
@@ -105,15 +153,15 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
   }
 
   Widget _buildThumbnail() {
-    // Priority 1: Use video player frame if initialized
-    if (_isInitialized && _thumbnailController != null) {
-      return AspectRatio(
-        aspectRatio: _thumbnailController!.value.aspectRatio,
-        child: VideoPlayer(_thumbnailController!),
-      );
-    }
+    // DISABLED: VideoPlayer for thumbnails to prevent decoder overload
+    // Skip directly to static thumbnail options
     
-    // Priority 2: Use provided thumbnail URL
+    print('🖼️ Building thumbnail for video ${widget.video.id}');
+    print('  thumbnailUrl: ${widget.video.thumbnailUrl}');
+    print('  videoUrl: ${widget.video.videoUrl}');
+    print('  runtimeThumbnailUrl: $_runtimeThumbnailUrl');
+    
+    // Priority 1: Use provided thumbnail URL
     if (widget.video.thumbnailUrl != null && widget.video.thumbnailUrl!.isNotEmpty) {
       return Image.network(
         widget.video.thumbnailUrl!,
@@ -136,24 +184,22 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
       );
     }
     
-    // Priority 3: Show loading while fetching video thumbnail
-    if (_isThumbnailLoading) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[900],
-        ),
-        child: Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.5)),
-            ),
-          ),
-        ),
+    // Priority 2: Use runtime-generated thumbnail URL
+    if (_runtimeThumbnailUrl != null) {
+      return Image.network(
+        _runtimeThumbnailUrl!,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return _buildFallbackThumbnail();
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return _buildFallbackThumbnail();
+        },
       );
     }
+    
+    // Skip loading state since we're not loading video controllers anymore
     
     // Priority 4: For DigitalOcean Spaces videos, try common thumbnail patterns
     if (widget.video.videoUrl != null && widget.video.videoUrl!.isNotEmpty) {
@@ -190,6 +236,7 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
       }
     }
     
+    print('🎨 Showing fallback thumbnail');
     return _buildFallbackThumbnail();
   }
 
@@ -197,16 +244,18 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
     // Create a unique gradient based on video ID for variety
     final int hashCode = widget.video.id.hashCode;
     final List<List<Color>> gradients = [
-      [Color(0xFFFF0080), Color(0xFF7928CA)], // Pink to Purple
-      [Color(0xFF00F0FF), Color(0xFF0080FF)], // Cyan to Blue
-      [Color(0xFFFF0080), Color(0xFFFF4040)], // Pink to Red
-      [Color(0xFF00CED1), Color(0xFF00F0FF)], // Dark Turquoise to Cyan
-      [Color(0xFF7928CA), Color(0xFF4B0082)], // Purple to Indigo
-      [Color(0xFFFF1493), Color(0xFFFF69B4)], // Deep Pink to Hot Pink
+      [const Color(0xFFFF0080), const Color(0xFF7928CA)], // Pink to Purple
+      [const Color(0xFF00F0FF), const Color(0xFF0080FF)], // Cyan to Blue
+      [const Color(0xFFFF0080), const Color(0xFFFF4040)], // Pink to Red
+      [const Color(0xFF00CED1), const Color(0xFF00F0FF)], // Dark Turquoise to Cyan
+      [const Color(0xFF7928CA), const Color(0xFF4B0082)], // Purple to Indigo
+      [const Color(0xFFFF1493), const Color(0xFFFF69B4)], // Deep Pink to Hot Pink
     ];
     
     final gradientIndex = hashCode.abs() % gradients.length;
     final selectedGradient = gradients[gradientIndex];
+    
+    print('🌈 Gradient index: $gradientIndex, colors: $selectedGradient');
     
     return Container(
       decoration: BoxDecoration(
@@ -268,6 +317,9 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
     return GestureDetector(
       onTap: widget.onTap,
       child: Container(
+        constraints: const BoxConstraints(
+          minHeight: 120, // Ensure minimum height
+        ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4),
           color: Colors.grey[900],

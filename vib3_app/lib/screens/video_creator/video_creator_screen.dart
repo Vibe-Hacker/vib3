@@ -18,6 +18,7 @@ import 'widgets/working_video_preview.dart';
 import 'widgets/fixed_bottom_toolbar.dart';
 import 'widgets/top_toolbar.dart';
 import '../publish_screen.dart';
+import '../../services/video_player_manager.dart';
 
 /// Main Video Creator Screen - TikTok-style simplicity with all features
 class VideoCreatorScreen extends StatefulWidget {
@@ -273,6 +274,10 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
   
   void _navigateToUpload() async {
     print('_navigateToUpload called');
+    
+    // Pause all active videos before navigating
+    await VideoPlayerManager.instance.pauseAllVideos();
+    
     final creationState = _creationStateProvider;
     
     // Check if there are video clips to export

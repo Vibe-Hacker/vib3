@@ -5,6 +5,9 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import '../providers/auth_provider.dart';
 import '../services/upload_service.dart';
+import '../services/video_processor_service.dart';
+import '../services/thumbnail_service.dart';
+import '../services/video_player_manager.dart';
 import '../widgets/grok_ai_assistant.dart';
 import 'video_recording_screen.dart';
 import 'video_creator/video_creator_screen.dart';
@@ -22,7 +25,7 @@ class UploadScreen extends StatefulWidget {
   State<UploadScreen> createState() => _UploadScreenState();
 }
 
-class _UploadScreenState extends State<UploadScreen> {
+class _UploadScreenState extends State<UploadScreen> with AutomaticKeepAliveClientMixin {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _hashtagsController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
@@ -34,6 +37,11 @@ class _UploadScreenState extends State<UploadScreen> {
   bool _allowStitch = true;
   String _privacy = 'public';
   String? _selectedMusicName;
+  VideoCompatibility? _videoCompatibility;
+  bool _isCheckingVideo = false;
+  
+  @override
+  bool get wantKeepAlive => false;
 
   @override
   void initState() {
@@ -46,6 +54,7 @@ class _UploadScreenState extends State<UploadScreen> {
       if (videoPath != null) {
         _selectedVideo = XFile(videoPath);
         _initializeVideoPlayer();
+        _checkVideoCompatibility();
       }
       
       if (musicName != null) {
@@ -61,6 +70,24 @@ class _UploadScreenState extends State<UploadScreen> {
     _videoController?.dispose();
     super.dispose();
   }
+  
+  void _resetState() {
+    setState(() {
+      _selectedVideo = null;
+      _videoController?.dispose();
+      _videoController = null;
+      _descriptionController.clear();
+      _hashtagsController.clear();
+      _isUploading = false;
+      _allowComments = true;
+      _allowDuet = true;
+      _allowStitch = true;
+      _privacy = 'public';
+      _selectedMusicName = null;
+      _videoCompatibility = null;
+      _isCheckingVideo = false;
+    });
+  }
 
   Future<void> _selectVideo() async {
     try {
@@ -74,6 +101,7 @@ class _UploadScreenState extends State<UploadScreen> {
           _selectedVideo = video;
         });
         _initializeVideoPlayer();
+        _checkVideoCompatibility();
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,6 +115,9 @@ class _UploadScreenState extends State<UploadScreen> {
 
   Future<void> _recordVideo() async {
     try {
+      // Pause all videos before navigating
+      await VideoPlayerManager.instance.pauseAllVideos();
+      
       // Navigate to the advanced recording screen
       Navigator.push(
         context,
@@ -112,6 +143,9 @@ class _UploadScreenState extends State<UploadScreen> {
       );
       
       if (video != null) {
+        // Pause all videos before navigating
+        await VideoPlayerManager.instance.pauseAllVideos();
+        
         // Navigate directly to editing screen
         Navigator.push(
           context,
@@ -146,6 +180,95 @@ class _UploadScreenState extends State<UploadScreen> {
     }
   }
 
+  Future<void> _checkVideoCompatibility() async {
+    if (_selectedVideo == null) return;
+    
+    setState(() {
+      _isCheckingVideo = true;
+      _videoCompatibility = null;
+    });
+    
+    try {
+      final compatibility = await VideoProcessorService.checkVideoCompatibility(_selectedVideo!.path);
+      setState(() {
+        _videoCompatibility = compatibility;
+        _isCheckingVideo = false;
+      });
+      
+      if (!compatibility.isCompatible) {
+        _showCompatibilityWarning();
+      }
+    } catch (e) {
+      print('Error checking video compatibility: $e');
+      setState(() {
+        _isCheckingVideo = false;
+      });
+    }
+  }
+  
+  void _showCompatibilityWarning() {
+    if (_videoCompatibility == null || _videoCompatibility!.isCompatible) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 8),
+            Text(
+              'Video Compatibility Issue',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _videoCompatibility!.reason ?? 'This video may have compatibility issues.',
+              style: TextStyle(color: Colors.white70),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'The video will still upload, but:',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              '• Thumbnail may not generate properly',
+              style: TextStyle(color: Colors.white70),
+            ),
+            Text(
+              '• Some devices may have playback issues',
+              style: TextStyle(color: Colors.white70),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'For best results, try recording with VIB3\'s camera.',
+              style: TextStyle(color: Color(0xFF00CED1)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Continue Anyway', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _recordVideo();
+            },
+            child: Text('Record New Video', style: TextStyle(color: Color(0xFF00CED1))),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _uploadVideo() async {
     if (_selectedVideo == null) return;
 
@@ -167,7 +290,35 @@ class _UploadScreenState extends State<UploadScreen> {
     });
 
     try {
-      final success = await UploadService.uploadVideo(
+      // Show progress dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF1A1A1A),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: Color(0xFF00CED1)),
+                SizedBox(height: 16),
+                Text(
+                  'Processing video...',
+                  style: TextStyle(color: Colors.white),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Generating thumbnail and uploading',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      
+      final result = await UploadService.uploadVideo(
         videoFile: File(_selectedVideo!.path),
         description: _descriptionController.text.trim(),
         privacy: _privacy,
@@ -178,8 +329,11 @@ class _UploadScreenState extends State<UploadScreen> {
         hashtags: _hashtagsController.text.trim(),
         musicName: _selectedMusicName,
       );
+      
+      // Close progress dialog
+      Navigator.pop(context);
 
-      if (success) {
+      if (result['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Video uploaded successfully!'),
@@ -191,6 +345,11 @@ class _UploadScreenState extends State<UploadScreen> {
         throw Exception('Upload failed');
       }
     } catch (e) {
+      // Make sure dialog is closed
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Upload failed: $e'),
@@ -206,6 +365,7 @@ class _UploadScreenState extends State<UploadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -228,14 +388,21 @@ class _UploadScreenState extends State<UploadScreen> {
             ),
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: _selectedVideo != null
+            ? IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () {
+                  _resetState();
+                },
+              )
+            : null,
         actions: [
           if (_selectedVideo != null && !_isUploading) ...[
             TextButton(
-              onPressed: () {
+              onPressed: () async {
+                // Pause all videos before navigating
+                await VideoPlayerManager.instance.pauseAllVideos();
+                
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -346,25 +513,91 @@ class _UploadScreenState extends State<UploadScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Video preview
-          Container(
-            width: double.infinity,
-            height: 400,
-            decoration: BoxDecoration(
-              color: Colors.grey[900],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: _videoController != null && _videoController!.value.isInitialized
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: AspectRatio(
-                      aspectRatio: _videoController!.value.aspectRatio,
-                      child: VideoPlayer(_videoController!),
+          // Video preview with compatibility indicator
+          Stack(
+            children: [
+              Container(
+                width: double.infinity,
+                height: 400,
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: _videoController != null && _videoController!.value.isInitialized
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: AspectRatio(
+                          aspectRatio: _videoController!.value.aspectRatio,
+                          child: VideoPlayer(_videoController!),
+                        ),
+                      )
+                    : const Center(
+                        child: CircularProgressIndicator(color: Color(0xFF00CED1)),
+                      ),
+              ),
+              // Compatibility indicator
+              if (_videoCompatibility != null && !_videoCompatibility!.isCompatible)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  )
-                : const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF00CED1)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.warning, size: 16, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'Compatibility Issue',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
+              // Checking indicator
+              if (_isCheckingVideo)
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Checking video...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 24),
 

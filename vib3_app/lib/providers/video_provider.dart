@@ -197,6 +197,7 @@ class VideoProvider extends ChangeNotifier {
   Future<void> loadForYouVideos(String token) async {
     try {
       print('VideoProvider: Loading Vib3 Pulse videos with recommendation algorithm...');
+      print('VideoProvider: Auth token present: ${token.isNotEmpty}');
       _isLoading = true;
       _error = null;
       notifyListeners();
@@ -508,14 +509,13 @@ class VideoProvider extends ChangeNotifier {
   }
   
   // Helper method to get AuthProvider
+  AuthProvider? _authProvider;
+  
+  void setAuthProvider(AuthProvider? provider) {
+    _authProvider = provider;
+  }
+  
   AuthProvider? _getAuthProvider() {
-    try {
-      // This will be called from within a build context
-      // For now, return null and let the recommendation engine handle anonymous users
-      return null;
-    } catch (e) {
-      print('VideoProvider: Could not get AuthProvider: $e');
-      return null;
-    }
+    return _authProvider;
   }
 }

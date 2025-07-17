@@ -100,6 +100,8 @@ class AuthProvider extends ChangeNotifier {
           });
           _currentUser = userData;
           print('AuthProvider: Restored user from storage - ${userData.username} (source: $authSource)');
+          print('AuthProvider: User data - followers: ${userData.followers}, following: ${userData.following}, totalLikes: ${userData.totalLikes}');
+          print('AuthProvider: User bio: ${userData.bio}, displayName: ${userData.displayName}');
         } catch (e) {
           print('AuthProvider: Error parsing stored user data: $e');
           // Clear corrupted data
@@ -177,7 +179,10 @@ class AuthProvider extends ChangeNotifier {
       
       if (response['success']) {
         _authToken = response['token'];
+        print('AuthProvider: Login response user data: ${response['user']}');
         _currentUser = User.fromJson(response['user']);
+        print('AuthProvider: Created user object - followers: ${_currentUser!.followers}, following: ${_currentUser!.following}, totalLikes: ${_currentUser!.totalLikes}');
+        print('AuthProvider: User bio: ${_currentUser!.bio}, displayName: ${_currentUser!.displayName}');
         
         // Set token expiry (24 hours from now)
         _tokenExpiry = DateTime.now().add(const Duration(hours: 24));
@@ -213,6 +218,7 @@ class AuthProvider extends ChangeNotifier {
       if (response['success']) {
         _authToken = response['token'];
         _currentUser = User.fromJson(response['user']);
+        print('AuthProvider: Signup - Created user object - followers: ${_currentUser!.followers}, following: ${_currentUser!.following}, totalLikes: ${_currentUser!.totalLikes}');
         
         // Set token expiry (24 hours from now)
         _tokenExpiry = DateTime.now().add(const Duration(hours: 24));
@@ -243,6 +249,8 @@ class AuthProvider extends ChangeNotifier {
     try {
       print('AuthProvider: Refreshing user stats...');
       final updatedUser = await UserService.getCurrentUserProfile(_authToken!);
+      print('AuthProvider: Got updated user from API: ${updatedUser?.username}');
+      print('AuthProvider: Updated user stats - followers: ${updatedUser?.followers}, following: ${updatedUser?.following}, totalLikes: ${updatedUser?.totalLikes}');
       
       if (updatedUser != null) {
         _currentUser = updatedUser;

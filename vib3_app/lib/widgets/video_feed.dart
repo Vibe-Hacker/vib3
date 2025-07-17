@@ -14,6 +14,9 @@ import '../services/video_service.dart';
 import '../models/video.dart';
 import '../models/comment.dart';
 import '../services/comment_service.dart';
+import '../services/video_player_manager.dart';
+import '../services/interaction_tracking_service.dart';
+import '../services/recommendation_engine.dart';
 import '../widgets/grok_ai_assistant.dart';
 import '../screens/profile_screen.dart';
 import '../config/app_config.dart';
@@ -25,6 +28,7 @@ import 'comments_sheet.dart';
 import 'swipe_gesture_detector.dart';
 import 'share_sheet.dart';
 import 'save_video_dialog.dart';
+import 'video_debug_overlay.dart';
 
 enum FeedType { forYou, following, friends }
 
@@ -59,6 +63,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   String? _draggingButton;
   Offset? _initialDragPosition;
   Offset? _dragOffset;
+  
+  // Page change debounce
+  Timer? _pageChangeDebounce;
 
   @override
   void initState() {
@@ -66,15 +73,58 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     _pageController = PageController(initialPage: 0);
     WidgetsBinding.instance.addObserver(this);
     _isScreenVisible = widget.isVisible;
-    _initButtonPositions();
-    _loadButtonPositions();
+    print('🎬 VideoFeed initState: _isScreenVisible = $_isScreenVisible');
+    print('🎬 VideoFeed initState: feedType = ${widget.feedType}');
+    
+    // Load videos after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🎬 VideoFeed: First frame callback, checking for videos...');
+      final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+      final videos = _getCurrentVideos();
+      print('🎬 VideoFeed: Found ${videos.length} videos in provider');
+      if (videos.isNotEmpty) {
+        print('🎬 First video URL: ${videos[0].videoUrl}');
+      }
+    });
+    
+    // Initialize button positions with default values
+    _buttonPositions = {
+      'profile': Offset(300, 200),
+      'like': Offset(300, 280),
+      'comment': Offset(300, 360),
+      'share': Offset(300, 440),
+      'save': Offset(300, 520),
+    };
+    
+    // Update positions after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final size = MediaQuery.of(context).size;
+        setState(() {
+          const buttonSize = 80.0;
+          const rightMargin = 20.0;
+          final x = size.width - buttonSize - rightMargin;
+          
+          _buttonPositions = {
+            'profile': Offset(x, 200),
+            'like': Offset(x, 280),
+            'comment': Offset(x, 360),
+            'share': Offset(x, 440),
+            'save': Offset(x, 520),
+          };
+        });
+        _loadButtonPositions();
+      }
+    });
     
     // Register pause callback with provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<VideoProvider>(context, listen: false).registerPauseCallback(() {
-        setState(() {
-          _isScreenVisible = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isScreenVisible = false;
+          });
+        }
       });
       
       // Initialize likes and follows
@@ -87,18 +137,6 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     });
   }
   
-  void _initButtonPositions() {
-    final screenWidth = WidgetsBinding.instance.window.physicalSize.width / WidgetsBinding.instance.window.devicePixelRatio;
-    // Position buttons with margin from right edge
-    const buttonSize = 80.0;
-    const rightMargin = 20.0;
-    _buttonPositions = {
-      'profile': Offset(screenWidth - buttonSize - rightMargin, 200),
-      'like': Offset(screenWidth - buttonSize - rightMargin, 280),
-      'comment': Offset(screenWidth - buttonSize - rightMargin, 360),
-      'share': Offset(screenWidth - buttonSize - rightMargin, 440),
-    };
-  }
 
   @override
   void didUpdateWidget(VideoFeed oldWidget) {
@@ -107,6 +145,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       setState(() {
         _isScreenVisible = widget.isVisible;
       });
+      print('🎬 VideoFeed: Visibility changed to $_isScreenVisible');
       
       // Handle visibility changes
       if (widget.isVisible && !oldWidget.isVisible) {
@@ -161,22 +200,108 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   @override
   void dispose() {
     _longPressTimer?.cancel();
+    _pageChangeDebounce?.cancel();
     WidgetsBinding.instance.removeObserver(this);
+    
+    // Stop tracking current video
+    InteractionTrackingService().stopVideoView();
+    
+    // Clear any pending video initializations
+    VideoPlayerManager.instance.clearInitQueue();
+    
+    // Pause all videos to prevent disposed controller access
+    VideoPlayerManager.instance.pauseAllVideos();
+    
     _pageController.dispose();
     super.dispose();
   }
 
   void _onPageChanged(int index) {
+    // Cancel any pending page change processing
+    _pageChangeDebounce?.cancel();
+    
+    // Track skip on previous video if swiped away quickly
+    if (_currentIndex != index) {
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+        final user = authProvider.currentUser;
+        
+        if (user != null) {
+          final videos = _getCurrentVideos();
+          if (_currentIndex < videos.length) {
+            final previousVideo = videos[_currentIndex];
+            InteractionTrackingService().trackSkip(
+              userId: user.id,
+              video: previousVideo,
+            );
+            InteractionTrackingService().stopVideoView(videoId: previousVideo.id);
+          }
+        }
+      } catch (e) {
+        print('Error tracking video skip: $e');
+      }
+    }
+    
+    // Immediately update the index
     setState(() {
       _currentIndex = index;
     });
     
+    // Debounce the actual video initialization
+    _pageChangeDebounce = Timer(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+      
+      // Start tracking new video
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final user = authProvider.currentUser;
+        final videos = _getCurrentVideos();
+        
+        if (user != null && index < videos.length) {
+          final currentVideo = videos[index];
+          InteractionTrackingService().startVideoView(
+            userId: user.id,
+            video: currentVideo,
+          );
+        }
+      } catch (e) {
+        print('Error tracking video view: $e');
+      }
+      
+      // Only pause, don't dispose to keep videos ready
+      final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+      videoProvider.pauseCurrentVideo();
+      
+      // Clean up videos that are far from current position
+      if (_currentIndex != index) {
+        // Dispose videos that are more than 2 positions away
+        final oldIndex = _currentIndex;
+        if ((oldIndex - index).abs() > 2) {
+          print('🧹 Cleaning up video at index $oldIndex (too far from new index $index)');
+        }
+      }
+      
+      // Force a rebuild to ensure the new video widget gets the correct isPlaying state
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            // This extra setState ensures the VideoPlayerWidget receives the updated isPlaying prop
+          });
+          
+          // Explicitly trigger video playback for the new index
+          // The VideoPlayerWidget will handle the actual playback when it sees isPlaying = true
+          print('📱 VideoFeed: Page changed to index $index, _isScreenVisible: $_isScreenVisible');
+        }
+      });
+    });
+    
     // Load more videos when near the end
-    final videoProvider = Provider.of<VideoProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final token = authProvider.authToken;
     
     // Get the appropriate video list based on feed type
+    final videoProvider = Provider.of<VideoProvider>(context, listen: false);
     List<Video> currentVideos = [];
     switch (widget.feedType) {
       case FeedType.forYou:
@@ -192,21 +317,28 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
         currentVideos = videoProvider.videos;
     }
     
-    // If we're within 3 videos of the end, load more
-    if (index >= currentVideos.length - 3 && 
+    // Load more videos when we're getting close to the end
+    // Or if we have less than 10 videos total
+    final shouldLoadMore = (index >= currentVideos.length - 5) || 
+                          (currentVideos.length < 10);
+    
+    if (shouldLoadMore && 
         !videoProvider.isLoadingMore && 
         videoProvider.hasMoreVideos &&
         token != null) {
-      print('📜 Loading more videos - current index: $index, total: ${currentVideos.length}');
-      videoProvider.loadMoreVideos(token, feedType: widget.feedType);
+      // Load more videos without blocking UI
+      Future.microtask(() {
+        videoProvider.loadMoreVideos(token, feedType: widget.feedType);
+      });
     }
   }
 
   void _handleLike(Video video) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final token = authProvider.authToken;
+    final user = authProvider.currentUser;
     
-    if (token == null) {
+    if (token == null || user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please login to like videos')),
       );
@@ -214,6 +346,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     }
 
     final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+    final wasLiked = videoProvider.isVideoLiked(video.id);
     final success = await videoProvider.toggleLike(video.id, token);
     
     if (!success) {
@@ -221,18 +354,51 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
         const SnackBar(content: Text('Failed to update like')),
       );
     } else {
+      // Track like interaction
+      InteractionTrackingService().trackLike(
+        userId: user.id,
+        video: video,
+        isLiked: !wasLiked,
+      );
+      
       // Refresh user stats after like
       authProvider.refreshUserStats();
     }
   }
 
   void _showComments(Video video) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.currentUser;
+    
+    if (user != null) {
+      // Track comment interaction when opening comments
+      InteractionTrackingService().trackComment(
+        userId: user.id,
+        video: video,
+      );
+    }
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => CommentsSheet(video: video),
     );
+  }
+  
+  List<Video> _getCurrentVideos() {
+    final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+    
+    switch (widget.feedType) {
+      case FeedType.forYou:
+        return videoProvider.forYouVideos;
+      case FeedType.following:
+        return videoProvider.followingVideos;
+      case FeedType.friends:
+        return videoProvider.friendsVideos;
+      default:
+        return videoProvider.videos;
+    }
   }
 
   void _toggleDragMode() {
@@ -242,10 +408,10 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   }
   
   void _loadButtonPositions() async {
-    final prefs = await SharedPreferences.getInstance();
-    final positionsString = prefs.getString('button_positions');
-    if (positionsString != null) {
-      try {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final positionsString = prefs.getString('button_positions');
+      if (positionsString != null && mounted) {
         final Map<String, dynamic> positions = jsonDecode(positionsString);
         final screenSize = MediaQuery.of(context).size;
         const buttonSize = 80.0;
@@ -266,9 +432,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             }
           });
         });
-      } catch (e) {
-        print('Error loading button positions: $e');
       }
+    } catch (e) {
+      print('Error loading button positions: $e');
     }
   }
   
@@ -536,7 +702,11 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     final currentUserId = authProvider.currentUser?.id;
     final isOwnVideo = currentUserId != null && currentUserId == video.userId;
     
+    print('🎯 Action buttons check: index=$index, _currentIndex=$_currentIndex, isCurrentVideo=$isCurrentVideo');
+    
     if (!isCurrentVideo) return [];
+    
+    print('✅ Building action buttons for video at index $index');
     
     return [
       // Profile Button with Follow - Draggable
@@ -563,7 +733,10 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             children: [
               Center(
                 child: Text(
-                  (video.user?['username'] ?? 'U')[0].toUpperCase(),
+                  () {
+                    final username = video.user?['username'] ?? 'U';
+                    return username.toString().isNotEmpty ? username.toString()[0].toUpperCase() : 'U';
+                  }(),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -572,9 +745,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                 ),
               ),
               if (!isOwnVideo)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
+                Align(
+                  alignment: Alignment.bottomRight,
                   child: GestureDetector(
                     onTap: () => _handleFollow(video),
                     child: Container(
@@ -814,8 +986,11 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildVideoPlayer(Video video, bool isCurrentVideo) {
-    if (video.videoUrl != null && video.videoUrl!.isNotEmpty && isCurrentVideo) {
+  Widget _buildVideoPlayer(Video video, bool isCurrentVideo, {bool preload = false}) {
+    print('🎬 _buildVideoPlayer: videoUrl=${video.videoUrl}, isCurrentVideo=$isCurrentVideo, preload=$preload, _isScreenVisible=$_isScreenVisible');
+    
+    if (video.videoUrl != null && video.videoUrl!.isNotEmpty && (isCurrentVideo || preload)) {
+      print('🎬 Creating VideoPlayerWidget with URL: ${video.videoUrl}, isPlaying: $isCurrentVideo');
       return Positioned.fill(
         child: VideoSwipeActions(
           onLike: () => _handleLike(video),
@@ -830,7 +1005,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               onLongPress: () => _showComments(video),
               child: VideoPlayerWidget(
                 videoUrl: video.videoUrl!,
-                isPlaying: isCurrentVideo && _isScreenVisible,
+                isPlaying: isCurrentVideo,
+                preload: preload,
               ),
             ),
           ),
@@ -852,6 +1028,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    print('🎨 VideoFeed build() called - isVisible=${widget.isVisible}, feedType=${widget.feedType}');
     return Consumer<VideoProvider>(
       builder: (context, videoProvider, child) {
         List<Video> videos = [];
@@ -867,6 +1044,11 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           videos = videoProvider.friendsVideos;
         } else {
           videos = videoProvider.videos;
+        }
+        
+        print('🎨 VideoFeed build: feedType=${widget.feedType}, videos=${videos.length}, isLoading=${videoProvider.isLoading}');
+        if (videos.isNotEmpty) {
+          print('🎨 First video URL: ${videos[0].videoUrl}');
         }
 
         if (videoProvider.isLoading && videos.isEmpty) {
@@ -935,32 +1117,49 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
         }
 
         if (videos.isEmpty) {
+          print('📱 VideoFeed: No videos to display (feedType: ${widget.feedType})');
           return Center(
             child: _buildEmptyState(),
           );
         }
+        
+        print('📱 VideoFeed: Displaying ${videos.length} videos (feedType: ${widget.feedType})');
+        if (videos.isNotEmpty) {
+          print('📹 First video URL: ${videos[0].videoUrl}');
+        }
 
-        return PageView.builder(
-          controller: _pageController,
-          scrollDirection: Axis.vertical,
-          onPageChanged: _onPageChanged,
-          itemCount: videos.length + (videoProvider.isLoadingMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            // Show loading indicator at the end
-            if (index >= videos.length) {
-              return Container(
-                color: Colors.black,
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFFFF0080),
-                  ),
-                ),
-              );
-            }
-            final video = videos[index];
+        return Stack(
+          children: [
+            PageView.builder(
+              controller: _pageController,
+              scrollDirection: Axis.vertical,
+              onPageChanged: _onPageChanged,
+              pageSnapping: true,
+              physics: const PageScrollPhysics(
+                parent: ClampingScrollPhysics(),
+              ),
+              // Allow infinite scrolling by not limiting item count
+              itemCount: null,
+              itemBuilder: (context, index) {
+            // Wrap around to beginning when reaching end
+            final videoIndex = videos.isNotEmpty ? index % videos.length : 0;
+            if (videos.isEmpty) return Container(color: Colors.black);
+            final video = videos[videoIndex];
             final isCurrentVideo = index == _currentIndex;
             final videoProvider = Provider.of<VideoProvider>(context);
             final isLiked = videoProvider.isVideoLiked(video.id);
+            
+            // Preload next 2 videos for smoother scrolling
+            final nextIndex1 = (_currentIndex + 1) % videos.length;
+            final nextIndex2 = (_currentIndex + 2) % videos.length;
+            final shouldPreload = (videoIndex == nextIndex1 || videoIndex == nextIndex2);
+            
+            // Always log for first few videos
+            if (index < 3 || isCurrentVideo) {
+              print('🎥 Building video $index: _currentIndex=$_currentIndex, isCurrentVideo=$isCurrentVideo, _isScreenVisible=$_isScreenVisible, will play=${isCurrentVideo}');
+              print('🎥 Video URL: ${video.videoUrl}');
+              print('🎥 Video has URL: ${video.videoUrl != null && video.videoUrl!.isNotEmpty}');
+            }
             
             return Container(
               color: Colors.black,
@@ -971,7 +1170,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                   child: Stack(
                     children: [
                         // Video player
-                        _buildVideoPlayer(video, isCurrentVideo),
+                        _buildVideoPlayer(video, isCurrentVideo, preload: shouldPreload),
                         
                         // Video description overlay
                         Positioned(
@@ -1010,7 +1209,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    '@${video.user?['username'] ?? 'unknown'}',
+                                    '@${video.username ?? video.user?['username'] ?? 'unknown'}',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 14,
@@ -1078,13 +1277,18 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                         
                         // Add floating bubble actions here if needed
                         ..._buildFloatingBubbleActions(context, video, index),
+                        
                       ],
                     ),
                   ),
                 ),
               );
-          },
-        );
+            },
+          ),
+          // Add debug overlay for troubleshooting
+          const VideoDebugOverlay(),
+        ],
+      );
       },
     );
   }

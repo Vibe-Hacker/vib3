@@ -7,11 +7,18 @@ import 'backend_health_service.dart';
 class NotificationService {
   static Future<List<AppNotification>> getNotifications(String token) async {
     try {
+      // Check if this is a known HTML endpoint
+      if (BackendHealthService.isHtmlEndpoint('/api/notifications')) {
+        print('ℹ️ Using mock notifications (endpoint known to return HTML)');
+        return _getMockNotifications();
+      }
+      
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/notifications'),
+        Uri.parse('${AppConfig.baseUrl}/api/notifications'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       );
 
@@ -19,7 +26,7 @@ class NotificationService {
         // Check if response is HTML instead of JSON
         if (response.body.trim().startsWith('<') || response.body.contains('<!DOCTYPE')) {
           print('❌ Notifications endpoint returned HTML instead of JSON');
-          BackendHealthService.reportHtmlResponse('/notifications');
+          BackendHealthService.reportHtmlResponse('/api/notifications');
           return _getMockNotifications();
         }
         
@@ -39,6 +46,7 @@ class NotificationService {
         notifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         return notifications;
       } else {
+        print('⚠️ Notifications endpoint returned ${response.statusCode}');
         // Return mock notifications if endpoint doesn't exist
         return _getMockNotifications();
       }

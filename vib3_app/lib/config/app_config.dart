@@ -15,7 +15,7 @@ class AppConfig {
   static const String loginEndpoint = '/api/auth/login';
   static const String signupEndpoint = '/api/auth/register';
   static const String videosEndpoint = '/feed';
-  static const String uploadEndpoint = '/api/upload';
+  static const String uploadEndpoint = '/api/upload/video';
   static const String profileEndpoint = '/api/auth/me';
   
   // Network settings

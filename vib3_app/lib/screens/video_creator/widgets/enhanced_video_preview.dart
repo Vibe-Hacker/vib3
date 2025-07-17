@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import '../providers/creation_state_provider.dart';
+import '../../../services/video_player_manager.dart';
 
 /// Enhanced video preview that plays video with background music
 class EnhancedVideoPreview extends StatefulWidget {
@@ -35,8 +36,11 @@ class _EnhancedVideoPreviewState extends State<EnhancedVideoPreview> {
   
   @override
   void dispose() {
-    _videoController?.pause();
-    _videoController?.dispose();
+    if (_videoController != null) {
+      VideoPlayerManager.instance.unregisterController(_videoController!);
+      _videoController?.pause();
+      _videoController?.dispose();
+    }
     _audioPlayer?.stop();
     _audioPlayer?.dispose();
     super.dispose();
@@ -65,6 +69,9 @@ class _EnhancedVideoPreviewState extends State<EnhancedVideoPreview> {
       await _videoController!.initialize();
       await _videoController!.setLooping(true);
       
+      // Register with VideoPlayerManager
+      VideoPlayerManager.instance.registerController(_videoController!);
+      
       // Initialize audio player if music is added
       final creationState = context.read<CreationStateProvider>();
       if (creationState.backgroundMusic != null) {
@@ -81,8 +88,8 @@ class _EnhancedVideoPreviewState extends State<EnhancedVideoPreview> {
         );
       }
       
-      // Start video playback
-      await _videoController!.play();
+      // Start video playback using manager
+      await VideoPlayerManager.instance.playVideo(_videoController!);
       
       if (mounted) {
         setState(() {

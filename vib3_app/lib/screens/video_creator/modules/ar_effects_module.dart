@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/creation_state_provider.dart';
+import '../../../services/ar_effects_processor.dart';
 
 class AREffectsModule extends StatefulWidget {
   const AREffectsModule({super.key});
@@ -303,19 +304,35 @@ class _AREffectsModuleState extends State<AREffectsModule>
       _selectedEffect = effect.id;
     });
     
-    // Apply AR effect
-    final creationState = context.read<CreationStateProvider>();
-    creationState.addEffect(
-      VideoEffect(
-        type: 'ar_effect',
-        parameters: {
-          'effectId': effect.id,
-          'effectType': effect.type.toString(),
-          'tracking': effect.tracking,
-          'intensity': 1.0,
-        },
-      ),
-    );
+    // Initialize AR processor if needed
+    AREffectsProcessor().initialize().then((_) {
+      // Apply AR effect to processor
+      AREffectsProcessor().setCurrentEffect(effect);
+      
+      // Apply AR effect to creation state
+      final creationState = context.read<CreationStateProvider>();
+      creationState.addEffect(
+        VideoEffect(
+          type: 'ar_effect',
+          parameters: {
+            'effectId': effect.id,
+            'effectType': effect.type.toString(),
+            'tracking': effect.tracking,
+            'intensity': 1.0,
+          },
+        ),
+      );
+      
+      print('✅ AR Effect "${effect.name}" activated with real-time processing');
+    }).catchError((error) {
+      print('❌ Failed to initialize AR processor: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to activate AR effect: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    });
     
     HapticFeedback.lightImpact();
   }

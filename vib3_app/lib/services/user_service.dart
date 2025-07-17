@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/user_model.dart';
+import 'video_service.dart';
 
 class UserService {
   static Future<List<User>> searchUsers(String query, String token) async {
@@ -53,6 +54,7 @@ class UserService {
   
   static Future<bool> followUser(String userId, String token) async {
     try {
+      print('👥 UserService: Following user: $userId');
       final response = await http.post(
         Uri.parse('${AppConfig.baseUrl}/api/users/$userId/follow'),
         headers: {
@@ -61,15 +63,27 @@ class UserService {
         },
       );
       
-      return response.statusCode == 200;
+      print('📡 UserService: Follow response status: ${response.statusCode}');
+      print('📄 UserService: Follow response body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        print('✅ UserService: Successfully followed user: $userId');
+        // Clear the cache to force refresh of following lists
+        VideoService.clearFollowingCache();
+        return true;
+      }
+      
+      print('⚠️ UserService: Failed to follow user, status: ${response.statusCode}');
+      return false;
     } catch (e) {
-      print('Error following user: $e');
+      print('❌ UserService: Error following user: $e');
       return false;
     }
   }
   
   static Future<bool> unfollowUser(String userId, String token) async {
     try {
+      print('👥 UserService: Unfollowing user: $userId');
       final response = await http.delete(
         Uri.parse('${AppConfig.baseUrl}/api/users/$userId/follow'),
         headers: {
@@ -78,15 +92,27 @@ class UserService {
         },
       );
       
-      return response.statusCode == 200;
+      print('📡 UserService: Unfollow response status: ${response.statusCode}');
+      print('📄 UserService: Unfollow response body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        print('✅ UserService: Successfully unfollowed user: $userId');
+        // Clear the cache to force refresh of following lists
+        VideoService.clearFollowingCache();
+        return true;
+      }
+      
+      print('⚠️ UserService: Failed to unfollow user, status: ${response.statusCode}');
+      return false;
     } catch (e) {
-      print('Error unfollowing user: $e');
+      print('❌ UserService: Error unfollowing user: $e');
       return false;
     }
   }
   
   static Future<List<String>> getUserFollowing(String userId, String token) async {
     try {
+      print('🔍 UserService: Getting following list for user: $userId');
       final response = await http.get(
         Uri.parse('${AppConfig.baseUrl}/api/users/$userId/following'),
         headers: {
@@ -95,10 +121,17 @@ class UserService {
         },
       );
       
+      print('📡 UserService: Following response status: ${response.statusCode}');
+      print('📄 UserService: Following response body: ${response.body}');
+      
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final List<dynamic> following = data['following'] ?? [];
-        return following.map((item) {
+        
+        print('👥 UserService: Raw following data: $following');
+        print('👥 UserService: Following count: ${following.length}');
+        
+        final followingIds = following.map((item) {
           if (item is String) {
             return item;
           } else if (item is Map<String, dynamic>) {
@@ -106,11 +139,15 @@ class UserService {
           }
           return '';
         }).where((id) => id.isNotEmpty).toList().cast<String>();
+        
+        print('✅ UserService: Processed following IDs: $followingIds');
+        return followingIds;
       }
       
+      print('⚠️ UserService: Failed to get following list, status: ${response.statusCode}');
       return [];
     } catch (e) {
-      print('Error getting user following list: $e');
+      print('❌ UserService: Error getting user following list: $e');
       return [];
     }
   }

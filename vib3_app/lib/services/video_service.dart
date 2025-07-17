@@ -86,7 +86,7 @@ class VideoService {
               
               // Ensure the URL is complete
               if (!videoUrl.startsWith('http')) {
-                videoUrl = 'https://vib3-videos.nyc3.digitaloceanspaces.com/$videoUrl';
+                videoUrl = 'https://vib3-videos.nyc3.digitaloceanspaces.com/videos/$videoUrl';
               }
               
               // Extract duration from processingInfo if available
@@ -104,6 +104,7 @@ class VideoService {
               }
               
               // Create simplified video object
+              print('🔍 Video $i user info: username=${json['username']}, user=${json['user']}');
               final video = Video(
                 id: json['_id']?.toString() ?? 'video_$i',
                 userId: json['userId']?.toString() ?? json['userid']?.toString() ?? '',

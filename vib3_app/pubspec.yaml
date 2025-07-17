@@ -53,7 +53,8 @@ dependencies:
   timeago: ^3.6.1  # Time formatting
   intl: ^0.20.2  # Internationalization
   device_info_plus: ^11.5.0  # For checking Android version
-  # ffmpeg_kit_flutter_min: ^6.0.3  # Temporarily disabled for testing
+  # Video processing packages
+  video_compress: ^3.1.3  # Video compression and basic operations
   
   # AR Effects & Real-time Processing
   google_mlkit_face_detection: ^0.13.1  # Face tracking for AR effects
@@ -61,7 +62,6 @@ dependencies:
   image: ^4.1.7  # Image processing for effects
   
   # Audio Processing
-  # ffmpeg_kit_flutter_min: ^6.0.3  # Temporarily disabled due to dependency issues
   just_audio: ^0.10.4  # Audio playback and effects
   
   # Sharing & External Apps
@@ -71,6 +71,9 @@ dependencies:
   
   # Speech Recognition
   speech_to_text: ^7.0.0  # Auto-captions
+  
+  # Network & Device Monitoring
+  connectivity_plus: ^6.0.5  # Network quality detection
 
 dev_dependencies:
   flutter_test:

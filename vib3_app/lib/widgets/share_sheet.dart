@@ -14,12 +14,14 @@ class ShareSheet extends StatefulWidget {
   final Video video;
   final VoidCallback? onDuet;
   final VoidCallback? onStitch;
+  final VoidCallback? onShare;
   
   const ShareSheet({
     super.key,
     required this.video,
     this.onDuet,
     this.onStitch,
+    this.onShare,
   });
   
   @override
@@ -189,6 +191,7 @@ class _ShareSheetState extends State<ShareSheet> with SingleTickerProviderStateM
     final videoUrl = 'https://vib3.app/v/${widget.video.id}';
     Clipboard.setData(ClipboardData(text: videoUrl));
     
+    widget.onShare?.call();
     HapticFeedback.mediumImpact();
     Navigator.pop(context);
     
@@ -209,6 +212,7 @@ class _ShareSheetState extends State<ShareSheet> with SingleTickerProviderStateM
         shareText,
         subject: 'Check out this VIB3!',
       );
+      widget.onShare?.call();
       Navigator.pop(context);
     } catch (e) {
       Navigator.pop(context);
@@ -226,11 +230,13 @@ class _ShareSheetState extends State<ShareSheet> with SingleTickerProviderStateM
     try {
       if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
         await launchUrl(Uri.parse(whatsappUrl));
+        widget.onShare?.call();
         Navigator.pop(context);
       } else {
         // Fallback to web WhatsApp
         final webUrl = 'https://wa.me/?text=${Uri.encodeComponent(shareText)}';
         await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+        widget.onShare?.call();
         Navigator.pop(context);
       }
     } catch (e) {

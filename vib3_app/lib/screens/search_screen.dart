@@ -49,10 +49,12 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
     if (token != null) {
       try {
         final trendingData = await SearchService.getTrendingContent(token);
-        setState(() {
-          _trendingVideos = (trendingData['videos'] as List<Video>).take(12).toList();
-          _trendingHashtags = trendingData['hashtags'] as List<String>;
-        });
+        if (mounted) {
+          setState(() {
+            _trendingVideos = (trendingData['videos'] as List<Video>).take(12).toList();
+            _trendingHashtags = trendingData['hashtags'] as List<String>;
+          });
+        }
       } catch (e) {
         print('Error loading trending content: $e');
       }
@@ -75,20 +77,24 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
         // Search using SearchService
         final searchResults = await SearchService.search(query, token);
         
-        setState(() {
-          _searchVideos = searchResults['videos'] as List<Video>;
-          _searchUsers = searchResults['users'] as List<User>;
-          _searchHashtags = searchResults['hashtags'] as List<String>;
-          _hasSearched = true;
-        });
+        if (mounted) {
+          setState(() {
+            _searchVideos = searchResults['videos'] as List<Video>;
+            _searchUsers = searchResults['users'] as List<User>;
+            _searchHashtags = searchResults['hashtags'] as List<String>;
+            _hasSearched = true;
+          });
+        }
       } catch (e) {
         print('Search error: $e');
       }
     }
 
-    setState(() {
-      _isSearching = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isSearching = false;
+      });
+    }
   }
 
   @override
@@ -187,7 +193,9 @@ class _SearchScreenState extends State<SearchScreen> with TickerProviderStateMix
                 ),
                 onSubmitted: _performSearch,
                 onChanged: (value) {
-                  setState(() {});
+                  if (mounted) {
+                    setState(() {});
+                  }
                 },
               ),
             ),

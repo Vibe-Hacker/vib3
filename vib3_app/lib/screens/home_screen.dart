@@ -12,9 +12,11 @@ import '../widgets/video_feed_components/migration_wrapper.dart';
 import '../config/app_config.dart';
 import '../core/config/feature_flags.dart';
 import '../services/backend_health_service.dart';
+import '../services/video_player_manager.dart';
 import 'profile_screen.dart';
 import 'search_screen.dart';
 import 'upload_screen.dart';
+import 'upload_flow_screen.dart';
 import 'notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -139,7 +141,7 @@ $analysis
                     useNewArchitecture: VideoFeedConfig.useNewArchitecture,
                   ),
             const SearchScreen(),
-            const UploadScreen(),
+            const UploadFlowScreen(),
             const NotificationsScreen(),
             const ProfileScreen(),
           ],
@@ -153,12 +155,40 @@ $analysis
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (index) {
-            // Stop video playback when navigating away
+          onTap: (index) async {
+            // Stop video playback when navigating away from home (index 0)
             if (_currentIndex == 0 && index != 0) {
               // Notify video feed to pause
               Provider.of<VideoProvider>(context, listen: false).pauseCurrentVideo();
+              // Clean up video resources properly when leaving video feed
+              await VideoPlayerManager.instance.pauseAllVideos();
+              // Clear init queue to prevent pending initializations
+              VideoPlayerManager.instance.clearInitQueue();
             }
+            
+            // Clean up all video resources when navigating to create
+            if (index == 2) {
+              await VideoPlayerManager.nuclearCleanup();
+              
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const UploadFlowScreen(),
+                  ),
+                );
+              }
+              return; // Don't update index for create button
+            }
+            
+            // Clean up when navigating to/from profile (index 4)
+            if ((_currentIndex == 4 && index != 4) || (_currentIndex != 4 && index == 4)) {
+              // Clear any pending video initializations
+              VideoPlayerManager.instance.clearInitQueue();
+              // Pause all videos to prevent disposed controller access
+              await VideoPlayerManager.instance.pauseAllVideos();
+            }
+            
             setState(() {
               _currentIndex = index;
             });

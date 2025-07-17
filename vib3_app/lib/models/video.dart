@@ -13,8 +13,20 @@ class Video {
   final DateTime createdAt;
   final DateTime updatedAt;
   final Map<String, dynamic>? user;
-  final String? musicName; // Add musicName field
-  final List<String>? hashtags; // Add hashtags field
+  final String? musicName;
+  final List<String>? hashtags;
+  final String? caption;
+  final String? soundId;
+  final String? category;
+  final Map<String, dynamic>? location;
+  final String username;
+  
+  // Interaction states
+  final bool isLiked;
+  final bool isFollowing;
+  final bool isFavorited;
+  final bool hasCommented;
+  final bool hasShared;
 
   Video({
     required this.id,
@@ -33,13 +45,23 @@ class Video {
     this.user,
     this.musicName,
     this.hashtags,
+    this.caption,
+    this.soundId,
+    this.category,
+    this.location,
+    required this.username,
+    this.isLiked = false,
+    this.isFollowing = false,
+    this.isFavorited = false,
+    this.hasCommented = false,
+    this.hasShared = false,
   });
 
   factory Video.fromJson(Map<String, dynamic> json) {
     return Video(
       id: json['_id'] ?? '',
       userId: json['userId'] ?? json['userid'] ?? '',
-      videoUrl: json['videoUrl'] ?? '',
+      videoUrl: json['videoUrl']?.toString(),
       thumbnailUrl: json['thumbnailUrl'] ?? json['thumbnailurl'] ?? '',
       description: json['title'] ?? json['description'] ?? 'Untitled',
       likesCount: json['likeCount'] ?? json['likecount'] ?? json['likes'] ?? 0,
@@ -63,6 +85,16 @@ class Video {
       hashtags: json['hashtags'] != null 
           ? List<String>.from(json['hashtags']) 
           : null,
+      caption: json['caption'] ?? json['description'],
+      soundId: json['soundId'] ?? json['sound_id'],
+      category: json['category'],
+      location: json['location'],
+      username: json['username'] ?? json['user']?['username'] ?? 'unknown',
+      isLiked: json['isLiked'] ?? false,
+      isFollowing: json['isFollowing'] ?? false,
+      isFavorited: json['isFavorited'] ?? false,
+      hasCommented: json['hasCommented'] ?? false,
+      hasShared: json['hasShared'] ?? false,
     );
   }
 
@@ -84,6 +116,16 @@ class Video {
       'user': user,
       'musicName': musicName,
       'hashtags': hashtags,
+      'caption': caption,
+      'soundId': soundId,
+      'category': category,
+      'location': location,
+      'username': username,
+      'isLiked': isLiked,
+      'isFollowing': isFollowing,
+      'isFavorited': isFavorited,
+      'hasCommented': hasCommented,
+      'hasShared': hasShared,
     };
   }
 
@@ -104,6 +146,16 @@ class Video {
     Map<String, dynamic>? user,
     String? musicName,
     List<String>? hashtags,
+    String? caption,
+    String? soundId,
+    String? category,
+    Map<String, dynamic>? location,
+    String? username,
+    bool? isLiked,
+    bool? isFollowing,
+    bool? isFavorited,
+    bool? hasCommented,
+    bool? hasShared,
   }) {
     return Video(
       id: id ?? this.id,
@@ -122,6 +174,16 @@ class Video {
       user: user ?? this.user,
       musicName: musicName ?? this.musicName,
       hashtags: hashtags ?? this.hashtags,
+      caption: caption ?? this.caption,
+      soundId: soundId ?? this.soundId,
+      category: category ?? this.category,
+      location: location ?? this.location,
+      username: username ?? this.username,
+      isLiked: isLiked ?? this.isLiked,
+      isFollowing: isFollowing ?? this.isFollowing,
+      isFavorited: isFavorited ?? this.isFavorited,
+      hasCommented: hasCommented ?? this.hasCommented,
+      hasShared: hasShared ?? this.hasShared,
     );
   }
 }

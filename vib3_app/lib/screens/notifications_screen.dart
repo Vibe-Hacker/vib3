@@ -38,17 +38,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> with TickerPr
     
     if (token != null) {
       final notifications = await NotificationService.getNotifications(token);
-      setState(() {
-        _allNotifications = notifications;
-        _followNotifications = notifications.where((n) => n.type == 'follow').toList();
-        _likeNotifications = notifications.where((n) => n.type == 'like').toList();
-        _commentNotifications = notifications.where((n) => n.type == 'comment').toList();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _allNotifications = notifications;
+          _followNotifications = notifications.where((n) => n.type == 'follow').toList();
+          _likeNotifications = notifications.where((n) => n.type == 'like').toList();
+          _commentNotifications = notifications.where((n) => n.type == 'comment').toList();
+          _isLoading = false;
+        });
+      }
     } else {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -59,32 +63,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> with TickerPr
     if (token != null) {
       await NotificationService.markAsRead(notificationId, token);
       // Update local state
-      setState(() {
-        _allNotifications = _allNotifications.map((n) {
-          if (n.id == notificationId) {
-            return n.copyWith(isRead: true);
-          }
-          return n;
-        }).toList();
-        _followNotifications = _followNotifications.map((n) {
-          if (n.id == notificationId) {
-            return n.copyWith(isRead: true);
-          }
-          return n;
-        }).toList();
-        _likeNotifications = _likeNotifications.map((n) {
-          if (n.id == notificationId) {
-            return n.copyWith(isRead: true);
-          }
-          return n;
-        }).toList();
-        _commentNotifications = _commentNotifications.map((n) {
-          if (n.id == notificationId) {
-            return n.copyWith(isRead: true);
-          }
-          return n;
-        }).toList();
-      });
+      if (mounted) {
+        setState(() {
+          _allNotifications = _allNotifications.map((n) {
+            if (n.id == notificationId) {
+              return n.copyWith(isRead: true);
+            }
+            return n;
+          }).toList();
+          _followNotifications = _followNotifications.map((n) {
+            if (n.id == notificationId) {
+              return n.copyWith(isRead: true);
+            }
+            return n;
+          }).toList();
+          _likeNotifications = _likeNotifications.map((n) {
+            if (n.id == notificationId) {
+              return n.copyWith(isRead: true);
+            }
+            return n;
+          }).toList();
+          _commentNotifications = _commentNotifications.map((n) {
+            if (n.id == notificationId) {
+              return n.copyWith(isRead: true);
+            }
+            return n;
+          }).toList();
+        });
+      }
     }
   }
 
@@ -94,12 +100,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> with TickerPr
     
     if (token != null) {
       await NotificationService.markAllAsRead(token);
-      setState(() {
-        _allNotifications = _allNotifications.map((n) => n.copyWith(isRead: true)).toList();
-        _followNotifications = _followNotifications.map((n) => n.copyWith(isRead: true)).toList();
-        _likeNotifications = _likeNotifications.map((n) => n.copyWith(isRead: true)).toList();
-        _commentNotifications = _commentNotifications.map((n) => n.copyWith(isRead: true)).toList();
-      });
+      if (mounted) {
+        setState(() {
+          _allNotifications = _allNotifications.map((n) => n.copyWith(isRead: true)).toList();
+          _followNotifications = _followNotifications.map((n) => n.copyWith(isRead: true)).toList();
+          _likeNotifications = _likeNotifications.map((n) => n.copyWith(isRead: true)).toList();
+          _commentNotifications = _commentNotifications.map((n) => n.copyWith(isRead: true)).toList();
+        });
+      }
     }
   }
 

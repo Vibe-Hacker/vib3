@@ -94,8 +94,9 @@ class _GreenScreenModuleState extends State<GreenScreenModule> {
     final camera = _cameras[cameraIndex];
     _cameraController = CameraController(
       camera,
-      ResolutionPreset.high,
+      ResolutionPreset.veryHigh,
       enableAudio: false, // No audio needed for preview
+      imageFormatGroup: ImageFormatGroup.jpeg,
     );
     
     try {
@@ -349,7 +350,7 @@ class _GreenScreenModuleState extends State<GreenScreenModule> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
+      height: MediaQuery.of(context).size.height * 0.9,
       decoration: const BoxDecoration(
         color: Color(0xFF1A1A1A),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -428,7 +429,17 @@ class _GreenScreenModuleState extends State<GreenScreenModule> {
                     // Camera preview (would have green screen applied)
                     if (_isInitialized && _cameraController != null)
                       Positioned.fill(
-                        child: CameraPreview(_cameraController!),
+                        child: AspectRatio(
+                          aspectRatio: _cameraController!.value.aspectRatio,
+                          child: FittedBox(
+                            fit: BoxFit.cover,
+                            child: SizedBox(
+                              width: MediaQuery.of(context).size.width,
+                              height: MediaQuery.of(context).size.width * _cameraController!.value.aspectRatio,
+                              child: CameraPreview(_cameraController!),
+                            ),
+                          ),
+                        ),
                       )
                     else
                       const Center(

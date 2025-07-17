@@ -16,6 +16,11 @@ try {
     process.exit(1);
 }
 
+// Import modular components early
+const constants = require('./constants');
+const videoConfig = require('./config/video-config');
+const { requireAuth: modularRequireAuth, createSession: modularCreateSession, sessions: modularSessions } = require('./middleware/auth');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 console.log('🚀 VIB3 Server starting...');
@@ -38,8 +43,8 @@ app.use((req, res, next) => {
     }
 });
 
-// Session management (simple in-memory for now)
-const sessions = new Map();
+// Session management - using modular auth
+const sessions = modularSessions; // Use sessions from auth module
 
 // CORS - Enhanced for mobile app
 app.use((req, res, next) => {
@@ -63,12 +68,60 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Test video endpoint for debugging
+const testVideoRouter = require('./test-video-endpoint');
+app.use('/api', testVideoRouter);
+
 // VIDEO FEED ENDPOINT - at root level to bypass all routing issues
 app.get('/feed', async (req, res) => {
     console.log('🎬 ROOT LEVEL FEED ENDPOINT HIT!');
     
     if (!db) {
-        return res.json({ videos: [], error: 'Database not connected' });
+        // Return test videos when database is not connected
+        const testVideos = [
+            {
+                _id: '1',
+                userId: 'test-user-1',
+                videoUrl: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4',
+                title: 'Test Video 1',
+                description: 'Sample video for testing',
+                likes: [],
+                createdAt: new Date(),
+                user: {
+                    username: 'testuser1',
+                    displayName: 'Test User 1'
+                },
+                likeCount: 0,
+                commentCount: 0,
+                shareCount: 0,
+                feedType: 'foryou',
+                thumbnailUrl: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4#t=1'
+            },
+            {
+                _id: '2',
+                userId: 'test-user-2',
+                videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                title: 'Test Video 2',
+                description: 'Google sample video',
+                likes: [],
+                createdAt: new Date(),
+                user: {
+                    username: 'testuser2',
+                    displayName: 'Test User 2'
+                },
+                likeCount: 0,
+                commentCount: 0,
+                shareCount: 0,
+                feedType: 'foryou',
+                thumbnailUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4#t=1'
+            }
+        ];
+        
+        return res.json({ 
+            videos: testVideos, 
+            error: 'Database not connected - showing test videos',
+            isTestData: true 
+        });
     }
     
     try {
@@ -1184,8 +1237,10 @@ const s3 = new AWS.S3({
 
 const BUCKET_NAME = process.env.DO_SPACES_BUCKET || 'vib3-videos';
 
-// Initialize video processor
+// Initialize video processors
 const videoProcessor = new VideoProcessor();
+const MultiQualityVideoProcessor = require('./video-processor-multi');
+const multiQualityProcessor = new MultiQualityVideoProcessor();
 
 // ================ ALGORITHM & RANKING FUNCTIONS ================
 
@@ -1781,20 +1836,14 @@ function calculateContentSimilarity(video, userProfile) {
     return factors > 0 ? similarity / factors : 0;
 }
 
-// Configure multer for video uploads with enhanced format support
+// Configure multer for video uploads using modular config
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 5 * 1024 * 1024 * 1024 // 5GB limit - allows any resolution videos
+        fileSize: videoConfig.UPLOAD_LIMITS.maxFileSize
     },
     fileFilter: (req, file, cb) => {
-        // Accept all common video formats - we'll convert them to standard MP4
-        const allowedTypes = [
-            'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm',
-            'video/3gpp', 'video/x-flv', 'video/x-ms-wmv', 'video/x-msvideo',
-            'video/avi', 'video/mov', 'video/mkv', 'video/x-matroska'
-        ];
-        if (allowedTypes.includes(file.mimetype) || file.mimetype.startsWith('video/')) {
+        if (videoConfig.SUPPORTED_FORMATS.input.includes(file.mimetype) || file.mimetype.startsWith('video/')) {
             cb(null, true);
         } else {
             cb(new Error('Invalid file type. Please upload a video file.'));
@@ -1804,7 +1853,6 @@ const upload = multer({
 
 // MongoDB connection
 const { MongoClient, ObjectId } = require('mongodb');
-const fs = require('fs').promises;
 const os = require('os');
 const ffmpeg = require('fluent-ffmpeg');
 let db = null;
@@ -1838,14 +1886,14 @@ async function createIndexes() {
         await cleanupLikes();
         
         // User indexes
-        await db.collection('users').createIndex({ email: 1 }, { unique: true });
-        await db.collection('users').createIndex({ username: 1 }, { unique: true });
+        await db.collection(constants.COLLECTIONS.USERS).createIndex({ email: 1 }, { unique: true });
+        await db.collection(constants.COLLECTIONS.USERS).createIndex({ username: 1 }, { unique: true });
         
         // Video indexes
-        await db.collection('videos').createIndex({ userId: 1 });
-        await db.collection('videos').createIndex({ createdAt: -1 });
-        await db.collection('videos').createIndex({ hashtags: 1 });
-        await db.collection('videos').createIndex({ status: 1 });
+        await db.collection(constants.COLLECTIONS.VIDEOS).createIndex({ userId: 1 });
+        await db.collection(constants.COLLECTIONS.VIDEOS).createIndex({ createdAt: -1 });
+        await db.collection(constants.COLLECTIONS.VIDEOS).createIndex({ hashtags: 1 });
+        await db.collection(constants.COLLECTIONS.VIDEOS).createIndex({ status: 1 });
         
         // Posts indexes (for photos and slideshows)
         await db.collection('posts').createIndex({ userId: 1 });
@@ -1930,12 +1978,8 @@ async function cleanupLikes() {
 // Connect to database on startup
 connectDB();
 
-// Helper function to create session
-function createSession(userId) {
-    const token = crypto.randomBytes(32).toString('hex');
-    sessions.set(token, { userId, createdAt: Date.now() });
-    return token;
-}
+// Use modular createSession
+const createSession = modularCreateSession;
 
 // Auth middleware
 function requireAuth(req, res, next) {
@@ -2481,23 +2525,53 @@ app.get('/api/videos', async (req, res) => {
         // Get user info for each video
         for (const video of videos) {
             try {
-                const user = await db.collection('users').findOne(
-                    { _id: new ObjectId(video.userId) },
-                    { projection: { password: 0 } }
-                );
+                console.log(`🔍 Looking up user for video ${video._id}, userId: ${video.userId} (type: ${typeof video.userId})`);
+                
+                // Try to find user - handle both string and ObjectId formats
+                let user = null;
+                
+                // First try as ObjectId if it looks like one
+                if (video.userId && video.userId.length === 24) {
+                    try {
+                        user = await db.collection('users').findOne(
+                            { _id: new ObjectId(video.userId) },
+                            { projection: { password: 0 } }
+                        );
+                    } catch (e) {
+                        console.log(`⚠️ Failed to convert userId to ObjectId: ${e.message}`);
+                    }
+                }
+                
+                // If not found, try as string
+                if (!user) {
+                    user = await db.collection('users').findOne(
+                        { _id: video.userId },
+                        { projection: { password: 0 } }
+                    );
+                }
+                
+                // If still not found, try username field
+                if (!user && video.username) {
+                    user = await db.collection('users').findOne(
+                        { username: video.username },
+                        { projection: { password: 0 } }
+                    );
+                }
                 
                 if (user) {
                     video.user = user;
                     video.username = user.username || user.displayName || 'anonymous';
+                    console.log(`✅ Found user for video ${video._id}: ${video.username}`);
                 } else {
                     // User not found in database
+                    console.log(`❌ User not found for video ${video._id}, userId: ${video.userId}, username: ${video.username}`);
                     video.user = { 
-                        username: 'deleted_user', 
-                        displayName: 'Deleted User', 
+                        username: video.username || 'deleted_user', 
+                        displayName: video.username || 'Deleted User', 
                         _id: video.userId,
                         profilePicture: '👤'
                     };
-                    video.username = 'deleted_user';
+                    video.username = video.username || 'deleted_user';
                 }
                 
                 // Get like count
@@ -2606,7 +2680,38 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
 
             console.log('✅ Video validation passed');
 
-            // Step 2: Convert video to standard H.264 MP4
+            // Step 2: Check if we should do multi-quality processing
+            const useMultiQuality = process.env.ENABLE_MULTI_QUALITY === 'true' || 
+                                   req.body.multiQuality === 'true' ||
+                                   (validation.info.video && validation.info.video.height >= 1080);
+
+            if (useMultiQuality) {
+                console.log('📋 Step 2: Processing video into multiple quality variants...');
+                try {
+                    const multiResult = await multiQualityProcessor.processMultiQuality(
+                        req.file.buffer, 
+                        req.file.originalname,
+                        req.user.userId || userId
+                    );
+                    
+                    // Return multi-quality result format
+                    return res.json({
+                        success: true,
+                        message: 'Video uploaded and processed into multiple qualities',
+                        videoId: null, // Will be set after DB save
+                        variants: multiResult.variants,
+                        manifest: multiResult.manifest,
+                        outputDir: multiResult.outputDir,
+                        processingTime: multiResult.processingTime,
+                        metadata: multiResult.metadata
+                    });
+                } catch (multiError) {
+                    console.error('Multi-quality processing failed, falling back to single quality:', multiError);
+                    // Fall back to single quality processing
+                }
+            }
+
+            // Step 2: Convert video to standard H.264 MP4 (single quality)
             console.log('📋 Step 2: Converting video to standard MP4...');
             conversionResult = await videoProcessor.convertToStandardMp4(req.file.buffer, req.file.originalname);
         }
@@ -6121,9 +6226,58 @@ async function _seedMusicDatabase() {
     }
 }
 
+// Load modular routes
+const { initializeVideoRoutes } = require('./routes/video-routes');
+const videoRouter = initializeVideoRoutes({ 
+    videoProcessor, 
+    multiQualityProcessor, 
+    s3, 
+    db 
+});
+app.use('/api/video', videoRouter); // New modular video routes
+
 // Load recommendation endpoints
 const recommendationEndpoints = require('./recommendation-endpoints');
 recommendationEndpoints(app, db);
+
+// Load Grok AI Task Manager
+const GrokTaskManager = require('./grok-task-manager');
+let grokManager = null;
+
+// Initialize Grok after database connection
+async function initializeGrok() {
+    if (db && !grokManager) {
+        grokManager = new GrokTaskManager(db);
+        grokManager.setupEndpoints(app);
+        grokManager.startBackgroundTasks();
+        console.log('🤖 Grok AI Task Manager initialized');
+    }
+}
+
+// Serve video variants and manifests
+app.get('/uploads/videos/:userId/:videoId/:file', (req, res) => {
+    const { userId, videoId, file } = req.params;
+    const filePath = path.join(__dirname, 'uploads', 'videos', userId, videoId, file);
+    
+    // Check if file exists
+    if (!require('fs').existsSync(filePath)) {
+        return res.status(404).json({ error: 'Video variant not found' });
+    }
+    
+    // Set appropriate content type
+    let contentType = 'video/mp4';
+    if (file.endsWith('.json')) {
+        contentType = 'application/json';
+    }
+    
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    
+    // Stream the file
+    const stream = require('fs').createReadStream(filePath);
+    stream.pipe(res);
+});
 
 // Error handling - MUST be last middleware BEFORE server.listen
 app.use((err, req, res, next) => {
@@ -6145,6 +6299,11 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
     // Connect to database
     const dbConnected = await connectDB();
     console.log(`Database: ${dbConnected ? 'Connected successfully' : 'No database configured'}`);
+    
+    // Initialize Grok AI if database is connected
+    if (dbConnected) {
+        await initializeGrok();
+    }
     
     console.log('');
     console.log('📊 Analytics endpoint available at: /api/analytics/algorithm');

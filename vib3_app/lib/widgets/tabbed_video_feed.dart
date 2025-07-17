@@ -60,7 +60,11 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
     final videoProvider = Provider.of<VideoProvider>(context, listen: false);
     final token = authProvider.authToken;
 
+    print('🔄 TabbedVideoFeed: Loading videos for tab $tabIndex');
+    print('🔑 Auth token present: ${token != null}');
+
     if (token == null) {
+      print('❌ No auth token available!');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please login to view videos'),
@@ -72,12 +76,15 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
 
     switch (tabIndex) {
       case 0: // Vib3 Pulse
+        print('📱 Loading Vib3 Pulse videos...');
         videoProvider.loadForYouVideos(token);
         break;
       case 1: // Vib3 Connect
+        print('📱 Loading Vib3 Connect videos...');
         videoProvider.loadFollowingVideos(token);
         break;
       case 2: // Vib3 Circle
+        print('📱 Loading Vib3 Circle videos...');
         videoProvider.loadFriendsVideos(token);
         break;
     }
@@ -156,9 +163,15 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
             controller: _tabController,
             children: [
               // Vib3 Pulse Feed
-              VideoFeed(
-                isVisible: widget.isVisible && _currentTab == 0,
-                feedType: FeedType.forYou,
+              Builder(
+                builder: (context) {
+                  final isVisible = widget.isVisible && _currentTab == 0;
+                  print('🎬 TabbedVideoFeed: Creating VideoFeed with isVisible=$isVisible (widget.isVisible=${widget.isVisible}, _currentTab=$_currentTab)');
+                  return VideoFeed(
+                    isVisible: isVisible,
+                    feedType: FeedType.forYou,
+                  );
+                },
               ),
               // Vib3 Connect Feed
               VideoFeed(
@@ -166,7 +179,10 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
                 feedType: FeedType.following,
               ),
               // Vib3 Circle Feed
-              _buildFriendsFeed(),
+              VideoFeed(
+                isVisible: widget.isVisible && _currentTab == 2,
+                feedType: FeedType.friends,
+              ),
             ],
           ),
         ),
