@@ -309,6 +309,11 @@ module.exports = function(app, db) {
     
     // Create indexes for performance
     async function createRecommendationIndexes() {
+        if (!db) {
+            console.log('⏳ Database not connected yet, skipping recommendation indexes');
+            return;
+        }
+        
         try {
             // Video views indexes
             await db.collection('video_views').createIndex({ videoId: 1 });
@@ -334,6 +339,8 @@ module.exports = function(app, db) {
         }
     }
     
-    // Call this when the module is loaded
-    createRecommendationIndexes();
+    // Call this when the module is loaded (but check if db exists first)
+    if (db) {
+        createRecommendationIndexes();
+    }
 };
