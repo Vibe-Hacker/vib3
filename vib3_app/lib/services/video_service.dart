@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/video.dart';
@@ -48,6 +49,11 @@ class VideoService {
         },
       ).timeout(const Duration(seconds: 10));
 
+      print('📡 Video API Response Status: ${testResponse.statusCode}');
+      print('📡 Response Headers: ${testResponse.headers}');
+      print('📡 Response Body Length: ${testResponse.body.length}');
+      print('📡 Response Body Preview: ${testResponse.body.substring(0, min(200, testResponse.body.length))}');
+      
       if (testResponse.statusCode == 200) {
         // Check if response is HTML instead of JSON
         if (testResponse.body.trim().startsWith('<') || testResponse.body.contains('<!DOCTYPE')) {
@@ -1982,11 +1988,13 @@ class VideoService {
     try {
       print('VideoService: Getting personalized videos for user: $userId');
       
+      // Use the working /api/videos endpoint with foryou feed
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/videos/foryou/$userId?limit=$limit&offset=$offset'),
+        Uri.parse('${AppConfig.baseUrl}/api/videos?feed=foryou&limit=$limit&offset=$offset'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       );
       
