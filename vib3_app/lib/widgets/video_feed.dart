@@ -1362,8 +1362,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               );
             },
           ),
-          // Add debug overlay for troubleshooting
-          const VideoDebugOverlay(),
+          // Debug overlay removed
         ],
       );
       },
