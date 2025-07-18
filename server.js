@@ -1235,13 +1235,21 @@ if (staticPath) {
         // Skip static serving for API routes - they should hit our endpoints
         if (req.path.startsWith('/api/') || req.path.startsWith('/videos-') || req.path.startsWith('/health')) {
             console.log(`🚫 Skipping static for API route: ${req.path}`);
-            return next('route'); // Skip this middleware, continue to next route
+            return next(); // Continue to next middleware/route
         }
         console.log(`📁 Serving static for: ${req.path}`);
         next();
     });
     
-    app.use(express.static(staticPath));
+    app.use(express.static(staticPath, {
+        index: false, // Don't serve index.html automatically
+        fallthrough: true // Continue to next middleware if file not found
+    }));
+    
+    // Manually handle index.html for non-API routes
+    app.get('/', (req, res) => {
+        res.sendFile(path.join(staticPath, 'index-full.html'));
+    });
 } else {
     console.error('ERROR: Could not find web directory in any of:', possiblePaths);
     app.use((req, res, next) => {
