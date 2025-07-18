@@ -32,7 +32,6 @@ import 'save_video_dialog.dart';
 // Import the better VIB3 themed components
 import 'video_feed_components/draggable/draggable_action_buttons.dart';
 import 'video_feed_components/state_manager.dart';
-import 'video_debug_overlay.dart';
 
 enum FeedType { forYou, following, friends }
 
@@ -1362,8 +1361,6 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               );
             },
           ),
-          // Add debug overlay for troubleshooting
-          const VideoDebugOverlay(),
         ],
       );
       },
