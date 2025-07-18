@@ -65,7 +65,12 @@ app.use((req, res, next) => {
 
 // Health check endpoint (before static files)
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+    res.status(200).json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        deploymentVersion: '2025-07-18-fix-api-routes',
+        staticMiddlewareFixed: true
+    });
 });
 
 // Test video endpoint for debugging
