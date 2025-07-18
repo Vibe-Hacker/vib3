@@ -5243,6 +5243,16 @@ app.get('/api/users/:userId', async (req, res) => {
     }
 });
 
+// Debug route to check if this file is deployed
+app.get('/api/debug/deployment', (req, res) => {
+    res.json({ 
+        message: 'Deployment updated',
+        timestamp: new Date().toISOString(),
+        staticMiddlewareRemoved: true,
+        followingEndpointExists: true
+    });
+});
+
 // Get user following list
 app.get('/api/users/:userId/following', async (req, res) => {
     console.log('🔍 GET /api/users/:userId/following endpoint hit');
