@@ -81,18 +81,38 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
             child: Stack(
               alignment: Alignment.bottomCenter,
               children: [
-                CircleAvatar(
-                  radius: 25,
-                  backgroundColor: Colors.white,
-                  child: CircleAvatar(
-                    radius: 23,
-                    backgroundColor: Colors.grey[800],
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00CED1), Color(0xFF1E90FF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00CED1).withOpacity(0.5),
+                        blurRadius: 15,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Center(
                     child: Text(
                       widget.video.user?['username']?[0]?.toUpperCase() ?? 'U',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 3,
+                            color: Colors.black45,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -141,15 +161,17 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: widget.isLiked ? const LinearGradient(
-                          colors: [Colors.red, Colors.pink],
+                        gradient: LinearGradient(
+                          colors: widget.isLiked 
+                            ? [Colors.red, Colors.pink]
+                            : [const Color(0xFFFF0080), const Color(0xFFFF4081)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                        ) : null,
+                        ),
                       ),
                       child: Icon(
                         widget.isLiked ? Icons.favorite : Icons.favorite_border,
-                        color: widget.isLiked ? Colors.white : Colors.white,
+                        color: Colors.white,
                         size: 32,
                         shadows: const [
                           Shadow(
@@ -191,10 +213,28 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
             },
             child: Column(
               children: [
-                const Icon(
-                  Icons.comment,
-                  color: Colors.white,
-                  size: 32,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF00CED1), Color(0xFF1E90FF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.comment,
+                    color: Colors.white,
+                    size: 32,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                        color: Colors.black45,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -202,6 +242,14 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                        color: Colors.black45,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -217,10 +265,28 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
             },
             child: Column(
               children: [
-                const Icon(
-                  Icons.share,
-                  color: Colors.white,
-                  size: 32,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFFF0080), Color(0xFFFF4081)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.share,
+                    color: Colors.white,
+                    size: 32,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                        color: Colors.black45,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -228,6 +294,14 @@ class _VideoActionButtonsState extends State<VideoActionButtons>
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                        color: Colors.black45,
+                      ),
+                    ],
                   ),
                 ),
               ],
