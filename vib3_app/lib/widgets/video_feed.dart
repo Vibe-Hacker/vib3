@@ -32,7 +32,6 @@ import 'save_video_dialog.dart';
 // Import the better VIB3 themed components
 import 'video_feed_components/draggable/draggable_action_buttons.dart';
 import 'video_feed_components/state_manager.dart';
-import 'video_debug_overlay.dart';
 
 enum FeedType { forYou, following, friends }
 
@@ -296,6 +295,15 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
         if (mounted) {
           setState(() {
             // This extra setState ensures the VideoPlayerWidget receives the updated isPlaying prop
+            // Force the PageView to rebuild the current item
+            _currentIndex = index;
+          });
+          
+          // Double rebuild to ensure video player gets the message
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (mounted) {
+              setState(() {});
+            }
           });
           
           // Explicitly trigger video playback for the new index
@@ -1064,8 +1072,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             child: GestureDetector(
               onLongPress: () => _showComments(video),
               child: VideoPlayerWidget(
+                key: ValueKey('video_${video.id}_${isCurrentVideo}'),
                 videoUrl: video.videoUrl!,
-                isPlaying: isCurrentVideo,
+                isPlaying: isCurrentVideo && _isScreenVisible,
                 preload: preload,
               ),
             ),
@@ -1362,11 +1371,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               );
             },
           ),
-          // Add debug overlay but make it invisible
-          Opacity(
-            opacity: 0.0,
-            child: const VideoDebugOverlay(),
-          ),
+          // Remove debug overlay completely
         ],
       );
       },
