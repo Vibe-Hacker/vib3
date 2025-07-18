@@ -207,21 +207,30 @@ class VideoProvider extends ChangeNotifier {
       final userId = authProvider?.currentUser?.id ?? 'anonymous';
       
       // Try to get personalized videos from backend first
-      List<Video> allVideos;
+      List<Video> allVideos = [];
       try {
         // Try the personalized endpoint if we have a real user ID
         if (userId != 'anonymous') {
+          print('VideoProvider: Attempting to load personalized videos for user: $userId');
           allVideos = await VideoService.getPersonalizedVideos(userId, token, limit: 100);
           print('VideoProvider: Got ${allVideos.length} personalized videos from backend');
         } else {
           // Fallback to regular feed for anonymous users
+          print('VideoProvider: Loading regular feed for anonymous user');
           allVideos = await VideoService.getAllVideos(token, feed: 'foryou', limit: 100);
           print('VideoProvider: Got ${allVideos.length} videos from server (anonymous user)');
         }
       } catch (e) {
         // Fallback to regular feed on error
-        print('VideoProvider: Personalized endpoint failed, falling back to regular feed');
-        allVideos = await VideoService.getAllVideos(token, feed: 'foryou', limit: 100);
+        print('VideoProvider: Personalized endpoint failed with error: $e');
+        print('VideoProvider: Attempting fallback to regular feed...');
+        try {
+          allVideos = await VideoService.getAllVideos(token, feed: 'foryou', limit: 100);
+          print('VideoProvider: Fallback successful, got ${allVideos.length} videos');
+        } catch (fallbackError) {
+          print('VideoProvider: Fallback also failed: $fallbackError');
+          allVideos = [];
+        }
       }
       
       // Use recommendation engine to personalize the feed
@@ -261,17 +270,23 @@ class VideoProvider extends ChangeNotifier {
       
       _debugInfo = 'Loaded ${_forYouVideos.length} personalized Vib3 Pulse videos';
       
+      print('VideoProvider: Successfully loaded ForYou feed with ${_forYouVideos.length} videos');
+      _isLoading = false;
       notifyListeners();
     } catch (e, stackTrace) {
       print('VideoProvider: Error loading Vib3 Pulse videos: $e');
       print('Stack trace: $stackTrace');
       _error = e.toString();
-      _forYouVideos.clear();
-      _videos.clear();
+      // Don't clear videos if we already have some
+      if (_forYouVideos.isEmpty) {
+        print('VideoProvider: No existing videos, clearing lists');
+        _forYouVideos.clear();
+        _videos.clear();
+      }
+      _isLoading = false;
       notifyListeners();
     } finally {
       _isLoading = false;
-      notifyListeners();
     }
   }
   

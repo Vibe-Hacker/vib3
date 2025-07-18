@@ -55,7 +55,8 @@ class VideoService {
           print('📄 HTML Response: ${testResponse.body.substring(0, 200)}...');
           print('🔧 Backend appears to be down or misconfigured');
           BackendHealthService.reportHtmlResponse('/api/videos');
-          throw Exception('Backend returned HTML instead of JSON - server may be down');
+          // Don't throw - return empty list to let app continue
+          return [];
         }
         
         final data = jsonDecode(testResponse.body);
