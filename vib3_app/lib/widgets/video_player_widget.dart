@@ -43,7 +43,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Initialize video immediately if playing or preloading
     if (widget.isPlaying || widget.preload) {
       print('🚀 Calling _initializeVideo() because isPlaying=${widget.isPlaying} or preload=${widget.preload}');
-      _initializeVideo();
+      // Add a small delay to ensure the widget is properly mounted
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _initializeVideo();
+        }
+      });
     } else {
       print('⏸️ NOT initializing video because isPlaying=false and preload=false');
     }
@@ -335,9 +340,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         // Unregister from VideoPlayerManager
         VideoPlayerManager.instance.unregisterController(_controller!);
         
-        // First pause the video if playing
+        // First pause and stop the video if playing
         try {
           _controller?.pause();
+          _controller?.seekTo(Duration.zero);
         } catch (e) {
           // Ignore pause errors during disposal
         }
@@ -367,13 +373,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    print('🎨 VideoPlayerWidget build: _isInitialized=$_isInitialized, _controller=${_controller != null}, isPlaying=${widget.isPlaying}');
+    print('🎨 VideoPlayerWidget build: _isInitialized=$_isInitialized, _controller=${_controller != null}, isPlaying=${widget.isPlaying}, hasError=$_hasError');
     
     // Don't show error screen during retries, just show black
     if (_hasError && _retryCount < _maxRetries) {
       // Still retrying, show black screen
       return Container(
         color: Colors.black,
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Colors.white24,
+          ),
+        ),
       );
     }
     
@@ -391,10 +402,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       );
     }
 
-    // Show black screen while initializing - no loading indicator
+    // Show black screen while initializing - with debug info
     if (!_isInitialized) {
       return Container(
         color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (_isInitializing)
+                CircularProgressIndicator(
+                  color: Colors.white24,
+                ),
+              if (_isInitializing)
+                Padding(
+                  padding: EdgeInsets.only(top: 16),
+                  child: Text(
+                    'Loading video...',
+                    style: TextStyle(color: Colors.white24, fontSize: 12),
+                  ),
+                ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -420,8 +450,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     alignment: Alignment.center,
                     clipBehavior: Clip.hardEdge,
                     child: SizedBox(
-                      width: _controller!.value.size.width,
-                      height: _controller!.value.size.height,
+                      width: _controller!.value.size.width > 0 ? _controller!.value.size.width : 720,
+                      height: _controller!.value.size.height > 0 ? _controller!.value.size.height : 1280,
                       child: VideoPlayer(_controller!),
                     ),
                   ),

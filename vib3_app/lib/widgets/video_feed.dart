@@ -89,6 +89,10 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       print('🎬 VideoFeed: Found ${videos.length} videos in provider');
       if (videos.isNotEmpty) {
         print('🎬 First video URL: ${videos[0].videoUrl}');
+        // Force initial state to trigger first video playback
+        setState(() {
+          _currentIndex = 0;
+        });
       }
     });
     
@@ -1214,7 +1218,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             
             // Always log for first few videos
             if (index < 3 || isCurrentVideo) {
-              print('🎥 Building video $index: _currentIndex=$_currentIndex, isCurrentVideo=$isCurrentVideo, _isScreenVisible=$_isScreenVisible, will play=${isCurrentVideo}');
+              print('🎥 Building video $index: _currentIndex=$_currentIndex, isCurrentVideo=$isCurrentVideo, _isScreenVisible=$_isScreenVisible, will play=${isCurrentVideo && _isScreenVisible}');
               print('🎥 Video URL: ${video.videoUrl}');
               print('🎥 Video has URL: ${video.videoUrl != null && video.videoUrl!.isNotEmpty}');
             }
@@ -1227,8 +1231,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                   height: MediaQuery.of(context).size.height,
                   child: Stack(
                     children: [
-                        // Video player
-                        _buildVideoPlayer(video, isCurrentVideo, preload: shouldPreload),
+                        // Video player - ensure first video plays
+                        _buildVideoPlayer(video, isCurrentVideo && _isScreenVisible, preload: shouldPreload),
                         
                         // Video description overlay
                         Positioned(
