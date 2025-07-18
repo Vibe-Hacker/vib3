@@ -1990,14 +1990,25 @@ class VideoService {
       );
       
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final videosJson = data['videos'] as List<dynamic>;
+        // Check if response is HTML (error case)
+        if (response.body.trim().startsWith('<!DOCTYPE') || response.body.trim().startsWith('<html')) {
+          print('⚠️ VideoService: Received HTML instead of JSON for personalized videos, falling back');
+          return await getAllVideos(token, feed: 'foryou', offset: offset, limit: limit);
+        }
         
-        print('VideoService: Got ${videosJson.length} personalized videos from backend');
-        
-        return videosJson.map((json) => 
-          Video.fromJson(json as Map<String, dynamic>)
-        ).toList();
+        try {
+          final data = jsonDecode(response.body);
+          final videosJson = data['videos'] as List<dynamic>;
+          
+          print('VideoService: Got ${videosJson.length} personalized videos from backend');
+          
+          return videosJson.map((json) => 
+            Video.fromJson(json as Map<String, dynamic>)
+          ).toList();
+        } catch (e) {
+          print('⚠️ VideoService: Error parsing personalized videos response: $e');
+          return await getAllVideos(token, feed: 'foryou', offset: offset, limit: limit);
+        }
       } else {
         print('VideoService: Failed to get personalized videos (${response.statusCode}), falling back to regular feed');
         // Fallback to regular feed if personalized endpoint fails

@@ -125,23 +125,34 @@ class UserService {
       print('📄 UserService: Following response body: ${response.body}');
       
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final List<dynamic> following = data['following'] ?? [];
+        // Check if response is HTML (error case)
+        if (response.body.trim().startsWith('<!DOCTYPE') || response.body.trim().startsWith('<html')) {
+          print('⚠️ UserService: Received HTML instead of JSON, endpoint not available');
+          return []; // Return empty list to continue app functionality
+        }
         
-        print('👥 UserService: Raw following data: $following');
-        print('👥 UserService: Following count: ${following.length}');
-        
-        final followingIds = following.map((item) {
-          if (item is String) {
-            return item;
-          } else if (item is Map<String, dynamic>) {
-            return item['_id'] ?? item['id'] ?? '';
-          }
-          return '';
-        }).where((id) => id.isNotEmpty).toList().cast<String>();
-        
-        print('✅ UserService: Processed following IDs: $followingIds');
-        return followingIds;
+        try {
+          final data = jsonDecode(response.body);
+          final List<dynamic> following = data['following'] ?? [];
+          
+          print('👥 UserService: Raw following data: $following');
+          print('👥 UserService: Following count: ${following.length}');
+          
+          final followingIds = following.map((item) {
+            if (item is String) {
+              return item;
+            } else if (item is Map<String, dynamic>) {
+              return item['_id'] ?? item['id'] ?? '';
+            }
+            return '';
+          }).where((id) => id.isNotEmpty).toList().cast<String>();
+          
+          print('✅ UserService: Processed following IDs: $followingIds');
+          return followingIds;
+        } catch (e) {
+          print('⚠️ UserService: Error parsing following response: $e');
+          return []; // Return empty list instead of throwing
+        }
       }
       
       print('⚠️ UserService: Failed to get following list, status: ${response.statusCode}');
