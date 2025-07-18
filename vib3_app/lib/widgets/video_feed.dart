@@ -11,6 +11,7 @@ import '../providers/video_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/video_service.dart';
+import '../services/user_service.dart';
 import '../models/video.dart';
 import '../models/comment.dart';
 import '../services/comment_service.dart';
@@ -28,6 +29,9 @@ import 'comments_sheet.dart';
 import 'swipe_gesture_detector.dart';
 import 'share_sheet.dart';
 import 'save_video_dialog.dart';
+// Import the better VIB3 themed components
+import 'video_feed_components/draggable/draggable_action_buttons.dart';
+import 'video_feed_components/state_manager.dart';
 import 'video_debug_overlay.dart';
 
 enum FeedType { forYou, following, friends }
@@ -59,6 +63,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   // Draggable button positions
   bool _isDragMode = false;
   late Map<String, Offset> _buttonPositions;
+  Map<String, bool> _followingStatus = {};
   Timer? _longPressTimer;
   String? _draggingButton;
   Offset? _initialDragPosition;
@@ -330,6 +335,46 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       Future.microtask(() {
         videoProvider.loadMoreVideos(token, feedType: widget.feedType);
       });
+    }
+  }
+
+  Future<void> _toggleFollow(String userId) async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final currentUserId = authProvider.currentUser?.id;
+      
+      if (currentUserId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please login to follow users')),
+        );
+        return;
+      }
+
+      final userService = UserService();
+      final isFollowing = _followingStatus[userId] ?? false;
+      
+      if (isFollowing) {
+        await userService.unfollowUser(userId);
+        setState(() {
+          _followingStatus[userId] = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unfollowed user')),
+        );
+      } else {
+        await userService.followUser(userId);
+        setState(() {
+          _followingStatus[userId] = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Following user')),
+        );
+      }
+    } catch (e) {
+      print('Error toggling follow: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
     }
   }
 
@@ -1029,7 +1074,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     print('🎨 VideoFeed build() called - isVisible=${widget.isVisible}, feedType=${widget.feedType}');
-    return Consumer<VideoProvider>(
+    return ChangeNotifierProvider(
+      create: (context) => VideoFeedStateManager(),
+      child: Consumer<VideoProvider>(
       builder: (context, videoProvider, child) {
         List<Video> videos = [];
         if (widget.feedType == FeedType.forYou) {
@@ -1275,8 +1322,23 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                           ),
                         ),
                         
-                        // Add floating bubble actions here if needed
-                        ..._buildFloatingBubbleActions(context, video, index),
+                        // Add the better VIB3 themed draggable action buttons
+                        if (index == _currentIndex)
+                          DraggableActionButtons(
+                            video: video,
+                            isLiked: Provider.of<VideoProvider>(context).isVideoLiked(video.id),
+                            isFollowing: _followingStatus[video.userId] ?? false,
+                            onLike: () => _handleLike(video),
+                            onComment: () => _showComments(video),
+                            onShare: () => _shareVideo(video),
+                            onFollow: () async {
+                              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                              if (authProvider.currentUser?.id != video.userId) {
+                                await _toggleFollow(video.userId);
+                              }
+                            },
+                            onProfile: () => _showCreatorProfile(video),
+                          ),
                         
                       ],
                     ),
@@ -1290,6 +1352,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
         ],
       );
       },
+    ),
     );
   }
 }
