@@ -1362,7 +1362,11 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               );
             },
           ),
-          // Debug overlay removed
+          // Add debug overlay but make it invisible
+          Opacity(
+            opacity: 0.0,
+            child: const VideoDebugOverlay(),
+          ),
         ],
       );
       },
