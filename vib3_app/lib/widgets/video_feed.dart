@@ -350,25 +350,36 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
         return;
       }
 
-      final userService = UserService();
+      final token = authProvider.authToken;
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Authentication required')),
+        );
+        return;
+      }
+      
       final isFollowing = _followingStatus[userId] ?? false;
       
       if (isFollowing) {
-        await userService.unfollowUser(userId);
-        setState(() {
-          _followingStatus[userId] = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unfollowed user')),
-        );
+        final success = await UserService.unfollowUser(userId, token);
+        if (success) {
+          setState(() {
+            _followingStatus[userId] = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unfollowed user')),
+          );
+        }
       } else {
-        await userService.followUser(userId);
-        setState(() {
-          _followingStatus[userId] = true;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Following user')),
-        );
+        final success = await UserService.followUser(userId, token);
+        if (success) {
+          setState(() {
+            _followingStatus[userId] = true;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Following user')),
+          );
+        }
       }
     } catch (e) {
       print('Error toggling follow: $e');
