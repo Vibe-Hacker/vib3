@@ -77,51 +77,23 @@ app.get('/feed', async (req, res) => {
     console.log('🎬 ROOT LEVEL FEED ENDPOINT HIT!');
     
     if (!db) {
-        // Return test videos when database is not connected
-        const testVideos = [
-            {
-                _id: '1',
-                userId: 'test-user-1',
-                videoUrl: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4',
-                title: 'Test Video 1',
-                description: 'Sample video for testing',
-                likes: [],
-                createdAt: new Date(),
-                user: {
-                    username: 'testuser1',
-                    displayName: 'Test User 1'
-                },
-                likeCount: 0,
-                commentCount: 0,
-                shareCount: 0,
-                feedType: 'foryou',
-                thumbnailUrl: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4#t=1'
-            },
-            {
-                _id: '2',
-                userId: 'test-user-2',
-                videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-                title: 'Test Video 2',
-                description: 'Google sample video',
-                likes: [],
-                createdAt: new Date(),
-                user: {
-                    username: 'testuser2',
-                    displayName: 'Test User 2'
-                },
-                likeCount: 0,
-                commentCount: 0,
-                shareCount: 0,
-                feedType: 'foryou',
-                thumbnailUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4#t=1'
-            }
-        ];
-        
-        return res.json({ 
-            videos: testVideos, 
-            error: 'Database not connected - showing test videos',
-            isTestData: true 
-        });
+        // Proxy to production backend when database is not connected
+        try {
+            const axios = require('axios');
+            const response = await axios.get('https://vib3-web-75tal.ondigitalocean.app/feed', {
+                params: req.query,
+                timeout: 10000
+            });
+            
+            console.log('📡 Proxied feed request to production backend');
+            return res.json(response.data);
+        } catch (error) {
+            console.error('Failed to proxy to production:', error.message);
+            return res.json({ 
+                videos: [], 
+                error: 'Database not connected and production proxy failed'
+            });
+        }
     }
     
     try {
