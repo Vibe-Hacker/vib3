@@ -72,6 +72,62 @@ app.get('/health', (req, res) => {
 const testVideoRouter = require('./test-video-endpoint');
 app.use('/api', testVideoRouter);
 
+// Video proxy endpoint to bypass CORS issues
+app.get('/api/proxy/video', async (req, res) => {
+    const videoUrl = req.query.url;
+    if (!videoUrl) {
+        return res.status(400).json({ error: 'Missing video URL' });
+    }
+    
+    try {
+        // Set CORS headers
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'GET, HEAD');
+        res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Content-Range, Accept-Ranges');
+        
+        // Support range requests for video seeking
+        const range = req.headers.range;
+        const axios = require('axios');
+        
+        if (range) {
+            // Handle range request
+            const headResponse = await axios.head(videoUrl);
+            const fileSize = parseInt(headResponse.headers['content-length']);
+            
+            const parts = range.replace(/bytes=/, "").split("-");
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+            const chunksize = (end - start) + 1;
+            
+            const response = await axios.get(videoUrl, {
+                headers: { Range: `bytes=${start}-${end}` },
+                responseType: 'stream'
+            });
+            
+            res.writeHead(206, {
+                'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+                'Accept-Ranges': 'bytes',
+                'Content-Length': chunksize,
+                'Content-Type': 'video/mp4'
+            });
+            
+            response.data.pipe(res);
+        } else {
+            // Stream entire video
+            const response = await axios.get(videoUrl, { responseType: 'stream' });
+            
+            res.header('Content-Type', response.headers['content-type'] || 'video/mp4');
+            res.header('Content-Length', response.headers['content-length']);
+            res.header('Accept-Ranges', 'bytes');
+            
+            response.data.pipe(res);
+        }
+    } catch (error) {
+        console.error('Video proxy error:', error.message);
+        res.status(500).json({ error: 'Failed to proxy video' });
+    }
+});
+
 // VIDEO FEED ENDPOINT - at root level to bypass all routing issues
 app.get('/feed', async (req, res) => {
     console.log('🎬 ROOT LEVEL FEED ENDPOINT HIT!');
@@ -5189,7 +5245,12 @@ app.get('/api/users/:userId', async (req, res) => {
 
 // Get user following list
 app.get('/api/users/:userId/following', async (req, res) => {
+    console.log('🔍 GET /api/users/:userId/following endpoint hit');
+    console.log('📝 Request params:', req.params);
+    console.log('📝 Database connected:', !!db);
+    
     if (!db) {
+        console.log('❌ Database not connected');
         return res.status(503).json({ error: 'Database not connected' });
     }
     
@@ -5202,11 +5263,11 @@ app.get('/api/users/:userId/following', async (req, res) => {
         
         const followingIds = following.map(f => f.followingId);
         
-        console.log(`User ${userId} is following ${followingIds.length} users`);
+        console.log(`✅ User ${userId} is following ${followingIds.length} users`);
         res.json({ following: followingIds });
         
     } catch (error) {
-        console.error('Get user following error:', error);
+        console.error('❌ Get user following error:', error);
         res.status(500).json({ error: 'Failed to get following list' });
     }
 });
@@ -5427,8 +5488,28 @@ app.get(['/app', '/app/'], (req, res) => {
     }
 });
 
-// Catch all route - use fixed index.html
+// Test endpoint to verify API routes work
+app.get('/api/test-following-endpoint', (req, res) => {
+    console.log('🧪 Test following endpoint hit');
+    res.json({ 
+        message: 'API routes are working',
+        timestamp: new Date().toISOString(),
+        note: 'If you see this, API routes are functioning properly'
+    });
+});
+
+// Catch all route - use fixed index.html (MUST BE LAST)
 app.get('*', (req, res) => {
+    // Log when catch-all is hit for API routes (shouldn't happen)
+    if (req.path.startsWith('/api/')) {
+        console.log('⚠️ WARNING: Catch-all route caught API path:', req.path);
+        console.log('This API endpoint may not be defined');
+        return res.status(404).json({ 
+            error: 'API endpoint not found',
+            path: req.path,
+            message: 'This API route is not defined on the server'
+        });
+    }
     res.sendFile(path.join(__dirname, 'www', 'index-full.html'));
 });
 
