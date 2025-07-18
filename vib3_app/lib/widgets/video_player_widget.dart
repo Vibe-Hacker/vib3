@@ -125,6 +125,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         final transformedUrl = VideoUrlService.transformVideoUrl(widget.videoUrl);
         print('🔄 Transformed URL: $transformedUrl');
         
+        // Check video format from URL
+        final videoFormat = transformedUrl.toLowerCase().contains('.webm') ? 'WebM' : 
+                           transformedUrl.toLowerCase().contains('.mp4') ? 'MP4' : 
+                           'Unknown';
+        print('🎥 Video format detected: $videoFormat');
+        
         // Extra validation
         if (transformedUrl.isEmpty || !transformedUrl.startsWith('http')) {
           throw Exception('Invalid video URL: $transformedUrl');
@@ -177,6 +183,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         print('✅ VideoPlayer: Successfully initialized ${widget.videoUrl}');
         print('📐 Video size: ${_controller!.value.size}');
         print('⏱️ Duration: ${_controller!.value.duration}');
+        print('🎬 Video format: ${_controller!.value.isInitialized ? "Supported" : "Not Supported"}');
+        
+        // Additional check for video size
+        if (_controller!.value.size.width == 0 || _controller!.value.size.height == 0) {
+          print('⚠️ Warning: Video has zero dimensions, may not display properly');
+        }
         
         _controller!.setLooping(true);
         
