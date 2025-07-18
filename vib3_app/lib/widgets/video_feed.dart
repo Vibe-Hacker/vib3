@@ -24,7 +24,6 @@ import 'double_tap_like_animation.dart';
 import 'comments_sheet.dart';
 import 'swipe_gesture_detector.dart';
 import 'share_sheet.dart';
-import 'video_swipe_actions.dart';
 
 enum FeedType { forYou, following, friends }
 
