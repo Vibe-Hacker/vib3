@@ -131,9 +131,7 @@ $analysis
       backgroundColor: Colors.black,
       body: SafeArea(
         bottom: false, // Don't add padding at bottom
-        child: Stack(
-          children: [
-            IndexedStack(
+        child: IndexedStack(
           index: _currentIndex,
           children: [
             // Use new architecture if feature flag is enabled
@@ -147,25 +145,6 @@ $analysis
             const UploadFlowScreen(),
             const NotificationsScreen(),
             const ProfileScreen(),
-          ],
-        ),
-            // Test button overlay
-            Positioned(
-              top: 50,
-              right: 10,
-              child: FloatingActionButton.small(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const TestVideoScreen(),
-                    ),
-                  );
-                },
-                backgroundColor: Colors.red,
-                child: const Icon(Icons.play_arrow, color: Colors.white),
-              ),
-            ),
           ],
         ),
       ),

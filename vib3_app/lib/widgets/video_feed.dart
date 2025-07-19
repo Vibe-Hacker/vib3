@@ -15,7 +15,6 @@ import '../services/user_service.dart';
 import '../models/video.dart';
 import '../models/comment.dart';
 import '../services/comment_service.dart';
-import '../services/video_player_manager.dart';
 import '../services/interaction_tracking_service.dart';
 import '../services/recommendation_engine.dart';
 import '../widgets/grok_ai_assistant.dart';
@@ -225,12 +224,6 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     
     // Stop tracking current video
     InteractionTrackingService().stopVideoView();
-    
-    // Clear any pending video initializations
-    VideoPlayerManager.instance.clearInitQueue();
-    
-    // Pause all videos to prevent disposed controller access
-    VideoPlayerManager.instance.pauseAllVideos();
     
     _pageController.dispose();
     super.dispose();
