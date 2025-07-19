@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:http/http.dart' as http;
 import '../services/video_player_manager.dart';
 import '../services/video_url_service.dart';
 import '../services/adaptive_streaming_service.dart';
@@ -33,9 +32,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _showPlayIcon = false;
   int _retryCount = 0;
   bool _isDisposed = false;
-  static const int _maxRetries = 2;
+  static const int _maxRetries = 1;
   bool _isInitializing = false;
-  String _errorMessage = '';
 
   @override
   void initState() {
@@ -45,12 +43,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Initialize video immediately if playing or preloading
     if (widget.isPlaying || widget.preload) {
       print('🚀 Calling _initializeVideo() because isPlaying=${widget.isPlaying} or preload=${widget.preload}');
-      // Add a small delay to ensure the widget is properly mounted
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _initializeVideo();
-        }
-      });
+      _initializeVideo();
     } else {
       print('⏸️ NOT initializing video because isPlaying=false and preload=false');
     }
@@ -110,8 +103,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _isInitializing = true;
     
     try {
-      // Initialize directly without queuing for faster response
-      if (_isDisposed || !mounted) return;
+      // Queue the initialization to prevent concurrent initializations
+      await VideoPlayerManager.instance.queueVideoInit(() async {
+        if (_isDisposed || !mounted) return;
       
       try {
         print('🎬 VideoPlayer: Initializing video: ${widget.videoUrl}');
@@ -142,24 +136,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           throw Exception('Invalid video URL: $transformedUrl');
         }
         
-        // Test URL accessibility
-        print('🆗 Testing video URL accessibility...');
-        try {
-          final testResponse = await http.head(Uri.parse(transformedUrl)).timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              throw Exception('URL test timed out');
-            },
-          );
-          print('✅ Video URL test: Status ${testResponse.statusCode}');
-          if (testResponse.statusCode >= 400) {
-            throw Exception('Video URL returned error: ${testResponse.statusCode}');
-          }
-        } catch (testError) {
-          print('⚠️ Video URL test failed: $testError');
-          // Continue anyway - the video player might still work
-        }
-        
         // Get optimal video URL based on device/network conditions
         final adaptiveVideoService = AdaptiveVideoService();
         final optimalUrl = await adaptiveVideoService.getOptimalVideoUrl(transformedUrl);
@@ -181,25 +157,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           },
         );
         
-        // Initialize with timeout
+        // Simple initialization without complex timeout logic
         print('🎮 About to call _controller.initialize()...');
-        try {
-          await _controller!.initialize().timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              throw Exception('Video initialization timed out after 10 seconds');
-            },
-          );
-          print('✅ VideoPlayer: Successfully initialized ${widget.videoUrl}');
-        } catch (timeoutError) {
-          print('⏱️ Video initialization timeout: $timeoutError');
-          throw timeoutError;
-        }
+        await _controller!.initialize();
+        print('✅ VideoPlayer: Successfully initialized ${widget.videoUrl}');
         
-        if (!mounted || _isDisposed) {
-          print('⚠️ Widget disposed during initialization');
-          return;
-        }
+        if (!mounted || _isDisposed) return;
         
         if (mounted) {
           setState(() {
@@ -292,10 +255,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           setState(() {
             _hasError = true;
             _isInitialized = false;
-            _errorMessage = 'Failed to initialize video';
           });
         }
       }
+    });
     } finally {
       _isInitializing = false;
     }
@@ -372,10 +335,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         // Unregister from VideoPlayerManager
         VideoPlayerManager.instance.unregisterController(_controller!);
         
-        // First pause and stop the video if playing
+        // First pause the video if playing
         try {
           _controller?.pause();
-          _controller?.seekTo(Duration.zero);
         } catch (e) {
           // Ignore pause errors during disposal
         }
@@ -405,18 +367,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    print('🎨 VideoPlayerWidget build: _isInitialized=$_isInitialized, _controller=${_controller != null}, isPlaying=${widget.isPlaying}, hasError=$_hasError');
+    print('🎨 VideoPlayerWidget build: _isInitialized=$_isInitialized, _controller=${_controller != null}, isPlaying=${widget.isPlaying}');
     
     // Don't show error screen during retries, just show black
     if (_hasError && _retryCount < _maxRetries) {
       // Still retrying, show black screen
       return Container(
         color: Colors.black,
-        child: const Center(
-          child: CircularProgressIndicator(
-            color: Colors.white24,
-          ),
-        ),
       );
     }
     
@@ -434,53 +391,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       );
     }
 
-    // Show black screen while initializing - with debug info
+    // Show black screen while initializing - no loading indicator
     if (!_isInitialized) {
       return Container(
         color: Colors.black,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (_isInitializing && !_hasError)
-                CircularProgressIndicator(
-                  color: Colors.white24,
-                ),
-              if (_isInitializing && !_hasError)
-                Padding(
-                  padding: EdgeInsets.only(top: 16),
-                  child: Text(
-                    'Loading video...',
-                    style: TextStyle(color: Colors.white24, fontSize: 12),
-                  ),
-                ),
-              if (_hasError && _retryCount >= _maxRetries)
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _hasError = false;
-                      _retryCount = 0;
-                    });
-                    _initializeVideo();
-                  },
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.refresh,
-                        color: Colors.white24,
-                        size: 48,
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Tap to retry',
-                        style: TextStyle(color: Colors.white24, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
       );
     }
 
@@ -506,8 +420,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     alignment: Alignment.center,
                     clipBehavior: Clip.hardEdge,
                     child: SizedBox(
-                      width: _controller!.value.size.width > 0 ? _controller!.value.size.width : 720,
-                      height: _controller!.value.size.height > 0 ? _controller!.value.size.height : 1280,
+                      width: _controller!.value.size.width,
+                      height: _controller!.value.size.height,
                       child: VideoPlayer(_controller!),
                     ),
                   ),
