@@ -89,15 +89,21 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       if (videos.isNotEmpty) {
         print('🎬 First video URL: ${videos[0].videoUrl}');
         
-        // Force a rebuild after a short delay to ensure the first video starts playing
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted && _isScreenVisible) {
-            print('🎬 VideoFeed: Forcing rebuild to start first video');
-            setState(() {
-              // This will trigger a rebuild and ensure isPlaying is properly set
-            });
-          }
-        });
+        // Force initial video to play immediately
+        if (mounted && _isScreenVisible && _currentIndex == 0) {
+          print('🎬 VideoFeed: Force starting first video NOW!');
+          // Double setState to ensure video widget gets the message
+          setState(() {
+            _currentIndex = 0;
+          });
+          Future.delayed(const Duration(milliseconds: 50), () {
+            if (mounted) {
+              setState(() {
+                // Force another rebuild to ensure video starts
+              });
+            }
+          });
+        }
       }
     });
     
@@ -1055,7 +1061,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     print('🎬 _buildVideoPlayer: videoUrl=${video.videoUrl}, isCurrentVideo=$isCurrentVideo, preload=$preload, _isScreenVisible=$_isScreenVisible');
     
     if (video.videoUrl != null && video.videoUrl!.isNotEmpty && (isCurrentVideo || preload)) {
-      print('🎬 Creating VideoPlayerWidget with URL: ${video.videoUrl}, isPlaying: $isCurrentVideo');
+      print('🎬 Creating VideoPlayerWidget with URL: ${video.videoUrl}, isPlaying: ${isCurrentVideo && _isScreenVisible}');
       return Positioned.fill(
         child: VideoSwipeActions(
           onLike: () => _handleLike(video),
@@ -1070,7 +1076,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               onLongPress: () => _showComments(video),
               child: VideoPlayerWidget(
                 videoUrl: video.videoUrl!,
-                isPlaying: isCurrentVideo,
+                isPlaying: isCurrentVideo && _isScreenVisible,
                 preload: preload,
               ),
             ),
