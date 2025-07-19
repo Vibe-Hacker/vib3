@@ -21,7 +21,7 @@ import '../services/recommendation_engine.dart';
 import '../widgets/grok_ai_assistant.dart';
 import '../screens/profile_screen.dart';
 import '../config/app_config.dart';
-import 'simple_video_widget.dart';
+import 'video_player_widget.dart';
 import '../screens/video_creator/modules/duet_module.dart';
 import '../screens/video_creator/modules/stitch_module.dart';
 import 'double_tap_like_animation.dart';
@@ -1058,9 +1058,10 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             isLiked: Provider.of<VideoProvider>(context).isVideoLiked(video.id),
             child: GestureDetector(
               onLongPress: () => _showComments(video),
-              child: SimpleVideoWidget(
+              child: VideoPlayerWidget(
                 videoUrl: video.videoUrl!,
-                isPlaying: isCurrentVideo && _isScreenVisible,
+                isPlaying: isCurrentVideo,
+                preload: preload,
               ),
             ),
           ),
