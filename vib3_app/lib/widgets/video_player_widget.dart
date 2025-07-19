@@ -110,9 +110,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _isInitializing = true;
     
     try {
-      // Queue the initialization to prevent concurrent initializations
-      await VideoPlayerManager.instance.queueVideoInit(() async {
-        if (_isDisposed || !mounted) return;
+      // Initialize directly without queuing for faster response
+      if (_isDisposed || !mounted) return;
       
       try {
         print('🎬 VideoPlayer: Initializing video: ${widget.videoUrl}');
@@ -297,7 +296,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           });
         }
       }
-    });
     } finally {
       _isInitializing = false;
     }
