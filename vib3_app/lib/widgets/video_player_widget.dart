@@ -69,20 +69,32 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     else if (oldWidget.isPlaying != widget.isPlaying) {
       print('🎬 VideoPlayer: Play state changed from ${oldWidget.isPlaying} to ${widget.isPlaying}');
       print('🎬 VideoPlayer: Current state - _isInitialized=$_isInitialized, _hasError=$_hasError, _controller=${_controller != null}');
-      if (widget.isPlaying && !_isInitialized && !_hasError) {
-        print('🎬 VideoPlayer: Starting initialization...');
+      if (widget.isPlaying && !_isInitialized && !_hasError && _controller == null) {
+        print('🎬 VideoPlayer: Starting initialization because widget wants to play...');
         _initializeVideo();
-      } else if (!widget.isPlaying && _isInitialized) {
+      } else if (!widget.isPlaying && _isInitialized && _controller != null) {
         _controller?.pause();
+        setState(() {
+          _isPaused = true;
+          _showPlayIcon = false;
+        });
         // Keep videos in memory, don't dispose immediately
       } else if (widget.isPlaying && _isInitialized && _controller != null) {
-        // Resume playing
-        print('▶️ VideoPlayer: Resuming playback');
-        VideoPlayerManager.instance.playVideo(_controller!);
+        // Resume playing - ensure video actually plays
+        print('▶️ VideoPlayer: Resuming playback (controller exists and is initialized)');
+        _controller!.play().then((_) {
+          VideoPlayerManager.instance.playVideo(_controller!);
+          print('✅ VideoPlayer: Successfully resumed playback');
+        }).catchError((e) {
+          print('❌ VideoPlayer: Error resuming playback: $e');
+        });
         setState(() {
           _isPaused = false;
           _showPlayIcon = false;
         });
+      } else if (widget.isPlaying && !_isInitialized && _controller != null && !_hasError) {
+        // Controller exists but not initialized yet - wait for initialization
+        print('⏳ VideoPlayer: Waiting for initialization to complete before playing...');
       }
     }
   }
@@ -198,12 +210,37 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         // Start playing if this widget is marked as playing (not just preloading)
         if (widget.isPlaying && mounted && !_isDisposed) {
           // Play the video directly
+          print('🎬 VideoPlayer: Widget isPlaying=true, starting playback...');
           try {
-            await _controller!.play();
-            print('▶️ VideoPlayer: Started playing - isPlaying: ${_controller!.value.isPlaying}');
-            
-            // Also register with manager
-            VideoPlayerManager.instance.playVideo(_controller!);
+            // Ensure video is ready before playing
+            if (_controller!.value.isInitialized) {
+              await _controller!.play();
+              print('▶️ VideoPlayer: Started playing - isPlaying: ${_controller!.value.isPlaying}');
+              
+              // Also register with manager
+              VideoPlayerManager.instance.playVideo(_controller!);
+              
+              // Force UI update to show video
+              if (mounted) {
+                setState(() {
+                  _isPaused = false;
+                  _showPlayIcon = false;
+                });
+              }
+            } else {
+              print('⚠️ Controller not fully initialized yet, scheduling play...');
+              // Schedule play for next frame
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && widget.isPlaying && _controller != null && _controller!.value.isInitialized) {
+                  _controller!.play();
+                  VideoPlayerManager.instance.playVideo(_controller!);
+                  setState(() {
+                    _isPaused = false;
+                    _showPlayIcon = false;
+                  });
+                }
+              });
+            }
           } catch (e) {
             print('⚠️ Error starting playback: $e');
           }
@@ -215,6 +252,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           } catch (e) {
             print('⚠️ Error pausing preloaded video: $e');
           }
+        } else {
+          print('⏸️ VideoPlayer: Not playing - isPlaying=${widget.isPlaying}, preload=${widget.preload}');
         }
         
       } catch (e, stackTrace) {
@@ -265,13 +304,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _handlePlayPause() async {
+    print('🎮 _handlePlayPause called: _controller=${_controller != null}, _isInitialized=$_isInitialized, widget.isPlaying=${widget.isPlaying}');
+    
     if (_controller != null && _isInitialized && mounted && !_isDisposed) {
       if (widget.isPlaying) {
         // Play directly and through manager
         try {
-          await _controller!.play();
-          VideoPlayerManager.instance.playVideo(_controller!);
-          print('▶️ _handlePlayPause: Playing video - isPlaying: ${_controller!.value.isPlaying}');
+          // First ensure the controller is not already playing
+          if (!_controller!.value.isPlaying) {
+            await _controller!.play();
+            VideoPlayerManager.instance.playVideo(_controller!);
+            print('▶️ _handlePlayPause: Started playing - controller.isPlaying: ${_controller!.value.isPlaying}');
+          } else {
+            print('▶️ _handlePlayPause: Video already playing');
+          }
           
           if (mounted && !_isDisposed) {
             setState(() {
@@ -284,11 +330,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         }
       } else {
         try {
-          _controller?.pause();
+          if (_controller!.value.isPlaying) {
+            _controller?.pause();
+            print('⏸️ _handlePlayPause: Paused video');
+          }
         } catch (e) {
           print('⚠️ Error pausing video: $e');
         }
       }
+    } else {
+      print('⚠️ _handlePlayPause: Cannot play - controller not ready or widget disposed');
     }
   }
 

@@ -32,7 +32,6 @@ import 'save_video_dialog.dart';
 // Import the better VIB3 themed components
 import 'video_feed_components/draggable/draggable_action_buttons.dart';
 import 'video_feed_components/state_manager.dart';
-import 'video_debug_overlay.dart';
 
 enum FeedType { forYou, following, friends }
 
@@ -89,6 +88,16 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       print('🎬 VideoFeed: Found ${videos.length} videos in provider');
       if (videos.isNotEmpty) {
         print('🎬 First video URL: ${videos[0].videoUrl}');
+        
+        // Force a rebuild after a short delay to ensure the first video starts playing
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted && _isScreenVisible) {
+            print('🎬 VideoFeed: Forcing rebuild to start first video');
+            setState(() {
+              // This will trigger a rebuild and ensure isPlaying is properly set
+            });
+          }
+        });
       }
     });
     
@@ -1358,8 +1367,6 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               );
             },
           ),
-          // Add debug overlay temporarily to diagnose issue
-          const VideoDebugOverlay(),
         ],
       );
       },
