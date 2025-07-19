@@ -15,6 +15,7 @@ import '../services/user_service.dart';
 import '../models/video.dart';
 import '../models/comment.dart';
 import '../services/comment_service.dart';
+import '../services/video_player_manager.dart';
 import '../services/interaction_tracking_service.dart';
 import '../services/recommendation_engine.dart';
 import '../widgets/grok_ai_assistant.dart';
@@ -31,6 +32,7 @@ import 'save_video_dialog.dart';
 // Import the better VIB3 themed components
 import 'video_feed_components/draggable/draggable_action_buttons.dart';
 import 'video_feed_components/state_manager.dart';
+import 'video_debug_overlay.dart';
 
 enum FeedType { forYou, following, friends }
 
@@ -87,22 +89,6 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       print('🎬 VideoFeed: Found ${videos.length} videos in provider');
       if (videos.isNotEmpty) {
         print('🎬 First video URL: ${videos[0].videoUrl}');
-        
-        // Force initial video to play immediately
-        if (mounted && _isScreenVisible && _currentIndex == 0) {
-          print('🎬 VideoFeed: Force starting first video NOW!');
-          // Double setState to ensure video widget gets the message
-          setState(() {
-            _currentIndex = 0;
-          });
-          Future.delayed(const Duration(milliseconds: 50), () {
-            if (mounted) {
-              setState(() {
-                // Force another rebuild to ensure video starts
-              });
-            }
-          });
-        }
       }
     });
     
@@ -224,6 +210,12 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     
     // Stop tracking current video
     InteractionTrackingService().stopVideoView();
+    
+    // Clear any pending video initializations
+    VideoPlayerManager.instance.clearInitQueue();
+    
+    // Pause all videos to prevent disposed controller access
+    VideoPlayerManager.instance.pauseAllVideos();
     
     _pageController.dispose();
     super.dispose();
@@ -1054,7 +1046,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     print('🎬 _buildVideoPlayer: videoUrl=${video.videoUrl}, isCurrentVideo=$isCurrentVideo, preload=$preload, _isScreenVisible=$_isScreenVisible');
     
     if (video.videoUrl != null && video.videoUrl!.isNotEmpty && (isCurrentVideo || preload)) {
-      print('🎬 Creating VideoPlayerWidget with URL: ${video.videoUrl}, isPlaying: ${isCurrentVideo && _isScreenVisible}');
+      print('🎬 Creating VideoPlayerWidget with URL: ${video.videoUrl}, isPlaying: $isCurrentVideo');
       return Positioned.fill(
         child: VideoSwipeActions(
           onLike: () => _handleLike(video),
@@ -1069,7 +1061,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               onLongPress: () => _showComments(video),
               child: VideoPlayerWidget(
                 videoUrl: video.videoUrl!,
-                isPlaying: isCurrentVideo && _isScreenVisible,
+                isPlaying: isCurrentVideo,
                 preload: preload,
               ),
             ),
@@ -1366,6 +1358,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               );
             },
           ),
+          // Add debug overlay for troubleshooting
+          const VideoDebugOverlay(),
         ],
       );
       },

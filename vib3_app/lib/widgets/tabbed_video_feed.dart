@@ -164,8 +164,16 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
             controller: _tabController,
             children: [
               // Vib3 Pulse Feed
-              // TEMPORARY: Using BasicVideoFeed to test
-              const BasicVideoFeed(),
+              Builder(
+                builder: (context) {
+                  final isVisible = widget.isVisible && _currentTab == 0;
+                  print('🎬 TabbedVideoFeed: Creating VideoFeed with isVisible=$isVisible (widget.isVisible=${widget.isVisible}, _currentTab=$_currentTab)');
+                  return VideoFeed(
+                    isVisible: isVisible,
+                    feedType: FeedType.forYou,
+                  );
+                },
+              ),
               // Vib3 Connect Feed
               VideoFeed(
                 isVisible: widget.isVisible && _currentTab == 1,
