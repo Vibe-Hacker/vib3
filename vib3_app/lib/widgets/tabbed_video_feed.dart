@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import '../providers/video_provider.dart';
 import '../models/video.dart';
 import 'video_feed.dart';
+import 'basic_video_feed.dart';
 
 class TabbedVideoFeed extends StatefulWidget {
   final bool isVisible;
@@ -163,16 +164,8 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
             controller: _tabController,
             children: [
               // Vib3 Pulse Feed
-              Builder(
-                builder: (context) {
-                  final isVisible = widget.isVisible && _currentTab == 0;
-                  print('🎬 TabbedVideoFeed: Creating VideoFeed with isVisible=$isVisible (widget.isVisible=${widget.isVisible}, _currentTab=$_currentTab)');
-                  return VideoFeed(
-                    isVisible: isVisible,
-                    feedType: FeedType.forYou,
-                  );
-                },
-              ),
+              // TEMPORARY: Using BasicVideoFeed to test
+              const BasicVideoFeed(),
               // Vib3 Connect Feed
               VideoFeed(
                 isVisible: widget.isVisible && _currentTab == 1,
