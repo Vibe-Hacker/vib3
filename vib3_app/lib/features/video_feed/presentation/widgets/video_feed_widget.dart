@@ -4,9 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/video_feed_provider.dart';
 import '../../domain/entities/video_entity.dart';
 import '../../../../widgets/video_player_widget.dart';
-import '../../../../widgets/optimized_video_feed.dart';
 import '../../../../services/enhanced_video_cache.dart';
-import '../../../../utils/performance_monitor.dart';
 
 /// Video feed widget using the new repository pattern
 /// This replaces direct VideoService usage
@@ -33,17 +31,11 @@ class _VideoFeedWidgetState extends State<VideoFeedWidget> {
     _pageController = PageController();
     _initializeCache();
     _loadInitialVideos();
-    
-    // Start performance monitoring in debug mode
-    if (mounted) {
-      PerformanceMonitor().startMonitoring();
-    }
   }
   
   @override
   void dispose() {
     _pageController.dispose();
-    PerformanceMonitor().stopMonitoring();
     super.dispose();
   }
   
@@ -159,36 +151,48 @@ class _VideoFeedWidgetState extends State<VideoFeedWidget> {
           );
         }
         
-        // Use optimized video feed for better performance
-        return FpsOverlay(
-          child: OptimizedVideoFeed(
-            videoUrls: videoUrls,
-            onPageChanged: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-              
-              // Track view
-              provider.trackView(videos[index].id);
-              
-              // Pre-cache next batch of videos
-              if (index < videos.length - 5) {
-                _videoCache.preCacheVideos(
-                  videoUrls.skip(index + 1).take(5).toList(),
-                  startPriority: 10,
-                );
-              }
-              
-              // Load more videos when reaching near the end
-              if (index >= videos.length - 3 && !isLoading) {
-                _loadMoreVideos(provider);
-              }
-            },
-            overlayBuilder: (context, index) {
-              final video = videos[index];
-              return _buildVideoOverlay(context, video, provider);
-            },
-          ),
+        // Use standard PageView with pre-caching
+        return PageView.builder(
+          controller: _pageController,
+          scrollDirection: Axis.vertical,
+          onPageChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+            
+            // Track view
+            provider.trackView(videos[index].id);
+            
+            // Pre-cache next 5 videos
+            if (index < videos.length - 5) {
+              _videoCache.preCacheVideos(
+                videoUrls.skip(index + 1).take(5).toList(),
+                startPriority: 10,
+              );
+            }
+            
+            // Load more videos when reaching near the end
+            if (index >= videos.length - 3 && !isLoading) {
+              _loadMoreVideos(provider);
+            }
+          },
+          itemCount: videos.length,
+          itemBuilder: (context, index) {
+            final video = videos[index];
+            
+            return Stack(
+              children: [
+                // Video player
+                VideoPlayerWidget(
+                  videoUrl: video.videoUrl,
+                  isPlaying: index == _currentIndex,
+                ),
+                
+                // Video info overlay
+                _buildVideoOverlay(context, video, provider),
+              ],
+            );
+          },
         );
       },
     );
