@@ -52,7 +52,11 @@ class VideoDTO {
     // Extract video URL
     String? videoUrl = json['videoUrl']?.toString();
     if (videoUrl != null && !videoUrl.startsWith('http')) {
+      // Only prepend base URL if it's a relative path
       videoUrl = 'https://vib3-videos.nyc3.digitaloceanspaces.com/$videoUrl';
+    } else if (videoUrl != null && videoUrl.contains('nyc3.digitaloceanspaces.com/videos/nyc3.digitaloceanspaces.com')) {
+      // Fix duplicated paths in URL
+      videoUrl = videoUrl.replaceAll('nyc3.digitaloceanspaces.com/videos/nyc3.digitaloceanspaces.com', 'nyc3.digitaloceanspaces.com');
     }
     
     // Extract duration
