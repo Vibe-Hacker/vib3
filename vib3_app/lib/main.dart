@@ -21,7 +21,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Reduce shader compilation jank for better performance
-  Paint.enableDithering = false;
+  // Note: Paint.enableDithering was removed in newer Flutter versions
   
   // Load environment variables
   await dotenv.load(fileName: ".env");
