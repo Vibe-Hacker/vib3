@@ -552,30 +552,4 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       ),
     );
   }
-  
-  Future<void> _cacheVideoInBackground(String url) async {
-    try {
-      // Download video in background only if playing or likely to be watched
-      if (!widget.isPlaying && !widget.preload) return;
-      
-      print('📥 Starting background cache for: $url');
-      
-      // Use HTTP to download the video
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Connection': 'keep-alive',
-          'Cache-Control': 'max-age=3600',
-        },
-      ).timeout(const Duration(minutes: 5));
-      
-      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
-        // Cache the video
-        await _cacheManager.cacheVideo(url, response.bodyBytes);
-        print('✅ Video cached successfully: ${response.bodyBytes.length / 1024 / 1024} MB');
-      }
-    } catch (e) {
-      print('⚠️ Failed to cache video in background: $e');
-    }
-  }
 }

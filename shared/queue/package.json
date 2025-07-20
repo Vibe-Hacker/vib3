@@ -1,0 +1,17 @@
+{
+  "name": "@vib3/queue",
+  "version": "1.0.0",
+  "description": "Message queue system for VIB3 microservices",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "bull": "^4.10.4",
+    "ioredis": "^5.3.2",
+    "winston": "^3.8.2"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0"
+  }
+}

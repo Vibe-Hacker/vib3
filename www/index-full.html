@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>VIB3 Studio - Video Social App</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div class="auth-container" id="authContainer">
+        <div class="auth-form">
+            <h2>Welcome to VIB3</h2>
+            <div class="auth-error" id="authError"></div>
+            <div class="auth-loading" id="authLoading">Loading...</div>
+            <div id="loginForm">
+                <input type="email" class="auth-input" id="loginEmail" placeholder="Email" required aria-label="Email">
+                <input type="password" class="auth-input" id="loginPassword" placeholder="Password" required aria-label="Password">
+                <button class="auth-btn" onclick="handleLogin()" aria-label="Sign In">Sign In</button>
+                <div class="auth-switch">
+                    Don't have an account? <a onclick="showSignup()">Sign up</a>
+                </div>
+            </div>
+            <div id="signupForm" style="display: none;">
+                <input type="text" class="auth-input" id="signupName" placeholder="Display Name" required aria-label="Display Name">
+                <input type="email" class="auth-input" id="signupEmail" placeholder="Email" required aria-label="Email">
+                <input type="password" class="auth-input" id="signupPassword" placeholder="Password (min 6 chars)" required aria-label="Password">
+                <button class="auth-btn" onclick="handleSignup()" aria-label="Create Account">Create Account</button>
+                <div class="auth-switch">
+                    Already have an account? <a onclick="showLogin()">Sign in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- VIB3's actual sidebar layout -->
+    <div class="sidebar" id="sidebar">
+        <!-- VIB3 Logo (clickable to refresh) -->
+        <div class="sidebar-logo" onclick="refreshForYou()" style="cursor: pointer; padding: 0 20px 20px 20px;">
+            <h1 style="font-size: 32px; font-weight: 900; letter-spacing: -1px; color: var(--text-primary);">VIB3</h1>
+        </div>
+        
+        <!-- Search Bar -->
+        <div style="padding: 0 20px 20px 20px; position: relative;">
+            <input type="text" id="sidebarSearchInput" placeholder="Search" style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); font-size: 14px;" onkeypress="if(event.key==='Enter') performSearch(this.value)" oninput="handleSidebarSearchInput(this)" onkeydown="handleSidebarSearchMentionKeyDown(event)">
+            <div id="sidebarSearchMentionDropdown" class="mention-dropdown"></div>
+        </div>
+        
+        <!-- Main Navigation -->
+        <button class="sidebar-item" onclick="showPage('foryou')" id="sidebarHome">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <div class="sidebar-text">For You</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showPage('explore')" id="sidebarExplore">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <div class="sidebar-text">Explore</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showPage('following')" id="sidebarFollowing">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A2.01 2.01 0 0 0 18.08 7c-.8 0-1.54.5-1.85 1.26l-1.94 5.83-1.31-.78A2.01 2.01 0 0 0 11.1 13l-4.03 2.41C6.41 15.74 6 16.36 6 17v5h2v-4.5l1.5-.9L9 19l1.5-2.1L12 16l1.5.9L15 19v3h4v-3h1z"/>
+            </svg>
+            <div class="sidebar-text">Following</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showPage('friends')" id="sidebarFriends">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm2.78 3.58A2 2 0 0 0 17 7h-2c-.83 0-1.58.56-1.85 1.37L12 12l-1.15-3.63A2 2 0 0 0 9 7H7a2 2 0 0 0-1.78.58L4 9v6h2v5h3v-5h2v5h3v-5h2V9l-1.22-1.42z"/>
+            </svg>
+            <div class="sidebar-text">Friends</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showUploadModal()">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V9h-3V7H5c-1.1 0-2 .9-2 2v9c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2v-3h2v5c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2h8v2H8v2h8z"/>
+            </svg>
+            <div class="sidebar-text">Upload</div>
+        </button>
+        
+        
+        <button class="sidebar-item" onclick="showPage('activity')">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+            </svg>
+            <div class="sidebar-text">Activity</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showPage('messages')">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+            </svg>
+            <div class="sidebar-text">Messages</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showPage('live')">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="3.2"/>
+                <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+            </svg>
+            <div class="sidebar-text">LIVE</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showPage('profile')" id="sidebarProfile">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+            <div class="sidebar-text">Profile</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showPage('creator')">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <div class="sidebar-text">VIB3 Studio</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showPage('shop')">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+            </svg>
+            <div class="sidebar-text">Shop</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="console.log('🖱️ Analytics button clicked'); showPage('analytics');">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+            </svg>
+            <div class="sidebar-text">Analytics</div>
+        </button>
+        
+        <button class="sidebar-item" onclick="showMoreOptions()">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+            </svg>
+            <div class="sidebar-text">...More</div>
+        </button>
+        
+        <!-- Separator Line -->
+        <div style="height: 1px; background: var(--border-primary); margin: 20px 16px;"></div>
+        
+        <!-- Following Accounts Section -->
+        <div style="padding: 0 20px;">
+            <p style="color: var(--text-secondary); font-size: 14px; font-weight: 600; margin-bottom: 12px;">Following accounts</p>
+            <div id="followingAccountsList">
+                <!-- Following accounts will be populated here -->
+                <p style="color: var(--text-tertiary); font-size: 12px;">Log in to see accounts you follow</p>
+            </div>
+        </div>
+        
+        <!-- Separator Line -->
+        <div style="height: 1px; background: var(--border-primary); margin: 20px 16px;"></div>
+        
+        <!-- Sign Out Button -->
+        <button class="sidebar-item signout-btn" onclick="handleLogout()" style="margin-bottom: 20px; color: var(--text-danger);">
+            <svg class="sidebar-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+            </svg>
+            <div class="sidebar-text">Sign Out</div>
+        </button>
+    </div>
+    
+    
+    <div class="app-container main-app" id="mainApp">
+        
+        <div class="video-feed" id="videoFeed">
+            <div class="feed-tabs">
+                <button class="feed-tab active" onclick="switchFeedTab('foryou')" id="foryouTab" aria-label="For You Feed">For You</button>
+                <button class="feed-tab" onclick="switchFeedTab('following')" id="followingTab" aria-label="Following Feed">Following</button>
+                <button class="feed-tab" onclick="switchFeedTab('explore')" id="exploreTab" aria-label="Explore Feed">Explore</button>
+            </div>
+            <div class="feed-content active" id="foryouFeed">
+            </div>
+            <div class="feed-content" id="followingFeed">
+            </div>
+            <div class="feed-content" id="exploreFeed">
+                <!-- Explore Top Navigation -->
+                <div class="explore-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border-primary); background: var(--bg-primary); position: sticky; top: 0; z-index: 100;">
+                    <!-- Search Bar -->
+                    <div class="explore-search" style="position: relative; margin-bottom: 16px;">
+                        <div class="search-input-container" style="position: relative;">
+                            <input 
+                                type="text" 
+                                id="exploreSearchInput"
+                                placeholder="Search users, videos, sounds, and hashtags"
+                                style="width: 100%; padding: 12px 16px 12px 48px; border: 1px solid var(--border-primary); border-radius: 24px; background: var(--bg-tertiary); color: var(--text-primary); font-size: 16px; outline: none;"
+                                onkeypress="if(event.key==='Enter' && !window.mentionDropdownOpen) performExploreSearch(this.value)"
+                                onfocus="showSearchSuggestions()"
+                                oninput="handleSearchInput(this)"
+                                onkeydown="handleSearchMentionKeyDown(event)"
+                            >
+                            <div id="searchMentionDropdown" class="mention-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 5px;"></div>
+                            <div class="search-icon" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                                </svg>
+                            </div>
+                            <button class="clear-search" onclick="clearExploreSearch()" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); cursor: pointer; display: none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <!-- Search Suggestions Dropdown -->
+                        <div id="searchSuggestions" class="search-suggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 200; display: none; max-height: 300px; overflow-y: auto;">
+                            <!-- Dynamic suggestions will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Trending Section -->
+                    <div class="trending-section" style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="font-size: 18px;">🔥</span>
+                            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">Trending</h3>
+                        </div>
+                        <div class="trending-scroll" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;">
+                            <div class="trending-item" onclick="searchTrendingTag('dance')" style="min-width: 120px; padding: 8px 16px; background: linear-gradient(135deg, #fe2c55, #ff006e); color: white; border-radius: 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 14px;">
+                                #dance
+                            </div>
+                            <div class="trending-item" onclick="searchTrendingTag('viral')" style="min-width: 120px; padding: 8px 16px; background: linear-gradient(135deg, #25d366, #128c7e); color: white; border-radius: 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 14px;">
+                                #viral
+                            </div>
+                            <div class="trending-item" onclick="searchTrendingTag('fyp')" style="min-width: 120px; padding: 8px 16px; background: linear-gradient(135deg, #1da1f2, #0d8bd9); color: white; border-radius: 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 14px;">
+                                #fyp
+                            </div>
+                            <div class="trending-item" onclick="searchTrendingTag('comedy')" style="min-width: 120px; padding: 8px 16px; background: linear-gradient(135deg, #ffcc02, #ff9500); color: white; border-radius: 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 14px;">
+                                #comedy
+                            </div>
+                            <div class="trending-item" onclick="searchTrendingTag('music')" style="min-width: 120px; padding: 8px 16px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border-radius: 20px; text-align: center; cursor: pointer; font-weight: 600; font-size: 14px;">
+                                #music
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Category Navigation -->
+                    <div class="category-nav" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px;">
+                        <button class="category-btn active" onclick="filterByCategory('all')" style="min-width: 80px; padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            All
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('music')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Music
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('dance')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Dance
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('comedy')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Comedy
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('gaming')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Gaming
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('beauty')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Beauty
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('food')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Food
+                        </button>
+                        <button class="category-btn" onclick="filterByCategory('pets')" style="min-width: 80px; padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                            Pets
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Video Grid Container -->
+                <div id="exploreVideoGrid" class="explore-video-grid" style="padding: 8px;">
+                    <!-- Videos will be dynamically inserted here -->
+                </div>
+            </div>
+            <div class="feed-content" id="friendsFeed">
+            </div>
+        </div>
+        <div class="search-page" id="searchPage">
+            <h2 style="margin-bottom: 20px;">🔍 Discover</h2>
+            <div style="position: relative; margin-bottom: 20px;">
+                <input type="text" class="auth-input" id="searchInput" placeholder="Search videos, users, sounds..." style="width: 100%;" aria-label="Search videos" 
+                       oninput="handleSidebarSearchInput(this)"
+                       onkeydown="handleSidebarSearchMentionKeyDown(event)"
+                       onkeypress="if(event.key==='Enter' && !window.mentionDropdownOpen) performSearch(this.value)">
+                <div id="sidebarSearchMentionDropdown" class="mention-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 5px;"></div>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+            <div id="searchNoResults" style="color: #888; text-align: center; margin-top: 50px; display: none;">
+                🔍 No results found. Try a different search term.
+            </div>
+            <div id="searchTrending" style="margin-top: 20px;">
+                <h3>🔥 Trending</h3>
+                <div class="search-result-item" onclick="searchTrendingTag('dance')">
+                    <div class="search-result-avatar">#</div>
+                    <div class="search-result-info">
+                        <h4>#dance</h4>
+                        <p>2.1M videos</p>
+                    </div>
+                </div>
+                <div class="search-result-item" onclick="searchTrendingTag('viral')">
+                    <div class="search-result-avatar">#</div>
+                    <div class="search-result-info">
+                        <h4>#viral</h4>
+                        <p>5.8M videos</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- VIB3-style Profile Page -->
+        <div class="profile-page" id="profilePage" style="margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary);">
+            <!-- Profile Header -->
+            <div style="padding: 32px 40px; border-bottom: 1px solid var(--border-primary);">
+                <div style="display: flex; align-items: flex-start; gap: 32px;">
+                    <!-- Profile Picture -->
+                    <div style="position: relative;">
+                        <div id="profilePic" onclick="uploadProfilePicture()" style="width: 116px; height: 116px; border-radius: 50%; background: linear-gradient(45deg, #ff006e, #8338ec); display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative;">
+                            <span id="profilePicText" style="color: white; font-size: 48px; font-weight: bold;">👤</span>
+                            <div style="position: absolute; bottom: 0; right: 0; width: 32px; height: 32px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="#161823">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <input type="file" id="profilePicInput" accept="image/*" style="display: none;" onchange="handleProfilePicUpload(event)">
+                    </div>
+                    
+                    <!-- Profile Info -->
+                    <div style="flex: 1; min-width: 0;">
+                        <!-- Username and Verification -->
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 8px;">
+                            <h1 id="profileName" style="font-size: 32px; font-weight: bold; color: var(--text-primary); margin: 0;">@yourhandle</h1>
+                            <button onclick="editProfile()" style="padding: 8px 24px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer;">Edit profile</button>
+                        </div>
+                        
+                        <!-- Display Name -->
+                        <h2 style="font-size: 20px; font-weight: 600; color: var(--text-primary); margin: 0 0 16px 0;" id="userDisplayName">Display Name</h2>
+                        
+                        <!-- Stats -->
+                        <div style="display: flex; gap: 20px; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span style="font-size: 18px; font-weight: bold; color: var(--text-primary);" id="followingCount">0</span>
+                                <span style="color: var(--text-secondary);">Following</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span style="font-size: 18px; font-weight: bold; color: var(--text-primary);" id="followersCount">0</span>
+                                <span style="color: var(--text-secondary);">Followers</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span style="font-size: 18px; font-weight: bold; color: var(--text-primary);" id="likesCount">0</span>
+                                <span style="color: var(--text-secondary);">Likes</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Bio -->
+                        <div id="profileBio" style="color: var(--text-primary); margin-bottom: 16px; line-height: 1.5;">
+                            Your bio goes here ✨ Click edit profile to change
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 12px;">
+                            <button onclick="showPage('settings')" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer;">Settings</button>
+                            <button onclick="handleLogout()" style="padding: 10px 20px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-primary); border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer;">Sign out</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content Tabs -->
+            <div style="display: flex; border-bottom: 1px solid var(--border-primary);">
+                <button style="flex: 1; padding: 16px; background: none; border: none; color: var(--text-primary); font-size: 16px; font-weight: 600; cursor: pointer; border-bottom: 2px solid var(--accent-primary);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+                        <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/>
+                    </svg>
+                    Videos
+                </button>
+                <button style="flex: 1; padding: 16px; background: none; border: none; color: var(--text-secondary); font-size: 16px; font-weight: 600; cursor: pointer;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    Liked
+                </button>
+                <button style="flex: 1; padding: 16px; background: none; border: none; color: var(--text-secondary); font-size: 16px; font-weight: 600; cursor: pointer;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                    </svg>
+                    Favorites
+                </button>
+            </div>
+            
+            <!-- Videos Grid -->
+            <div style="padding: 20px 40px;">
+                <div id="userVideosGrid" class="video-videos-grid"></div>
+                <div id="noVideosMessage" style="text-align: center; color: var(--text-secondary); margin-top: 80px; display: none;">
+                    <div style="font-size: 96px; margin-bottom: 24px;">📹</div>
+                    <h3 style="font-size: 24px; margin-bottom: 8px; color: var(--text-primary);">Upload your first video</h3>
+                    <p style="font-size: 16px; margin-bottom: 24px;">Your videos will appear here</p>
+                    <button onclick="showUploadModal()" style="padding: 12px 24px; background: var(--accent-primary); color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer;">Upload video</button>
+                    <!-- Temporary debug button -->
+                    <button onclick="console.log('Debug: Testing modal...'); const modal = document.getElementById('uploadModal'); if(modal) { modal.style.display='flex'; modal.style.zIndex='99999'; modal.classList.add('active'); console.log('Debug: Modal should be visible now'); } else { console.log('Debug: Modal not found!'); }" style="padding: 8px 16px; background: red; color: white; border: none; border-radius: 4px; font-size: 12px; margin-left: 10px;">DEBUG TEST</button>
+                </div>
+            </div>
+        </div>
+        <div class="settings-page" id="settingsPage" style="margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
+                <button onclick="showPage('profile')" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;" aria-label="Back to profile">←</button>
+                <h2 style="margin: 0;">⚙️ Settings</h2>
+            </div>
+            
+            <div class="settings-section">
+                <h3>🎨 Theme</h3>
+                <div class="theme-options">
+                    <div class="theme-option" data-theme="light" onclick="changeTheme('light')">
+                        <div class="theme-preview theme-light"></div>
+                        <span>Light</span>
+                    </div>
+                    <div class="theme-option" data-theme="dark" onclick="changeTheme('dark')">
+                        <div class="theme-preview theme-dark"></div>
+                        <span>Dark</span>
+                    </div>
+                    <div class="theme-option" data-theme="purple" onclick="changeTheme('purple')">
+                        <div class="theme-preview theme-purple"></div>
+                        <span>Purple</span>
+                    </div>
+                    <div class="theme-option" data-theme="blue" onclick="changeTheme('blue')">
+                        <div class="theme-preview theme-blue"></div>
+                        <span>Ocean</span>
+                    </div>
+                    <div class="theme-option" data-theme="green" onclick="changeTheme('green')">
+                        <div class="theme-preview theme-green"></div>
+                        <span>Nature</span>
+                    </div>
+                    <div class="theme-option" data-theme="rose" onclick="changeTheme('rose')">
+                        <div class="theme-preview theme-rose"></div>
+                        <span>Rose</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3>Privacy</h3>
+                <div class="settings-item">
+                    <span>Private Account</span>
+                    <div class="toggle-switch" onclick="toggleSetting(this, 'privateAccount')">
+                        <div class="toggle-switch-thumb"></div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <span>Allow Comments</span>
+                    <div class="toggle-switch active" onclick="toggleSetting(this, 'allowComments')">
+                        <div class="toggle-switch-thumb"></div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <span>Allow Downloads</span>
+                    <div class="toggle-switch" onclick="toggleSetting(this, 'allowDownloads')">
+                        <div class="toggle-switch-thumb"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>Notifications</h3>
+                <div class="settings-item">
+                    <span>Push Notifications</span>
+                    <div class="toggle-switch active" onclick="toggleSetting(this, 'pushNotifications')">
+                        <div class="toggle-switch-thumb"></div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <span>Email Notifications</span>
+                    <div class="toggle-switch" onclick="toggleSetting(this, 'emailNotifications')">
+                        <div class="toggle-switch-thumb"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>Display</h3>
+                <div class="settings-item">
+                    <span>Dark Mode</span>
+                    <div class="toggle-switch active" onclick="toggleSetting(this, 'darkMode')">
+                        <div class="toggle-switch-thumb"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>About</h3>
+                <div class="settings-item" style="cursor: pointer;" onclick="showToast('VIB3 v1.0.0')">
+                    <span>App Version</span>
+                    <span style="color: #888;">v1.0.0</span>
+                </div>
+                <div class="settings-item" style="cursor: pointer;" onclick="showToast('Help center coming soon!')">
+                    <span>Help & Support</span>
+                    <span style="color: #888;">❓</span>
+                </div>
+                <div class="settings-item" style="cursor: pointer;" onclick="showToast('Terms and privacy coming soon!')">
+                    <span>Terms & Privacy</span>
+                    <span style="color: #888;">📄</span>
+                </div>
+            </div>
+        </div>
+        <div class="messages-page" id="messagesPage" style="margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px;">
+            <h2 style="margin-bottom: 20px;">💬 Messages</h2>
+            
+            <!-- Chat List -->
+            <div class="chat-list">
+                <div class="chat-item" onclick="openChat('user1')">
+                    <div class="chat-avatar">👤</div>
+                    <div class="chat-info">
+                        <div class="chat-name">@user123</div>
+                        <div class="chat-preview">Hey! Love your latest video 🔥</div>
+                        <div class="chat-time">2m ago</div>
+                    </div>
+                    <div class="chat-status unread">2</div>
+                </div>
+                
+                <div class="chat-item" onclick="openChat('user2')">
+                    <div class="chat-avatar">👩</div>
+                    <div class="chat-info">
+                        <div class="chat-name">@dancer_pro</div>
+                        <div class="chat-preview">Can you teach me that move?</div>
+                        <div class="chat-time">5m ago</div>
+                    </div>
+                </div>
+                
+                <div class="chat-item" onclick="openGroupChat('group1')">
+                    <div class="chat-avatar">👥</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Dance Crew</div>
+                        <div class="chat-preview">Planning next collab video...</div>
+                        <div class="chat-time">1h ago</div>
+                    </div>
+                    <div class="chat-status unread">5</div>
+                </div>
+            </div>
+            
+            <button onclick="startNewChat()" class="new-chat-btn">+ Start New Chat</button>
+        </div>
+        
+        <!-- VIB3 Studio Page -->
+        <div class="creator-page" id="creatorPage" style="margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px; display: none;">
+            <h2 style="margin-bottom: 20px;">🎬 VIB3 Studio</h2>
+            
+            <!-- Earnings Dashboard -->
+            <div class="earnings-dashboard">
+                <div class="earnings-card">
+                    <h3>Total Earnings</h3>
+                    <div class="earnings-amount">$847.32</div>
+                    <div class="earnings-change">+$127.45 this month</div>
+                </div>
+                
+                <div class="earnings-card">
+                    <h3>Video Fund</h3>
+                    <div class="earnings-amount">$623.18</div>
+                    <div class="earnings-subtitle">From 47 eligible videos</div>
+                </div>
+                
+                <div class="earnings-card">
+                    <h3>Live Gifts</h3>
+                    <div class="earnings-amount">$156.84</div>
+                    <div class="earnings-subtitle">From 12 live streams</div>
+                </div>
+                
+                <div class="earnings-card">
+                    <h3>VIB3 Studio Tips</h3>
+                    <div class="earnings-amount">$67.30</div>
+                    <div class="earnings-subtitle">From 23 supporters</div>
+                </div>
+            </div>
+            
+            <!-- Fund Requirements -->
+            <div class="fund-requirements">
+                <h3>VIB3 Studio Eligibility</h3>
+                <div class="requirement-item completed">
+                    <span class="requirement-icon">✅</span>
+                    <span>10,000+ followers</span>
+                    <span class="requirement-status">15,847 followers</span>
+                </div>
+                <div class="requirement-item completed">
+                    <span class="requirement-icon">✅</span>
+                    <span>100,000+ video views in 30 days</span>
+                    <span class="requirement-status">287,432 views</span>
+                </div>
+                <div class="requirement-item completed">
+                    <span class="requirement-icon">✅</span>
+                    <span>Be 18+ years old</span>
+                    <span class="requirement-status">Verified</span>
+                </div>
+                <div class="requirement-item completed">
+                    <span class="requirement-icon">✅</span>
+                    <span>Follow Community Guidelines</span>
+                    <span class="requirement-status">Good standing</span>
+                </div>
+            </div>
+            
+            <!-- Monetization Tools -->
+            <div class="monetization-tools">
+                <h3>Monetization Tools</h3>
+                <div class="tool-grid">
+                    <div class="tool-card" onclick="setupTips()">
+                        <div class="tool-icon">💝</div>
+                        <div class="tool-name">VIB3 Studio Tips</div>
+                        <div class="tool-description">Let fans tip you directly</div>
+                        <button class="tool-action">Set Up</button>
+                    </div>
+                    
+                    <div class="tool-card" onclick="setupMerchandise()">
+                        <div class="tool-icon">👕</div>
+                        <div class="tool-name">Merchandise</div>
+                        <div class="tool-description">Sell your branded products</div>
+                        <button class="tool-action">Create Store</button>
+                    </div>
+                    
+                    <div class="tool-card" onclick="setupSponsorship()">
+                        <div class="tool-icon">🤝</div>
+                        <div class="tool-name">Brand Partnerships</div>
+                        <div class="tool-description">Connect with sponsors</div>
+                        <button class="tool-action">Apply</button>
+                    </div>
+                    
+                    <div class="tool-card" onclick="setupSubscription()">
+                        <div class="tool-icon">⭐</div>
+                        <div class="tool-name">VIB3 Premium</div>
+                        <div class="tool-description">Exclusive content for subscribers</div>
+                        <button class="tool-action">Enable</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Shop Page -->
+        <div class="shop-page" id="shopPage" style="margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px; display: none;">
+            <h2 style="margin-bottom: 20px;">🛍️ VIB3 Shop</h2>
+            
+            <!-- Shop Categories -->
+            <div class="shop-categories">
+                <button class="shop-category active" onclick="filterShop('trending')">🔥 Trending</button>
+                <button class="shop-category" onclick="filterShop('fashion')">👗 Fashion</button>
+                <button class="shop-category" onclick="filterShop('tech')">📱 Tech</button>
+                <button class="shop-category" onclick="filterShop('beauty')">💄 Beauty</button>
+                <button class="shop-category" onclick="filterShop('home')">🏠 Home</button>
+                <button class="shop-category" onclick="filterShop('merch')">👕 VIB3 Studio Merch</button>
+            </div>
+            
+            <!-- Product Grid -->
+            <div class="product-grid">
+                <div class="product-card" onclick="viewProduct('1')">
+                    <div class="product-image">📱</div>
+                    <div class="product-info">
+                        <div class="product-name">VIB3 Phone Ring</div>
+                        <div class="product-creator">by @techreview</div>
+                        <div class="product-price">$12.99</div>
+                        <div class="product-rating">⭐⭐⭐⭐⭐ 4.8 (234)</div>
+                    </div>
+                    <button class="add-to-cart-btn">Add to Cart</button>
+                </div>
+                
+                <div class="product-card" onclick="viewProduct('2')">
+                    <div class="product-image">👕</div>
+                    <div class="product-info">
+                        <div class="product-name">VIB3 Hoodie</div>
+                        <div class="product-creator">by @fashionista</div>
+                        <div class="product-price">$39.99</div>
+                        <div class="product-rating">⭐⭐⭐⭐⭐ 4.9 (567)</div>
+                    </div>
+                    <button class="add-to-cart-btn">Add to Cart</button>
+                </div>
+                
+                <div class="product-card" onclick="viewProduct('3')">
+                    <div class="product-image">💄</div>
+                    <div class="product-info">
+                        <div class="product-name">Glow Up Makeup Kit</div>
+                        <div class="product-creator">by @beautyguru</div>
+                        <div class="product-price">$24.99</div>
+                        <div class="product-rating">⭐⭐⭐⭐⭐ 4.7 (189)</div>
+                    </div>
+                    <button class="add-to-cart-btn">Add to Cart</button>
+                </div>
+            </div>
+            
+            <!-- Shopping Cart -->
+            <div class="shopping-cart" id="shoppingCart" style="position: fixed; right: 20px; top: 20px; background: var(--bg-secondary); padding: 15px; border-radius: 10px; display: none;">
+                <h4>🛒 Cart (0)</h4>
+                <div class="cart-items"></div>
+                <div class="cart-total">Total: $0.00</div>
+                <button onclick="checkout()" class="checkout-btn">Checkout</button>
+            </div>
+        </div>
+        
+        <!-- Analytics Page -->
+        <div class="analytics-page" id="analyticsPage" style="margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">📊 Analytics Dashboard</h2>
+                <button onclick="loadAnalyticsData()" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">🔄 Refresh</button>
+            </div>
+            
+            <!-- Loading State -->
+            <div id="analyticsLoading" style="text-align: center; color: #999; padding: 40px;">
+                <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+                <div>Loading analytics data...</div>
+            </div>
+            
+            <!-- Error State -->
+            <div id="analyticsError" style="display: none; background: #ff3333; color: white; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+                ❌ Failed to load analytics data
+            </div>
+            
+            <!-- Analytics Content -->
+            <div id="analyticsContent" style="display: none;">
+                <!-- Algorithm Performance Overview -->
+                <div class="analytics-overview">
+                    <div class="stat-card">
+                        <div class="stat-icon">🤖</div>
+                        <div class="stat-number" id="avgEngagementScore">-</div>
+                        <div class="stat-label">Avg Engagement Score</div>
+                        <div class="stat-change" id="engagementRange">-</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">🔥</div>
+                        <div class="stat-number" id="highEngagementCount">-</div>
+                        <div class="stat-label">High Engagement Videos</div>
+                        <div class="stat-change">Score > 1.0</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">⏰</div>
+                        <div class="stat-number" id="freshContentCount">-</div>
+                        <div class="stat-label">Fresh Content (24h)</div>
+                        <div class="stat-change" id="freshContentPercent">-</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-number" id="uniqueCreators">-</div>
+                        <div class="stat-label">Unique Creators</div>
+                        <div class="stat-change" id="diversityStatus">-</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">❤️</div>
+                        <div class="stat-number" id="totalLikes">-</div>
+                        <div class="stat-label">Total Likes</div>
+                        <div class="stat-change" id="avgLikeRate">-</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">💬</div>
+                        <div class="stat-number" id="totalComments">-</div>
+                        <div class="stat-label">Total Comments</div>
+                        <div class="stat-change" id="totalViews">-</div>
+                    </div>
+                </div>
+            
+                <!-- Algorithm Performance Details -->
+                <div class="analytics-charts">
+                    <div class="chart-container">
+                        <h3>🏆 Top Ranked Videos (Algorithm Order)</h3>
+                        <div id="topVideosList" style="max-height: 400px; overflow-y: auto;">
+                            <!-- Top videos will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>📊 Engagement Distribution</h3>
+                        <div id="engagementDistribution">
+                            <div style="margin: 20px 0;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span>High Engagement (>1.0)</span>
+                                    <span id="highEngagementPercent">-</span>
+                                </div>
+                                <div style="background: #333; height: 20px; border-radius: 10px; overflow: hidden;">
+                                    <div id="highEngagementBar" style="background: linear-gradient(90deg, #fe2c55, #ff006e); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin: 20px 0;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span>Fresh Content (24h)</span>
+                                    <span id="freshContentPercent2">-</span>
+                                </div>
+                                <div style="background: #333; height: 20px; border-radius: 10px; overflow: hidden;">
+                                    <div id="freshContentBar" style="background: linear-gradient(90deg, #25f4ee, #1da1f2); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>🎯 Algorithm Effectiveness</h3>
+                        <div id="algorithmMetrics">
+                            <div style="margin: 15px 0; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                <div style="font-weight: 600; margin-bottom: 8px;">Content Diversity</div>
+                                <div id="diversityMetric" style="color: #999;">-</div>
+                            </div>
+                            <div style="margin: 15px 0; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                <div style="font-weight: 600; margin-bottom: 8px;">Average Content Age</div>
+                                <div id="avgAgeMetric" style="color: #999;">-</div>
+                            </div>
+                            <div style="margin: 15px 0; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                                <div style="font-weight: 600; margin-bottom: 8px;">Algorithm Version</div>
+                                <div style="color: #25f4ee;">v1.0.0-engagement</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Export Options -->
+                <div class="export-options">
+                    <h3>📈 Analytics Actions</h3>
+                    <button onclick="loadAnalyticsData()" class="export-btn">🔄 Refresh Data</button>
+                    <button onclick="window.open('/algorithm-analytics.html', '_blank')" class="export-btn">📊 Detailed View</button>
+                    <button onclick="exportAnalyticsData()" class="export-btn">📋 Copy Data</button>
+                </div>
+            </div>
+        </div>
+        
+
+        <!-- All Modal HTML from here... -->
+        <div class="modal upload-modal" id="uploadModal">
+            <div class="modal-content">
+                <button class="close-btn" onclick="closeUploadModal()" aria-label="Close upload modal">×</button>
+                
+                <!-- Step 1: Upload Type Selection -->
+                <div id="uploadStep1">
+                    <h3>🎬 Create New Content</h3>
+                    <div class="upload-options">
+                        <div class="upload-option" onclick="selectVideo()" aria-label="Upload video">
+                            <div class="upload-option-icon">🎥</div>
+                            <div class="upload-option-text">
+                                <div>Upload Video</div>
+                                <small>MP4, MOV, AVI up to 4K Ultra HD</small>
+                            </div>
+                        </div>
+                        <div class="upload-option" onclick="recordNewVideo()" aria-label="Record video">
+                            <div class="upload-option-icon">📹</div>
+                            <div class="upload-option-text">
+                                <div>Record Video</div>
+                                <small>Record directly with camera</small>
+                            </div>
+                        </div>
+                        <div class="upload-option" onclick="selectPhotos()" aria-label="Upload photos">
+                            <div class="upload-option-icon">📸</div>
+                            <div class="upload-option-text">
+                                <div>Upload Photos</div>
+                                <small>Create slideshow (up to 35 images)</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quality Settings -->
+                    <div class="quality-settings">
+                        <h4>⚙️ Quality Settings</h4>
+                        <div class="setting-item">
+                            <label class="switch">
+                                <input type="checkbox" id="highQuality" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>High-quality uploads (4K Ultra HD)</span>
+                        </div>
+                        <div class="setting-item">
+                            <label class="switch">
+                                <input type="checkbox" id="dataSaver">
+                                <span class="slider"></span>
+                            </label>
+                            <span>Data saver mode</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: File Selection & Preview -->
+                <div id="uploadStep2" style="display: none;">
+                    <h3 id="step2Title">📁 Select Files</h3>
+                    <div class="file-selection">
+                        <input type="file" id="videoInput" accept="video/mp4,video/mov,video/avi,video/quicktime" style="display: none;" onchange="handleVideoSelect(event)" multiple>
+                        <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoSelect(event)" multiple>
+                        
+                        <div class="preview-container" id="previewContainer">
+                            <div class="drop-zone" onclick="triggerFileSelect()">
+                                <div class="drop-icon">📎</div>
+                                <div>Click to select files or drag and drop</div>
+                                <small id="formatHint">Supported: MP4, MOV, AVI</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="upload-buttons">
+                        <button class="cancel-btn" onclick="goToStep(1)">Back</button>
+                        <button class="continue-btn" onclick="goToStep(3)" disabled>Continue</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Compact Video Editor -->
+                <div id="uploadStep3" style="display: none;">
+                    <h3>🚀 TikTok-Style Editor</h3>
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <div style="margin-bottom: 30px;">
+                            <div style="font-size: 60px; margin-bottom: 20px;">🎬</div>
+                            <h2 style="color: white; margin-bottom: 15px;">Ready to edit your video?</h2>
+                            <p style="color: #888; margin-bottom: 30px;">Our compact editor gives you all the tools you need without scrolling!</p>
+                        </div>
+                        
+                        <button onclick="openAdvancedVideoEditor();" style="
+                            background: linear-gradient(45deg, #fe2c55, #ff006e); 
+                            color: white; 
+                            border: none; 
+                            padding: 15px 40px; 
+                            border-radius: 25px; 
+                            font-size: 18px; 
+                            font-weight: 600; 
+                            cursor: pointer; 
+                            box-shadow: 0 4px 15px rgba(254, 44, 85, 0.4);
+                            margin-bottom: 20px;
+                        ">
+                            🚀 Open Compact Editor
+                        </button>
+                        
+                        <div style="color: #666; font-size: 14px;">
+                            ✓ No scrolling needed<br>
+                            ✓ All tools in bottom toolbar<br>
+                            ✓ TikTok-style interface
+                        </div>
+                    </div>
+                    
+                    <div class="upload-buttons">
+                        <button class="cancel-btn" onclick="goToStep(2)">Back</button>
+                        <button class="continue-btn" onclick="goToStep(4)">Skip Editing</button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Details & Customization -->
+                <div id="uploadStep4" style="display: none;">
+                    <h3>📝 Add Details</h3>
+                    <div class="details-form">
+                        <div class="form-group">
+                            <label>Title</label>
+                            <input type="text" id="contentTitle" placeholder="Give your content a catchy title..." maxlength="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="contentDescription" placeholder="Tell your story... Use #hashtags to reach more people" rows="4"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Hashtags</label>
+                            <div class="hashtag-input">
+                                <input type="text" id="hashtagInput" placeholder="Add hashtags..." onkeypress="handleHashtagInput(event)">
+                                <div class="suggested-hashtags">
+                                    <span class="hashtag-suggestion" onclick="addHashtag('fyp')">#fyp</span>
+                                    <span class="hashtag-suggestion" onclick="addHashtag('viral')">#viral</span>
+                                    <span class="hashtag-suggestion" onclick="addHashtag('trending')">#trending</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Privacy Settings</label>
+                            <select id="privacySettings">
+                                <option value="public">🌍 Public - Anyone can see</option>
+                                <option value="friends">👥 Friends - Only friends can see</option>
+                                <option value="private">🔒 Private - Only you can see</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Additional Options</label>
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" id="allowComments" checked> Allow comments</label>
+                                <label><input type="checkbox" id="allowDownloads"> Allow downloads</label>
+                                <label><input type="checkbox" id="allowDuets" checked> Allow duets</label>
+                                <label><input type="checkbox" id="allowStitch" checked> Allow stitch</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Schedule</label>
+                            <div class="schedule-options">
+                                <label><input type="radio" name="schedule" value="now" checked> Post now</label>
+                                <label><input type="radio" name="schedule" value="later"> Schedule for later</label>
+                            </div>
+                            <input type="datetime-local" id="scheduleTime" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="upload-buttons">
+                        <button class="cancel-btn" onclick="goToStep(3)">Back</button>
+                        <button class="publish-btn" onclick="publishContent()">🚀 Publish</button>
+                    </div>
+                </div>
+
+                <!-- Step 5: Publishing Progress -->
+                <div id="uploadStep5" class="loading-state" style="display: none;">
+                    <div class="spinner"></div>
+                    <div id="publishStatus">Preparing your content...</div>
+                    <div id="publishProgress">0% complete</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Modals -->
+        <div class="modal" id="commentsModal">
+            <div class="modal-content">
+                <button class="close-btn" onclick="closeModal()" aria-label="Close comments">×</button>
+                <h3>Comments</h3>
+                <div style="margin: 20px 0; text-align: left;">
+                    <div style="margin-bottom: 15px;">
+                        <strong>@user123:</strong> Amazing video! 🔥
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong>@dancer_pro:</strong> Tutorial please? 🙏
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong>@music_lover:</strong> What's the song name?
+                    </div>
+                </div>
+                <input type="text" placeholder="Add a comment..." style="width: 100%; padding: 10px; border: none; border-radius: 20px; background: #333; color: white;" aria-label="Add a comment">
+            </div>
+        </div>
+
+        <div class="delete-modal" id="deleteModal">
+            <div class="delete-modal-content">
+                <h3>🗑️ Delete Video</h3>
+                <p>Are you sure you want to delete this video?<br><strong>This action cannot be undone.</strong></p>
+                <div class="delete-modal-buttons">
+                    <button class="delete-modal-btn cancel-delete-btn" onclick="closeDeleteModal()" aria-label="Cancel delete">Cancel</button>
+                    <button class="delete-modal-btn confirm-delete-btn" onclick="confirmDeleteVideo()" aria-label="Confirm delete">Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="share-modal" id="shareModal">
+            <div class="share-modal-content">
+                <div class="share-modal-header">
+                    <h3 class="share-modal-title">Share Video</h3>
+                    <button class="share-close-btn" onclick="closeShareModal()" aria-label="Close share modal">×</button>
+                </div>
+                <div class="share-options">
+                    <div class="share-option share-repost" id="repostOption" onclick="toggleRepost()" aria-label="Repost video">
+                        <div class="share-option-icon">🔄</div>
+                        <div class="share-option-label" id="repostLabel">Repost</div>
+                    </div>
+                    <div class="share-option share-copy" onclick="copyVideoLink()" aria-label="Copy video link">
+                        <div class="share-option-icon">📋</div>
+                        <div class="share-option-label">Copy Link</div>
+                    </div>
+                    <div class="share-option share-instagram" onclick="shareToInstagram()" aria-label="Share to Instagram">
+                        <div class="share-option-icon">📷</div>
+                        <div class="share-option-label">Instagram</div>
+                    </div>
+                    <div class="share-option share-twitter" onclick="shareToTwitter()" aria-label="Share to Twitter">
+                        <div class="share-option-icon">🐦</div>
+                        <div class="share-option-label">Twitter</div>
+                    </div>
+                    <div class="share-option share-facebook" onclick="shareToFacebook()" aria-label="Share to Facebook">
+                        <div class="share-option-icon">📘</div>
+                        <div class="share-option-label">Facebook</div>
+                    </div>
+                    <div class="share-option share-whatsapp" onclick="shareToWhatsApp()" aria-label="Share to WhatsApp">
+                        <div class="share-option-icon">💬</div>
+                        <div class="share-option-label">WhatsApp</div>
+                    </div>
+                    <div class="share-option share-telegram" onclick="shareToTelegram()" aria-label="Share to Telegram">
+                        <div class="share-option-icon">✈️</div>
+                        <div class="share-option-label">Telegram</div>
+                    </div>
+                    <div class="share-option share-email" onclick="shareViaEmail()" aria-label="Share via Email">
+                        <div class="share-option-icon">📧</div>
+                        <div class="share-option-label">Email</div>
+                    </div>
+                    <div class="share-option share-download" onclick="downloadVideo()" aria-label="Download video">
+                        <div class="share-option-icon">⬇️</div>
+                        <div class="share-option-label">Download</div>
+                    </div>
+                    <div class="share-option share-qr" onclick="generateQRCode()" aria-label="Generate QR code">
+                        <div class="share-option-icon">📱</div>
+                        <div class="share-option-label">QR Code</div>
+                    </div>
+                    <div class="share-option share-more" onclick="shareNative()" aria-label="More share options">
+                        <div class="share-option-icon">⋯</div>
+                        <div class="share-option-label">More</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional modals continue... -->
+        
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <!-- Load MongoDB adapter and auth-simple, then complete VIB3 app -->
+    <script>
+        // Inline critical fixes to avoid Railway caching issues
+        console.log('🚨 INLINE FIXES LOADING - Version 2025.01.05');
+        
+        // Define critical variables before any script loads
+        window.liveStreamingState = {
+            isActive: false,
+            startTime: null,
+            viewers: 0,
+            title: '',
+            category: '',
+            stream: null
+        };
+        
+        window.apiCallLimiter = {
+            calls: new Map(),
+            limit: 10,
+            window: 60000,
+            canMakeCall(key) {
+                const now = Date.now();
+                if (!this.calls.has(key)) {
+                    this.calls.set(key, []);
+                }
+                const calls = this.calls.get(key);
+                const recentCalls = calls.filter(time => now - time < this.window);
+                this.calls.set(key, recentCalls);
+                return recentCalls.length < this.limit;
+            },
+            recordCall(key) {
+                if (!this.calls.has(key)) {
+                    this.calls.set(key, []);
+                }
+                this.calls.get(key).push(Date.now());
+            }
+        };
+        
+        console.log('✅ INLINE FIXES READY - Variables defined');
+    </script>
+    <script src="js/mongodb-adapter.js"></script>
+    <!-- Removed auth-simple.js - conflicts with mongodb-adapter -->
+    <script>
+        // Define auth handler functions
+        window.handleLogin = async function() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showToast('Please enter email and password', 'error');
+                return;
+            }
+            
+            try {
+                const result = await window.mongoAPI.login(email, password);
+                if (result.success) {
+                    document.getElementById('authContainer').style.display = 'none';
+                    document.getElementById('sidebar').style.display = 'block';
+                    document.getElementById('mainApp').style.display = 'block';
+                    showToast('Welcome back!', 'success');
+                    
+                    // Load feed
+                    if (window.switchFeedTab) {
+                        window.switchFeedTab('foryou');
+                    }
+                }
+            } catch (error) {
+                showToast(error.message || 'Login failed', 'error');
+            }
+        };
+        
+        window.handleSignup = async function() {
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            
+            if (!name || !email || !password) {
+                showToast('Please fill all fields', 'error');
+                return;
+            }
+            
+            try {
+                const result = await window.mongoAPI.signup(email, password, name);
+                if (result.success) {
+                    showToast('Account created! Logging in...', 'success');
+                    await handleLogin();
+                }
+            } catch (error) {
+                showToast(error.message || 'Signup failed', 'error');
+            }
+        };
+        
+        window.handleLogout = async function() {
+            await window.mongoAPI.logout();
+            document.getElementById('authContainer').style.display = 'block';
+            document.getElementById('sidebar').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'none';
+            showToast('Logged out', 'info');
+        };
+        
+        window.showLogin = function() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('signupForm').style.display = 'none';
+        };
+        
+        window.showSignup = function() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('signupForm').style.display = 'block';
+        };
+    </script>
+    <script src="js/simple-profile.js"></script>
+    <script src="js/profile-functions.js"></script>
+    <script src="js/features/videoEditor.js"></script>
+    <script src="js/comments-simple.js"></script>
+    <script src="js/search-simple.js"></script>
+    <!-- Removed vib3-complete-v2.js - no longer needed -->
+    
+    <!-- Auto-testing and fixing scripts for development -->
+    <script>
+        // Embedded autonomous testing system
+        const autoTest = {
+            testNavigation() {
+                const pages = ['foryou', 'explore', 'following', 'friends', 'activity', 'messages', 'profile', 'settings'];
+                pages.forEach(page => {
+                    try {
+                        if (window.showPage) {
+                            window.showPage(page);
+                            console.log(`✓ ${page} navigation works`);
+                            
+                            // If we just tested profile, go back to the main feed
+                            if (page === 'profile' && window.goBackToFeed) {
+                                setTimeout(() => {
+                                    goBackToFeed();
+                                    console.log('✓ Auto-returned to main feed after profile test');
+                                }, 100);
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`✗ ${page} navigation failed:`, error.message);
+                    }
+                });
+            },
+            
+            testFunctions() {
+                const functions = ['handleLogin', 'handleSignup', 'handleLogout', 'changeTheme', 'showPage'];
+                functions.forEach(func => {
+                    if (typeof window[func] === 'function') {
+                        console.log(`✓ ${func} available`);
+                    } else {
+                        console.error(`✗ ${func} missing`);
+                    }
+                });
+            },
+            
+            runTests() {
+                console.log('🧪 Running autonomous tests...');
+                this.testFunctions();
+                this.testNavigation();
+                console.log('🏁 Tests complete');
+            }
+        };
+        
+        const autoFix = {
+            fixMissingPages() {
+                const requiredPages = ['searchPage', 'settingsPage', 'messagesPage'];
+                requiredPages.forEach(pageId => {
+                    if (!document.getElementById(pageId)) {
+                        const page = document.createElement('div');
+                        page.id = pageId;
+                        page.className = pageId.replace('Page', '-page');
+                        page.style.cssText = 'margin-left: 240px; width: calc(100vw - 240px); height: 100vh; overflow-y: auto; background: var(--bg-primary); padding: 20px; display: none;';
+                        page.innerHTML = `<h2>${pageId.replace('Page', '').charAt(0).toUpperCase() + pageId.replace('Page', '').slice(1)}</h2><p>Loading...</p>`;
+                        document.body.appendChild(page);
+                        console.log(`🔧 Created missing page: ${pageId}`);
+                    }
+                });
+            },
+            
+            fixTheme() {
+                const savedTheme = localStorage.getItem('vib3-theme');
+                if (savedTheme && !document.body.className.includes(`theme-${savedTheme}`)) {
+                    document.body.className = `theme-${savedTheme}`;
+                    console.log(`🔧 Restored theme: ${savedTheme}`);
+                }
+            },
+            
+            runFixes() {
+                console.log('🔧 Running auto-fixes...');
+                this.fixMissingPages();
+                this.fixTheme();
+            },
+            
+            init() {
+                // Only run testing in development
+                const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                
+                if (isDevelopment) {
+                    console.log('🚀 Autonomous system initialized (dev mode)');
+                    
+                    // Run initial fixes and tests in development
+                    setTimeout(() => {
+                        this.runFixes();
+                        autoTest.runTests();
+                    }, 3000);
+                } else {
+                    // Production: only run essential fixes
+                    this.fixTheme();
+                }
+                
+                // Periodic theme fixes (but not excessive testing)
+                setInterval(() => {
+                    this.fixTheme();
+                }, 300000); // Every 5 minutes
+            }
+        };
+        
+        // Initialize autonomous system
+        autoFix.init();
+        
+        // Analytics functionality
+        async function loadAnalyticsData() {
+            const loading = document.getElementById('analyticsLoading');
+            const content = document.getElementById('analyticsContent');
+            const error = document.getElementById('analyticsError');
+            
+            // Show loading state
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            error.style.display = 'none';
+            
+            try {
+                const apiBaseUrl = window.API_BASE_URL || 
+                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                        ? '' 
+                        : 'https://vib3-production.up.railway.app');
+                
+                const response = await fetch(`${apiBaseUrl}/api/analytics/algorithm`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const responseText = await response.text();
+                    throw new Error(`Expected JSON response but got ${contentType}`);
+                }
+                
+                const analytics = await response.json();
+                
+                displayAnalyticsData(analytics);
+                
+                // Show content and ensure visibility
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                content.style.visibility = 'visible';
+                content.style.opacity = '1';
+                
+                // Store data globally for export function
+                window.currentAnalyticsData = analytics;
+                
+                // ANALYTICS DASHBOARD IN BANNER FORM (SINCE THE PAGE WON'T SHOW)
+                // First, remove any existing analytics overlay to prevent duplicates
+                const existingOverlay = document.getElementById('analyticsOverlay');
+                if (existingOverlay) {
+                    existingOverlay.remove();
+                }
+                
+                const testElement = document.createElement('div');
+                testElement.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h2 style="color: white; margin: 0;">📊 VIB3 Analytics Dashboard</h2>
+                        <p style="margin: 5px 0; opacity: 0.8;">Algorithm: ${analytics.algorithmVersion}</p>
+                        ${analytics.hashtagAnalytics ? `<p style="margin: 5px 0; opacity: 0.8;">🏷️ Hashtag Recommendations: Active</p>` : ''}
+                        ${analytics.mlAnalytics ? `<p style="margin: 5px 0; opacity: 0.8;">🤖 ML Recommendations: Active</p>` : ''}
+                        <div style="margin-top: 10px;">
+                            <button onclick="loadWatchTimeAnalytics()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; margin: 0 5px;">
+                                ⏱️ Watch Time Analytics
+                            </button>
+                            <button onclick="loadAlgorithmAnalytics()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; margin: 0 5px;">
+                                🤖 Algorithm Analytics
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold;">${analytics.engagementStats.avgScore.toFixed(2)}</div>
+                            <div style="font-size: 12px; opacity: 0.8;">Avg Engagement Score</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold;">${analytics.engagementStats.highEngagementCount}</div>
+                            <div style="font-size: 12px; opacity: 0.8;">High Engagement Videos</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold;">${analytics.totalVideos}</div>
+                            <div style="font-size: 12px; opacity: 0.8;">Total Videos</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold;">${analytics.totalEngagement.totalLikes.toLocaleString()}</div>
+                            <div style="font-size: 12px; opacity: 0.8;">Total Likes</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold;">${analytics.freshnessStats.last24h}</div>
+                            <div style="font-size: 12px; opacity: 0.8;">Fresh Content (24h)</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold;">${analytics.diversity.uniqueCreators}</div>
+                            <div style="font-size: 12px; opacity: 0.8;">Unique Creators</div>
+                        </div>
+                    </div>
+                    
+                    ${analytics.hashtagAnalytics ? `
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h3 style="margin: 0 0 10px 0; color: white;">🏷️ Hashtag Analytics</h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 18px; font-weight: bold;">${analytics.hashtagAnalytics.videosWithHashtags}/${analytics.totalVideos}</div>
+                                <div style="font-size: 12px; opacity: 0.8;">Videos with Hashtags</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 18px; font-weight: bold;">${analytics.hashtagAnalytics.boostedVideos}</div>
+                                <div style="font-size: 12px; opacity: 0.8;">Personalized Videos</div>
+                            </div>
+                        </div>
+                        ${analytics.hashtagAnalytics.topHashtags && analytics.hashtagAnalytics.topHashtags.length > 0 ? `
+                        <div style="margin-top: 10px;">
+                            <div style="font-weight: 600; margin-bottom: 5px;">Top Hashtags:</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                ${analytics.hashtagAnalytics.topHashtags.slice(0, 8).map(h => 
+                                    `<span style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 12px; font-size: 11px;">#${h.tag} (${h.count})</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                    
+                    ${analytics.mlAnalytics ? `
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h3 style="margin: 0 0 10px 0; color: white;">🤖 Machine Learning Analytics</h3>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 18px; font-weight: bold;">${analytics.mlAnalytics.videosWithMLBoost}</div>
+                                <div style="font-size: 12px; opacity: 0.8;">ML Boosted Videos</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 18px; font-weight: bold;">${analytics.mlAnalytics.collaborativeRecommendations}</div>
+                                <div style="font-size: 12px; opacity: 0.8;">Collaborative Recs</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 18px; font-weight: bold;">${analytics.mlAnalytics.contentRecommendations}</div>
+                                <div style="font-size: 12px; opacity: 0.8;">Content-Based Recs</div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 16px; font-weight: bold;">${analytics.mlAnalytics.avgMLBoost.toFixed(3)}</div>
+                                <div style="font-size: 11px; opacity: 0.8;">Avg ML Boost</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 16px; font-weight: bold;">${analytics.mlAnalytics.maxMLBoost.toFixed(3)}</div>
+                                <div style="font-size: 11px; opacity: 0.8;">Max ML Boost</div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h3 style="margin: 0 0 10px 0; color: white;">🏆 Top Performing Videos</h3>
+                        ${analytics.topVideos.slice(0, 3).map((video, index) => `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+                                <div style="flex: 1;">
+                                    <span>${index + 1}. ${video.title}</span>
+                                    ${video.mlRecommendationScore > 0 ? `<span style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">🤖 +${video.mlRecommendationScore.toFixed(2)}</span>` : ''}
+                                </div>
+                                <span>Score: ${video.finalScore || video.engagementScore} | ❤️ ${video.likes}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                testElement.style.cssText = 'position: fixed; top: 20px; left: 260px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; z-index: 99999; font-size: 14px; width: calc(100vw - 280px); height: calc(100vh - 40px); overflow: auto; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);';
+                testElement.id = 'analyticsOverlay';
+                document.body.appendChild(testElement);
+                
+                // Add resize listener to adjust when console opens/closes
+                const resizeHandler = () => {
+                    const overlay = document.getElementById('analyticsOverlay');
+                    if (overlay) {
+                        overlay.style.width = 'calc(100vw - 280px)';
+                        overlay.style.height = 'calc(100vh - 40px)';
+                        overlay.style.top = '20px';
+                        overlay.style.left = '260px';
+                    }
+                };
+                
+                window.addEventListener('resize', resizeHandler);
+                
+                // Store cleanup function for when overlay is closed (modern approach)
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        mutation.removedNodes.forEach((node) => {
+                            if (node === testElement) {
+                                window.removeEventListener('resize', resizeHandler);
+                                observer.disconnect();
+                            }
+                        });
+                    });
+                });
+                observer.observe(document.body, { childList: true });
+                
+                // Show analytics page with proper positioning
+                const analyticsPage = document.getElementById('analyticsPage');
+                if (analyticsPage) {
+                    analyticsPage.style.display = 'block';
+                    analyticsPage.style.position = 'fixed';
+                    analyticsPage.style.top = '0';
+                    analyticsPage.style.left = '240px';
+                    analyticsPage.style.width = 'calc(100vw - 240px)';
+                    analyticsPage.style.height = '100vh';
+                    analyticsPage.style.zIndex = '9999';
+                    analyticsPage.style.background = 'var(--bg-primary)';
+                    analyticsPage.style.visibility = 'visible';
+                    analyticsPage.style.opacity = '1';
+                } else {
+                    console.error('❌ Analytics page element not found!');
+                }
+                
+                // Hide overlapping pages
+                const allPages = document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page');
+                allPages.forEach(page => {
+                    page.style.display = 'none';
+                });
+                
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = `Failed to load analytics: ${err.message}`;
+            }
+        }
+        
+        function displayAnalyticsData(data) {
+            try {
+                // Overview stats
+                const avgScoreEl = document.getElementById('avgEngagementScore');
+                if (avgScoreEl) {
+                    avgScoreEl.textContent = data.engagementStats.avgScore.toFixed(2);
+                }
+            document.getElementById('highEngagementCount').textContent = data.engagementStats.highEngagementCount;
+            document.getElementById('freshContentCount').textContent = data.freshnessStats.last24h;
+            document.getElementById('uniqueCreators').textContent = data.diversity.uniqueCreators;
+            document.getElementById('totalLikes').textContent = data.totalEngagement.totalLikes.toLocaleString();
+            document.getElementById('totalComments').textContent = data.totalEngagement.totalComments.toLocaleString();
+            
+            // Additional stats
+            document.getElementById('engagementRange').textContent = `Range: ${data.engagementStats.minScore.toFixed(2)} - ${data.engagementStats.maxScore.toFixed(2)}`;
+            document.getElementById('freshContentPercent').textContent = `${Math.round(data.freshnessStats.last24h / data.totalVideos * 100)}% of total`;
+            document.getElementById('diversityStatus').textContent = data.diversity.contentSpread;
+            document.getElementById('avgLikeRate').textContent = `${(data.totalEngagement.avgLikeRate * 100).toFixed(2)}% like rate`;
+            document.getElementById('totalViews').textContent = `${data.totalEngagement.totalViews.toLocaleString()} total views`;
+            
+            // Engagement distribution bars
+            const highEngagementPercent = Math.round(data.engagementStats.highEngagementCount / data.totalVideos * 100);
+            const freshContentPercent = Math.round(data.freshnessStats.last24h / data.totalVideos * 100);
+            
+            document.getElementById('highEngagementPercent').textContent = `${highEngagementPercent}%`;
+            document.getElementById('freshContentPercent2').textContent = `${freshContentPercent}%`;
+            document.getElementById('highEngagementBar').style.width = `${highEngagementPercent}%`;
+            document.getElementById('freshContentBar').style.width = `${freshContentPercent}%`;
+            
+            // Algorithm metrics
+            document.getElementById('diversityMetric').textContent = `${data.diversity.uniqueCreators} unique creators in top 10 (${data.diversity.contentSpread})`;
+            document.getElementById('avgAgeMetric').textContent = `${data.freshnessStats.avgAgeHours.toFixed(1)} hours average`;
+            
+            // Top videos list
+            const topVideosList = document.getElementById('topVideosList');
+            topVideosList.innerHTML = data.topVideos.map((video, index) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border-primary); ${index === 0 ? 'background: linear-gradient(90deg, rgba(254, 44, 85, 0.1), rgba(255, 0, 110, 0.1));' : ''}">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">${index + 1}. ${video.title}</div>
+                        <div style="font-size: 12px; color: #999;">Score: ${video.engagementScore} • ${video.hoursOld}h old</div>
+                    </div>
+                    <div style="text-align: right; font-size: 12px; color: #999;">
+                        <div>❤️ ${video.likes} • 💬 ${video.comments}</div>
+                        <div>👁️ ${video.views} • 📊 ${(video.likeRate * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            } catch (error) {
+                console.error('Error displaying analytics data:', error);
+                throw error;
+            }
+        }
+        
+        function exportAnalyticsData() {
+            // Simple export functionality
+            if (window.currentAnalyticsData) {
+                const dataStr = JSON.stringify(window.currentAnalyticsData, null, 2);
+                navigator.clipboard.writeText(dataStr).then(() => {
+                    alert('📋 Analytics data copied to clipboard!');
+                }).catch(() => {
+                    console.log('Analytics data:', dataStr);
+                    alert('📋 Analytics data logged to console');
+                });
+            }
+        }
+        
+        // Load analytics when page is shown
+        function showAnalyticsPage() {
+            loadAnalyticsData();
+        }
+        
+        // Load watch time analytics
+        async function loadWatchTimeAnalytics() {
+            try {
+                const apiBaseUrl = window.API_BASE_URL || 
+                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                        ? '' 
+                        : 'https://vib3-production.up.railway.app');
+                
+                const response = await fetch(`${apiBaseUrl}/api/analytics/watchtime`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const watchTimeData = await response.json();
+                displayWatchTimeAnalytics(watchTimeData);
+                
+            } catch (err) {
+                console.error('Failed to load watch time analytics:', err);
+                alert('Failed to load watch time analytics');
+            }
+        }
+        
+        // Display watch time analytics
+        function displayWatchTimeAnalytics(data) {
+            // Remove existing overlay
+            const existingOverlay = document.getElementById('analyticsOverlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'analyticsOverlay';
+            overlay.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="color: white; margin: 0;">⏱️ Watch Time Analytics</h2>
+                    <p style="margin: 5px 0; opacity: 0.8;">Real-time viewing metrics</p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold;">${data.platformMetrics.daily.totalWatchTimeHours}h</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Watch Time (24h)</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold;">${data.platformMetrics.daily.totalViews}</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Views (24h)</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold;">${Math.round(data.platformMetrics.daily.avgWatchPercentage)}%</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Avg Completion</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold;">${data.platformMetrics.weekly.totalWatchTimeHours}h</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Watch Time (7d)</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold;">${data.platformMetrics.weekly.uniqueViewers}</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Unique Viewers (7d)</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold;">${Math.round(data.platformMetrics.weekly.avgWatchTime)}s</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Avg Watch Time</div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                        <h3 style="margin: 0 0 10px 0; color: white; font-size: 16px;">📹 Top Videos by Watch Time</h3>
+                        ${data.topVideosByWatchTime.slice(0, 5).map((video, index) => `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                                <span style="font-size: 12px;">${index + 1}. ${video.title}</span>
+                                <span style="font-size: 11px; opacity: 0.8;">${video.totalWatchTimeMinutes}m</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                        <h3 style="margin: 0 0 10px 0; color: white; font-size: 16px;">👤 Top Creators by Watch Time</h3>
+                        ${data.creatorAnalytics.slice(0, 5).map((creator, index) => `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                                <span style="font-size: 12px;">${index + 1}. ${creator.username}</span>
+                                <span style="font-size: 11px; opacity: 0.8;">${creator.totalWatchTimeHours}h</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h3 style="margin: 0 0 10px 0; color: white; font-size: 16px;">📊 Completion Rate Distribution</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px;">
+                        ${data.completionRates.map(range => `
+                            <div style="text-align: center;">
+                                <div style="font-size: 18px; font-weight: bold;">${range.percentage}%</div>
+                                <div style="font-size: 11px; opacity: 0.8;">${range.label}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                ${data.insights && data.insights.length > 0 ? `
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                    <h3 style="margin: 0 0 10px 0; color: white; font-size: 16px;">💡 Insights</h3>
+                    ${data.insights.map(insight => `
+                        <div style="margin-bottom: 8px; padding: 8px; background: rgba(${insight.type === 'success' ? '39, 174, 96' : '52, 152, 219'}, 0.2); border-radius: 4px;">
+                            <span style="font-size: 12px;">${insight.text}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                ` : ''}
+                
+                <div style="text-align: center; margin-top: 15px;">
+                    <button onclick="loadAlgorithmAnalytics()" style="background: #333; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                        🤖 Back to Algorithm Analytics
+                    </button>
+                </div>
+            `;
+            
+            overlay.style.cssText = 'position: fixed; top: 20px; left: 260px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; z-index: 99999; font-size: 14px; width: calc(100vw - 280px); height: calc(100vh - 40px); overflow: auto; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);';
+            document.body.appendChild(overlay);
+        }
+        
+        // Load algorithm analytics (back button)
+        function loadAlgorithmAnalytics() {
+            loadAnalyticsData();
+        }
+        
+        // Auto-load analytics when analytics page is opened
+        const originalShowPage = window.showPage;
+        window.showPage = function(page) {
+            if (originalShowPage) {
+                originalShowPage(page);
+            } else {
+                // Basic fallback logic
+                document.querySelectorAll('.video-feed, .search-page, .profile-page, .settings-page, .messages-page, .creator-page, .shop-page, .analytics-page').forEach(el => {
+                    el.style.display = 'none';
+                });
+                
+                const pageElement = document.getElementById(page + 'Page');
+                if (pageElement) {
+                    pageElement.style.display = 'block';
+                }
+            }
+            
+            if (page === 'analytics') {
+                setTimeout(loadAnalyticsData, 100);
+            }
+        };
+        
+    </script>
+</body>
+</html>

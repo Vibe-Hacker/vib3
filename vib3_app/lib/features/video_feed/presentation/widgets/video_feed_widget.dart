@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import '../providers/video_feed_provider.dart';
 import '../../domain/entities/video_entity.dart';
 import '../../../../widgets/video_player_widget.dart';
+import '../../../../widgets/optimized_video_feed.dart';
+import '../../../../services/enhanced_video_cache.dart';
+import '../../../../utils/performance_monitor.dart';
 
 /// Video feed widget using the new repository pattern
 /// This replaces direct VideoService usage
@@ -22,18 +25,30 @@ class VideoFeedWidget extends StatefulWidget {
 class _VideoFeedWidgetState extends State<VideoFeedWidget> {
   late PageController _pageController;
   int _currentIndex = 0;
+  final _videoCache = EnhancedVideoCache();
   
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _initializeCache();
     _loadInitialVideos();
+    
+    // Start performance monitoring in debug mode
+    if (mounted) {
+      PerformanceMonitor().startMonitoring();
+    }
   }
   
   @override
   void dispose() {
     _pageController.dispose();
+    PerformanceMonitor().stopMonitoring();
     super.dispose();
+  }
+  
+  Future<void> _initializeCache() async {
+    await _videoCache.initialize();
   }
   
   void _loadInitialVideos() {
@@ -135,264 +150,145 @@ class _VideoFeedWidgetState extends State<VideoFeedWidget> {
           );
         }
         
-        return PageView.builder(
-          controller: _pageController,
-          scrollDirection: Axis.vertical,
-          onPageChanged: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-            
-            // Track view
-            provider.trackView(videos[index].id);
-            
-            // Load more videos when reaching near the end
-            if (index >= videos.length - 3 && !isLoading) {
-              _loadMoreVideos(provider);
-            }
-          },
-          itemCount: videos.length,
-          itemBuilder: (context, index) {
-            final video = videos[index];
-            
-            return Stack(
-              children: [
-                // Video player
-                VideoPlayerWidget(
-                  videoUrl: video.videoUrl,
-                  isPlaying: index == _currentIndex,
-                ),
-                
-                // Video info overlay
-                Positioned(
-                  bottom: 80,
-                  left: 16,
-                  right: 80,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Username
-                      GestureDetector(
-                        onTap: () {
-                          // Navigate to user profile
-                        },
-                        child: Text(
-                          '@${video.username}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black45,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Description
-                      if (video.description != null)
-                        Text(
-                          video.description!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black45,
-                              ),
-                            ],
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      
-                      // Music info
-                      if (video.musicName != null) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.music_note,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                video.musicName!,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  shadows: [
-                                    Shadow(
-                                      offset: Offset(1, 1),
-                                      blurRadius: 3,
-                                      color: Colors.black45,
-                                    ),
-                                  ],
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                
-                // Action buttons
-                Positioned(
-                  bottom: 80,
-                  right: 16,
-                  child: Column(
-                    children: [
-                      // Profile button with follow indicator
-                      GestureDetector(
-                        onTap: () {
-                          // Navigate to user profile
-                        },
-                        child: Stack(
-                          alignment: Alignment.bottomCenter,
-                          children: [
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                              ),
-                              child: ClipOval(
-                                child: video.userAvatar != null
-                                    ? Image.network(
-                                        video.userAvatar!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
-                                          color: Colors.grey[800],
-                                          child: const Icon(
-                                            Icons.person,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      )
-                                    : Container(
-                                        color: Colors.grey[800],
-                                        child: const Icon(
-                                          Icons.person,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            if (!video.isFollowing)
-                              Transform.translate(
-                                offset: const Offset(0, 8),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.add,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Like button
-                      _ActionButton(
-                        icon: video.isLiked ? Icons.favorite : Icons.favorite_border,
-                        color: video.isLiked ? Colors.red : Colors.white,
-                        count: video.likesCount,
-                        onTap: () {
-                          provider.toggleLike(video.id, video.isLiked);
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      
-                      // Comment button
-                      _ActionButton(
-                        icon: Icons.comment,
-                        count: video.commentsCount,
-                        onTap: () {
-                          // Show comments
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      
-                      // Share button
-                      _ActionButton(
-                        icon: Icons.share,
-                        count: video.sharesCount,
-                        onTap: () {
-                          // Share video
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      
-                      // Music disc
-                      GestureDetector(
-                        onTap: () {
-                          // Show music info
-                        },
-                        child: RotationTransition(
-                          turns: AlwaysStoppedAnimation(0),
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.black,
-                              border: Border.all(
-                                color: Colors.grey[800]!,
-                                width: 8,
-                              ),
-                            ),
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/icons/music_disc.png',
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  color: Colors.grey[900],
-                                  child: const Icon(
-                                    Icons.music_note,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
+        // Pre-cache upcoming videos for smooth playback
+        final videoUrls = videos.map((v) => v.videoUrl).toList();
+        if (_currentIndex < videos.length - 5) {
+          _videoCache.preCacheVideos(
+            videoUrls.skip(_currentIndex + 1).take(5).toList(),
+            startPriority: 10,
+          );
+        }
+        
+        // Use optimized video feed for better performance
+        return FpsOverlay(
+          child: OptimizedVideoFeed(
+            videoUrls: videoUrls,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+              
+              // Track view
+              provider.trackView(videos[index].id);
+              
+              // Pre-cache next batch of videos
+              if (index < videos.length - 5) {
+                _videoCache.preCacheVideos(
+                  videoUrls.skip(index + 1).take(5).toList(),
+                  startPriority: 10,
+                );
+              }
+              
+              // Load more videos when reaching near the end
+              if (index >= videos.length - 3 && !isLoading) {
+                _loadMoreVideos(provider);
+              }
+            },
+            overlayBuilder: (context, index) {
+              final video = videos[index];
+              return _buildVideoOverlay(context, video, provider);
+            },
+          ),
         );
       },
+    );
+  }
+  
+  Widget _buildVideoOverlay(BuildContext context, VideoEntity video, VideoFeedProvider provider) {
+    return Stack(
+      children: [
+        // Video info overlay
+        Positioned(
+          bottom: 80,
+          left: 16,
+          right: 80,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Username
+              GestureDetector(
+                onTap: () {
+                  // Navigate to user profile
+                },
+                child: Text(
+                  '@${video.username}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                        color: Colors.black45,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Description
+              if (video.description != null)
+                Text(
+                  video.description!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                        color: Colors.black45,
+                      ),
+                    ],
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
+        ),
+        
+        // Action buttons
+        Positioned(
+          bottom: 80,
+          right: 16,
+          child: Column(
+            children: [
+              // Like button
+              _ActionButton(
+                icon: video.isLiked ? Icons.favorite : Icons.favorite_border,
+                color: video.isLiked ? Colors.red : Colors.white,
+                count: video.likesCount,
+                onTap: () {
+                  provider.toggleLike(video.id, video.isLiked);
+                },
+              ),
+              const SizedBox(height: 20),
+              
+              // Comment button
+              _ActionButton(
+                icon: Icons.comment,
+                count: video.commentsCount,
+                onTap: () {
+                  // Show comments
+                },
+              ),
+              const SizedBox(height: 20),
+              
+              // Share button
+              _ActionButton(
+                icon: Icons.share,
+                count: video.sharesCount,
+                onTap: () {
+                  // Share video
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

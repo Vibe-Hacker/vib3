@@ -20,6 +20,9 @@ import 'features/video_feed/presentation/providers/video_feed_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Reduce shader compilation jank for better performance
+  Paint.enableDithering = false;
+  
   // Load environment variables
   await dotenv.load(fileName: ".env");
   

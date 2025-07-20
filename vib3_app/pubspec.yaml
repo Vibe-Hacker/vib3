@@ -74,6 +74,9 @@ dependencies:
   
   # Network & Device Monitoring
   connectivity_plus: ^6.0.5  # Network quality detection
+  
+  # Image caching
+  cached_network_image: ^3.4.1  # For efficient image caching
 
 dev_dependencies:
   flutter_test:

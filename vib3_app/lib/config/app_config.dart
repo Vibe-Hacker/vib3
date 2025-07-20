@@ -1,12 +1,10 @@
 class AppConfig {
   // Backend URLs (multiple for reliability)
   static const List<String> backendUrls = [
-    'https://vib3-web-75tal.ondigitalocean.app',  // Digital Ocean primary
-    'http://vib3-web-75tal.ondigitalocean.app',   // HTTP fallback
-    'http://192.168.1.100:3000',                  // Local HTTP fallback
-    'https://192.168.1.100:3000',                 // Local HTTPS fallback
+    'https://vib3app.net',                         // Production primary
+    'https://vib3-web-75tal.ondigitalocean.app',  // Digital Ocean backup
+    'http://192.168.1.100:3000',                  // Local development
     'http://10.0.2.2:3000',                       // Android emulator localhost
-    'https://vib3-production.up.railway.app',     // Old Railway backup
   ];
   
   static String get baseUrl => backendUrls[0]; // Default
@@ -14,7 +12,7 @@ class AppConfig {
   // API Endpoints
   static const String loginEndpoint = '/api/auth/login';
   static const String signupEndpoint = '/api/auth/register';
-  static const String videosEndpoint = '/feed';
+  static const String videosEndpoint = '/api/feed';
   static const String uploadEndpoint = '/api/upload/video';
   static const String profileEndpoint = '/api/auth/me';
   

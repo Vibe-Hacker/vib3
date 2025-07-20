@@ -100,3 +100,5 @@ vib3-upload.*
 # Python cache
 __pycache__/flutter/
 /flutter/
+/ndk/
+/cmake/

@@ -18,6 +18,8 @@ import '../services/comment_service.dart';
 import '../services/video_player_manager.dart';
 import '../services/interaction_tracking_service.dart';
 import '../services/recommendation_engine.dart';
+import '../services/intelligent_cache_manager.dart';
+import '../services/thumbnail_service.dart';
 import '../widgets/grok_ai_assistant.dart';
 import '../screens/profile_screen.dart';
 import '../config/app_config.dart';
@@ -85,6 +87,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     print('🎬 VideoFeed initState: _isScreenVisible = $_isScreenVisible');
     print('🎬 VideoFeed initState: feedType = ${widget.feedType}');
     
+    // Initialize cache manager
+    IntelligentCacheManager().initialize();
+    
     // Load videos after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       print('🎬 VideoFeed: First frame callback, checking for videos...');
@@ -93,6 +98,10 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       print('🎬 VideoFeed: Found ${videos.length} videos in provider');
       if (videos.isNotEmpty) {
         print('🎬 First video URL: ${videos[0].videoUrl}');
+        // Prefetch thumbnails for better performance
+        _prefetchThumbnails(videos);
+        // Prefetch videos based on TikTok's strategy
+        _prefetchVideos(videos);
       }
     });
     
@@ -320,6 +329,17 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           // Explicitly trigger video playback for the new index
           // The VideoPlayerWidget will handle the actual playback when it sees isPlaying = true
           print('📱 VideoFeed: Page changed to index $index, _isScreenVisible: $_isScreenVisible');
+          
+          // Prefetch next videos based on scroll velocity
+          final videos = _getCurrentVideos();
+          if (videos.isNotEmpty) {
+            _prefetchVideos(videos);
+            
+            // Track video view for intelligent caching
+            if (index < videos.length) {
+              IntelligentCacheManager().trackVideoView(videos[index].videoUrl ?? '');
+            }
+          }
         }
       });
     });
@@ -667,6 +687,52 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     );
     
     // Could navigate to a filtered feed or update recommendations
+  }
+  
+  Future<void> _prefetchThumbnails(List<Video> videos) async {
+    try {
+      // Prefetch thumbnails for first 10 videos
+      final toPrefetch = videos.take(10);
+      for (final video in toPrefetch) {
+        if (video.thumbnailUrl != null && video.thumbnailUrl!.isNotEmpty) {
+          // Warm up image cache
+          precacheImage(NetworkImage(video.thumbnailUrl!), context);
+        } else if (video.videoUrl != null) {
+          // Generate thumbnail URL from video URL
+          final thumbnailUrl = await ThumbnailService.generateThumbnailUrl(video.videoUrl!);
+          if (thumbnailUrl != null) {
+            precacheImage(NetworkImage(thumbnailUrl), context);
+          }
+        }
+      }
+      print('🖼️ Prefetched thumbnails for ${toPrefetch.length} videos');
+    } catch (e) {
+      print('⚠️ Error prefetching thumbnails: $e');
+    }
+  }
+  
+  Future<void> _prefetchVideos(List<Video> videos) async {
+    try {
+      final cacheManager = IntelligentCacheManager();
+      
+      // Get video URLs for prefetching (next 3 videos)
+      final currentIndex = _currentIndex;
+      final urlsToPrefetch = <String>[];
+      
+      for (int i = 1; i <= 3; i++) {
+        final nextIndex = (currentIndex + i) % videos.length;
+        if (nextIndex < videos.length && videos[nextIndex].videoUrl != null) {
+          urlsToPrefetch.add(videos[nextIndex].videoUrl!);
+        }
+      }
+      
+      // Let cache manager handle intelligent prefetching
+      await cacheManager.prefetchVideos(urlsToPrefetch);
+      
+      print('📥 Prefetching ${urlsToPrefetch.length} videos');
+    } catch (e) {
+      print('⚠️ Error prefetching videos: $e');
+    }
   }
   
 

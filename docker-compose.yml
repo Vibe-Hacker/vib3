@@ -1,0 +1,283 @@
+version: '3.8'
+
+services:
+  # Infrastructure Services
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+    networks:
+      - vib3-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: vib3
+      RABBITMQ_DEFAULT_PASS: vib3secret
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - vib3-network
+
+  mongodb-primary:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: vib3admin
+      MONGO_INITDB_DATABASE: vib3
+    volumes:
+      - mongodb-primary-data:/data/db
+    command: mongod --replSet rs0 --bind_ip_all
+    networks:
+      - vib3-network
+
+  mongodb-secondary1:
+    image: mongo:6
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: vib3admin
+    volumes:
+      - mongodb-secondary1-data:/data/db
+    command: mongod --replSet rs0 --bind_ip_all
+    networks:
+      - vib3-network
+
+  mongodb-secondary2:
+    image: mongo:6
+    ports:
+      - "27019:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: vib3admin
+    volumes:
+      - mongodb-secondary2-data:/data/db
+    command: mongod --replSet rs0 --bind_ip_all
+    networks:
+      - vib3-network
+
+  elasticsearch:
+    image: elasticsearch:8.10.2
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - vib3-network
+
+  kibana:
+    image: kibana:8.10.2
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - vib3-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - vib3-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=vib3admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - vib3-network
+
+  # Load Balancer
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api-gateway
+    networks:
+      - vib3-network
+
+  # Microservices
+  api-gateway:
+    build: ./microservices/api-gateway
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+      - RATE_LIMIT_WINDOW_MS=60000
+      - RATE_LIMIT_MAX_REQUESTS=100
+    depends_on:
+      - redis
+      - auth-service
+      - video-service
+      - user-service
+      - recommendation-service
+    networks:
+      - vib3-network
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  auth-service:
+    build: ./microservices/auth-service
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:vib3admin@mongodb-primary:27017,mongodb-secondary1:27017,mongodb-secondary2:27017/vib3?replicaSet=rs0&authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - mongodb-primary
+      - redis
+    networks:
+      - vib3-network
+    deploy:
+      replicas: 2
+
+  video-service:
+    build: ./microservices/video-service
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:vib3admin@mongodb-primary:27017,mongodb-secondary1:27017,mongodb-secondary2:27017/vib3?replicaSet=rs0&authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://vib3:vib3secret@rabbitmq:5672
+      - S3_BUCKET=${S3_BUCKET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    depends_on:
+      - mongodb-primary
+      - redis
+      - rabbitmq
+    networks:
+      - vib3-network
+    deploy:
+      replicas: 3
+
+  video-worker:
+    build: ./microservices/video-service
+    command: npm run worker
+    environment:
+      - NODE_ENV=production
+      - RABBITMQ_URL=amqp://vib3:vib3secret@rabbitmq:5672
+      - S3_BUCKET=${S3_BUCKET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    depends_on:
+      - rabbitmq
+    networks:
+      - vib3-network
+    deploy:
+      replicas: 5
+
+  user-service:
+    build: ./microservices/user-service
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:vib3admin@mongodb-primary:27017,mongodb-secondary1:27017,mongodb-secondary2:27017/vib3?replicaSet=rs0&authSource=admin
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mongodb-primary
+      - redis
+    networks:
+      - vib3-network
+    deploy:
+      replicas: 2
+
+  recommendation-service:
+    build: ./microservices/recommendation-service
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:vib3admin@mongodb-primary:27017,mongodb-secondary1:27017,mongodb-secondary2:27017/vib3?replicaSet=rs0&authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - mongodb-primary
+      - redis
+      - elasticsearch
+    networks:
+      - vib3-network
+    deploy:
+      replicas: 2
+
+  analytics-service:
+    build: ./microservices/analytics-service
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:vib3admin@mongodb-primary:27017,mongodb-secondary1:27017,mongodb-secondary2:27017/vib3?replicaSet=rs0&authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - mongodb-primary
+      - redis
+      - elasticsearch
+    networks:
+      - vib3-network
+    deploy:
+      replicas: 2
+
+  notification-service:
+    build: ./microservices/notification-service
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:vib3admin@mongodb-primary:27017,mongodb-secondary1:27017,mongodb-secondary2:27017/vib3?replicaSet=rs0&authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://vib3:vib3secret@rabbitmq:5672
+    depends_on:
+      - mongodb-primary
+      - redis
+      - rabbitmq
+    networks:
+      - vib3-network
+    deploy:
+      replicas: 2
+
+networks:
+  vib3-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  rabbitmq-data:
+  mongodb-primary-data:
+  mongodb-secondary1-data:
+  mongodb-secondary2-data:
+  elasticsearch-data:
+  prometheus-data:
+  grafana-data:
