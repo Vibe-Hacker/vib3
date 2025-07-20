@@ -15,7 +15,7 @@ import 'modules/filters_module.dart';
 import 'modules/tools_module.dart';
 import 'providers/creation_state_provider.dart';
 import 'widgets/working_video_preview.dart';
-import 'widgets/fixed_bottom_toolbar.dart';
+import 'widgets/bottom_toolbar.dart';
 import 'widgets/top_toolbar.dart';
 import '../publish_screen.dart';
 import '../../services/video_player_manager.dart';
@@ -231,7 +231,7 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                 alignment: Alignment.bottomCenter,
                 child: IgnorePointer(
                   ignoring: false, // Always allow touches
-                  child: FixedBottomToolbar(
+                  child: BottomToolbar(
                     key: const ValueKey('fixed_bottom_toolbar'),
                     currentMode: _currentMode,
                     onModeSelected: (mode) {

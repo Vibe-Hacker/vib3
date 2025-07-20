@@ -4,7 +4,6 @@ import '../providers/auth_provider.dart';
 import '../providers/video_provider.dart';
 import '../models/video.dart';
 import 'video_feed.dart';
-import 'basic_video_feed.dart';
 
 class TabbedVideoFeed extends StatefulWidget {
   final bool isVisible;
