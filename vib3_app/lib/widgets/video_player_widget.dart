@@ -138,7 +138,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         
         // Get optimal video URL based on device/network conditions
         final adaptiveVideoService = AdaptiveVideoService();
-        final optimalUrl = await adaptiveVideoService.getOptimalVideoUrl(transformedUrl);
+        // Skip quality optimization during preloading for faster init
+        final optimalUrl = await adaptiveVideoService.getOptimalVideoUrl(
+          transformedUrl, 
+          fastMode: widget.preload
+        );
         print('🎯 Optimal URL: $optimalUrl');
         
         final uri = Uri.parse(optimalUrl);

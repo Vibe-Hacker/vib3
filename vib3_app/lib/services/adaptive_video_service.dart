@@ -19,8 +19,12 @@ class AdaptiveVideoService {
   Map<String, dynamic>? _currentManifest;
   
   /// Get optimal video URL based on current conditions
-  Future<String> getOptimalVideoUrl(String baseUrl, {Map<String, dynamic>? manifest}) async {
+  Future<String> getOptimalVideoUrl(String baseUrl, {Map<String, dynamic>? manifest, bool fastMode = false}) async {
     try {
+      // In fast mode (during fast scrolling), skip quality checks
+      if (fastMode) {
+        return baseUrl;
+      }
       // First check if this is already a direct video file URL (ends with .mp4, etc)
       final uri = Uri.parse(baseUrl);
       final path = uri.path.toLowerCase();

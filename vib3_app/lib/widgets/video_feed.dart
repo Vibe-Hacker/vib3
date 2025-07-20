@@ -70,6 +70,11 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   
   // Page change debounce
   Timer? _pageChangeDebounce;
+  
+  // Velocity tracking for adaptive preloading
+  int _lastPageChangeTime = 0;
+  double _scrollVelocity = 0.0;
+  int _preloadRange = 3; // Dynamic preload range based on velocity
 
   @override
   void initState() {
@@ -224,6 +229,25 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     // Cancel any pending page change processing
     _pageChangeDebounce?.cancel();
     
+    // Track velocity for adaptive preloading
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (_lastPageChangeTime > 0) {
+      final timeDiff = now - _lastPageChangeTime;
+      _scrollVelocity = 1000.0 / timeDiff; // Pages per second
+      
+      // Adjust preload range based on velocity
+      if (_scrollVelocity > 2.0) {
+        _preloadRange = 5; // Fast scrolling - preload more
+      } else if (_scrollVelocity > 1.0) {
+        _preloadRange = 4; // Medium scrolling
+      } else {
+        _preloadRange = 3; // Slow scrolling - normal preload
+      }
+      
+      print('📈 Scroll velocity: ${_scrollVelocity.toStringAsFixed(2)} pages/sec, preload range: $_preloadRange');
+    }
+    _lastPageChangeTime = now;
+    
     // Track skip on previous video if swiped away quickly
     if (_currentIndex != index) {
       try {
@@ -252,8 +276,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       _currentIndex = index;
     });
     
-    // Debounce the actual video initialization
-    _pageChangeDebounce = Timer(const Duration(milliseconds: 100), () {
+    // Debounce the actual video initialization - reduced from 100ms to 50ms
+    _pageChangeDebounce = Timer(const Duration(milliseconds: 50), () {
       if (!mounted) return;
       
       // Start tracking new video
@@ -1206,10 +1230,21 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             final videoProvider = Provider.of<VideoProvider>(context);
             final isLiked = videoProvider.isVideoLiked(video.id);
             
-            // Preload next 2 videos for smoother scrolling
-            final nextIndex1 = (_currentIndex + 1) % videos.length;
-            final nextIndex2 = (_currentIndex + 2) % videos.length;
-            final shouldPreload = (videoIndex == nextIndex1 || videoIndex == nextIndex2);
+            // Dynamic preloading based on scroll velocity
+            bool shouldPreload = false;
+            
+            // Always preload previous video
+            if (videoIndex == (_currentIndex - 1 + videos.length) % videos.length) {
+              shouldPreload = true;
+            }
+            
+            // Preload next videos based on velocity
+            for (int i = 1; i <= _preloadRange; i++) {
+              if (videoIndex == (_currentIndex + i) % videos.length) {
+                shouldPreload = true;
+                break;
+              }
+            }
             
             // Always log for first few videos
             if (index < 3 || isCurrentVideo) {
