@@ -255,6 +255,32 @@ class AdaptiveStreamingService {
     
     return (baseBuffer * deviceMultiplier).round();
   }
+  
+  /// Get dynamic buffer strategy based on network conditions
+  Map<String, dynamic> getDynamicBufferStrategy() {
+    return {
+      'initialBuffer': switch (_currentNetworkQuality) {
+        NetworkQuality.excellent => 2.0, // 2 seconds
+        NetworkQuality.good => 3.0,
+        NetworkQuality.fair => 4.0,
+        NetworkQuality.poor => 5.0,
+      },
+      'maxBuffer': switch (_currentNetworkQuality) {
+        NetworkQuality.excellent => 30.0, // 30 seconds
+        NetworkQuality.good => 25.0,
+        NetworkQuality.fair => 20.0,
+        NetworkQuality.poor => 15.0,
+      },
+      'rebufferThreshold': switch (_currentNetworkQuality) {
+        NetworkQuality.excellent => 1.0, // 1 second
+        NetworkQuality.good => 1.5,
+        NetworkQuality.fair => 2.0,
+        NetworkQuality.poor => 3.0,
+      },
+      'aggressivePrefetch': _currentNetworkQuality == NetworkQuality.excellent || 
+                           _currentNetworkQuality == NetworkQuality.good,
+    };
+  }
 
   /// Get recommended preload count
   int getRecommendedPreloadCount() {

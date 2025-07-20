@@ -1,16 +1,24 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:http/http.dart' as http;
 import '../services/video_player_manager.dart';
 import '../services/video_url_service.dart';
 import '../services/adaptive_streaming_service.dart';
 import '../services/adaptive_video_service.dart';
+import '../services/intelligent_cache_manager.dart';
+import '../services/thumbnail_service.dart';
+import '../services/intelligent_cache_manager.dart';
+import '../services/hls_streaming_service.dart';
+import 'package:dio/dio.dart';
+import 'dart:io';
 
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
   final bool isPlaying;
   final VoidCallback? onTap;
   final bool preload;
+  final String? thumbnailUrl;
 
   const VideoPlayerWidget({
     super.key,
@@ -18,6 +26,7 @@ class VideoPlayerWidget extends StatefulWidget {
     this.isPlaying = false,
     this.onTap,
     this.preload = false,
+    this.thumbnailUrl,
   });
 
   @override
@@ -34,18 +43,36 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _isDisposed = false;
   static const int _maxRetries = 1;
   bool _isInitializing = false;
+  String? _thumbnailUrl;
+  
+  // Cache manager instance
+  final IntelligentCacheManager _cacheManager = IntelligentCacheManager();
 
   @override
   void initState() {
     super.initState();
     print('🎬 VideoPlayerWidget created for URL: ${widget.videoUrl}');
     print('🎬 Initial isPlaying: ${widget.isPlaying}, preload: ${widget.preload}');
+    
+    // Load thumbnail immediately
+    _loadThumbnail();
+    
     // Initialize video immediately if playing or preloading
     if (widget.isPlaying || widget.preload) {
       print('🚀 Calling _initializeVideo() because isPlaying=${widget.isPlaying} or preload=${widget.preload}');
       _initializeVideo();
     } else {
       print('⏸️ NOT initializing video because isPlaying=false and preload=false');
+    }
+  }
+  
+  Future<void> _loadThumbnail() async {
+    // Try to get thumbnail URL from video URL
+    final thumbnailUrl = await ThumbnailService.generateThumbnailUrl(widget.videoUrl);
+    if (mounted && thumbnailUrl != null) {
+      setState(() {
+        _thumbnailUrl = thumbnailUrl;
+      });
     }
   }
 
@@ -138,28 +165,60 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         
         // Get optimal video URL based on device/network conditions
         final adaptiveVideoService = AdaptiveVideoService();
-        // Skip quality optimization during preloading for faster init
-        final optimalUrl = await adaptiveVideoService.getOptimalVideoUrl(
-          transformedUrl, 
-          fastMode: widget.preload
-        );
-        print('🎯 Optimal URL: $optimalUrl');
+        final hlsService = HLSStreamingService();
         
-        final uri = Uri.parse(optimalUrl);
-        print('🔗 Parsed URL - Host: ${uri.host}, Path: ${uri.path}');
+        // Check if we should use HLS
+        String optimalUrl;
+        if (hlsService.isHLSUrl(transformedUrl)) {
+          // Already HLS, get optimal variant
+          optimalUrl = await hlsService.getOptimalHLSVariant(transformedUrl);
+          print('🎯 HLS variant selected: $optimalUrl');
+        } else {
+          // Regular video, use adaptive service
+          optimalUrl = await adaptiveVideoService.getOptimalVideoUrl(
+            transformedUrl, 
+            fastMode: widget.preload
+          );
+          print('🎯 Optimal URL: $optimalUrl');
+        }
         
-        _controller = VideoPlayerController.networkUrl(
-          uri,
-          videoPlayerOptions: VideoPlayerOptions(
-            mixWithOthers: false,
-            allowBackgroundPlayback: false,
-          ),
-          httpHeaders: {
-            'Connection': 'keep-alive',
-            'Cache-Control': 'max-age=3600',
-            'Accept-Encoding': 'gzip, deflate',
-          },
-        );
+        // Track this video view for predictive caching
+        _cacheManager.trackVideoView(optimalUrl);
+        
+        // Check cache first using member variable cache manager
+        final cachedFile = await _cacheManager.getVideo(optimalUrl);
+        
+        if (cachedFile != null && await cachedFile.exists()) {
+          print('💾 Loading video from cache: ${cachedFile.path}');
+          _controller = VideoPlayerController.file(
+            cachedFile,
+            videoPlayerOptions: VideoPlayerOptions(
+              mixWithOthers: false,
+              allowBackgroundPlayback: false,
+            ),
+          );
+        } else {
+          print('🌐 Loading video from network: $optimalUrl');
+          final uri = Uri.parse(optimalUrl);
+          print('🔗 Parsed URL - Host: ${uri.host}, Path: ${uri.path}');
+          
+          _controller = VideoPlayerController.networkUrl(
+            uri,
+            videoPlayerOptions: VideoPlayerOptions(
+              mixWithOthers: false,
+              allowBackgroundPlayback: false,
+            ),
+            httpHeaders: {
+              'Connection': 'keep-alive',
+              'Cache-Control': 'max-age=3600',
+              'Accept-Encoding': 'gzip, deflate',
+              'Range': 'bytes=0-', // Enable range requests for progressive download
+            },
+          );
+          
+          // Download and cache video in background
+          _cacheVideoInBackground(optimalUrl);
+        }
         
         // Simple initialization without complex timeout logic
         print('🎮 About to call _controller.initialize()...');
@@ -296,6 +355,33 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
+  Future<void> _cacheVideoInBackground(String videoUrl) async {
+    try {
+      print('📥 Starting background cache for: $videoUrl');
+      final dio = Dio();
+      final response = await dio.get(
+        videoUrl,
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: {
+            'Connection': 'keep-alive',
+            'Cache-Control': 'max-age=3600',
+            'Accept-Encoding': 'gzip, deflate',
+          },
+        ),
+      );
+      
+      if (response.statusCode == 200 && response.data != null) {
+        final cacheManager = IntelligentCacheManager();
+        await cacheManager.cacheVideo(videoUrl, response.data as List<int>);
+        print('✅ Video cached successfully: $videoUrl');
+      }
+    } catch (e) {
+      print('⚠️ Background caching failed: $e');
+      // Don't throw - this is a background operation
+    }
+  }
+
   void _togglePlayPause() {
     if (_controller != null && _isInitialized && mounted) {
       setState(() {
@@ -395,10 +481,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       );
     }
 
-    // Show black screen while initializing - no loading indicator
+    // Show thumbnail while initializing if available
     if (!_isInitialized) {
       return Container(
         color: Colors.black,
+        child: _thumbnailUrl != null
+            ? Image.network(
+                _thumbnailUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.black,
+                ),
+              )
+            : null,
       );
     }
 
@@ -456,5 +551,31 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         ),
       ),
     );
+  }
+  
+  Future<void> _cacheVideoInBackground(String url) async {
+    try {
+      // Download video in background only if playing or likely to be watched
+      if (!widget.isPlaying && !widget.preload) return;
+      
+      print('📥 Starting background cache for: $url');
+      
+      // Use HTTP to download the video
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Connection': 'keep-alive',
+          'Cache-Control': 'max-age=3600',
+        },
+      ).timeout(const Duration(minutes: 5));
+      
+      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+        // Cache the video
+        await _cacheManager.cacheVideo(url, response.bodyBytes);
+        print('✅ Video cached successfully: ${response.bodyBytes.length / 1024 / 1024} MB');
+      }
+    } catch (e) {
+      print('⚠️ Failed to cache video in background: $e');
+    }
   }
 }
