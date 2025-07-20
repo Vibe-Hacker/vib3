@@ -232,8 +232,7 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                 child: IgnorePointer(
                   ignoring: false, // Always allow touches
                   child: BottomToolbar(
-                    key: const ValueKey('fixed_bottom_toolbar'),
-                    currentMode: _currentMode,
+                    key: const ValueKey('bottom_toolbar'),
                     onModeSelected: (mode) {
                       print('VideoCreatorScreen: Mode selected - $mode');
                       if (mounted) {
@@ -243,7 +242,6 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                         _toolPanelController.forward();
                       }
                     },
-                    onNext: _currentMode == CreatorMode.edit ? _navigateToUpload : null,
                   ),
                 ),
               ),
