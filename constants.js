@@ -5,6 +5,11 @@ module.exports = {
     SESSION_CLEANUP_INTERVAL: 60 * 60 * 1000, // 1 hour
     
     // Security
+    SECURITY: {
+        TOKEN_LENGTH: 32,
+        BCRYPT_ROUNDS: 10,
+        JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+    },
     JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
     BCRYPT_ROUNDS: 10,
     
