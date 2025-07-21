@@ -467,6 +467,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Widget build(BuildContext context) {
     print('🎨 VideoPlayerWidget build: _isInitialized=$_isInitialized, _controller=${_controller != null}, isPlaying=${widget.isPlaying}');
     
+    // If we're supposed to be playing but controller isn't actually playing, reinitialize
+    if (widget.isPlaying && _controller != null && _isInitialized && !_controller!.value.isPlaying && !_isPaused) {
+      print('⚠️ Controller not playing when it should be - reinitializing');
+      Future.microtask(() {
+        if (mounted) {
+          _controller?.play();
+        }
+      });
+    }
+    
     // Don't show error screen during retries, just show black
     if (_hasError && _retryCount < _maxRetries) {
       // Still retrying, show black screen
