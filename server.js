@@ -74,8 +74,8 @@ app.get('/health', (req, res) => {
 });
 
 // Test video endpoint for debugging
-const testVideoRouter = require('./test-video-endpoint');
-app.use('/api', testVideoRouter);
+// const testVideoRouter = require('./test-video-endpoint');
+// app.use('/api', testVideoRouter);
 
 // Video proxy endpoint to bypass CORS issues
 app.get('/api/proxy/video', async (req, res) => {
