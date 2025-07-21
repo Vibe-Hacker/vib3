@@ -564,6 +564,19 @@
         
         console.log('✅ INLINE FIXES READY - Variables defined');
         
+        // Simple showToast function for notifications
+        window.showToast = function(message) {
+            const toast = document.getElementById('toast');
+            if (toast) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            } else {
+                // Fallback to alert if toast element doesn't exist
+                console.log('Toast:', message);
+            }
+        };
+        
         // INLINE AUTH HANDLERS - Direct in HTML to avoid any loading issues
         window.handleLogin = async function() {
             console.log('🔐 INLINE handleLogin called');
