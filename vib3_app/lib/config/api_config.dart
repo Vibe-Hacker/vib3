@@ -3,10 +3,10 @@ import 'package:flutter/foundation.dart';
 /// API Configuration for VIB3 Microservices Architecture
 class ApiConfig {
   // API Gateway URL (single entry point for all microservices)
-  static const String apiGatewayUrl = 'http://138.197.89.163:3000';
+  static const String apiGatewayUrl = 'https://api.vib3app.net';
   
   // Fallback to monolith for backward compatibility
-  static const String monolithUrl = 'http://138.197.89.163:3000';
+  static const String monolithUrl = 'https://api.vib3app.net';
   
   // Feature flags
   static const bool useMicroservices = true; // Toggle between architectures
