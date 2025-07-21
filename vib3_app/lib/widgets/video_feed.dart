@@ -76,7 +76,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   // Velocity tracking for adaptive preloading
   int _lastPageChangeTime = 0;
   double _scrollVelocity = 0.0;
-  int _preloadRange = 3; // Dynamic preload range based on velocity
+  int _preloadRange = 4; // Dynamic preload range based on velocity
 
   @override
   void initState() {
@@ -246,11 +246,11 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       
       // Adjust preload range based on velocity
       if (_scrollVelocity > 2.0) {
-        _preloadRange = 5; // Fast scrolling - preload more
+        _preloadRange = 6; // Fast scrolling - preload more
       } else if (_scrollVelocity > 1.0) {
-        _preloadRange = 4; // Medium scrolling
+        _preloadRange = 5; // Medium scrolling
       } else {
-        _preloadRange = 3; // Slow scrolling - normal preload
+        _preloadRange = 4; // Slow scrolling - normal preload
       }
       
       print('📈 Scroll velocity: ${_scrollVelocity.toStringAsFixed(2)} pages/sec, preload range: $_preloadRange');
@@ -366,8 +366,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     }
     
     // Load more videos when we're getting close to the end
-    // Or if we have less than 10 videos total
-    final shouldLoadMore = (index >= currentVideos.length - 5) || 
+    // But not too aggressively to avoid disrupting preloaded videos
+    final shouldLoadMore = (index >= currentVideos.length - 2) || 
                           (currentVideos.length < 10);
     
     if (shouldLoadMore && 
