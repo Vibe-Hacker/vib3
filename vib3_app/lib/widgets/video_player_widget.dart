@@ -57,14 +57,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Load thumbnail immediately
     _loadThumbnail();
     
-    // Initialize video immediately if playing or preloading
-    if (widget.isPlaying || widget.preload) {
-      print('🚀 Calling _initializeVideo() because isPlaying=${widget.isPlaying} or preload=${widget.preload}');
+    // Initialize based on play state or preload flag
+    if (widget.isPlaying) {
+      print('🚀 Initializing video because isPlaying=true');
       _initializeVideo();
+    } else if (widget.preload) {
+      print('🚀 Pre-initializing video for smooth playback');
+      // Delay slightly to avoid too many concurrent initializations
+      Future.delayed(Duration(milliseconds: 100 * (_preloadCounter++ % 3)), () {
+        if (mounted) {
+          _initializeVideo();
+        }
+      });
     } else {
-      print('⏸️ NOT initializing video because isPlaying=false and preload=false');
+      print('⏸️ Not initializing video yet');
     }
   }
+  
+  static int _preloadCounter = 0;
   
   Future<void> _loadThumbnail() async {
     // Try to get thumbnail URL from video URL
@@ -96,13 +106,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     else if (oldWidget.isPlaying != widget.isPlaying) {
       print('🎬 VideoPlayer: Play state changed from ${oldWidget.isPlaying} to ${widget.isPlaying}');
       print('🎬 VideoPlayer: Current state - _isInitialized=$_isInitialized, _hasError=$_hasError, _controller=${_controller != null}');
-      if (widget.isPlaying && !_isInitialized && !_hasError) {
-        print('🎬 VideoPlayer: Starting initialization...');
-        _initializeVideo();
-      } else if (!widget.isPlaying && _isInitialized) {
-        _controller?.pause();
-        // Keep videos in memory, don't dispose immediately
-      } else if (widget.isPlaying && _isInitialized && _controller != null) {
+      if (widget.isPlaying && _isInitialized && _controller != null) {
         // Resume playing
         print('▶️ VideoPlayer: Resuming playback');
         VideoPlayerManager.instance.playVideo(_controller!);
@@ -110,6 +114,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           _isPaused = false;
           _showPlayIcon = false;
         });
+      } else if (!widget.isPlaying && _isInitialized && _controller != null) {
+        _controller?.pause();
+        // Keep videos in memory, don't dispose immediately
       }
     }
   }
@@ -258,7 +265,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         // Register with VideoPlayerManager
         VideoPlayerManager.instance.registerController(_controller!);
         
-        // Start playing if this widget is marked as playing (not just preloading)
+        // Start playing only if this widget is marked as playing
         if (widget.isPlaying && mounted && !_isDisposed) {
           // Play the video directly
           try {
@@ -270,13 +277,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           } catch (e) {
             print('⚠️ Error starting playback: $e');
           }
-        } else if (widget.preload && mounted && !_isDisposed) {
-          // For preloaded videos, just pause after initialization
+        } else if (mounted && !_isDisposed) {
+          // For non-playing videos, pause after initialization
           try {
             await _controller!.pause();
-            print('⏸️ VideoPlayer: Preloaded and paused');
+            await _controller!.seekTo(Duration.zero);
+            print('⏸️ VideoPlayer: Initialized and paused');
           } catch (e) {
-            print('⚠️ Error pausing preloaded video: $e');
+            print('⚠️ Error pausing video: $e');
           }
         }
         

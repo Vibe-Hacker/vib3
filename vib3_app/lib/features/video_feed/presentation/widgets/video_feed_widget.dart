@@ -4,9 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/video_feed_provider.dart';
 import '../../domain/entities/video_entity.dart';
 import '../../../../widgets/video_player_widget.dart';
-import '../../../../widgets/preloaded_video_player.dart';
 import '../../../../services/enhanced_video_cache.dart';
-import '../../../../services/video_preload_manager.dart';
 
 /// Video feed widget using the new repository pattern
 /// This replaces direct VideoService usage
@@ -26,7 +24,6 @@ class _VideoFeedWidgetState extends State<VideoFeedWidget> {
   late PageController _pageController;
   int _currentIndex = 0;
   final _videoCache = EnhancedVideoCache();
-  final _preloadManager = VideoPreloadManager();
   
   @override
   void initState() {
@@ -154,11 +151,6 @@ class _VideoFeedWidgetState extends State<VideoFeedWidget> {
           );
         }
         
-        // Preload videos when we have them
-        if (videos.isNotEmpty) {
-          _preloadManager.preloadVideos(videoUrls, _currentIndex);
-        }
-        
         return PageView.builder(
           controller: _pageController,
           scrollDirection: Axis.vertical,
@@ -169,9 +161,6 @@ class _VideoFeedWidgetState extends State<VideoFeedWidget> {
             
             // Track view
             provider.trackView(videos[index].id);
-            
-            // Preload adjacent videos
-            _preloadManager.preloadVideos(videoUrls, index);
             
             // Pre-cache next 5 videos for download
             if (index < videos.length - 5) {
@@ -192,10 +181,12 @@ class _VideoFeedWidgetState extends State<VideoFeedWidget> {
             
             return Stack(
               children: [
-                // Use preloaded video player
-                PreloadedVideoPlayer(
+                // Use video player with smart preloading
+                VideoPlayerWidget(
+                  key: ValueKey(video.videoUrl),
                   videoUrl: video.videoUrl,
                   isPlaying: index == _currentIndex,
+                  preload: (index - _currentIndex).abs() <= 1, // Preload 1 video ahead/behind
                 ),
                 
                 // Video info overlay

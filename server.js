@@ -365,6 +365,9 @@ app.get('/api/test', async (req, res) => {
                 video.commentCount = 0;
                 video.shareCount = 0;
                 video.feedType = feed;
+                
+                // Fix URLs before sending
+                video.videoUrl = fixVideoUrl(video.videoUrl);
                 video.thumbnailUrl = video.videoUrl + '#t=1';
             } catch (e) {
                 console.log('User lookup error:', e);
@@ -427,6 +430,9 @@ app.get('/api/test-videos', async (req, res) => {
                 video.commentCount = 0;
                 video.shareCount = 0;
                 video.feedType = feed;
+                
+                // Fix URLs before sending
+                video.videoUrl = fixVideoUrl(video.videoUrl);
                 video.thumbnailUrl = video.videoUrl + '#t=1';
             } catch (e) {
                 console.log('User lookup error:', e);
@@ -1282,6 +1288,29 @@ const BUCKET_NAME = process.env.DO_SPACES_BUCKET || 'vib3-videos';
 const videoProcessor = new VideoProcessor();
 const MultiQualityVideoProcessor = require('./video-processor-multi');
 const multiQualityProcessor = new MultiQualityVideoProcessor();
+const AdvancedVideoProcessor = require('./advanced-video-processor');
+const advancedProcessor = new AdvancedVideoProcessor();
+
+// ================ HELPER FUNCTIONS ================
+
+// Fix duplicated paths in video URLs
+function fixVideoUrl(url) {
+    if (!url) return url;
+    
+    let fixedUrl = url;
+    
+    // Fix the specific pattern we're seeing
+    if (fixedUrl.includes('/videos/nyc3.digitaloceanspaces.com/vib3-videos/videos/')) {
+        fixedUrl = fixedUrl.replace('/videos/nyc3.digitaloceanspaces.com/vib3-videos/videos/', '/videos/');
+    }
+    
+    // Fix other duplication patterns
+    if (fixedUrl.includes('nyc3.digitaloceanspaces.com/videos/nyc3.digitaloceanspaces.com')) {
+        fixedUrl = fixedUrl.replace('nyc3.digitaloceanspaces.com/videos/nyc3.digitaloceanspaces.com', 'nyc3.digitaloceanspaces.com');
+    }
+    
+    return fixedUrl;
+}
 
 // ================ ALGORITHM & RANKING FUNCTIONS ================
 
@@ -2624,6 +2653,12 @@ app.get('/api/videos', async (req, res) => {
                 // Get share count (create shares collection if needed)
                 video.shareCount = await db.collection('shares').countDocuments({ videoId: video._id.toString() });
                 
+                // Fix video URLs before sending
+                video.videoUrl = fixVideoUrl(video.videoUrl);
+                if (video.thumbnailUrl) {
+                    video.thumbnailUrl = fixVideoUrl(video.thumbnailUrl);
+                }
+                
                 // Add feed metadata without changing titles
                 video.feedType = feed;
                 
@@ -3047,9 +3082,42 @@ app.post('/api/videos/upload', requireAuth, upload.fields([
                 bypassed: true
             };
         } else {
-            // Convert video to standard H.264 MP4
-            console.log('📋 Converting video to standard MP4...');
-            conversionResult = await videoProcessor.convertToStandardMp4(videoFile.buffer, videoFile.originalname);
+            // Use advanced processor for H.265/HEVC support and multi-resolution
+            console.log('📋 Using advanced video processor...');
+            try {
+                const advancedResult = await advancedProcessor.processVideo(videoFile.buffer, videoFile.originalname);
+                
+                if (advancedResult.success) {
+                    // Use the highest quality resolution for now
+                    const primaryVideo = advancedResult.resolutions.find(r => r.resolution === '1080p') || 
+                                       advancedResult.resolutions.find(r => r.resolution === '720p') || 
+                                       advancedResult.resolutions[0];
+                    
+                    if (primaryVideo) {
+                        const videoBuffer = fs.readFileSync(primaryVideo.path);
+                        conversionResult = {
+                            success: true,
+                            buffer: videoBuffer,
+                            originalSize: videoFile.size,
+                            convertedSize: videoBuffer.length,
+                            videoInfo: advancedResult.originalInfo,
+                            advancedProcessing: advancedResult
+                        };
+                        
+                        // Clean up processed files after reading
+                        await advancedProcessor.cleanup(advancedResult.processId);
+                    } else {
+                        throw new Error('No video resolutions generated');
+                    }
+                } else {
+                    throw new Error('Advanced processing failed');
+                }
+            } catch (advError) {
+                console.error('Advanced processor error:', advError);
+                // Fallback to basic processor
+                console.log('📋 Falling back to standard MP4 conversion...');
+                conversionResult = await videoProcessor.convertToStandardMp4(videoFile.buffer, videoFile.originalname);
+            }
         }
         
         let finalBuffer, finalMimeType;

@@ -51,12 +51,38 @@ class VideoDTO {
     
     // Extract video URL
     String? videoUrl = json['videoUrl']?.toString();
-    if (videoUrl != null && !videoUrl.startsWith('http')) {
-      // Only prepend base URL if it's a relative path
-      videoUrl = 'https://vib3-videos.nyc3.digitaloceanspaces.com/$videoUrl';
-    } else if (videoUrl != null && videoUrl.contains('nyc3.digitaloceanspaces.com/videos/nyc3.digitaloceanspaces.com')) {
-      // Fix duplicated paths in URL
-      videoUrl = videoUrl.replaceAll('nyc3.digitaloceanspaces.com/videos/nyc3.digitaloceanspaces.com', 'nyc3.digitaloceanspaces.com');
+    final originalUrl = videoUrl;
+    if (videoUrl != null) {
+      if (!videoUrl.startsWith('http')) {
+        // Only prepend base URL if it's a relative path
+        videoUrl = 'https://vib3-videos.nyc3.digitaloceanspaces.com/$videoUrl';
+      }
+      
+      // Fix various URL duplication patterns
+      if (videoUrl.contains('nyc3.digitaloceanspaces.com/videos/nyc3.digitaloceanspaces.com')) {
+        videoUrl = videoUrl.replaceAll('nyc3.digitaloceanspaces.com/videos/nyc3.digitaloceanspaces.com', 'nyc3.digitaloceanspaces.com');
+      }
+      
+      // Fix the specific pattern we're seeing
+      if (videoUrl.contains('/videos/nyc3.digitaloceanspaces.com/vib3-videos/videos/')) {
+        videoUrl = videoUrl.replaceAll('/videos/nyc3.digitaloceanspaces.com/vib3-videos/videos/', '/videos/');
+      }
+      
+      // General fix for any duplicated domain in path
+      final uri = Uri.parse(videoUrl);
+      if (uri.pathSegments.contains('nyc3.digitaloceanspaces.com')) {
+        // Remove the duplicated domain from path
+        final fixedPath = uri.path
+            .replaceAll('/nyc3.digitaloceanspaces.com/vib3-videos', '')
+            .replaceAll('/vib3-videos/videos/', '/videos/');
+        videoUrl = uri.replace(path: fixedPath).toString();
+      }
+      
+      // Debug log URL transformation
+      if (originalUrl != videoUrl) {
+        print('🔧 Fixed video URL from: $originalUrl');
+        print('🔧 Fixed video URL to: $videoUrl');
+      }
     }
     
     // Extract duration
