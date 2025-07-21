@@ -2374,6 +2374,13 @@ app.post('/api/auth/logout', requireAuth, (req, res) => {
 });
 
 // Get all videos (feed)
+// Main feed endpoint for Flutter app
+app.get('/api/feed', async (req, res) => {
+    // Redirect to /api/videos which has the full implementation
+    req.query.feed = req.query.feed || 'foryou';
+    return app._router.handle(Object.assign(req, { url: '/api/videos', path: '/api/videos' }), res);
+});
+
 app.get('/api/videos', async (req, res) => {
     console.log('🚨 URGENT DEBUG: /api/videos endpoint hit at', new Date().toISOString());
     console.log('🚨 Query params:', req.query);
