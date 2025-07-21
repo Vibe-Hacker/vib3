@@ -4,7 +4,7 @@
 // API base URL configuration
 const API_BASE_URL = window.API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
     ? '' 
-    : 'https://vib3-production.up.railway.app');
+    : 'http://138.197.89.163:3000');
 
 console.log('🔌 MongoDB adapter loading, API URL:', API_BASE_URL);
 
