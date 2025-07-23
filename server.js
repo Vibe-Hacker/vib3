@@ -48,12 +48,13 @@ app.use((req, res, next) => {
 // Session management - using modular auth
 const sessions = modularSessions; // Use sessions from auth module
 
-// CORS - Enhanced for mobile app
+// CORS - Enhanced for mobile app and video streaming
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Range');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
     res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
     
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
@@ -5541,7 +5542,7 @@ app.post('/api/upload/validate', requireAuth, upload.array('files', 35), async (
 // Legacy web routes removed - using Flutter app only
 // app.get('/', (req, res) => {
 //     // Legacy web serving removed - using Flutter app only
-    res.status(404).json({ error: 'Web interface removed - use Flutter app' });
+//     res.status(404).json({ error: 'Web interface removed - use Flutter app' });
 // });
 
 // Legacy /app route removed - using Flutter app only
@@ -6165,6 +6166,51 @@ app.use('*', (req, res) => {
 
 // ================ MUSIC API ENDPOINTS ================
 
+// Video proxy endpoint for CORS issues
+app.get('/api/proxy/video', async (req, res) => {
+    const videoUrl = req.query.url;
+    
+    if (!videoUrl) {
+        return res.status(400).json({ error: 'No video URL provided' });
+    }
+    
+    try {
+        // Validate it's a DigitalOcean Spaces URL
+        if (!videoUrl.includes('digitaloceanspaces.com')) {
+            return res.status(400).json({ error: 'Invalid video source' });
+        }
+        
+        // Set proper headers for video streaming
+        res.setHeader('Content-Type', 'video/mp4');
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
+        
+        // Use https module to pipe the video
+        const https = require('https');
+        https.get(videoUrl, (videoResponse) => {
+            // Forward status code
+            res.status(videoResponse.statusCode);
+            
+            // Forward headers
+            Object.entries(videoResponse.headers).forEach(([key, value]) => {
+                if (key.toLowerCase() !== 'access-control-allow-origin') {
+                    res.setHeader(key, value);
+                }
+            });
+            
+            // Pipe the video stream
+            videoResponse.pipe(res);
+        }).on('error', (error) => {
+            console.error('Proxy stream error:', error);
+            res.status(500).json({ error: 'Failed to stream video' });
+        });
+        
+    } catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: 'Failed to proxy video' });
+    }
+});
+
 // Get trending music
 app.get('/api/music/trending', async (req, res) => {
     try {
@@ -6371,8 +6417,7 @@ app.use(grokDevRoutes); // Grok development assistant routes
 const recommendationEndpoints = require('./recommendation-endpoints');
 recommendationEndpoints(app, db);
 
-// Load Grok AI Task Manager
-const GrokTaskManager = require('./grok-task-manager');
+// Grok Task Manager already loaded at top
 let grokManager = null;
 
 // Initialize Grok after database connection
