@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 
 // This should be in environment variables
-const GROK_API_KEY = process.env.GROK_API_KEY || 'your-grok-api-key-here';
+const GROK_API_KEY = process.env.GROK_API_KEY;
 
 // Endpoint to get Grok configuration
 router.get('/api/grok/config', (req, res) => {

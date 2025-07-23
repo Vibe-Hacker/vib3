@@ -6,7 +6,7 @@ const { ObjectId } = require('mongodb');
 class GrokTaskManager {
     constructor(db) {
         this.db = db;
-        this.apiKey = process.env.GROK_API_KEY || 'YOUR_GROK_API_KEY_HERE';
+        this.apiKey = process.env.GROK_API_KEY;
         this.baseUrl = 'https://api.x.ai/v1';
         this.taskQueue = [];
         this.isProcessing = false;

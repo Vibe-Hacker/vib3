@@ -6,7 +6,7 @@ const router = express.Router();
 const { ObjectId } = require('mongodb');
 
 // Initialize Grok API
-const GROK_API_KEY = process.env.GROK_API_KEY || 'your-grok-api-key-here';
+const GROK_API_KEY = process.env.GROK_API_KEY;
 const GROK_BASE_URL = 'https://api.x.ai/v1';
 
 // Helper function to make Grok requests
