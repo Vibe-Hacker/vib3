@@ -79,13 +79,47 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
     if (_controller == null || !_isRecording) return;
 
     try {
+      print('🛑 Stopping video recording...');
+      
+      // Show loading indicator
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Center(
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF00CED1)),
+                  SizedBox(height: 16),
+                  Text(
+                    'Processing video...',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+      
       final XFile video = await _controller!.stopVideoRecording();
+      
       setState(() {
         _isRecording = false;
         _isPaused = false;
         _showTimer = false;
       });
       _recordingTimer?.cancel();
+      
+      // Small delay to ensure file is written
+      await Future.delayed(Duration(milliseconds: 500));
       
       // Navigate to editing screen
       if (mounted) {
@@ -95,43 +129,70 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
         final videoFile = File(video.path);
         if (await videoFile.exists()) {
           final fileSize = await videoFile.length();
-          print('📁 Video file size: $fileSize bytes');
+          print('📁 Video file size: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
           
           if (fileSize > 0) {
-            // Use new video creator instead of old editing screen
-            Navigator.pushReplacement(
-              context,
+            // Close loading dialog
+            Navigator.of(context).pop();
+            
+            // Navigate with replacement to prevent going back to recording
+            await Navigator.of(context).pushReplacement(
               MaterialPageRoute(
                 builder: (context) => VideoCreatorScreen(videoPath: video.path),
+                settings: RouteSettings(name: '/video-creator'),
               ),
-            );
+            ).then((value) {
+              print('✅ Navigation completed');
+            }).catchError((error) {
+              print('❌ Navigation error: $error');
+              _showError('Failed to open editor: $error');
+            });
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Error: Video file is empty'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            Navigator.of(context).pop(); // Close loading
+            _showError('Video file is empty. Please try again.');
           }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: Video file not found'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          Navigator.of(context).pop(); // Close loading
+          _showError('Video file not found. Please try again.');
         }
       }
     } catch (e) {
-      print('Error stopping recording: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      print('❌ Error stopping recording: $e');
+      print('Stack trace: ${StackTrace.current}');
+      
+      // Close loading dialog if open
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.of(context).pop();
       }
+      
+      _showError('Recording error: ${e.toString()}');
+      
+      // Reset recording state
+      setState(() {
+        _isRecording = false;
+        _isPaused = false;
+        _showTimer = false;
+      });
+    }
+  }
+  
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'Retry',
+            textColor: Colors.white,
+            onPressed: () {
+              // Reset camera
+              _initializeCamera();
+            },
+          ),
+        ),
+      );
     }
   }
 
