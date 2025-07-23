@@ -1149,6 +1149,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             child: GestureDetector(
               onLongPress: () => _showComments(video),
               child: VideoPlayerWidget(
+                key: ValueKey('video_${video.id}'),
                 videoUrl: video.videoUrl!,
                 isPlaying: isCurrentVideo,
                 preload: preload,

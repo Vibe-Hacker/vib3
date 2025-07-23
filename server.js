@@ -20,6 +20,8 @@ try {
 const constants = require('./constants');
 const videoConfig = require('./config/video-config');
 const { requireAuth: modularRequireAuth, createSession: modularCreateSession, sessions: modularSessions } = require('./middleware/auth');
+const grokDevRoutes = require('./server/routes/grok-dev');
+const GrokTaskManager = require('./grok-task-manager');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1179,8 +1181,8 @@ function calculateQuartileRetention(views, quartile) {
 }
 
 // Serve static files (AFTER API routes)
-// Route mobile app requests to app directory
-app.use('/app', express.static(path.join(__dirname, 'app')));
+// Legacy web directories removed - using Flutter app only
+// app.use('/app', express.static(path.join(__dirname, 'app')));
 
 // Mobile device detection middleware
 function isMobileDevice(userAgent) {
@@ -1188,8 +1190,8 @@ function isMobileDevice(userAgent) {
     return mobileRegex.test(userAgent);
 }
 
-// Route mobile devices to mobile directory, others to www directory
-app.use('/mobile', express.static(path.join(__dirname, 'mobile')));
+// Legacy mobile directory removed - using Flutter app only
+// app.use('/mobile', express.static(path.join(__dirname, 'mobile')));
 
 // Auto-redirect based on device type (before static serving)
 app.get('/', (req, res, next) => {
@@ -1212,65 +1214,39 @@ app.get('/', (req, res, next) => {
 });
 
 // Route web requests to www directory (default)
-const webDir = path.join(__dirname, 'www');
-console.log('Serving static files from:', webDir);
-console.log('Current directory:', process.cwd());
-console.log('__dirname:', __dirname);
+// Legacy static file serving removed - using Flutter app only
+// const webDir = path.join(__dirname, 'www');
+// console.log('Serving static files from:', webDir);
+// console.log('Current directory:', process.cwd());
+// console.log('__dirname:', __dirname);
 
-// Try multiple possible paths
-const possiblePaths = [
-    path.join(__dirname, 'www'),
-    path.join(process.cwd(), 'www'),
-    './www',
-    'www'
-];
+// Legacy paths removed
+// const possiblePaths = [
+//     path.join(__dirname, 'www'),
+//     path.join(process.cwd(), 'www'),
+//     './www',
+//     'www'
+// ];
 
-let staticPath = null;
-const fs = require('fs');
-for (const p of possiblePaths) {
-    if (fs.existsSync(p)) {
-        staticPath = p;
-        console.log('Found web directory at:', p);
-        break;
-    }
-}
+// let staticPath = null;
+// const fs = require('fs');
+// for (const p of possiblePaths) {
+//     if (fs.existsSync(p)) {
+//         staticPath = p;
+//         console.log('Found web directory at:', p);
+//         break;
+//     }
+// }
 
-if (staticPath) {
-    // IMPORTANT: Only serve static files for non-API routes
-    app.use((req, res, next) => {
-        // Skip static serving for API routes - they should hit our endpoints
-        if (req.path.startsWith('/api/') || req.path.startsWith('/videos-') || req.path.startsWith('/health')) {
-            console.log(`🚫 Skipping static for API route: ${req.path}`);
-            return next(); // Continue to next middleware/route
-        }
-        console.log(`📁 Serving static for: ${req.path}`);
-        next();
+// Legacy static file serving removed - using Flutter app only
+// All requests to the root will get a message to use the Flutter app
+app.get('/', (req, res) => {
+    res.json({ 
+        message: 'VIB3 API Server',
+        status: 'Web interface removed - please use the Flutter mobile app',
+        api: 'Available at /api/*'
     });
-    
-    app.use(express.static(staticPath, {
-        index: false, // Don't serve index.html automatically
-        fallthrough: true // Continue to next middleware if file not found
-    }));
-    
-    // Manually handle index.html for non-API routes
-    app.get('/', (req, res) => {
-        res.sendFile(path.join(staticPath, 'index-full.html'));
-    });
-} else {
-    console.error('ERROR: Could not find web directory in any of:', possiblePaths);
-    app.use((req, res, next) => {
-        if (req.path === '/') {
-            res.status(500).json({ 
-                error: 'Web directory not found',
-                tried: possiblePaths,
-                cwd: process.cwd(),
-                dirname: __dirname
-            });
-        } else {
-            next();
-        }
-    });
-}
+});
 
 
 // DigitalOcean Spaces configuration
@@ -5562,29 +5538,31 @@ app.post('/api/upload/validate', requireAuth, upload.array('files', 35), async (
 });
 
 // Serve the fixed index.html without vib3-complete.js
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'www', 'index-full.html'));
-});
+// Legacy web routes removed - using Flutter app only
+// app.get('/', (req, res) => {
+//     // Legacy web serving removed - using Flutter app only
+    res.status(404).json({ error: 'Web interface removed - use Flutter app' });
+// });
 
-// Serve original app on /app route with mobile detection (both /app and /app/)
-app.get(['/app', '/app/'], (req, res) => {
-    const userAgent = req.get('User-Agent') || '';
-    const isMobile = isMobileDevice(userAgent);
-    
-    console.log(`📱 /app route - Device detection: ${isMobile ? 'MOBILE' : 'DESKTOP'} - User-Agent: ${userAgent}`);
-    console.log(`📱 /app route - Original URL: ${req.originalUrl}`);
-    
-    if (isMobile) {
-        // Preserve query parameters when redirecting to mobile
-        const queryString = req.originalUrl.includes('?') ? req.originalUrl.substring(req.originalUrl.indexOf('?')) : '';
-        const redirectUrl = `/mobile${queryString}`;
-        console.log(`📱 Redirecting mobile device from /app to ${redirectUrl}`);
-        return res.redirect(redirectUrl);
-    } else {
-        console.log('🖥️ Serving desktop /app version');
-        res.sendFile(path.join(__dirname, 'www', 'index-new.html'));
-    }
-});
+// Legacy /app route removed - using Flutter app only
+// app.get(['/app', '/app/'], (req, res) => {
+//     const userAgent = req.get('User-Agent') || '';
+//     const isMobile = isMobileDevice(userAgent);
+//     
+//     console.log(`📱 /app route - Device detection: ${isMobile ? 'MOBILE' : 'DESKTOP'} - User-Agent: ${userAgent}`);
+//     console.log(`📱 /app route - Original URL: ${req.originalUrl}`);
+//     
+//     if (isMobile) {
+//         // Preserve query parameters when redirecting to mobile
+//         const queryString = req.originalUrl.includes('?') ? req.originalUrl.substring(req.originalUrl.indexOf('?')) : '';
+//         const redirectUrl = `/mobile${queryString}`;
+//         console.log(`📱 Redirecting mobile device from /app to ${redirectUrl}`);
+//         return res.redirect(redirectUrl);
+//     } else {
+//         console.log('🖥️ Serving desktop /app version');
+//         res.sendFile(path.join(__dirname, 'www', 'index-new.html'));
+//     }
+// });
 
 // Test endpoint to verify API routes work
 app.get('/api/test-following-endpoint', (req, res) => {
@@ -5608,7 +5586,8 @@ app.get('*', (req, res) => {
             message: 'This API route is not defined on the server'
         });
     }
-    res.sendFile(path.join(__dirname, 'www', 'index-full.html'));
+    // Legacy web serving removed - using Flutter app only
+    res.status(404).json({ error: 'Web interface removed - use Flutter app' });
 });
 
 // ================ ADMIN CLEANUP ENDPOINTS ================
@@ -6386,6 +6365,7 @@ const videoRouter = initializeVideoRoutes({
     db 
 });
 app.use('/api/video', videoRouter); // New modular video routes
+app.use(grokDevRoutes); // Grok development assistant routes
 
 // Load recommendation endpoints
 const recommendationEndpoints = require('./recommendation-endpoints');
@@ -6454,6 +6434,15 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
     // Initialize Grok AI if database is connected
     if (dbConnected) {
         await initializeGrok();
+        
+        // Initialize Grok Task Manager
+        const grokTaskManager = new GrokTaskManager(db);
+        grokTaskManager.setupEndpoints(app);
+        
+        // Start background tasks only in production
+        if (process.env.NODE_ENV === 'production') {
+            grokTaskManager.startBackgroundTasks();
+        }
     }
     
     console.log('');

@@ -249,11 +249,31 @@ class VideoProvider extends ChangeNotifier {
         if (personalizedVideos.isEmpty && allVideos.isNotEmpty) {
           // If recommendation engine returns nothing but we have videos, use all videos
           print('VideoProvider: Recommendation engine returned empty, using all ${allVideos.length} videos');
-          _forYouVideos.clear();
-          _forYouVideos.addAll(allVideos);
+          // Only update if different to avoid unnecessary rebuilds
+          if (_forYouVideos.length != allVideos.length || 
+              (_forYouVideos.isNotEmpty && _forYouVideos.first.id != allVideos.first.id)) {
+            _forYouVideos.clear();
+            _forYouVideos.addAll(allVideos);
+          }
         } else {
-          _forYouVideos.clear();
-          _forYouVideos.addAll(personalizedVideos);
+          // Only update if the list is actually different
+          bool isDifferent = _forYouVideos.length != personalizedVideos.length;
+          if (!isDifferent && _forYouVideos.isNotEmpty && personalizedVideos.isNotEmpty) {
+            // Check if the order changed
+            for (int i = 0; i < _forYouVideos.length && i < personalizedVideos.length; i++) {
+              if (_forYouVideos[i].id != personalizedVideos[i].id) {
+                isDifferent = true;
+                break;
+              }
+            }
+          }
+          
+          if (isDifferent) {
+            _forYouVideos.clear();
+            _forYouVideos.addAll(personalizedVideos);
+          } else {
+            print('VideoProvider: Skipping update - videos haven\'t changed');
+          }
         }
         
         print('VideoProvider: Final ForYou video count: ${_forYouVideos.length}');
@@ -272,6 +292,7 @@ class VideoProvider extends ChangeNotifier {
       
       print('VideoProvider: Successfully loaded ForYou feed with ${_forYouVideos.length} videos');
       _isLoading = false;
+      // Only notify listeners once at the end, not during recommendation processing
       notifyListeners();
     } catch (e, stackTrace) {
       print('VideoProvider: Error loading Vib3 Pulse videos: $e');

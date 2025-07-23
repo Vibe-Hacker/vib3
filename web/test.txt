@@ -1,4 +1,0 @@
-This is a plain text file.
-If Railway serves this as HTML with scripts, we know it's injecting code.
-There should be NO JavaScript here.
-Just plain text.
