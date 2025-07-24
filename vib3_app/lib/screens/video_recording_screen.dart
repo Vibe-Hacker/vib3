@@ -5,6 +5,7 @@ import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'dart:async';
 import 'video_creator/video_creator_screen.dart';
+import 'simple_video_editor.dart';
 
 class VideoRecordingScreen extends StatefulWidget {
   const VideoRecordingScreen({super.key});
@@ -118,43 +119,26 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
       });
       _recordingTimer?.cancel();
       
-      // Small delay to ensure file is written
-      await Future.delayed(Duration(milliseconds: 500));
-      
-      // Navigate to editing screen
+      // Navigate immediately without waiting
       if (mounted) {
         print('🎬 Video recorded successfully at: ${video.path}');
         
-        // Check if file exists
-        final videoFile = File(video.path);
-        if (await videoFile.exists()) {
-          final fileSize = await videoFile.length();
-          print('📁 Video file size: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
-          
-          if (fileSize > 0) {
-            // Close loading dialog
-            Navigator.of(context).pop();
-            
-            // Navigate with replacement to prevent going back to recording
-            await Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => VideoCreatorScreen(videoPath: video.path),
-                settings: RouteSettings(name: '/video-creator'),
-              ),
-            ).then((value) {
-              print('✅ Navigation completed');
-            }).catchError((error) {
-              print('❌ Navigation error: $error');
-              _showError('Failed to open editor: $error');
-            });
-          } else {
-            Navigator.of(context).pop(); // Close loading
-            _showError('Video file is empty. Please try again.');
-          }
-        } else {
-          Navigator.of(context).pop(); // Close loading
-          _showError('Video file not found. Please try again.');
+        // Close loading dialog first
+        if (Navigator.canPop(context)) {
+          Navigator.of(context).pop();
         }
+        
+        // Navigate directly without checking file
+        print('🚀 Attempting direct navigation to editor...');
+        
+        // Method 1: Direct push (simplest approach)
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => SimpleVideoEditor(videoPath: video.path),
+          ),
+        );
+        
+        print('✅ Navigation initiated');
       }
     } catch (e) {
       print('❌ Error stopping recording: $e');
