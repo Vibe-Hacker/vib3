@@ -5,14 +5,17 @@ class AppConfig {
     'https://vib3-web-75tal.ondigitalocean.app',  // Digital Ocean backup
     'http://192.168.1.100:3000',                  // Local development
     'http://10.0.2.2:3000',                       // Android emulator localhost
+    'http://localhost:3000',                      // Web localhost
   ];
   
-  static String get baseUrl => backendUrls[0]; // Default
+  // For local testing on physical device, use your computer's IP
+  // Find your IP: Windows: ipconfig, Mac/Linux: ifconfig
+  static String get baseUrl => 'https://vib3app.net'; // Production server
   
   // API Endpoints
   static const String loginEndpoint = '/api/auth/login';
   static const String signupEndpoint = '/api/auth/register';
-  static const String videosEndpoint = '/api/feed';
+  static const String videosEndpoint = '/api/videos';
   static const String uploadEndpoint = '/api/upload/video';
   static const String profileEndpoint = '/api/auth/me';
   
