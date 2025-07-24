@@ -218,8 +218,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             httpHeaders: {
               'Connection': 'keep-alive',
               'Cache-Control': 'max-age=3600',
-              'Accept-Encoding': 'gzip, deflate',
-              'Range': 'bytes=0-', // Enable range requests for progressive download
+              'Accept': '*/*',
+              'User-Agent': 'VIB3/1.0 (Flutter)',
+              // Remove Range header to see if it's causing issues
+              // 'Range': 'bytes=0-', // Enable range requests for progressive download
             },
           );
           
@@ -231,8 +233,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         print('🎮 About to call _controller.initialize()...');
         await _controller!.initialize();
         print('✅ VideoPlayer: Successfully initialized ${widget.videoUrl}');
+        print('📊 Video info: ${_controller!.value.size.width}x${_controller!.value.size.height}, duration: ${_controller!.value.duration}');
         
         if (!mounted || _isDisposed) return;
+        
+        // Set looping
+        await _controller!.setLooping(true);
         
         if (mounted) {
           setState(() {
@@ -517,32 +523,34 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     return GestureDetector(
       onTap: _togglePlayPause,
-      child: ClipRRect(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(30),
-          bottom: Radius.circular(30),
-        ),
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: Colors.black,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Video player that fills the container with cover fit
-              if (_controller != null && _isInitialized && !_isDisposed)
-                Positioned.fill(
-                  child: FittedBox(
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.hardEdge,
-                    child: SizedBox(
-                      width: _controller!.value.size.width,
-                      height: _controller!.value.size.height,
-                      child: VideoPlayer(_controller!),
-                    ),
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: Colors.black,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Video player that fills the container with cover fit
+            if (_controller != null && _isInitialized && !_isDisposed)
+              Container(
+                color: Colors.green.withOpacity(0.3), // Debug color
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: _controller!.value.aspectRatio,
+                    child: VideoPlayer(_controller!),
                   ),
                 ),
+              )
+            else
+              Container(
+                color: Colors.red.withOpacity(0.3), // Debug color when not initialized
+                child: Center(
+                  child: Text(
+                    'Video not initialized',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
             // Play/Pause icon overlay
             if (_showPlayIcon)
               Center(
@@ -565,7 +573,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 ),
               ),
           ],
-          ),
         ),
       ),
     );
