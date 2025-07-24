@@ -59,7 +59,6 @@ class _SimpleVideoEditorState extends State<SimpleVideoEditor> {
       MaterialPageRoute(
         builder: (context) => PublishScreen(
           videoPath: widget.videoPath,
-          description: _description,
         ),
       ),
     );
