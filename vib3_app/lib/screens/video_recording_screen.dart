@@ -124,15 +124,16 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
         print('🎬 Video recorded successfully at: ${video.path}');
         
         // Close loading dialog first
-        if (Navigator.canPop(context)) {
-          Navigator.of(context).pop();
-        }
+        Navigator.of(context).pop();
+        
+        // Small delay to ensure dialog closes
+        await Future.delayed(Duration(milliseconds: 100));
         
         // Navigate directly without checking file
         print('🚀 Attempting direct navigation to editor...');
         
-        // Method 1: Direct push (simplest approach)
-        Navigator.of(context).push(
+        // Push and replace to prevent going back to recording screen
+        Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => SimpleVideoEditor(videoPath: video.path),
           ),
