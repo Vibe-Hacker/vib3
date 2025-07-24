@@ -235,6 +235,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   }
 
   void _onPageChanged(int index) {
+    print('📱 VideoFeed: Page changed to $index');
+    
     // Cancel any pending page change processing
     _pageChangeDebounce?.cancel();
     
@@ -1300,17 +1302,16 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             // Dynamic preloading based on scroll velocity
             bool shouldPreload = false;
             
-            // Always preload previous video
-            if (videoIndex == (_currentIndex - 1 + videos.length) % videos.length) {
-              shouldPreload = true;
+            // Calculate distance from current video
+            int distanceFromCurrent = (videoIndex - _currentIndex).abs();
+            if (distanceFromCurrent > videos.length / 2) {
+              // Handle wrap-around
+              distanceFromCurrent = videos.length - distanceFromCurrent;
             }
             
-            // Preload next videos based on velocity
-            for (int i = 1; i <= _preloadRange; i++) {
-              if (videoIndex == (_currentIndex + i) % videos.length) {
-                shouldPreload = true;
-                break;
-              }
+            // Preload videos within range
+            if (distanceFromCurrent <= _preloadRange) {
+              shouldPreload = true;
             }
             
             // Always log for first few videos

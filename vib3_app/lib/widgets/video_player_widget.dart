@@ -63,18 +63,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _initializeVideo();
     } else if (widget.preload) {
       print('🚀 Pre-initializing video for smooth playback');
-      // Delay slightly to avoid too many concurrent initializations
-      Future.delayed(Duration(milliseconds: 100 * (_preloadCounter++ % 3)), () {
-        if (mounted) {
-          _initializeVideo();
-        }
-      });
+      // Initialize immediately for preloading
+      _initializeVideo();
     } else {
       print('⏸️ Not initializing video yet');
     }
   }
-  
-  static int _preloadCounter = 0;
   
   Future<void> _loadThumbnail() async {
     // Try to get thumbnail URL from video URL

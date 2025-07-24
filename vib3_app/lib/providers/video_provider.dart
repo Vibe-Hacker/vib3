@@ -80,7 +80,8 @@ class VideoProvider extends ChangeNotifier {
       print('VideoProvider: Loading more videos for feed type: $feedType');
       _isLoadingMore = true;
       _error = null;
-      notifyListeners();
+      // Don't notify listeners here - it causes UI to show loading states
+      // notifyListeners();
 
       // Get more videos based on feed type
       List<Video> newVideos = [];
