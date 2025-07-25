@@ -346,7 +346,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         try {
           await _controller!.play();
           VideoPlayerManager.instance.playVideo(_controller!);
+          
+          // Add detailed logging
           print('▶️ _handlePlayPause: Playing video - isPlaying: ${_controller!.value.isPlaying}');
+          print('📊 Video state: buffering=${_controller!.value.isBuffering}, initialized=${_controller!.value.isInitialized}');
+          print('🎥 Video position: ${_controller!.value.position} / ${_controller!.value.duration}');
+          print('📐 Video size: ${_controller!.value.size}');
+          print('🔊 Volume: ${_controller!.value.volume}');
+          
+          // Check if video is actually progressing
+          Future.delayed(Duration(seconds: 1), () {
+            if (mounted && _controller != null) {
+              print('⏱️ After 1 second - Position: ${_controller!.value.position}, Playing: ${_controller!.value.isPlaying}');
+            }
+          });
           
           if (mounted && !_isDisposed) {
             setState(() {
@@ -471,9 +484,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Widget build(BuildContext context) {
     print('🎨 VideoPlayerWidget build: _isInitialized=$_isInitialized, _controller=${_controller != null}, isPlaying=${widget.isPlaying}');
     
+    if (_controller != null && _isInitialized) {
+      print('🎬 Controller state: playing=${_controller!.value.isPlaying}, buffering=${_controller!.value.isBuffering}');
+      print('📐 Video dimensions: ${_controller!.value.size.width}x${_controller!.value.size.height}');
+      print('⏱️ Position: ${_controller!.value.position} / ${_controller!.value.duration}');
+    }
+    
     // If we're supposed to be playing but controller isn't actually playing, reinitialize
     if (widget.isPlaying && _controller != null && _isInitialized && !_controller!.value.isPlaying && !_isPaused) {
-      print('⚠️ Controller not playing when it should be - reinitializing');
+      print('⚠️ Controller not playing when it should be - attempting to play');
       Future.microtask(() {
         if (mounted) {
           _controller?.play();
@@ -536,13 +555,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               // Video player that fills the container with cover fit
               if (_controller != null && _isInitialized && !_isDisposed)
                 Positioned.fill(
-                  child: FittedBox(
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.hardEdge,
-                    child: SizedBox(
-                      width: _controller!.value.size.width,
-                      height: _controller!.value.size.height,
+                  child: Center(
+                    child: AspectRatio(
+                      aspectRatio: _controller!.value.aspectRatio > 0 
+                          ? _controller!.value.aspectRatio 
+                          : 9/16, // Default to portrait if aspect ratio is invalid
                       child: VideoPlayer(_controller!),
                     ),
                   ),
