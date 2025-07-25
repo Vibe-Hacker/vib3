@@ -63,12 +63,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _initializeVideo();
     } else if (widget.preload) {
       print('🚀 Pre-initializing video for smooth playback');
-      // Initialize immediately for preloading
-      _initializeVideo();
+      // Stagger preload initialization to avoid decoder overload
+      final delay = (_preloadCounter++ % 3) * 200; // 0ms, 200ms, or 400ms
+      Future.delayed(Duration(milliseconds: delay), () {
+        if (mounted && !_isInitialized && !_isInitializing) {
+          _initializeVideo();
+        }
+      });
     } else {
       print('⏸️ Not initializing video yet');
     }
   }
+  
+  static int _preloadCounter = 0;
   
   Future<void> _loadThumbnail() async {
     // Try to get thumbnail URL from video URL
@@ -96,6 +103,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
     }
     
+    // Handle preload state changes
+    else if (oldWidget.preload != widget.preload && widget.preload && !_isInitialized) {
+      print('🎬 VideoPlayer: Preload enabled, initializing...');
+      _initializeVideo();
+    }
+    
     // Handle play state changes without recreating controller
     else if (oldWidget.isPlaying != widget.isPlaying) {
       print('🎬 VideoPlayer: Play state changed from ${oldWidget.isPlaying} to ${widget.isPlaying}');
@@ -110,7 +123,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         });
       } else if (!widget.isPlaying && _isInitialized && _controller != null) {
         _controller?.pause();
-        // Keep videos in memory, don't dispose immediately
+        // Dispose if not preloading to free resources
+        if (!widget.preload) {
+          print('🗑️ Disposing video that is no longer in preload range');
+          Future.delayed(Duration(seconds: 2), () {
+            if (mounted && !widget.isPlaying && !widget.preload) {
+              _disposeController();
+            }
+          });
+        }
       }
     }
   }
