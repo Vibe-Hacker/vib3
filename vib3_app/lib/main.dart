@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -16,9 +17,18 @@ import 'widgets/video_feed_components/migration_wrapper.dart';
 import 'core/di/service_locator.dart';
 import 'core/config/feature_flags.dart';
 import 'features/video_feed/presentation/providers/video_feed_provider.dart';
+import 'services/dev_http_overrides.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // In development, bypass certificate verification if needed
+  // WARNING: Remove this in production!
+  if (!kIsWeb && (kDebugMode || kProfileMode)) {
+    HttpOverrides.global = DevHttpOverrides();
+    print('⚠️ Development mode: SSL certificate verification relaxed');
+    print('🕐 Device time: ${DateTime.now()}');
+  }
   
   // Reduce shader compilation jank for better performance
   // Note: Paint.enableDithering was removed in newer Flutter versions
