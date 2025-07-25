@@ -60,7 +60,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Initialize based on play state or preload flag
     if (widget.isPlaying) {
       print('🚀 Initializing video because isPlaying=true');
-      _initializeVideo();
+      // Use microtask to ensure widget is fully built
+      Future.microtask(() {
+        if (mounted) {
+          _initializeVideo();
+        }
+      });
     } else if (widget.preload) {
       print('🚀 Pre-initializing video for smooth playback');
       // Stagger preload initialization to avoid decoder overload
@@ -123,21 +128,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         });
       } else if (!widget.isPlaying && _isInitialized && _controller != null) {
         _controller?.pause();
-        // Dispose if not preloading to free resources
-        if (!widget.preload) {
-          print('🗑️ Disposing video that is no longer in preload range');
-          Future.delayed(Duration(seconds: 2), () {
-            if (mounted && !widget.isPlaying && !widget.preload) {
-              _disposeController();
-            }
-          });
-        }
+        // Don't dispose immediately - keep in memory for smoother scrolling
       }
     }
   }
 
   Future<void> _initializeVideo() async {
-    if (_isDisposed || _isInitializing) return;
+    print('🎮 _initializeVideo called for ${widget.videoUrl}');
+    print('🎮 Current state: _isDisposed=$_isDisposed, _isInitializing=$_isInitializing, _controller=${_controller != null}');
+    
+    if (_isDisposed || _isInitializing) {
+      print('⚠️ Skipping initialization: disposed=$_isDisposed, initializing=$_isInitializing');
+      return;
+    }
     
     // Validate URL first
     if (widget.videoUrl.isEmpty) {

@@ -235,7 +235,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   }
 
   void _onPageChanged(int index) {
-    print('📱 VideoFeed: Page changed to $index');
+    print('📱 VideoFeed: Page changed to $index, _isScreenVisible: $_isScreenVisible');
     
     // Cancel any pending page change processing
     _pageChangeDebounce?.cancel();
@@ -1153,8 +1153,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               child: VideoPlayerWidget(
                 key: ValueKey('video_${video.id}'),
                 videoUrl: video.videoUrl!,
-                isPlaying: isCurrentVideo,
-                preload: preload,
+                isPlaying: isCurrentVideo && _isScreenVisible,
+                preload: preload && _isScreenVisible,
               ),
             ),
           ),
