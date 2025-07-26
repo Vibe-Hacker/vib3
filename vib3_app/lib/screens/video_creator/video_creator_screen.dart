@@ -167,18 +167,21 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
       value: _creationStateProvider,
       child: Scaffold(
         backgroundColor: Colors.black,
+        resizeToAvoidBottomInset: false,
         body: SafeArea(
-          child: Consumer<CreationStateProvider>(
-            builder: (context, creationState, child) {
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                    // Main content area with padding for toolbars
-                    Positioned(
-                      top: _currentMode != CreatorMode.camera ? 60 : 0, // Space for top toolbar
-                      bottom: _currentMode != CreatorMode.camera ? 100 : 0, // Space for bottom toolbar (100px height)
-                      left: 0,
-                      right: 0,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Consumer<CreationStateProvider>(
+                builder: (context, creationState, child) {
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                        // Main content area with padding for toolbars
+                        Positioned(
+                          top: _currentMode != CreatorMode.camera ? 56 : 0, // Reduced space for top toolbar
+                          bottom: _currentMode != CreatorMode.camera ? 80 : 0, // Matches toolbar height
+                          left: 0,
+                          right: 0,
                       child: IgnorePointer(
                         ignoring: _currentMode == CreatorMode.edit && _isDraggingButtons,
                         child: ClipRect(
@@ -248,6 +251,8 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
               ),
                   ],
                 );
+              },
+              );
             },
           ),
         ),

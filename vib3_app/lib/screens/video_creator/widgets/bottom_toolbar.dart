@@ -15,8 +15,8 @@ class BottomToolbar extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: () {}, // Catch taps that fall through
       child: Container(
-        height: 100,
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        height: 80,
+        padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.9),
           border: Border(

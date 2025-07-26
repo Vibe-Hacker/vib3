@@ -68,6 +68,7 @@ class _SimpleVideoEditorState extends State<SimpleVideoEditor> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Column(
           children: [
