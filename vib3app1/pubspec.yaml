@@ -69,18 +69,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  assets:
-    - assets/images/
-    - assets/icons/
-    - assets/animations/
-    - assets/sounds/
-    - assets/fonts/
-
-  fonts:
-    - family: VIB3
-      fonts:
-        - asset: assets/fonts/VIB3-Regular.ttf
-        - asset: assets/fonts/VIB3-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/VIB3-Light.ttf
-          weight: 300
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
+  #   - assets/animations/
+  #   - assets/sounds/
