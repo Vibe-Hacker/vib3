@@ -386,6 +386,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             _isInitialized = false;
           });
         }
+      }
       });
     } finally {
       _isInitializing = false;
