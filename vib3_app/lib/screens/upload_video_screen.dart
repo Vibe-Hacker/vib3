@@ -181,7 +181,10 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
           ),
         ],
       ),
-      body: _isUploading ? _buildUploadingView() : _buildFormView(),
+      body: SafeArea(
+        child: _isUploading ? _buildUploadingView() : _buildFormView(),
+      ),
+      resizeToAvoidBottomInset: true,
     );
   }
   
@@ -242,20 +245,28 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   }
   
   Widget _buildFormView() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Video preview and cover selector
-          Container(
-            height: 200,
-            margin: const EdgeInsets.all(16),
-            child: Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 20),
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Video preview and cover selector
+                Container(
+                  height: 180,
+                  margin: const EdgeInsets.all(16),
+                  child: Row(
               children: [
                 // Video preview
                 Container(
-                  width: 120,
-                  height: 200,
+                  width: 100,
+                  height: 180,
                   decoration: BoxDecoration(
                     color: Colors.grey[900],
                     borderRadius: BorderRadius.circular(10),
@@ -314,9 +325,9 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       SizedBox(
-                        height: 80,
+                        height: 70,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: 6, // Number of cover options
@@ -377,7 +388,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                 TextField(
                   controller: _captionController,
                   style: const TextStyle(color: Colors.white),
-                  maxLines: 3,
+                  maxLines: 2,
                   maxLength: 150,
                   decoration: InputDecoration(
                     hintText: 'Add a caption...',
@@ -472,9 +483,12 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
           // Interaction settings
           _buildInteractionSettings(),
           
-          const SizedBox(height: 100), // Space for bottom navigation
+          const SizedBox(height: 20), // Reduced space at bottom
         ],
       ),
+    ),
+    );
+    },
     );
   }
   
@@ -492,7 +506,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 10),
           _buildPrivacyOption(
             'Public',
             'Everyone can view',
@@ -531,7 +545,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
             Icon(
@@ -588,7 +602,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 10),
           _buildToggleSetting(
             'Comment',
             _allowComments,
@@ -620,7 +634,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
     Function(bool) onChanged,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
