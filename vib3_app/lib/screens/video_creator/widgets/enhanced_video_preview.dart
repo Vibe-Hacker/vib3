@@ -251,7 +251,7 @@ class _EnhancedVideoPreviewState extends State<EnhancedVideoPreview> {
         // Music indicator
         if (creationState.backgroundMusic != null)
           Positioned(
-            bottom: 100,
+            bottom: 20,
             left: 20,
             right: 20,
             child: Container(
