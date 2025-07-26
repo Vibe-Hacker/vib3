@@ -59,22 +59,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _loadThumbnail();
     
     // Initialize based on play state or preload flag
-    if (widget.isPlaying) {
-      print('🚀 Will initialize video because isPlaying=true');
+    if (widget.isPlaying || widget.preload) {
+      print('🚀 Will initialize video because isPlaying=${widget.isPlaying}, preload=${widget.preload}');
       // Use microtask to ensure widget is fully built
       Future.microtask(() {
         print('🚀 Microtask executing for video init');
-        if (mounted) {
-          _initializeVideo();
-        }
-      });
-    } else if (widget.preload) {
-      print('🚀 Will pre-initialize video for smooth playback');
-      // Stagger preload initialization to avoid decoder overload
-      final delay = (_preloadCounter++ % 3) * 200; // 0ms, 200ms, or 400ms
-      print('🚀 Scheduling preload with ${delay}ms delay');
-      Future.delayed(Duration(milliseconds: delay), () {
-        print('🚀 Delayed preload executing');
         if (mounted && !_isInitialized && !_isInitializing) {
           _initializeVideo();
         }
@@ -122,14 +111,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     else if (oldWidget.isPlaying != widget.isPlaying) {
       print('🎬 VideoPlayer: Play state changed from ${oldWidget.isPlaying} to ${widget.isPlaying}');
       print('🎬 VideoPlayer: Current state - _isInitialized=$_isInitialized, _hasError=$_hasError, _controller=${_controller != null}');
-      if (widget.isPlaying && _isInitialized && _controller != null) {
-        // Resume playing
-        print('▶️ VideoPlayer: Resuming playback');
-        VideoPlayerManager.instance.playVideo(_controller!);
-        setState(() {
-          _isPaused = false;
-          _showPlayIcon = false;
-        });
+      if (widget.isPlaying) {
+        if (_isInitialized && _controller != null) {
+          // Resume playing
+          print('▶️ VideoPlayer: Resuming playback');
+          VideoPlayerManager.instance.playVideo(_controller!);
+          setState(() {
+            _isPaused = false;
+            _showPlayIcon = false;
+          });
+        } else if (!_isInitialized && !_isInitializing && !_hasError) {
+          // Initialize if not already initialized
+          print('🎬 VideoPlayer: Initializing video because isPlaying changed to true');
+          _initializeVideo();
+        }
       } else if (!widget.isPlaying && _isInitialized && _controller != null) {
         _controller?.pause();
         // Don't dispose immediately - keep in memory for smoother scrolling

@@ -168,7 +168,7 @@ class _TabbedVideoFeedState extends State<TabbedVideoFeed> with SingleTickerProv
                   final isVisible = widget.isVisible && _currentTab == 0;
                   print('🎬 TabbedVideoFeed: Creating VideoFeed with isVisible=$isVisible (widget.isVisible=${widget.isVisible}, _currentTab=$_currentTab)');
                   return VideoFeed(
-                    isVisible: isVisible,
+                    isVisible: widget.isVisible && _currentTab == 0,
                     feedType: FeedType.forYou,
                   );
                 },
