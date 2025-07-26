@@ -24,7 +24,7 @@ class VideoPlayerManager {
   VideoPlayerController? _currentPlayingController;
   
   // Maximum number of controllers allowed (dynamically adjusted)
-  int get _maxControllers => _adaptiveStreaming.getRecommendedPreloadCount() + 3; // Increased for better preloading
+  int get _maxControllers => 3; // Reduced to prevent decoder overload
   
   // Video initialization queue
   final List<Future<void> Function()> _initQueue = [];

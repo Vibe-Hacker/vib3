@@ -262,6 +262,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         await _controller!.setLooping(true);
         await _controller!.setVolume(1.0);
         
+        // Set playback speed to reduce decoder load if needed
+        if (!widget.isPlaying) {
+          // For preloaded videos, pause immediately to save resources
+          await _controller!.pause();
+          await _controller!.seekTo(Duration.zero);
+        }
+        
         if (mounted) {
           setState(() {
             _isInitialized = true;
