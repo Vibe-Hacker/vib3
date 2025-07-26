@@ -329,16 +329,19 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(),
-            
-            // Video preview - smaller fixed height
-            Container(
-              height: 300, // Fixed height for preview
-              child: Stack(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
+              children: [
+                // Header
+                _buildHeader(),
+                
+                // Video preview - responsive height
+                Container(
+                  height: constraints.maxHeight * 0.35, // 35% of available height
+                  child: Stack(
                 children: [
                   // Video player
                   _buildVideoPreview(),
@@ -384,12 +387,16 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
             // Timeline
             _buildTimeline(),
             
-            // Tools
-            _buildTools(),
+            // Tools - use remaining space
+            Expanded(
+              child: _buildTools(),
+            ),
             
             // Export progress
             if (_isExporting) _buildExportProgress(),
           ],
+        );
+        },
         ),
       ),
     );
@@ -397,8 +404,8 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
 
   Widget _buildHeader() {
     return Container(
-      height: 56,
-      padding: EdgeInsets.symmetric(horizontal: 16),
+      height: 48,
+      padding: EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         children: [
           IconButton(
@@ -497,7 +504,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
 
   Widget _buildTimeline() {
     return Container(
-      height: 80, // Reduced from 100
+      height: 70, // Further reduced
       color: Colors.grey[900],
       child: Column(
         children: [
@@ -609,10 +616,9 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   }
 
   Widget _buildTools() {
-    return Expanded( // Use remaining space
-      child: Container(
-        color: Colors.grey[900],
-        child: Column(
+    return Container(
+      color: Colors.grey[900],
+      child: Column(
         children: [
           // Tab bar
           Container(
@@ -661,7 +667,6 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
             child: _buildTabContent(),
           ),
         ],
-        ),
       ),
     );
   }
@@ -688,11 +693,11 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
   }
 
   Widget _buildTrimTools() {
-    return Container(
+    return SingleChildScrollView(
       padding: EdgeInsets.all(12), // Reduced padding
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
+      physics: BouncingScrollPhysics(),
+      child: Column(
+        children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -876,7 +881,6 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
             ),
           ],
         ],
-        ),
       ),
     );
   }
