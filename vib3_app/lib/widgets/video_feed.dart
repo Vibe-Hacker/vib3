@@ -1142,13 +1142,17 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       print('🎬 Will play: $isCurrentVideo, Will preload: $preload');
       
       // Always create the video player widget, let it handle its own initialization
-      return Positioned.fill(
-        child: VideoPlayerWidget(
-          key: ValueKey('video_${video.id}'),
-          videoUrl: video.videoUrl!,
-          isPlaying: isCurrentVideo,
-          preload: preload,
-        ),
+      print('🎬 About to return VideoPlayerWidget wrapper');
+      return Builder(
+        builder: (context) {
+          print('🎬 Builder building VideoPlayerWidget for ${video.id}');
+          return VideoPlayerWidget(
+            key: ValueKey('video_${video.id}'),
+            videoUrl: video.videoUrl!,
+            isPlaying: isCurrentVideo,
+            preload: preload,
+          );
+        }
       );
     } else {
       return Positioned.fill(
@@ -1315,7 +1319,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                   child: Stack(
                     children: [
                         // Video player
-                        _buildVideoPlayer(video, isCurrentVideo, preload: shouldPreload),
+                        Positioned.fill(
+                          child: _buildVideoPlayer(video, isCurrentVideo, preload: shouldPreload),
+                        ),
                         
                         // Video description overlay
                         Positioned(
