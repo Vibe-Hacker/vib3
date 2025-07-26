@@ -21,7 +21,6 @@ dependencies:
   
   # State Management
   provider: ^6.1.1
-  riverpod: ^2.4.9
   
   # Network & API
   dio: ^5.4.0
@@ -33,10 +32,10 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   
-  # Authentication
-  firebase_auth: ^4.15.3
-  google_sign_in: ^6.2.1
-  sign_in_with_apple: ^5.0.0
+  # Authentication (optional - can be added later)
+  # firebase_auth: ^4.15.3
+  # google_sign_in: ^6.2.1
+  # sign_in_with_apple: ^5.0.0
   
   # Media
   camera: ^0.10.5+7
@@ -53,9 +52,9 @@ dependencies:
   share_plus: ^7.2.1
   url_launcher: ^6.2.2
   
-  # Maps & Location
-  geolocator: ^10.1.0
-  geocoding: ^2.1.1
+  # Maps & Location (optional - can be added later)
+  # geolocator: ^10.1.0
+  # geocoding: ^2.1.1
   
   # Permissions
   permission_handler: ^11.1.0
@@ -74,22 +73,22 @@ dependencies:
   form_builder_validators: ^9.1.0
   
   # Utilities
-  intl: ^0.18.1
+  intl: ^0.19.0
   timeago: ^3.6.0
   uuid: ^4.2.2
   collection: ^1.18.0
   
-  # Analytics
-  firebase_analytics: ^10.7.4
-  firebase_crashlytics: ^3.4.8
+  # Analytics (optional - can be added later)
+  # firebase_analytics: ^10.7.4
+  # firebase_crashlytics: ^3.4.8
   
-  # Push Notifications
-  firebase_messaging: ^14.7.9
-  flutter_local_notifications: ^16.2.0
+  # Push Notifications (optional - can be added later)
+  # firebase_messaging: ^14.7.9
+  # flutter_local_notifications: ^16.2.0
   
-  # AR/Filters
-  arcore_flutter_plugin: ^0.1.0
-  arkit_plugin: ^1.0.7
+  # AR/Filters (optional - can be added later)
+  # arcore_flutter_plugin: ^0.1.0
+  # arkit_plugin: ^1.0.7
   
   # Audio
   just_audio: ^0.9.36
