@@ -167,15 +167,16 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
       value: _creationStateProvider,
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Consumer<CreationStateProvider>(
-          builder: (context, creationState, child) {
-                return Stack(
-                  clipBehavior: Clip.none,
-                  children: [
+        body: SafeArea(
+          child: Consumer<CreationStateProvider>(
+            builder: (context, creationState, child) {
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
                     // Main content area with padding for toolbars
                     Positioned(
                       top: _currentMode != CreatorMode.camera ? 60 : 0, // Space for top toolbar
-                      bottom: _currentMode != CreatorMode.camera ? 90 : 0, // Space for bottom toolbar when not in camera
+                      bottom: _currentMode != CreatorMode.camera ? 100 : 0, // Space for bottom toolbar (100px height)
                       left: 0,
                       right: 0,
                       child: IgnorePointer(
@@ -247,7 +248,8 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
               ),
                   ],
                 );
-          },
+            },
+          ),
         ),
       ),
     );

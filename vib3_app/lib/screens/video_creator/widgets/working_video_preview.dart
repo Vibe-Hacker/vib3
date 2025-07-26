@@ -74,9 +74,9 @@ class _WorkingVideoPreviewState extends State<WorkingVideoPreview> {
   Widget build(BuildContext context) {
     final creationState = context.watch<CreationStateProvider>();
     
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
+    return Container(
+      color: Colors.black,
+      child: Stack(
         children: [
           // Video player or loading state
           if (_isLoading)
