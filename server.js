@@ -6413,6 +6413,10 @@ const videoRouter = initializeVideoRoutes({
 app.use('/api/video', videoRouter); // New modular video routes
 app.use(grokDevRoutes); // Grok development assistant routes
 
+// Load Claude bridge routes
+const claudeBridgeRoutes = require('./server/routes/claude-bridge');
+app.use('/api/claude', claudeBridgeRoutes); // Claude AI bridge routes
+
 // Load recommendation endpoints
 const recommendationEndpoints = require('./recommendation-endpoints');
 recommendationEndpoints(app, db);

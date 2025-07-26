@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIB3 Claude Development Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
+        .ai-selector {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .model-select {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .model-select label {
+            color: #ddd;
+            font-weight: 600;
+        }
+
+        .model-select select {
+            padding: 8px 15px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .model-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .model-badge.grok {
+            background: rgba(255, 165, 0, 0.2);
+            color: #ffa500;
+            border: 1px solid #ffa500;
+        }
+
+        .model-badge.claude {
+            background: rgba(100, 149, 237, 0.2);
+            color: #6495ed;
+            border: 1px solid #6495ed;
+        }
+
+        .model-badge.bridge {
+            background: rgba(138, 43, 226, 0.2);
+            color: #8a2be2;
+            border: 1px solid #8a2be2;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: #6495ed;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(100, 149, 237, 0.2);
+        }
+
+        .card h2 {
+            color: #6495ed;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .card p {
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #ddd;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #6495ed;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        button {
+            background: #6495ed;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #5a7fc7;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(100, 149, 237, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .output {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .output:empty {
+            display: none;
+        }
+
+        .bridge-output {
+            display: none;
+        }
+
+        .bridge-output.active {
+            display: block;
+        }
+
+        .bridge-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px solid #222;
+        }
+
+        .bridge-section h3 {
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #6495ed;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .error {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff0000;
+            color: #ff6666;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .success {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            color: #66ff66;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .api-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .api-status.connected {
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+            border: 1px solid #00ff00;
+        }
+
+        .api-status.disconnected {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff0000;
+            border: 1px solid #ff0000;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+
+            .ai-selector {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="api-status disconnected" id="apiStatus">API Disconnected</div>
+    
+    <div class="container">
+        <header>
+            <h1>🤖 VIB3 Claude Development Assistant</h1>
+            <p class="subtitle">Advanced AI-powered development tools with Claude integration</p>
+        </header>
+
+        <div class="ai-selector">
+            <div class="model-select">
+                <label for="globalModel">AI Model:</label>
+                <select id="globalModel" onchange="updateModelBadge()">
+                    <option value="claude">Claude (Default)</option>
+                    <option value="grok">Grok</option>
+                    <option value="bridge">Bridge (Grok → Claude)</option>
+                </select>
+            </div>
+            <div id="modelBadge" class="model-badge claude">CLAUDE</div>
+        </div>
+
+        <div class="grid">
+            <!-- Code Generation -->
+            <div class="card">
+                <h2>💻 Code Generation</h2>
+                <p>Generate production-ready code for new features</p>
+                
+                <div class="form-group">
+                    <label for="codeFeature">Feature Description</label>
+                    <input type="text" id="codeFeature" placeholder="e.g., Add video download button">
+                </div>
+                
+                <div class="form-group">
+                    <label for="codeContext">Context/Requirements</label>
+                    <textarea id="codeContext" placeholder="Additional context or requirements..."></textarea>
+                </div>
+                
+                <button onclick="generateCode()">Generate Code</button>
+                <div class="loading" id="codeLoading">Generating code...</div>
+                <div class="output" id="codeOutput"></div>
+                <div class="bridge-output" id="codeBridgeOutput">
+                    <div class="bridge-section">
+                        <h3>Grok Response:</h3>
+                        <div class="output" id="codeGrokOutput"></div>
+                    </div>
+                    <div class="bridge-section">
+                        <h3>Claude Refinement:</h3>
+                        <div class="output" id="codeClaudeOutput"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bug Analysis -->
+            <div class="card">
+                <h2>🐛 Bug Analysis & Fix</h2>
+                <p>Analyze errors and get fixes</p>
+                
+                <div class="form-group">
+                    <label for="bugError">Error Message</label>
+                    <input type="text" id="bugError" placeholder="e.g., Cannot read property 'map' of undefined">
+                </div>
+                
+                <div class="form-group">
+                    <label for="bugCode">Relevant Code</label>
+                    <textarea id="bugCode" placeholder="Paste the code causing the error..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="bugContext">Additional Context</label>
+                    <textarea id="bugContext" placeholder="Any additional context..."></textarea>
+                </div>
+                
+                <button onclick="analyzeBug()">Analyze & Fix</button>
+                <div class="loading" id="bugLoading">Analyzing bug...</div>
+                <div class="output" id="bugOutput"></div>
+                <div class="bridge-output" id="bugBridgeOutput">
+                    <div class="bridge-section">
+                        <h3>Grok Response:</h3>
+                        <div class="output" id="bugGrokOutput"></div>
+                    </div>
+                    <div class="bridge-section">
+                        <h3>Claude Refinement:</h3>
+                        <div class="output" id="bugClaudeOutput"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature Planning -->
+            <div class="card">
+                <h2>📋 Feature Planning</h2>
+                <p>Get detailed implementation plans</p>
+                
+                <div class="form-group">
+                    <label for="planFeature">Feature Name</label>
+                    <input type="text" id="planFeature" placeholder="e.g., Video recommendations system">
+                </div>
+                
+                <div class="form-group">
+                    <label for="planRequirements">Requirements</label>
+                    <textarea id="planRequirements" placeholder="List your requirements..."></textarea>
+                </div>
+                
+                <button onclick="planFeature()">Create Plan</button>
+                <div class="loading" id="planLoading">Creating plan...</div>
+                <div class="output" id="planOutput"></div>
+                <div class="bridge-output" id="planBridgeOutput">
+                    <div class="bridge-section">
+                        <h3>Grok Response:</h3>
+                        <div class="output" id="planGrokOutput"></div>
+                    </div>
+                    <div class="bridge-section">
+                        <h3>Claude Refinement:</h3>
+                        <div class="output" id="planClaudeOutput"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Code Review -->
+            <div class="card">
+                <h2>🔍 Code Review</h2>
+                <p>Get your code reviewed for improvements</p>
+                
+                <div class="form-group">
+                    <label for="reviewCode">Code to Review</label>
+                    <textarea id="reviewCode" placeholder="Paste your code here..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reviewPurpose">Code Purpose</label>
+                    <input type="text" id="reviewPurpose" placeholder="What does this code do?">
+                </div>
+                
+                <button onclick="reviewCode()">Review Code</button>
+                <div class="loading" id="reviewLoading">Reviewing code...</div>
+                <div class="output" id="reviewOutput"></div>
+                <div class="bridge-output" id="reviewBridgeOutput">
+                    <div class="bridge-section">
+                        <h3>Grok Response:</h3>
+                        <div class="output" id="reviewGrokOutput"></div>
+                    </div>
+                    <div class="bridge-section">
+                        <h3>Claude Refinement:</h3>
+                        <div class="output" id="reviewClaudeOutput"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Query Helper -->
+            <div class="card">
+                <h2>🗄️ Database Query Helper</h2>
+                <p>Generate MongoDB queries</p>
+                
+                <div class="form-group">
+                    <label for="queryDesc">What do you want to query?</label>
+                    <input type="text" id="queryDesc" placeholder="e.g., Find top 10 videos by views">
+                </div>
+                
+                <div class="form-group">
+                    <label for="queryCollection">Collection</label>
+                    <select id="queryCollection">
+                        <option value="videos">videos</option>
+                        <option value="users">users</option>
+                        <option value="comments">comments</option>
+                        <option value="likes">likes</option>
+                        <option value="views">views</option>
+                    </select>
+                </div>
+                
+                <button onclick="generateQuery()">Generate Query</button>
+                <div class="loading" id="queryLoading">Generating query...</div>
+                <div class="output" id="queryOutput"></div>
+                <div class="bridge-output" id="queryBridgeOutput">
+                    <div class="bridge-section">
+                        <h3>Grok Response:</h3>
+                        <div class="output" id="queryGrokOutput"></div>
+                    </div>
+                    <div class="bridge-section">
+                        <h3>Claude Refinement:</h3>
+                        <div class="output" id="queryClaudeOutput"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- General Purpose -->
+            <div class="card">
+                <h2>💬 General Assistant</h2>
+                <p>Ask any development question</p>
+                
+                <div class="form-group">
+                    <label for="generalPrompt">Your Question</label>
+                    <textarea id="generalPrompt" placeholder="Ask anything about VIB3 development..."></textarea>
+                </div>
+                
+                <button onclick="askGeneral()">Ask Assistant</button>
+                <div class="loading" id="generalLoading">Processing...</div>
+                <div class="output" id="generalOutput"></div>
+                <div class="bridge-output" id="generalBridgeOutput">
+                    <div class="bridge-section">
+                        <h3>Grok Response:</h3>
+                        <div class="output" id="generalGrokOutput"></div>
+                    </div>
+                    <div class="bridge-section">
+                        <h3>Claude Refinement:</h3>
+                        <div class="output" id="generalClaudeOutput"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update model badge
+        function updateModelBadge() {
+            const model = document.getElementById('globalModel').value;
+            const badge = document.getElementById('modelBadge');
+            
+            badge.className = 'model-badge ' + model;
+            badge.textContent = model.toUpperCase();
+        }
+
+        // Check API connection
+        async function checkAPIConnection() {
+            try {
+                // Check Claude connection
+                const response = await fetch('/api/claude/general', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({ prompt: 'test' })
+                });
+                
+                const status = document.getElementById('apiStatus');
+                if (response.ok || response.status === 500) { // 500 might mean API key not set
+                    status.textContent = 'API Connected';
+                    status.className = 'api-status connected';
+                } else {
+                    status.textContent = 'API Disconnected';
+                    status.className = 'api-status disconnected';
+                }
+            } catch (error) {
+                const status = document.getElementById('apiStatus');
+                status.textContent = 'API Error';
+                status.className = 'api-status disconnected';
+            }
+        }
+
+        // Check connection on load
+        checkAPIConnection();
+        setInterval(checkAPIConnection, 30000); // Check every 30 seconds
+
+        // Helper function to make API calls
+        async function callAPI(endpoint, data, model = null) {
+            const selectedModel = model || document.getElementById('globalModel').value;
+            
+            // Determine the correct endpoint based on model
+            let apiEndpoint = endpoint;
+            if (selectedModel === 'grok') {
+                apiEndpoint = endpoint.replace('/api/claude/', '/api/grok/');
+            } else if (selectedModel === 'bridge') {
+                apiEndpoint = '/api/claude/bridge';
+                data = { prompt: JSON.stringify(data) };
+            }
+
+            const response = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`API error: ${response.status} - ${error}`);
+            }
+
+            return await response.json();
+        }
+
+        // Helper to handle output display
+        function displayOutput(result, outputId, bridgeIds = {}) {
+            const model = document.getElementById('globalModel').value;
+            
+            if (model === 'bridge' && result.grokResponse && result.claudeRefinement) {
+                // Hide single output, show bridge output
+                document.getElementById(outputId).style.display = 'none';
+                document.getElementById(bridgeIds.container).classList.add('active');
+                document.getElementById(bridgeIds.grok).textContent = result.grokResponse;
+                document.getElementById(bridgeIds.claude).textContent = result.claudeRefinement;
+            } else {
+                // Show single output, hide bridge output
+                document.getElementById(outputId).style.display = 'block';
+                if (bridgeIds.container) {
+                    document.getElementById(bridgeIds.container).classList.remove('active');
+                }
+                
+                // Extract the appropriate response based on the result structure
+                let content = '';
+                if (result.code) content = result.code;
+                else if (result.analysis) content = result.analysis;
+                else if (result.plan) content = result.plan;
+                else if (result.review) content = result.review;
+                else if (result.query) content = result.query;
+                else if (result.response) content = result.response;
+                else content = JSON.stringify(result, null, 2);
+                
+                document.getElementById(outputId).textContent = content;
+            }
+        }
+
+        // Code Generation
+        async function generateCode() {
+            const feature = document.getElementById('codeFeature').value;
+            const context = document.getElementById('codeContext').value;
+            const loading = document.getElementById('codeLoading');
+            const output = document.getElementById('codeOutput');
+
+            if (!feature) {
+                output.innerHTML = '<div class="error">Please provide a feature description</div>';
+                return;
+            }
+
+            loading.classList.add('active');
+            output.innerHTML = '';
+
+            try {
+                const result = await callAPI('/api/claude/generate-code', {
+                    feature,
+                    context
+                });
+
+                displayOutput(result, 'codeOutput', {
+                    container: 'codeBridgeOutput',
+                    grok: 'codeGrokOutput',
+                    claude: 'codeClaudeOutput'
+                });
+            } catch (error) {
+                output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        // Bug Analysis
+        async function analyzeBug() {
+            const error = document.getElementById('bugError').value;
+            const code = document.getElementById('bugCode').value;
+            const context = document.getElementById('bugContext').value;
+            const loading = document.getElementById('bugLoading');
+            const output = document.getElementById('bugOutput');
+
+            if (!error) {
+                output.innerHTML = '<div class="error">Please provide an error message</div>';
+                return;
+            }
+
+            loading.classList.add('active');
+            output.innerHTML = '';
+
+            try {
+                const result = await callAPI('/api/claude/analyze-bug', {
+                    error,
+                    code,
+                    context
+                });
+
+                displayOutput(result, 'bugOutput', {
+                    container: 'bugBridgeOutput',
+                    grok: 'bugGrokOutput',
+                    claude: 'bugClaudeOutput'
+                });
+            } catch (error) {
+                output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        // Feature Planning
+        async function planFeature() {
+            const feature = document.getElementById('planFeature').value;
+            const requirements = document.getElementById('planRequirements').value;
+            const loading = document.getElementById('planLoading');
+            const output = document.getElementById('planOutput');
+
+            if (!feature) {
+                output.innerHTML = '<div class="error">Please provide a feature name</div>';
+                return;
+            }
+
+            loading.classList.add('active');
+            output.innerHTML = '';
+
+            try {
+                const result = await callAPI('/api/claude/plan-feature', {
+                    feature,
+                    requirements
+                });
+
+                displayOutput(result, 'planOutput', {
+                    container: 'planBridgeOutput',
+                    grok: 'planGrokOutput',
+                    claude: 'planClaudeOutput'
+                });
+            } catch (error) {
+                output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        // Code Review
+        async function reviewCode() {
+            const code = document.getElementById('reviewCode').value;
+            const purpose = document.getElementById('reviewPurpose').value;
+            const loading = document.getElementById('reviewLoading');
+            const output = document.getElementById('reviewOutput');
+
+            if (!code) {
+                output.innerHTML = '<div class="error">Please provide code to review</div>';
+                return;
+            }
+
+            loading.classList.add('active');
+            output.innerHTML = '';
+
+            try {
+                const result = await callAPI('/api/claude/review-code', {
+                    code,
+                    purpose
+                });
+
+                displayOutput(result, 'reviewOutput', {
+                    container: 'reviewBridgeOutput',
+                    grok: 'reviewGrokOutput',
+                    claude: 'reviewClaudeOutput'
+                });
+            } catch (error) {
+                output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        // Database Query Generation
+        async function generateQuery() {
+            const description = document.getElementById('queryDesc').value;
+            const collection = document.getElementById('queryCollection').value;
+            const loading = document.getElementById('queryLoading');
+            const output = document.getElementById('queryOutput');
+
+            if (!description) {
+                output.innerHTML = '<div class="error">Please describe what you want to query</div>';
+                return;
+            }
+
+            loading.classList.add('active');
+            output.innerHTML = '';
+
+            try {
+                const result = await callAPI('/api/claude/generate-query', {
+                    description,
+                    collection
+                });
+
+                displayOutput(result, 'queryOutput', {
+                    container: 'queryBridgeOutput',
+                    grok: 'queryGrokOutput',
+                    claude: 'queryClaudeOutput'
+                });
+            } catch (error) {
+                output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        // General Assistant
+        async function askGeneral() {
+            const prompt = document.getElementById('generalPrompt').value;
+            const loading = document.getElementById('generalLoading');
+            const output = document.getElementById('generalOutput');
+
+            if (!prompt) {
+                output.innerHTML = '<div class="error">Please provide a question</div>';
+                return;
+            }
+
+            loading.classList.add('active');
+            output.innerHTML = '';
+
+            try {
+                const result = await callAPI('/api/claude/general', {
+                    prompt,
+                    systemPrompt: 'You are a helpful AI assistant for the VIB3 project, a TikTok-like video platform.'
+                });
+
+                displayOutput(result, 'generalOutput', {
+                    container: 'generalBridgeOutput',
+                    grok: 'generalGrokOutput',
+                    claude: 'generalClaudeOutput'
+                });
+            } catch (error) {
+                output.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>
