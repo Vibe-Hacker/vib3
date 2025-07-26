@@ -13,6 +13,9 @@ import '../../features/camera/screens/camera_screen.dart';
 import '../../features/messages/screens/messages_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/search/screens/search_screen.dart';
+import '../../features/vibe/screens/vibe_meter_screen.dart';
+import '../../features/time_capsule/screens/time_capsule_screen.dart';
+import '../../features/collab/screens/collab_room_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -99,12 +102,12 @@ class AppRouter {
             ],
           ),
           
-          // Reels
+          // Collab Rooms (replacing Reels in nav)
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/reels',
-                builder: (context, state) => const ReelsScreen(),
+                path: '/collab',
+                builder: (context, state) => const CollabRoomScreen(),
               ),
             ],
           ),
@@ -143,6 +146,24 @@ class AppRouter {
             },
           ),
         ],
+      ),
+      
+      // VIB3 Unique Features
+      GoRoute(
+        path: '/vibe-meter',
+        builder: (context, state) => const VibeMeterScreen(),
+      ),
+      GoRoute(
+        path: '/time-capsule',
+        builder: (context, state) => const TimeCapsuleScreen(),
+      ),
+      GoRoute(
+        path: '/collab-rooms',
+        builder: (context, state) => const CollabRoomScreen(),
+      ),
+      GoRoute(
+        path: '/reels',
+        builder: (context, state) => const ReelsScreen(),
       ),
       
       // Stories

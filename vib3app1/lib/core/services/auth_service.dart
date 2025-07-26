@@ -1,4 +1,9 @@
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:convert';
+import 'dart:math';
 import 'api_service.dart';
 import 'storage_service.dart';
 import '../models/user_model.dart';
@@ -52,6 +57,12 @@ class AuthService extends ChangeNotifier {
   }) async {
     try {
       _setLoading(true);
+      
+      // Demo login handling
+      if (email == 'demo@vib3.com' && password == 'demo123') {
+        await loginAsGuest(isDemoAccount: true);
+        return;
+      }
       
       final response = await _apiService.post<Map<String, dynamic>>(
         '/auth/login',
@@ -120,13 +131,54 @@ class AuthService extends ChangeNotifier {
     try {
       _setLoading(true);
       
-      // TODO: Implement Google Sign In
-      // 1. Get Google credentials
-      // 2. Send to backend
-      // 3. Save auth token and user data
+      // Initialize Google Sign In
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+      );
       
-      throw UnimplementedError('Google login not implemented');
+      // Trigger sign in flow
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        throw Exception('Google sign in cancelled');
+      }
+      
+      // Get auth details
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      // For demo, create a user directly
+      _currentUser = User(
+        id: 'google_${googleUser.id}',
+        username: googleUser.email.split('@').first,
+        email: googleUser.email,
+        displayName: googleUser.displayName ?? googleUser.email.split('@').first,
+        bio: '✨ Signed in with Google',
+        profilePicture: googleUser.photoUrl ?? 'https://api.dicebear.com/7.x/avataaars/svg?seed=${googleUser.email}',
+        followersCount: 0,
+        followingCount: 0,
+        postsCount: 0,
+        isVerified: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      // Save auth data
+      await StorageService.saveAuthToken('google_${googleAuth.idToken ?? DateTime.now().millisecondsSinceEpoch}');
+      await StorageService.saveUserId(_currentUser!.id);
+      await StorageService.saveUsername(_currentUser!.username);
+      
+      _isAuthenticated = true;
+      
+      notifyListeners();
+      
+      // In production, you would send the Google token to your backend:
+      // final response = await _apiService.post('/auth/google', data: {
+      //   'idToken': googleAuth.idToken,
+      //   'accessToken': googleAuth.accessToken,
+      // });
+      
     } catch (e) {
+      print('Google sign in error: $e');
       rethrow;
     } finally {
       _setLoading(false);
@@ -137,12 +189,103 @@ class AuthService extends ChangeNotifier {
     try {
       _setLoading(true);
       
-      // TODO: Implement Sign in with Apple
-      // 1. Get Apple credentials
-      // 2. Send to backend
-      // 3. Save auth token and user data
+      // Generate nonce for security
+      final rawNonce = _generateNonce();
+      final nonce = _sha256ofString(rawNonce);
       
-      throw UnimplementedError('Apple login not implemented');
+      // Request Apple ID credential
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
+      );
+      
+      // Create user from Apple credential
+      _currentUser = User(
+        id: 'apple_${credential.userIdentifier}',
+        username: credential.email?.split('@').first ?? 'apple_user_${Random().nextInt(9999)}',
+        email: credential.email ?? '${credential.userIdentifier}@privaterelay.apple.com',
+        displayName: '${credential.givenName ?? ''} ${credential.familyName ?? ''}'.trim().isEmpty
+            ? 'Apple User'
+            : '${credential.givenName ?? ''} ${credential.familyName ?? ''}'.trim(),
+        bio: '🍎 Signed in with Apple',
+        profilePicture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=apple_${credential.userIdentifier}',
+        followersCount: 0,
+        followingCount: 0,
+        postsCount: 0,
+        isVerified: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      // Save auth data
+      await StorageService.saveAuthToken('apple_${credential.identityToken ?? DateTime.now().millisecondsSinceEpoch}');
+      await StorageService.saveUserId(_currentUser!.id);
+      await StorageService.saveUsername(_currentUser!.username);
+      
+      _isAuthenticated = true;
+      
+      notifyListeners();
+      
+      // In production, you would verify the Apple token with your backend:
+      // final response = await _apiService.post('/auth/apple', data: {
+      //   'identityToken': credential.identityToken,
+      //   'authorizationCode': credential.authorizationCode,
+      //   'userIdentifier': credential.userIdentifier,
+      // });
+      
+    } catch (e) {
+      print('Apple sign in error: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+  
+  String _generateNonce([int length = 32]) {
+    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
+  }
+  
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+  
+  Future<void> loginAsGuest({bool isDemoAccount = false}) async {
+    try {
+      _setLoading(true);
+      
+      // Create a mock user for guest/demo access
+      _currentUser = User(
+        id: isDemoAccount ? 'demo_user_001' : 'guest_${DateTime.now().millisecondsSinceEpoch}',
+        username: isDemoAccount ? 'demo_user' : 'guest_user',
+        email: isDemoAccount ? 'demo@vib3.com' : 'guest@vib3.com',
+        displayName: isDemoAccount ? 'Demo User' : 'Guest User',
+        bio: isDemoAccount 
+            ? '🎬 Welcome to VIB3! This is a demo account to explore all features.' 
+            : '👋 Exploring VIB3 as a guest',
+        profilePicture: 'https://api.dicebear.com/7.x/avataaars/svg?seed=${isDemoAccount ? "demo" : "guest"}',
+        followersCount: isDemoAccount ? 1234 : 0,
+        followingCount: isDemoAccount ? 567 : 0,
+        postsCount: isDemoAccount ? 42 : 0,
+        isVerified: isDemoAccount,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      // Save minimal auth data for guest
+      await StorageService.saveAuthToken('guest_token_${DateTime.now().millisecondsSinceEpoch}');
+      await StorageService.saveUserId(_currentUser!.id);
+      await StorageService.saveUsername(_currentUser!.username);
+      
+      _isAuthenticated = true;
+      
+      notifyListeners();
     } catch (e) {
       rethrow;
     } finally {

@@ -2,12 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFFFF0050);
-  static const Color secondaryColor = Color(0xFF00D4FF);
-  static const Color backgroundColor = Color(0xFF000000);
-  static const Color surfaceColor = Color(0xFF1A1A1A);
-  static const Color errorColor = Color(0xFFFF3333);
-  static const Color successColor = Color(0xFF00FF88);
+  // Unique VIB3 color palette - Purple/Turquoise theme
+  static const Color primaryColor = Color(0xFF8B5CF6); // Vibrant purple
+  static const Color secondaryColor = Color(0xFF06B6D4); // Turquoise
+  static const Color accentColor = Color(0xFFF59E0B); // Amber accent
+  static const Color backgroundColor = Color(0xFF0F0817); // Deep purple-black
+  static const Color surfaceColor = Color(0xFF1E1333); // Purple-tinted surface
+  static const Color cardColor = Color(0xFF2A1F47); // Card background
+  static const Color errorColor = Color(0xFFEF4444);
+  static const Color successColor = Color(0xFF10B981);
+  static const Color warningColor = Color(0xFFF59E0B);
+  
+  // Gradient colors for unique effects
+  static const LinearGradient vibeGradient = LinearGradient(
+    colors: [primaryColor, secondaryColor],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient pulseGradient = LinearGradient(
+    colors: [Color(0xFF8B5CF6), Color(0xFFEC4899), Color(0xFF06B6D4)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
   
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
@@ -18,11 +35,14 @@ class AppTheme {
       secondary: secondaryColor,
       background: backgroundColor,
       surface: surfaceColor,
+      onBackground: Colors.white,
+      onSurface: Colors.white,
       error: errorColor,
     ),
     
     appBarTheme: AppBarTheme(
-      backgroundColor: Colors.transparent,
+      backgroundColor: backgroundColor,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
       centerTitle: true,
       titleTextStyle: GoogleFonts.poppins(
@@ -84,6 +104,8 @@ class AppTheme {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryColor,
+      shadowColor: primaryColor.withOpacity(0.3),
+      elevation: 8,
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 50),
         shape: RoundedRectangleBorder(
@@ -164,9 +186,10 @@ class AppTheme {
   static const double smallPadding = 8.0;
   static const double largePadding = 24.0;
   
-  static const double defaultRadius = 12.0;
-  static const double smallRadius = 8.0;
-  static const double largeRadius = 24.0;
+  static const double defaultRadius = 16.0;
+  static const double smallRadius = 12.0;
+  static const double largeRadius = 32.0;
+  static const double extraLargeRadius = 40.0;
   
   static const Duration shortAnimationDuration = Duration(milliseconds: 200);
   static const Duration defaultAnimationDuration = Duration(milliseconds: 300);

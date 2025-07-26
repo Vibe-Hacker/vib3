@@ -252,7 +252,7 @@ class VideoPlayerManager {
       print('📦 Queue already processing, scheduling check...');
       // Schedule a check to ensure queue doesn't get stuck
       _queueProcessTimer?.cancel();
-      _queueProcessTimer = Timer(const Duration(milliseconds: 200), () {
+      _queueProcessTimer = Timer(const Duration(milliseconds: 100), () {
         if (!_isProcessingQueue && _initQueue.isNotEmpty) {
           print('📦 Queue appears stuck, restarting processing...');
           _processQueue();
@@ -284,8 +284,8 @@ class VideoPlayerManager {
           print('🎬 About to call init function...');
           await initFunction();
           print('🎬 Init function completed');
-          // Add small delay to prevent overwhelming the decoder
-          await Future.delayed(const Duration(milliseconds: 100));
+          // Reduced delay to speed up processing
+          await Future.delayed(const Duration(milliseconds: 50));
         } catch (e) {
           print('❌ Error processing video init: $e');
           print('❌ Stack trace: ${StackTrace.current}');
@@ -300,7 +300,7 @@ class VideoPlayerManager {
       if (_initQueue.isNotEmpty && _isAppActive) {
         print('📦 More items in queue, scheduling another processing...');
         _queueProcessTimer?.cancel();
-        _queueProcessTimer = Timer(const Duration(milliseconds: 200), () {
+        _queueProcessTimer = Timer(const Duration(milliseconds: 100), () {
           _processQueue();
         });
       }

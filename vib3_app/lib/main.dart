@@ -19,6 +19,8 @@ import 'core/config/feature_flags.dart';
 import 'features/video_feed/presentation/providers/video_feed_provider.dart';
 import 'services/dev_http_overrides.dart';
 import 'services/video_player_manager.dart';
+import 'services/video_performance_service.dart';
+import 'services/buffer_management_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +41,17 @@ void main() async {
   
   // Initialize service locator for dependency injection
   await ServiceLocator.init();
+  
+  // Initialize video services
+  try {
+    // Initialize buffer management
+    BufferManagementService().initialize();
+    
+    // Pre-warm video decoder for better performance
+    await VideoPerformanceService().preWarmDecoder();
+  } catch (e) {
+    print('⚠️ Failed to initialize video services: $e');
+  }
   
   // Set preferred orientations and system UI
   SystemChrome.setPreferredOrientations([

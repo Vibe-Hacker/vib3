@@ -54,6 +54,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _fillDemoCredentials() {
+    _emailController.text = 'demo@vib3.com';
+    _passwordController.text = 'demo123';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -188,18 +193,27 @@ class _LoginScreenState extends State<LoginScreen> {
                       
                       const SizedBox(height: 24),
                       
-                      // Forgot Password
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            // TODO: Navigate to forgot password
-                          },
-                          child: const Text(
-                            'Forgot Password?',
-                            style: TextStyle(color: AppTheme.primaryColor),
+                      // Forgot Password and Demo Account
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: _fillDemoCredentials,
+                            child: const Text(
+                              'Use Demo Account',
+                              style: TextStyle(color: AppTheme.secondaryColor),
+                            ),
                           ),
-                        ),
+                          TextButton(
+                            onPressed: () {
+                              // TODO: Navigate to forgot password
+                            },
+                            child: const Text(
+                              'Forgot Password?',
+                              style: TextStyle(color: AppTheme.primaryColor),
+                            ),
+                          ),
+                        ],
                       ).animate().fadeIn(delay: 800.ms),
                       
                       const SizedBox(height: 24),
@@ -264,16 +278,42 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           _buildSocialButton(
-                            onPressed: () {
-                              // TODO: Google login
+                            onPressed: () async {
+                              try {
+                                final authService = context.read<AuthService>();
+                                await authService.loginWithGoogle();
+                                if (!mounted) return;
+                                context.go('/home');
+                              } catch (e) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Google login failed: ${e.toString()}'),
+                                    backgroundColor: AppTheme.errorColor,
+                                  ),
+                                );
+                              }
                             },
                             icon: Icons.g_mobiledata_rounded,
                             delay: 1100.ms,
                           ),
                           const SizedBox(width: 16),
                           _buildSocialButton(
-                            onPressed: () {
-                              // TODO: Apple login
+                            onPressed: () async {
+                              try {
+                                final authService = context.read<AuthService>();
+                                await authService.loginWithApple();
+                                if (!mounted) return;
+                                context.go('/home');
+                              } catch (e) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Apple login failed: ${e.toString()}'),
+                                    backgroundColor: AppTheme.errorColor,
+                                  ),
+                                );
+                              }
                             },
                             icon: Icons.apple,
                             delay: 1200.ms,
@@ -322,18 +362,39 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 20),
                 
                 // Demo Login Button
-                TextButton(
-                  onPressed: () {
-                    // Demo login - bypass authentication
-                    context.go('/home');
-                  },
-                  child: const Text(
-                    'Continue as Guest',
-                    style: TextStyle(
-                      color: Colors.white60,
-                      decoration: TextDecoration.underline,
+                Column(
+                  children: [
+                    const Text(
+                      'For Testing',
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        // Guest login with auth service
+                        final authService = context.read<AuthService>();
+                        await authService.loginAsGuest();
+                        if (!mounted) return;
+                        context.go('/home');
+                      },
+                      icon: const Icon(Icons.person_outline, size: 20),
+                      label: const Text('Continue as Guest'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.secondaryColor,
+                        side: const BorderSide(
+                          color: AppTheme.secondaryColor,
+                          width: 1.5,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ).animate().fadeIn(delay: 1500.ms),
               ],
             ),

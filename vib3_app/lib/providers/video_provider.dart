@@ -6,6 +6,7 @@ import '../services/user_service.dart';
 import '../widgets/video_feed.dart'; // For FeedType enum
 import '../services/recommendation_engine.dart';
 import '../providers/auth_provider.dart';
+import '../services/video_performance_service.dart';
 
 class VideoProvider extends ChangeNotifier {
   final List<Video> _videos = [];
@@ -25,6 +26,10 @@ class VideoProvider extends ChangeNotifier {
   // Track liked videos and followed users
   final Set<String> _likedVideoIds = {};
   final Set<String> _followedUserIds = {};
+  
+  // Performance-based quality adaptation
+  final VideoPerformanceService _performanceService = VideoPerformanceService();
+  VideoQuality _adaptiveQuality = VideoQuality.auto;
 
   List<Video> get videos => _videos;
   List<Video> get forYouVideos => _forYouVideos;
@@ -587,5 +592,41 @@ class VideoProvider extends ChangeNotifier {
   
   AuthProvider? _getAuthProvider() {
     return _authProvider;
+  }
+  
+  // Performance-based quality adaptation
+  String getAdaptiveVideoUrl(String originalUrl) {
+    final qualitySuffix = _performanceService.getQualitySuffix();
+    
+    // Apply quality suffix to URL if needed
+    if (qualitySuffix.isNotEmpty && !originalUrl.contains(qualitySuffix)) {
+      // Insert quality suffix before file extension
+      final lastDot = originalUrl.lastIndexOf('.');
+      if (lastDot > 0) {
+        return originalUrl.substring(0, lastDot) + qualitySuffix + originalUrl.substring(lastDot);
+      }
+    }
+    
+    return originalUrl;
+  }
+  
+  // Monitor video performance and adapt quality
+  void monitorVideoPerformance(String videoId, double averageFps, double bufferHealth) {
+    // If performance is poor, reduce quality
+    if (averageFps < 20 || bufferHealth < 0.2) {
+      print('📉 Poor video performance detected - reducing quality');
+      _performanceService.setHardwareAcceleration(false);
+      notifyListeners();
+    }
+  }
+  
+  // Get current video quality setting
+  VideoQuality get currentQuality => _adaptiveQuality;
+  
+  // Manually set video quality
+  void setVideoQuality(VideoQuality quality) {
+    _adaptiveQuality = quality;
+    print('🎥 Video quality set to: $quality');
+    notifyListeners();
   }
 }

@@ -11,6 +11,8 @@ import '../services/intelligent_cache_manager.dart';
 import '../services/thumbnail_service.dart';
 import '../services/intelligent_cache_manager.dart';
 import '../services/hls_streaming_service.dart';
+import '../services/video_performance_service.dart';
+import '../services/buffer_management_service.dart';
 import 'package:dio/dio.dart';
 import 'dart:io';
 
@@ -51,6 +53,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   
   // Cache manager instance
   final IntelligentCacheManager _cacheManager = IntelligentCacheManager();
+  
+  // Performance monitoring
+  Timer? _performanceTimer;
 
   @override
   void initState() {
@@ -63,6 +68,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _loadThumbnail();
     
     // Initialize immediately if we should play or preload
+    print('📊 InitState check: isPlaying=${widget.isPlaying}, preload=${widget.preload}');
     if (widget.isPlaying || widget.preload) {
       print('🚀 Will initialize video because isPlaying=${widget.isPlaying}, preload=${widget.preload}');
       // Use post frame callback to ensure widget is fully built
@@ -73,9 +79,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         }
         
         print('🎬 Post frame callback - mounted: $mounted, disposed: $_isDisposed');
+        print('🎬 Post frame callback - _isInitialized: $_isInitialized, _isInitializing: $_isInitializing');
         
         if (!_isInitialized && !_isInitializing) {
+          print('🎬 Post frame callback - calling _initializeVideo');
           _initializeVideo();
+        } else {
+          print('🎬 Post frame callback - skipping init: _isInitialized=$_isInitialized, _isInitializing=$_isInitializing');
         }
       });
     } else {
@@ -133,6 +143,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     else if (oldWidget.isPlaying != widget.isPlaying) {
       print('🎬 VideoPlayer: Play state changed from ${oldWidget.isPlaying} to ${widget.isPlaying}');
       print('🎬 VideoPlayer: Current state - _isInitialized=$_isInitialized, _hasError=$_hasError, _controller=${_controller != null}');
+      print('🎬 VideoPlayer: _isInitializing=$_isInitializing, _isDisposed=$_isDisposed, mounted=$mounted');
       if (widget.isPlaying) {
         if (_isInitialized && _controller != null) {
           // Resume playing
@@ -142,14 +153,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             _isPaused = false;
             _showPlayIcon = false;
           });
-        } else if (!_isInitialized && !_isInitializing && !_hasError) {
-          // Initialize if not already initialized
+        } else if (!_isInitialized && !_isInitializing) {
+          // Initialize if not already initialized (ignore _hasError for now)
           print('🎬 VideoPlayer: Initializing video because isPlaying changed to true');
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              _initializeVideo();
-            }
-          });
+          print('🎬 VideoPlayer: About to schedule post frame callback...');
+          _initializeVideo(); // Call directly instead of using post frame callback
+        } else {
+          print('🎬 VideoPlayer: Not initializing - _isInitialized=$_isInitialized, _isInitializing=$_isInitializing, _hasError=$_hasError');
         }
       } else if (!widget.isPlaying && _isInitialized && _controller != null) {
         _controller?.pause();
@@ -180,22 +190,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _isInitializing = true;
     
     try {
-      print('🎆 About to queue video initialization...');
+      print('🎆 About to initialize video directly (bypassing queue)...');
       print('🎆 Widget state: mounted=$mounted, disposed=$_isDisposed, initializing=$_isInitializing');
       
-      // Queue the initialization to prevent concurrent initializations
-      await VideoPlayerManager.instance.queueVideoInit(() async {
-        print('🎆 Inside queued init function for ${widget.videoUrl}');
-        print('🎆 Queued function state check: disposed=$_isDisposed, mounted=$mounted');
-        
-        if (_isDisposed || !mounted) {
-          print('🎆 Skipping init: disposed=$_isDisposed, mounted=$mounted');
-          return;
-        }
-        
-        try {
+      if (_isDisposed || !mounted) {
+        print('🎆 Skipping init: disposed=$_isDisposed, mounted=$mounted');
+        return;
+      }
+      
+      try {
         print('🎬 VideoPlayer: Initializing video: ${widget.videoUrl}');
-        print('🎬 Queue processing started for this video');
+        print('🎬 Direct initialization started for this video');
         
         // Dispose any existing controller first
         if (_controller != null) {
@@ -252,10 +257,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           print('💾 Loading video from cache: ${cachedFile.path}');
           _controller = VideoPlayerController.file(
             cachedFile,
-            videoPlayerOptions: VideoPlayerOptions(
-              mixWithOthers: false,
-              allowBackgroundPlayback: false,
-            ),
+            videoPlayerOptions: VideoPerformanceService().getOptimizedPlayerOptions(),
           );
         } else {
           print('🌐 Loading video from network: $optimalUrl');
@@ -264,17 +266,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           
           _controller = VideoPlayerController.networkUrl(
             uri,
-            videoPlayerOptions: VideoPlayerOptions(
-              mixWithOthers: false,
-              allowBackgroundPlayback: false,
-            ),
+            videoPlayerOptions: VideoPerformanceService().getOptimizedPlayerOptions(),
             httpHeaders: {
               'Connection': 'keep-alive',
               'Cache-Control': 'max-age=3600',
-              'Accept': '*/*',
+              'Accept': 'video/mp4,video/webm,video/*;q=0.9,*/*;q=0.8',
+              'Accept-Encoding': 'identity',  // Disable compression for video
               'User-Agent': 'VIB3/1.0 (Flutter)',
-              // Remove Range header to see if it's causing issues
-              // 'Range': 'bytes=0-', // Enable range requests for progressive download
+              'X-Playback-Session-Id': DateTime.now().millisecondsSinceEpoch.toString(),
+              // Optimize for streaming
+              'Accept-Ranges': 'bytes',
+              'Sec-Fetch-Mode': 'no-cors',
             },
           );
           
@@ -310,6 +312,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         await _controller!.setLooping(true);
         await _controller!.setVolume(1.0);
         
+        // Configure video for better buffer management
+        try {
+          // Pause immediately after initialization to prevent buffer overflow
+          if (!widget.isPlaying) {
+            await _controller!.pause();
+          }
+        } catch (e) {
+          print('⚠️ Error configuring video playback: $e');
+        }
+        
+        // Start performance monitoring
+        _startPerformanceMonitoring();
+        
         // Set playback speed to reduce decoder load if needed
         if (!widget.isPlaying) {
           // For preloaded videos, pause immediately to save resources
@@ -343,8 +358,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           print('⚠️ Warning: Video has zero dimensions, may not display properly');
         }
         
-        // Register with VideoPlayerManager
+        // Register with VideoPlayerManager and BufferManagementService
         VideoPlayerManager.instance.registerController(_controller!);
+        BufferManagementService().registerController(_controller!);
         
       } catch (e, stackTrace) {
         print('❌ VideoPlayer: Error initializing ${widget.videoUrl}: $e');
@@ -387,7 +403,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           });
         }
       }
-      });
+    } catch (outerError) {
+      print('❌ Outer catch: Error in video initialization: $outerError');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _isInitialized = false;
+        });
+      }
     } finally {
       _isInitializing = false;
     }
@@ -501,18 +524,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     
     try {
       if (_controller != null) {
-        // Unregister from VideoPlayerManager
+        // Unregister from managers
         try {
           VideoPlayerManager.instance.unregisterController(_controller!);
+          BufferManagementService().unregisterController(_controller!);
         } catch (e) {
           print('⚠️ Error unregistering controller: $e');
         }
         
-        // First pause the video if playing
+        // First pause the video and clear buffers
         try {
           _controller?.pause();
+          _controller?.seekTo(Duration.zero);  // Clear video buffer
         } catch (e) {
-          // Ignore pause errors during disposal
+          // Ignore pause/seek errors during disposal
         }
         
         // Dispose the controller
@@ -540,6 +565,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void dispose() {
     print('🔴 VideoPlayerWidget dispose() called for ${widget.videoUrl}');
     print('🔴 Widget hashCode: ${this.hashCode}');
+    _isDisposed = true;
+    
+    _performanceTimer?.cancel();
     _disposeController();
     super.dispose();
   }
@@ -664,4 +692,26 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       ),
     );
   }
+  
+  // Start performance monitoring
+  void _startPerformanceMonitoring() {
+    _performanceTimer?.cancel();
+    
+    _performanceTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (_controller != null && _controller!.value.isInitialized && mounted) {
+        VideoPerformanceService().analyzeAndOptimize(widget.videoUrl, _controller!);
+        
+        // Log performance metrics
+        final report = VideoPerformanceService().getPerformanceReport(widget.videoUrl);
+        if (report.isNotEmpty) {
+          print('📊 Video Performance Report for ${widget.videoUrl}:');
+          print('   Average FPS: ${report['averageFps']?.toStringAsFixed(1) ?? 'N/A'}');
+          print('   Buffer Health: ${(report['bufferHealth'] * 100)?.toStringAsFixed(1) ?? 'N/A'}%');
+          print('   Quality: ${report['currentQuality'] ?? 'auto'}');
+          print('   Hardware Acceleration: ${report['hardwareAcceleration'] ?? 'unknown'}');
+        }
+      }
+    });
+  }
+  
 }

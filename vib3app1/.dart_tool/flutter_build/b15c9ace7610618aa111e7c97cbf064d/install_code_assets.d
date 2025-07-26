@@ -1,0 +1,1 @@
+ C:\\Users\\VIBE\\Desktop\\VIB3\\vib3app1\\.dart_tool\\flutter_build\\b15c9ace7610618aa111e7c97cbf064d\\native_assets.json: 

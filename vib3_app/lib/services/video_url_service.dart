@@ -27,19 +27,29 @@ class VideoUrlService {
     return videoUrl;
   }
   
-  // Get video URL with query parameters for better caching
+  // Get video URL with optimized parameters for better performance
   static String getOptimizedUrl(String videoUrl) {
     final uri = Uri.parse(videoUrl);
     
-    // Add cache-busting parameter if needed
-    final queryParams = Map<String, String>.from(uri.queryParameters);
+    // Optimize URL parameters for better playback and codec performance
+    final Map<String, String> optimizedParams = Map<String, String>.from(uri.queryParameters);
     
-    // Don't add timestamp to DigitalOcean URLs as it might break signing
+    // Add performance optimization parameters
     if (!videoUrl.contains('digitaloceanspaces.com')) {
-      queryParams['t'] = DateTime.now().millisecondsSinceEpoch.toString();
+      // Only add these for non-DigitalOcean URLs to avoid breaking signing
+      optimizedParams.addAll({
+        'profile': 'baseline',  // H.264 baseline profile for compatibility
+        'preset': 'fast',       // Faster encoding/decoding
+        'tune': 'fastdecode',   // Optimize for fast decoding
+        'movflags': 'faststart', // Enable progressive download
+        'format': 'mp4',        // Ensure MP4 format
+      });
     }
     
-    return uri.replace(queryParameters: queryParams).toString();
+    // Add cache control for better streaming
+    optimizedParams['cache'] = 'force-cache';
+    
+    return uri.replace(queryParameters: optimizedParams).toString();
   }
   
   // Check if URL needs proxy (for CORS issues)

@@ -19,6 +19,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late AnimationController _fabAnimationController;
   late AnimationController _borderAnimationController;
+  late AnimationController _vibeAnimationController;
   
   @override
   void initState() {
@@ -31,12 +32,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
+    _vibeAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
   }
   
   @override
   void dispose() {
     _fabAnimationController.dispose();
     _borderAnimationController.dispose();
+    _vibeAnimationController.dispose();
     super.dispose();
   }
   
@@ -78,14 +84,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         height: 56,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: LinearGradient(
-            colors: [
-              AppTheme.primaryColor,
-              AppTheme.secondaryColor,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: AppTheme.pulseGradient,
           boxShadow: [
             BoxShadow(
               color: AppTheme.primaryColor.withOpacity(0.3),
@@ -154,9 +153,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   _buildNavItem(
                     index: 3,
                     currentIndex: currentIndex,
-                    icon: Icons.play_circle_outline_rounded,
-                    activeIcon: Icons.play_circle_rounded,
-                    label: 'Reels',
+                    icon: Icons.group_work_outlined,
+                    activeIcon: Icons.group_work,
+                    label: 'Collab',
                   ),
                   _buildNavItem(
                     index: 4,

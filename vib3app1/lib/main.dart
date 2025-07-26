@@ -7,6 +7,7 @@ import 'app/theme/app_theme.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/api_service.dart';
 import 'core/services/storage_service.dart';
+import 'core/services/feed_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,7 @@ void main() async {
   
   final apiService = ApiService();
   final authService = AuthService(apiService, storageService);
+  final feedService = FeedService(apiService);
   
   runApp(
     MultiProvider(
@@ -33,6 +35,7 @@ void main() async {
         Provider<ApiService>.value(value: apiService),
         Provider<StorageService>.value(value: storageService),
         ChangeNotifierProvider<AuthService>.value(value: authService),
+        ChangeNotifierProvider<FeedService>.value(value: feedService),
       ],
       child: const VIB3App(),
     ),

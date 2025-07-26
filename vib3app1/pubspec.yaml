@@ -54,6 +54,11 @@ dependencies:
   uuid: ^4.2.2
   collection: ^1.18.0
   
+  # Authentication
+  google_sign_in: ^6.1.6
+  sign_in_with_apple: ^6.0.0
+  crypto: ^3.0.3
+  
   # Audio
   just_audio: ^0.9.36
   # record: ^5.0.4  # Temporarily disabled due to compatibility issue

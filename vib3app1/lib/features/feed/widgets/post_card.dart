@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/widgets/placeholder_image.dart';
 
 class PostCard extends StatefulWidget {
   final String postId;
@@ -160,10 +161,19 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                 ),
                 padding: const EdgeInsets.all(1.5),
                 child: ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: widget.userAvatar,
-                    fit: BoxFit.cover,
-                  ),
+                  child: widget.userAvatar.startsWith('http')
+                      ? CachedNetworkImage(
+                          imageUrl: widget.userAvatar,
+                          fit: BoxFit.cover,
+                          errorWidget: (context, url, error) => PlaceholderAvatar(
+                            size: 32,
+                            seed: widget.username,
+                          ),
+                        )
+                      : PlaceholderAvatar(
+                          size: 32,
+                          seed: widget.username,
+                        ),
                 ),
               ),
             ),
@@ -226,13 +236,15 @@ class _PostCardState extends State<PostCard> with TickerProviderStateMixin {
                 return CachedNetworkImage(
                   imageUrl: widget.mediaUrls[index],
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: AppTheme.surfaceColor,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
-                    ),
+                  placeholder: (context, url) => PlaceholderImage(
+                    width: double.infinity,
+                    height: double.infinity,
+                    text: 'Loading...',
+                  ),
+                  errorWidget: (context, url, error) => PlaceholderImage(
+                    width: double.infinity,
+                    height: double.infinity,
+                    text: 'Post ${index + 1}',
                   ),
                 );
               },

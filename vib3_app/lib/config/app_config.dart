@@ -10,7 +10,8 @@ class AppConfig {
   
   // For local testing on physical device, use your computer's IP
   // Find your IP: Windows: ipconfig, Mac/Linux: ifconfig
-  static String get baseUrl => 'https://vib3app.net'; // Production server
+  static String get baseUrl => 'http://YOUR_ACTUAL_IP:3000'; // Replace YOUR_ACTUAL_IP with the IP from ipconfig
+  // Use 'http://10.0.2.2:3000' for Android emulator
   
   // API Endpoints
   static const String loginEndpoint = '/api/auth/login';
