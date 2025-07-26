@@ -83,7 +83,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     super.initState();
     _pageController = PageController(initialPage: 0);
     WidgetsBinding.instance.addObserver(this);
-    _isScreenVisible = widget.isVisible ?? true; // Default to true if null
+    _isScreenVisible = true; // Always start as visible
     print('🎬 VideoFeed initState: widget.isVisible = ${widget.isVisible}, _isScreenVisible = $_isScreenVisible');
     print('🎬 VideoFeed initState: feedType = ${widget.feedType}');
     
@@ -1134,12 +1134,14 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   }
 
   Widget _buildVideoPlayer(Video video, bool isCurrentVideo, {bool preload = false}) {
-    print('🎬 _buildVideoPlayer: videoUrl=${video.videoUrl}, isCurrentVideo=$isCurrentVideo, preload=$preload, _isScreenVisible=$_isScreenVisible');
+    print('🎬 _buildVideoPlayer called: videoUrl=${video.videoUrl}, isCurrentVideo=$isCurrentVideo, preload=$preload');
+    print('🎬 Video ID: ${video.id}');
     
-    if (video.videoUrl != null && video.videoUrl!.isNotEmpty && (isCurrentVideo || preload)) {
-      print('🎬 Creating VideoPlayerWidget with URL: ${video.videoUrl}');
-      print('🎬 isCurrentVideo: $isCurrentVideo, _isScreenVisible: $_isScreenVisible');
-      print('🎬 Final isPlaying: ${isCurrentVideo && _isScreenVisible}, preload: ${preload && _isScreenVisible}');
+    if (video.videoUrl != null && video.videoUrl!.isNotEmpty) {
+      print('🎬 Creating VideoPlayerWidget for video ${video.id}');
+      print('🎬 Will play: $isCurrentVideo, Will preload: $preload');
+      
+      // Always create the video player widget, let it handle its own initialization
       return Positioned.fill(
         child: VideoSwipeActions(
           onLike: () => _handleLike(video),
@@ -1304,24 +1306,19 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             // Dynamic preloading based on scroll velocity
             bool shouldPreload = false;
             
-            // Calculate distance from current video
-            int distanceFromCurrent = (videoIndex - _currentIndex).abs();
-            if (distanceFromCurrent > videos.length / 2) {
-              // Handle wrap-around
-              distanceFromCurrent = videos.length - distanceFromCurrent;
-            }
+            // Calculate distance from current video using actual index, not wrapped videoIndex
+            int distanceFromCurrent = (index - _currentIndex).abs();
             
             // Preload videos within range
             if (distanceFromCurrent <= _preloadRange) {
               shouldPreload = true;
             }
             
-            // Always log for first few videos
-            if (index < 3 || isCurrentVideo) {
-              print('🎥 Building video $index: _currentIndex=$_currentIndex, isCurrentVideo=$isCurrentVideo, _isScreenVisible=$_isScreenVisible, will play=${isCurrentVideo}');
-              print('🎥 Video URL: ${video.videoUrl}');
-              print('🎥 Video has URL: ${video.videoUrl != null && video.videoUrl!.isNotEmpty}');
-            }
+            // Always log for debugging
+            print('🎥 Building video at index $index (videoIndex=$videoIndex): _currentIndex=$_currentIndex, isCurrentVideo=$isCurrentVideo');
+            print('🎥 Distance from current: $distanceFromCurrent, shouldPreload=$shouldPreload');
+            print('🎥 Video URL: ${video.videoUrl}');
+            print('🎥 Will play: $isCurrentVideo, Will preload: $shouldPreload');
             
             return Container(
               color: Colors.black,

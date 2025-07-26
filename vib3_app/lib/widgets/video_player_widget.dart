@@ -294,33 +294,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           print('⚠️ Warning: Video has zero dimensions, may not display properly');
         }
         
-        _controller!.setLooping(true);
-        
         // Register with VideoPlayerManager
         VideoPlayerManager.instance.registerController(_controller!);
-        
-        // Start playing only if this widget is marked as playing
-        if (widget.isPlaying && mounted && !_isDisposed) {
-          // Play the video directly
-          try {
-            await _controller!.play();
-            print('▶️ VideoPlayer: Started playing - isPlaying: ${_controller!.value.isPlaying}');
-            
-            // Also register with manager
-            VideoPlayerManager.instance.playVideo(_controller!);
-          } catch (e) {
-            print('⚠️ Error starting playback: $e');
-          }
-        } else if (mounted && !_isDisposed) {
-          // For non-playing videos, pause after initialization
-          try {
-            await _controller!.pause();
-            await _controller!.seekTo(Duration.zero);
-            print('⏸️ VideoPlayer: Initialized and paused');
-          } catch (e) {
-            print('⚠️ Error pausing video: $e');
-          }
-        }
         
       } catch (e, stackTrace) {
         print('❌ VideoPlayer: Error initializing ${widget.videoUrl}: $e');
@@ -520,12 +495,22 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       print('⏱️ Position: ${_controller!.value.position} / ${_controller!.value.duration}');
     }
     
-    // If we're supposed to be playing but controller isn't actually playing, reinitialize
+    // If we're supposed to be playing but controller isn't actually playing, play it
     if (widget.isPlaying && _controller != null && _isInitialized && !_controller!.value.isPlaying && !_isPaused) {
       print('⚠️ Controller not playing when it should be - attempting to play');
       Future.microtask(() {
+        if (mounted && _controller != null) {
+          VideoPlayerManager.instance.playVideo(_controller!);
+        }
+      });
+    }
+    
+    // If we should be playing but not initialized, initialize now
+    if (widget.isPlaying && !_isInitialized && !_isInitializing && !_hasError) {
+      print('⚠️ Video should be playing but not initialized - initializing now');
+      Future.microtask(() {
         if (mounted) {
-          _controller?.play();
+          _initializeVideo();
         }
       });
     }
