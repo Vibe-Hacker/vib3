@@ -149,15 +149,30 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
           },
         );
       case CreatorMode.effects:
-        return EffectsModule();
+        return Container(
+          color: Colors.black,
+          child: EffectsModule(),
+        );
       case CreatorMode.music:
-        return MusicModule();
+        return Container(
+          color: Colors.black,
+          child: MusicModule(),
+        );
       case CreatorMode.text:
-        return TextModule();
+        return Container(
+          color: Colors.black,
+          child: TextModule(),
+        );
       case CreatorMode.filters:
-        return FiltersModule();
+        return Container(
+          color: Colors.black,
+          child: FiltersModule(),
+        );
       case CreatorMode.tools:
-        return ToolsModule();
+        return Container(
+          color: Colors.black,
+          child: ToolsModule(),
+        );
     }
   }
   

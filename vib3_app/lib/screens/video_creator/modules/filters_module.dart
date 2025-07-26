@@ -109,7 +109,7 @@ class _FiltersModuleState extends State<FiltersModule>
         ),
         
         // Tab content
-        Expanded(
+        Flexible(
           child: TabBarView(
             controller: _tabController,
             children: [
@@ -150,7 +150,7 @@ class _FiltersModuleState extends State<FiltersModule>
           ),
           
           // Filter options
-          Expanded(
+          Flexible(
             child: TabBarView(
               children: _filterCategories.entries.map((entry) => 
                 _buildFilterGrid(entry.value, creationState)
@@ -234,7 +234,7 @@ class _FiltersModuleState extends State<FiltersModule>
   }) {
     return Column(
       children: [
-        Expanded(
+        Flexible(
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),

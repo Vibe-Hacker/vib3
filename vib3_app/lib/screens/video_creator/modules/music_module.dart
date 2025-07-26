@@ -210,51 +210,54 @@ class _MusicModuleState extends State<MusicModule>
   Widget build(BuildContext context) {
     final creationState = context.watch<CreationStateProvider>();
     
-    return Column(
-      children: [
-        // Tab bar
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
-            border: Border(
-              bottom: BorderSide(
-                color: Colors.white.withOpacity(0.1),
+    return Container(
+      color: Colors.black,
+      child: Column(
+        children: [
+            // Tab bar
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white.withOpacity(0.1),
+                  ),
+                ),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicatorColor: const Color(0xFF00CED1),
+                indicatorWeight: 3,
+                labelColor: const Color(0xFF00CED1),
+                unselectedLabelColor: Colors.white54,
+                tabs: const [
+                  Tab(text: 'Music'),
+                  Tab(text: 'Sounds'),
+                  Tab(text: 'Voiceover'),
+                  Tab(text: 'My Audio'),
+                ],
               ),
             ),
-          ),
-          child: TabBar(
-            controller: _tabController,
-            indicatorColor: const Color(0xFF00CED1),
-            indicatorWeight: 3,
-            labelColor: const Color(0xFF00CED1),
-            unselectedLabelColor: Colors.white54,
-            tabs: const [
-              Tab(text: 'Music'),
-              Tab(text: 'Sounds'),
-              Tab(text: 'Voiceover'),
-              Tab(text: 'My Audio'),
-            ],
-          ),
-        ),
-        
-        // Tab content
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildMusicTab(creationState),
-              _buildSoundsTab(creationState),
-              _buildVoiceoverTab(creationState),
-              _buildMyAudioTab(creationState),
-            ],
-          ),
-        ),
-        
-        // Volume mixer
-        if (creationState.backgroundMusicPath != null || 
-            creationState.voiceoverPath != null)
-          _buildVolumeMixer(creationState),
-      ],
+            
+            // Tab content
+            Flexible(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildMusicTab(creationState),
+                  _buildSoundsTab(creationState),
+                  _buildVoiceoverTab(creationState),
+                  _buildMyAudioTab(creationState),
+                ],
+              ),
+            ),
+            
+            // Volume mixer
+            if (creationState.backgroundMusicPath != null || 
+                creationState.voiceoverPath != null)
+              _buildVolumeMixer(creationState),
+          ],
+      ),
     );
   }
   
@@ -336,7 +339,7 @@ class _MusicModuleState extends State<MusicModule>
         ),
         
         // Music list
-        Expanded(
+        Flexible(
           child: _isLoadingMusic
               ? const Center(
                   child: CircularProgressIndicator(
@@ -427,7 +430,7 @@ class _MusicModuleState extends State<MusicModule>
         ),
         
         // Sound effects grid
-        Expanded(
+        Flexible(
           child: GridView.builder(
             padding: const EdgeInsets.all(16),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

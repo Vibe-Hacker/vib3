@@ -97,7 +97,7 @@ class _EffectsModuleState extends State<EffectsModule>
         ),
         
         // Effects grid
-        Expanded(
+        Flexible(
           child: TabBarView(
             controller: _tabController,
             children: _effectCategories.entries.map((entry) =>

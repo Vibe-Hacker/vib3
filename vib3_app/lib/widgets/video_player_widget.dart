@@ -286,9 +286,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         print('🎮 About to call _controller.initialize()...');
         try {
           await _controller!.initialize().timeout(
-            const Duration(seconds: 10),
+            const Duration(seconds: 30),
             onTimeout: () {
-              throw TimeoutException('Video initialization timed out after 10 seconds');
+              throw TimeoutException('Video initialization timed out after 30 seconds');
             },
           );
           print('✅ VideoPlayer: Successfully initialized ${widget.videoUrl}');

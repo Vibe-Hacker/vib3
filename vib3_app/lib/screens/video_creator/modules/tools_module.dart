@@ -84,7 +84,7 @@ class _ToolsModuleState extends State<ToolsModule>
         ),
         
         // Tab content
-        Expanded(
+        Flexible(
           child: TabBarView(
             controller: _tabController,
             children: [

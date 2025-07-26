@@ -102,7 +102,7 @@ class _TextModuleState extends State<TextModule>
         ),
         
         // Tab content
-        Expanded(
+        Flexible(
           child: TabBarView(
             controller: _tabController,
             children: [
@@ -196,7 +196,7 @@ class _TextModuleState extends State<TextModule>
         ),
         
         // Text styling controls
-        Expanded(
+        Flexible(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -255,7 +255,7 @@ class _TextModuleState extends State<TextModule>
           ),
           
           // Sticker grid
-          Expanded(
+          Flexible(
             child: TabBarView(
               children: _stickerCategories.entries.map((entry) => 
                 _buildStickerGrid(entry.value, creationState)
