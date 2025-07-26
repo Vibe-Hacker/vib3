@@ -74,7 +74,10 @@ class VideoProvider extends ChangeNotifier {
   }
 
   Future<void> loadMoreVideos(String token, {FeedType? feedType}) async {
-    if (_isLoadingMore) return;
+    if (_isLoadingMore) {
+      print('VideoProvider: Already loading more videos, skipping duplicate request');
+      return;
+    }
 
     try {
       print('VideoProvider: Loading more videos for feed type: $feedType');
@@ -195,10 +198,19 @@ class VideoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Track if we're already loading ForYou videos
+  bool _isLoadingForYou = false;
+  
   Future<void> loadForYouVideos(String token) async {
+    if (_isLoadingForYou) {
+      print('VideoProvider: Already loading ForYou videos, skipping duplicate request');
+      return;
+    }
+    
     try {
       print('VideoProvider: Loading Vib3 Pulse videos with recommendation algorithm...');
       print('VideoProvider: Auth token present: ${token.isNotEmpty}');
+      _isLoadingForYou = true;
       _isLoading = true;
       _error = null;
       notifyListeners();
@@ -309,13 +321,23 @@ class VideoProvider extends ChangeNotifier {
       notifyListeners();
     } finally {
       _isLoading = false;
+      _isLoadingForYou = false;
     }
   }
   
 
+  // Track if we're already loading Following videos
+  bool _isLoadingFollowing = false;
+  
   Future<void> loadFollowingVideos(String token) async {
+    if (_isLoadingFollowing) {
+      print('VideoProvider: Already loading Following videos, skipping duplicate request');
+      return;
+    }
+    
     try {
       print('VideoProvider: Loading Vib3 Connect videos...');
+      _isLoadingFollowing = true;
       _isLoading = true;
       _error = null;
       notifyListeners();
@@ -341,6 +363,7 @@ class VideoProvider extends ChangeNotifier {
       notifyListeners();
     } finally {
       _isLoading = false;
+      _isLoadingFollowing = false;
       notifyListeners();
     }
   }
@@ -374,9 +397,18 @@ class VideoProvider extends ChangeNotifier {
     }
   }
 
+  // Track if we're already loading Friends videos
+  bool _isLoadingFriends = false;
+  
   Future<void> loadFriendsVideos(String token) async {
+    if (_isLoadingFriends) {
+      print('VideoProvider: Already loading Friends videos, skipping duplicate request');
+      return;
+    }
+    
     try {
       print('VideoProvider: Loading Vib3 Circle videos...');
+      _isLoadingFriends = true;
       _isLoading = true;
       _error = null;
       notifyListeners();
@@ -402,6 +434,7 @@ class VideoProvider extends ChangeNotifier {
       notifyListeners();
     } finally {
       _isLoading = false;
+      _isLoadingFriends = false;
       notifyListeners();
     }
   }

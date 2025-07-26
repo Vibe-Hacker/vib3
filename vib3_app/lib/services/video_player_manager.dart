@@ -29,6 +29,10 @@ class VideoPlayerManager {
   // Video initialization queue
   final List<Future<void> Function()> _initQueue = [];
   bool _isProcessingQueue = false;
+  Timer? _queueProcessTimer;
+  
+  // Track if app is in foreground
+  static bool _isAppActive = true;
   
   // Nuclear cleanup - dispose ALL video resources
   static Future<void> nuclearCleanup() async {
@@ -75,6 +79,11 @@ class VideoPlayerManager {
 
   // Register a video controller
   void registerController(VideoPlayerController controller) {
+    if (!_isAppActive) {
+      print('VideoPlayerManager: App not active, not registering controller');
+      return;
+    }
+    
     _activeControllers.add(controller);
     
     // If we have too many controllers, dispose the oldest non-playing ones
@@ -121,6 +130,11 @@ class VideoPlayerManager {
 
   // Play a video and pause all others
   Future<void> playVideo(VideoPlayerController controller) async {
+    if (!_isAppActive) {
+      print('VideoPlayerManager: App not active, not playing video');
+      return;
+    }
+    
     // Pause all other videos first
     for (final activeController in _activeControllers) {
       if (activeController != controller && activeController.value.isPlaying) {
@@ -208,7 +222,7 @@ class VideoPlayerManager {
   
   // Queue a video initialization to prevent concurrent initializations
   Future<void> queueVideoInit(Future<void> Function() initFunction) async {
-    print('📋 Queueing video initialization. Queue size: ${_initQueue.length}');
+    print('📋 Queueing video initialization. Queue size: ${_initQueue.length}, isProcessing: $_isProcessingQueue');
     
     // Create a completer to track when this specific init completes
     final completer = Completer<void>();
@@ -217,16 +231,35 @@ class VideoPlayerManager {
     Future<void> wrappedInit() async {
       try {
         await initFunction();
-        completer.complete();
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
       } catch (e) {
-        completer.completeError(e);
+        if (!completer.isCompleted) {
+          completer.completeError(e);
+        }
       }
     }
     
     _initQueue.add(wrappedInit);
     
+    // Always try to process the queue
     if (!_isProcessingQueue) {
+      print('📦 Starting queue processing immediately...');
+      // Process immediately without timer
       _processQueue();
+    } else {
+      print('📦 Queue already processing, scheduling check...');
+      // Schedule a check to ensure queue doesn't get stuck
+      _queueProcessTimer?.cancel();
+      _queueProcessTimer = Timer(const Duration(milliseconds: 200), () {
+        if (!_isProcessingQueue && _initQueue.isNotEmpty) {
+          print('📦 Queue appears stuck, restarting processing...');
+          _processQueue();
+        } else if (_isProcessingQueue) {
+          print('📦 Queue still processing normally');
+        }
+      });
     }
     
     // Wait for this specific initialization to complete
@@ -235,28 +268,61 @@ class VideoPlayerManager {
   
   // Process the initialization queue
   Future<void> _processQueue() async {
-    if (_isProcessingQueue || _initQueue.isEmpty) return;
-    
-    _isProcessingQueue = true;
-    
-    while (_initQueue.isNotEmpty) {
-      final initFunction = _initQueue.removeAt(0);
-      try {
-        print('🎬 Processing video initialization from queue. Remaining: ${_initQueue.length}');
-        await initFunction();
-        // No delay for faster initialization - videos will init in parallel
-        // The video decoder can handle multiple concurrent initializations
-      } catch (e) {
-        print('❌ Error processing video init: $e');
-      }
+    if (_isProcessingQueue || _initQueue.isEmpty) {
+      print('📦 Cannot process queue: isProcessing=$_isProcessingQueue, queueEmpty=${_initQueue.isEmpty}');
+      return;
     }
     
-    _isProcessingQueue = false;
+    _isProcessingQueue = true;
+    print('🎬 Starting queue processing with ${_initQueue.length} items');
+    
+    try {
+      while (_initQueue.isNotEmpty && _isAppActive) {
+        final initFunction = _initQueue.removeAt(0);
+        try {
+          print('🎬 Processing video initialization from queue. Remaining: ${_initQueue.length}');
+          print('🎬 About to call init function...');
+          await initFunction();
+          print('🎬 Init function completed');
+          // Add small delay to prevent overwhelming the decoder
+          await Future.delayed(const Duration(milliseconds: 100));
+        } catch (e) {
+          print('❌ Error processing video init: $e');
+          print('❌ Stack trace: ${StackTrace.current}');
+        }
+      }
+    } finally {
+      // Always reset the processing flag, even if an error occurs
+      print('🎬 Queue processing completed, resetting flag');
+      _isProcessingQueue = false;
+      
+      // If there are still items in queue, schedule another processing
+      if (_initQueue.isNotEmpty && _isAppActive) {
+        print('📦 More items in queue, scheduling another processing...');
+        _queueProcessTimer?.cancel();
+        _queueProcessTimer = Timer(const Duration(milliseconds: 200), () {
+          _processQueue();
+        });
+      }
+    }
   }
   
   // Clear the initialization queue (for emergency cleanup)
   void clearInitQueue() {
     print('🧹 Clearing video initialization queue');
     _initQueue.clear();
+  }
+  
+  // Call this when app goes to background
+  static void onAppPaused() {
+    print('VideoPlayerManager: App paused, pausing all videos');
+    _isAppActive = false;
+    instance.pauseAllVideos();
+  }
+  
+  // Call this when app comes to foreground
+  static void onAppResumed() {
+    print('VideoPlayerManager: App resumed');
+    _isAppActive = true;
   }
 }

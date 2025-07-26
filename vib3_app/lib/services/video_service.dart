@@ -25,6 +25,9 @@ class VideoService {
     print('VideoService: Cleared following/friends cache');
   }
   
+  // Track ongoing requests to prevent duplicates
+  static final Map<String, Future<List<Video>>> _ongoingRequests = {};
+  
   static Future<List<Video>> getAllVideos(String token, {String feed = 'foryou', int offset = 0, int limit = 20}) async {
     // Check cache first
     final cacheKey = 'getAllVideos_${feed}_${offset}_$limit';
@@ -33,12 +36,33 @@ class VideoService {
       return (_cache[cacheKey]!['data'] as List<Video>);
     }
     
+    // Check if we already have an ongoing request for this exact query
+    final requestKey = 'getAllVideos_${feed}_${offset}_$limit';
+    if (_ongoingRequests.containsKey(requestKey)) {
+      print('⏳ Waiting for ongoing request: $requestKey');
+      return await _ongoingRequests[requestKey]!;
+    }
+    
     print('🔍 VideoService.getAllVideos called with:');
     print('   Token: ${token.length > 10 ? '${token.substring(0, 10)}...' : token}');
     print('   Feed: $feed');
     print('   Offset: $offset, Limit: $limit');
     print('   URL: ${AppConfig.baseUrl}/api/videos?limit=$limit&offset=$offset&feed=$feed');
     
+    // Create a new request and track it
+    final requestFuture = _doGetAllVideos(token, feed, offset, limit, cacheKey);
+    _ongoingRequests[requestKey] = requestFuture;
+    
+    try {
+      final result = await requestFuture;
+      return result;
+    } finally {
+      // Remove from ongoing requests when done
+      _ongoingRequests.remove(requestKey);
+    }
+  }
+  
+  static Future<List<Video>> _doGetAllVideos(String token, String feed, int offset, int limit, String cacheKey) async {
     // First, let's test with a simple direct approach
     try {
       final testResponse = await http.get(
@@ -476,38 +500,30 @@ class VideoService {
     
     print('🚀 MULTI-REQUEST APPROACH: Making multiple requests to bypass 8-video server limit');
     
-    while (keepGoing && page < 20) { // Max 20 pages to prevent infinite loops (20 * 8 = 160 videos max)
+    while (keepGoing && page < 5) { // Reduced to 5 pages to prevent excessive requests
       try {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        
-        // Try multiple pagination patterns for each page
-        final pageUrls = [
-          '${AppConfig.baseUrl}/feed?page=$page&_t=$timestamp',
-          '${AppConfig.baseUrl}/api/videos?page=$page&_t=$timestamp',
-          '${AppConfig.baseUrl}/feed?offset=${page * 8}&_t=$timestamp',
-          '${AppConfig.baseUrl}/api/videos?offset=${page * 8}&_t=$timestamp',
-          '${AppConfig.baseUrl}/feed?skip=${page * 8}&_t=$timestamp',
-          '${AppConfig.baseUrl}/api/videos?skip=${page * 8}&_t=$timestamp',
-        ];
+        // Use only the standard endpoint pattern
+        final offset = page * 20; // Use standard page size
+        final url = '${AppConfig.baseUrl}/api/videos?offset=$offset&limit=20&feed=foryou';
         
         bool pageHadNewVideos = false;
         
-        for (final url in pageUrls) {
-          try {
-            print('📄 PAGE $page REQUEST: $url');
-            
-            final headers = <String, String>{
-              'Content-Type': 'application/json',
-            };
-            
-            if (token != 'no-token') {
-              headers['Authorization'] = 'Bearer $token';
-            }
-            
-            final response = await http.get(
-              Uri.parse(url),
-              headers: headers,
-            );
+        try {
+          print('📄 PAGE $page REQUEST: $url');
+          
+          final headers = <String, String>{
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          };
+          
+          if (token != 'no-token') {
+            headers['Authorization'] = 'Bearer $token';
+          }
+          
+          final response = await http.get(
+            Uri.parse(url),
+            headers: headers,
+          ).timeout(const Duration(seconds: 10));
 
             if (response.statusCode == 200) {
               final dynamic responseData = jsonDecode(response.body);
@@ -546,18 +562,16 @@ class VideoService {
                 
                 print('✅ PAGE $page: Added $newVideosCount new videos (${allVideos.length} total)');
                 
-                if (newVideosCount > 0) {
-                  pageHadNewVideos = true;
-                  emptyResponses = 0; // Reset empty counter
-                  break; // Found videos with this URL pattern, move to next page
-                }
+              if (newVideosCount > 0) {
+                pageHadNewVideos = true;
+                emptyResponses = 0; // Reset empty counter
               }
-            } else {
-              print('❌ PAGE $page ERROR: ${response.statusCode} for $url');
             }
-          } catch (e) {
-            print('❌ PAGE $page EXCEPTION: $e for $url');
+          } else {
+            print('❌ PAGE $page ERROR: ${response.statusCode}');
           }
+        } catch (e) {
+          print('❌ PAGE $page EXCEPTION: $e');
         }
         
         if (!pageHadNewVideos) {
@@ -833,43 +847,9 @@ class VideoService {
   }
 
   static Future<List<Video>> getVideosPage(String token, int page, int limit) async {
+    // Just use the standard getAllVideos method to avoid duplicates
     final offset = page * limit;
-    
-    // Try different endpoints with various pagination parameters
-    final endpoints = [
-      // Standard pagination
-      '${AppConfig.baseUrl}/api/videos?feed=foryou&page=$page&limit=$limit',
-      '${AppConfig.baseUrl}/api/videos?page=$page&limit=$limit',
-      '${AppConfig.baseUrl}/feed?page=$page&limit=$limit',
-      
-      // Offset-based pagination
-      '${AppConfig.baseUrl}/api/videos?feed=foryou&offset=$offset&limit=$limit',
-      '${AppConfig.baseUrl}/api/videos?offset=$offset&limit=$limit',
-      '${AppConfig.baseUrl}/feed?offset=$offset&limit=$limit',
-      
-      // Skip-based pagination
-      '${AppConfig.baseUrl}/api/videos?feed=foryou&skip=$offset&limit=$limit',
-      '${AppConfig.baseUrl}/api/videos?skip=$offset&limit=$limit',
-      
-      // Different feed types with pagination
-      '${AppConfig.baseUrl}/api/videos?feed=following&page=$page&limit=$limit', 
-      '${AppConfig.baseUrl}/api/videos?feed=explore&page=$page&limit=$limit',
-      '${AppConfig.baseUrl}/api/videos?feed=trending&page=$page&limit=$limit',
-      
-      // Alternative endpoints
-      '${AppConfig.baseUrl}/videos?page=$page&limit=$limit',
-      '${AppConfig.baseUrl}/api/feed?page=$page&limit=$limit',
-      
-      // Fallback without pagination for first page
-      if (page == 0) ...[
-        '${AppConfig.baseUrl}/api/videos?feed=foryou',
-        '${AppConfig.baseUrl}/api/videos',
-        '${AppConfig.baseUrl}/feed',
-        '${AppConfig.baseUrl}/videos',
-      ],
-    ];
-    
-    return _fetchFromEndpoints(endpoints, token);
+    return getAllVideos(token, offset: offset, limit: limit);
   }
 
   static Future<List<Video>> _fetchFromEndpoints(List<String> endpoints, String token) async {

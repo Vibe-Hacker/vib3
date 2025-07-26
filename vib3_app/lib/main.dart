@@ -18,6 +18,7 @@ import 'core/di/service_locator.dart';
 import 'core/config/feature_flags.dart';
 import 'features/video_feed/presentation/providers/video_feed_provider.dart';
 import 'services/dev_http_overrides.dart';
+import 'services/video_player_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,9 +69,46 @@ void main() async {
   runApp(const VIB3App());
 }
 
-class VIB3App extends StatelessWidget {
+class VIB3App extends StatefulWidget {
   const VIB3App({super.key});
 
+  @override
+  State<VIB3App> createState() => _VIB3AppState();
+}
+
+class _VIB3AppState extends State<VIB3App> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+  
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    print('📦 App lifecycle state changed: $state');
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+        // App going to background
+        VideoPlayerManager.onAppPaused();
+        break;
+      case AppLifecycleState.resumed:
+        // App coming to foreground
+        VideoPlayerManager.onAppResumed();
+        break;
+      case AppLifecycleState.hidden:
+        // Handle hidden state if needed
+        break;
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     return MultiProvider(

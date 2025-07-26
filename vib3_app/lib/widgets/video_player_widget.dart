@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -20,16 +21,14 @@ class VideoPlayerWidget extends StatefulWidget {
   final bool preload;
   final String? thumbnailUrl;
 
-  VideoPlayerWidget({
+  const VideoPlayerWidget({
     super.key,
     required this.videoUrl,
     this.isPlaying = false,
     this.onTap,
     this.preload = false,
     this.thumbnailUrl,
-  }) {
-    print('🎬 VideoPlayerWidget constructor: videoUrl=$videoUrl, isPlaying=$isPlaying, preload=$preload, key=$key');
-  }
+  });
 
   @override
   State<VideoPlayerWidget> createState() {
@@ -56,21 +55,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
-    print('🎬 VideoPlayerWidget.initState() called');
-    print('🎬 URL: ${widget.videoUrl}');
+    print('🎬 VideoPlayerWidget.initState() called for ${widget.videoUrl}');
     print('🎬 isPlaying: ${widget.isPlaying}, preload: ${widget.preload}');
-    print('🎬 Widget key: ${widget.key}');
+    print('🎬 Widget hashCode: ${this.hashCode}');
     
     // Load thumbnail immediately
     _loadThumbnail();
     
-    // Initialize based on play state or preload flag
+    // Initialize immediately if we should play or preload
     if (widget.isPlaying || widget.preload) {
       print('🚀 Will initialize video because isPlaying=${widget.isPlaying}, preload=${widget.preload}');
-      // Initialize immediately without delay
-      if (!_isInitialized && !_isInitializing) {
-        _initializeVideo();
-      }
+      // Use post frame callback to ensure widget is fully built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _isDisposed) {
+          print('🎬 Post frame callback - not mounted or disposed, skipping init');
+          return;
+        }
+        
+        print('🎬 Post frame callback - mounted: $mounted, disposed: $_isDisposed');
+        
+        if (!_isInitialized && !_isInitializing) {
+          _initializeVideo();
+        }
+      });
     } else {
       print('⏸️ Not initializing video - isPlaying=false, preload=false');
     }
@@ -92,22 +99,34 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void didUpdateWidget(VideoPlayerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     
+    print('🎬 VideoPlayer.didUpdateWidget: oldUrl=${oldWidget.videoUrl}, newUrl=${widget.videoUrl}');
+    print('🎬 VideoPlayer.didUpdateWidget: oldPlay=${oldWidget.isPlaying}, newPlay=${widget.isPlaying}');
+    
     // Only recreate controller when URL actually changes
     if (oldWidget.videoUrl != widget.videoUrl) {
       print('🎬 VideoPlayer: URL changed from ${oldWidget.videoUrl} to ${widget.videoUrl}');
       _disposeController();
       _hasError = false;
       _isInitialized = false;
+      _isInitializing = false;
       _retryCount = 0;
-      if (widget.isPlaying) {
-        _initializeVideo();
-      }
+      
+      // Schedule initialization after widget update
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && (widget.isPlaying || widget.preload)) {
+          _initializeVideo();
+        }
+      });
     }
     
     // Handle preload state changes
-    else if (oldWidget.preload != widget.preload && widget.preload && !_isInitialized) {
+    else if (oldWidget.preload != widget.preload && widget.preload && !_isInitialized && !_isInitializing) {
       print('🎬 VideoPlayer: Preload enabled, initializing...');
-      _initializeVideo();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _initializeVideo();
+        }
+      });
     }
     
     // Handle play state changes without recreating controller
@@ -126,7 +145,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         } else if (!_isInitialized && !_isInitializing && !_hasError) {
           // Initialize if not already initialized
           print('🎬 VideoPlayer: Initializing video because isPlaying changed to true');
-          _initializeVideo();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _initializeVideo();
+            }
+          });
         }
       } else if (!widget.isPlaying && _isInitialized && _controller != null) {
         _controller?.pause();
@@ -157,12 +180,22 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _isInitializing = true;
     
     try {
+      print('🎆 About to queue video initialization...');
+      print('🎆 Widget state: mounted=$mounted, disposed=$_isDisposed, initializing=$_isInitializing');
+      
       // Queue the initialization to prevent concurrent initializations
       await VideoPlayerManager.instance.queueVideoInit(() async {
-        if (_isDisposed || !mounted) return;
-      
-      try {
+        print('🎆 Inside queued init function for ${widget.videoUrl}');
+        print('🎆 Queued function state check: disposed=$_isDisposed, mounted=$mounted');
+        
+        if (_isDisposed || !mounted) {
+          print('🎆 Skipping init: disposed=$_isDisposed, mounted=$mounted');
+          return;
+        }
+        
+        try {
         print('🎬 VideoPlayer: Initializing video: ${widget.videoUrl}');
+        print('🎬 Queue processing started for this video');
         
         // Dispose any existing controller first
         if (_controller != null) {
@@ -249,14 +282,27 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           _cacheVideoInBackground(optimalUrl);
         }
         
-        // Simple initialization without complex timeout logic
+        // Simple initialization with timeout
         print('🎮 About to call _controller.initialize()...');
-        await _controller!.initialize();
-        print('✅ VideoPlayer: Successfully initialized ${widget.videoUrl}');
-        print('📊 Video info: ${_controller!.value.size.width}x${_controller!.value.size.height}, duration: ${_controller!.value.duration}');
-        print('🎬 Video initialized: ${_controller!.value.isInitialized}');
-        print('▶️ Video playing: ${_controller!.value.isPlaying}');
-        print('🔊 Video volume: ${_controller!.value.volume}');
+        try {
+          await _controller!.initialize().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException('Video initialization timed out after 10 seconds');
+            },
+          );
+          print('✅ VideoPlayer: Successfully initialized ${widget.videoUrl}');
+          print('📊 Video info: ${_controller!.value.size.width}x${_controller!.value.size.height}, duration: ${_controller!.value.duration}');
+          print('🎬 Video initialized: ${_controller!.value.isInitialized}');
+          print('▶️ Video playing: ${_controller!.value.isPlaying}');
+          print('🔊 Video volume: ${_controller!.value.volume}');
+        } catch (timeoutError) {
+          if (timeoutError is TimeoutException) {
+            print('⏱️ Video initialization timeout: $timeoutError');
+            throw Exception('Video took too long to load');
+          }
+          rethrow;
+        }
         
         if (!mounted || _isDisposed) return;
         
@@ -340,8 +386,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             _isInitialized = false;
           });
         }
-      }
-    });
+      });
     } finally {
       _isInitializing = false;
     }
@@ -456,7 +501,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     try {
       if (_controller != null) {
         // Unregister from VideoPlayerManager
-        VideoPlayerManager.instance.unregisterController(_controller!);
+        try {
+          VideoPlayerManager.instance.unregisterController(_controller!);
+        } catch (e) {
+          print('⚠️ Error unregistering controller: $e');
+        }
         
         // First pause the video if playing
         try {
@@ -466,7 +515,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         }
         
         // Dispose the controller
-        _controller?.dispose();
+        try {
+          _controller?.dispose();
+        } catch (e) {
+          print('⚠️ Error disposing controller: $e');
+        }
       }
       
       _controller = null;
@@ -484,6 +537,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   void dispose() {
+    print('🔴 VideoPlayerWidget dispose() called for ${widget.videoUrl}');
+    print('🔴 Widget hashCode: ${this.hashCode}');
     _disposeController();
     super.dispose();
   }
@@ -491,6 +546,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   Widget build(BuildContext context) {
     print('🎨 VideoPlayerWidget build: _isInitialized=$_isInitialized, _controller=${_controller != null}, isPlaying=${widget.isPlaying}');
+    print('🎨 VideoPlayerWidget build: videoUrl=${widget.videoUrl}');
     
     if (_controller != null && _isInitialized) {
       print('🎬 Controller state: playing=${_controller!.value.isPlaying}, buffering=${_controller!.value.isBuffering}');
@@ -509,13 +565,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
     
     // If we should be playing but not initialized, initialize now
-    if (widget.isPlaying && !_isInitialized && !_isInitializing && !_hasError) {
-      print('⚠️ Video should be playing but not initialized - initializing now');
-      Future.microtask(() {
-        if (mounted) {
-          _initializeVideo();
-        }
-      });
+    if ((widget.isPlaying || widget.preload) && !_isInitialized && !_isInitializing && !_hasError && !_isDisposed) {
+      print('⚠️ Video should be initialized but isn\'t - initializing now');
+      print('⚠️ isPlaying=${widget.isPlaying}, preload=${widget.preload}');
+      print('⚠️ _isDisposed=$_isDisposed');
+      // Don't initialize in build method - wait for post frame callback
     }
     
     // Don't show error screen during retries, just show black

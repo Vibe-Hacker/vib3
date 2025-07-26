@@ -24,6 +24,7 @@ import '../widgets/grok_ai_assistant.dart';
 import '../screens/profile_screen.dart';
 import '../config/app_config.dart';
 import 'video_player_widget.dart';
+import 'simple_video_player.dart';
 import '../screens/video_creator/modules/duet_module.dart';
 import '../screens/video_creator/modules/stitch_module.dart';
 import 'double_tap_like_animation.dart';
@@ -1141,19 +1142,27 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       print('🎬 Creating VideoPlayerWidget for video ${video.id}');
       print('🎬 Will play: $isCurrentVideo, Will preload: $preload');
       
-      // Always create the video player widget, let it handle its own initialization
-      print('🎬 About to return VideoPlayerWidget wrapper');
-      return Builder(
-        builder: (context) {
-          print('🎬 Builder building VideoPlayerWidget for ${video.id}');
-          return VideoPlayerWidget(
-            key: ValueKey('video_${video.id}'),
-            videoUrl: video.videoUrl!,
-            isPlaying: isCurrentVideo,
-            preload: preload,
-          );
-        }
-      );
+      // Use a stable key based only on video ID to avoid unnecessary rebuilds
+      final widgetKey = ValueKey('video_${video.id}');
+      print('🎬 Using key: $widgetKey');
+      
+      // Temporarily test with SimpleVideoPlayer for debugging
+      const bool useSimplePlayer = false; // Toggle this to test
+      
+      if (useSimplePlayer) {
+        return SimpleVideoPlayer(
+          key: widgetKey,
+          videoUrl: video.videoUrl!,
+          isPlaying: isCurrentVideo,
+        );
+      } else {
+        return VideoPlayerWidget(
+          key: widgetKey,
+          videoUrl: video.videoUrl!,
+          isPlaying: isCurrentVideo,
+          preload: preload,
+        );
+      }
     } else {
       return Positioned.fill(
         child: Container(
@@ -1171,9 +1180,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     print('🎨 VideoFeed build() called - isVisible=${widget.isVisible}, feedType=${widget.feedType}');
-    return ChangeNotifierProvider(
-      create: (context) => VideoFeedStateManager(),
-      child: Consumer<VideoProvider>(
+    return Consumer<VideoProvider>(
       builder: (context, videoProvider, child) {
         List<Video> videos = [];
         if (widget.feedType == FeedType.forYou) {
@@ -1290,7 +1297,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             if (videos.isEmpty) return Container(color: Colors.black);
             final video = videos[videoIndex];
             final isCurrentVideo = index == _currentIndex;
-            final videoProvider = Provider.of<VideoProvider>(context);
+            final videoProvider = Provider.of<VideoProvider>(context, listen: false);
             final isLiked = videoProvider.isVideoLiked(video.id);
             
             // Dynamic preloading based on scroll velocity
@@ -1310,7 +1317,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             print('🎥 Video URL: ${video.videoUrl}');
             print('🎥 Will play: $isCurrentVideo, Will preload: $shouldPreload');
             
-            return Container(
+            // Use RepaintBoundary to prevent unnecessary rebuilds
+            return RepaintBoundary(
+              child: Container(
               color: Colors.black,
               child: Center(
                 child: Container(
@@ -1448,13 +1457,13 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
                     ),
                   ),
                 ),
-              );
+              ),
+            );
             },
           ),
         ],
       );
       },
-    ),
     );
   }
 }
