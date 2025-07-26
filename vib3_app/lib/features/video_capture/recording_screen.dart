@@ -6,6 +6,7 @@ import 'camera_permissions.dart';
 import '../../core/video_pipeline/pipeline_manager.dart';
 import '../../core/video_pipeline/pipeline_state.dart';
 import 'package:provider/provider.dart';
+import '../../screens/video_creator/video_creator_screen.dart';
 
 class RecordingScreen extends StatefulWidget {
   const RecordingScreen({super.key});
@@ -100,11 +101,14 @@ class _RecordingScreenState extends State<RecordingScreen>
       pipelineState.setVideoPath(file.path);
       pipelineState.setVideoDuration(Duration(seconds: _recordingSeconds));
       
-      // Navigate to next screen
-      Navigator.pushReplacementNamed(
+      // Navigate to video creator screen for editing
+      Navigator.pushReplacement(
         context,
-        '/video-editor',
-        arguments: {'videoPath': file.path},
+        MaterialPageRoute(
+          builder: (context) => VideoCreatorScreen(
+            videoPath: file.path,
+          ),
+        ),
       );
     }
   }
