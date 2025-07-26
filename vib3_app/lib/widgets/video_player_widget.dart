@@ -20,17 +20,22 @@ class VideoPlayerWidget extends StatefulWidget {
   final bool preload;
   final String? thumbnailUrl;
 
-  const VideoPlayerWidget({
+  VideoPlayerWidget({
     super.key,
     required this.videoUrl,
     this.isPlaying = false,
     this.onTap,
     this.preload = false,
     this.thumbnailUrl,
-  });
+  }) {
+    print('🎬 VideoPlayerWidget constructor: videoUrl=$videoUrl, isPlaying=$isPlaying, preload=$preload, key=$key');
+  }
 
   @override
-  State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
+  State<VideoPlayerWidget> createState() {
+    print('🎬 VideoPlayerWidget.createState() called');
+    return _VideoPlayerWidgetState();
+  }
 }
 
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
@@ -54,6 +59,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     print('🎬 VideoPlayerWidget.initState() called');
     print('🎬 URL: ${widget.videoUrl}');
     print('🎬 isPlaying: ${widget.isPlaying}, preload: ${widget.preload}');
+    print('🎬 Widget key: ${widget.key}');
     
     // Load thumbnail immediately
     _loadThumbnail();
@@ -61,13 +67,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Initialize based on play state or preload flag
     if (widget.isPlaying || widget.preload) {
       print('🚀 Will initialize video because isPlaying=${widget.isPlaying}, preload=${widget.preload}');
-      // Use microtask to ensure widget is fully built
-      Future.microtask(() {
-        print('🚀 Microtask executing for video init');
-        if (mounted && !_isInitialized && !_isInitializing) {
-          _initializeVideo();
-        }
-      });
+      // Initialize immediately without delay
+      if (!_isInitialized && !_isInitializing) {
+        _initializeVideo();
+      }
     } else {
       print('⏸️ Not initializing video - isPlaying=false, preload=false');
     }

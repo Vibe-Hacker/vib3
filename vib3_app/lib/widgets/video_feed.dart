@@ -1143,25 +1143,11 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       
       // Always create the video player widget, let it handle its own initialization
       return Positioned.fill(
-        child: VideoSwipeActions(
-          onLike: () => _handleLike(video),
-          onShare: () => _shareVideo(video),
-          onSave: () => _saveVideo(video),
-          onNotInterested: () => _markNotInterested(video),
-          onShowMore: () => _showMoreLikeThis(video),
-          child: DoubleTapLikeWrapper(
-            onDoubleTap: () => _handleLike(video),
-            isLiked: Provider.of<VideoProvider>(context).isVideoLiked(video.id),
-            child: GestureDetector(
-              onLongPress: () => _showComments(video),
-              child: VideoPlayerWidget(
-                key: ValueKey('video_${video.id}'),
-                videoUrl: video.videoUrl!,
-                isPlaying: isCurrentVideo,
-                preload: preload,
-              ),
-            ),
-          ),
+        child: VideoPlayerWidget(
+          key: ValueKey('video_${video.id}'),
+          videoUrl: video.videoUrl!,
+          isPlaying: isCurrentVideo,
+          preload: preload,
         ),
       );
     } else {
