@@ -24,8 +24,8 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.vib3.vib3app1"
-    compileSdk flutter.compileSdkVersion
-    ndkVersion flutter.ndkVersion
+    compileSdk 34
+    ndkVersion "25.1.8937393"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -42,8 +42,8 @@ android {
 
     defaultConfig {
         applicationId "com.vib3.vib3app1"
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion flutter.targetSdkVersion
+        minSdkVersion 21
+        targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
