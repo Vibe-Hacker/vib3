@@ -83,8 +83,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     super.initState();
     _pageController = PageController(initialPage: 0);
     WidgetsBinding.instance.addObserver(this);
-    _isScreenVisible = widget.isVisible;
-    print('🎬 VideoFeed initState: _isScreenVisible = $_isScreenVisible');
+    _isScreenVisible = widget.isVisible ?? true; // Default to true if null
+    print('🎬 VideoFeed initState: widget.isVisible = ${widget.isVisible}, _isScreenVisible = $_isScreenVisible');
     print('🎬 VideoFeed initState: feedType = ${widget.feedType}');
     
     // Initialize cache manager
@@ -1137,7 +1137,9 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
     print('🎬 _buildVideoPlayer: videoUrl=${video.videoUrl}, isCurrentVideo=$isCurrentVideo, preload=$preload, _isScreenVisible=$_isScreenVisible');
     
     if (video.videoUrl != null && video.videoUrl!.isNotEmpty && (isCurrentVideo || preload)) {
-      print('🎬 Creating VideoPlayerWidget with URL: ${video.videoUrl}, isPlaying: $isCurrentVideo');
+      print('🎬 Creating VideoPlayerWidget with URL: ${video.videoUrl}');
+      print('🎬 isCurrentVideo: $isCurrentVideo, _isScreenVisible: $_isScreenVisible');
+      print('🎬 Final isPlaying: ${isCurrentVideo && _isScreenVisible}, preload: ${preload && _isScreenVisible}');
       return Positioned.fill(
         child: VideoSwipeActions(
           onLike: () => _handleLike(video),
@@ -1153,8 +1155,8 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
               child: VideoPlayerWidget(
                 key: ValueKey('video_${video.id}'),
                 videoUrl: video.videoUrl!,
-                isPlaying: isCurrentVideo && _isScreenVisible,
-                preload: preload && _isScreenVisible,
+                isPlaying: isCurrentVideo,
+                preload: preload,
               ),
             ),
           ),

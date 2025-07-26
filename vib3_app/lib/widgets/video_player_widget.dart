@@ -51,32 +51,36 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
-    print('🎬 VideoPlayerWidget created for URL: ${widget.videoUrl}');
-    print('🎬 Initial isPlaying: ${widget.isPlaying}, preload: ${widget.preload}');
+    print('🎬 VideoPlayerWidget.initState() called');
+    print('🎬 URL: ${widget.videoUrl}');
+    print('🎬 isPlaying: ${widget.isPlaying}, preload: ${widget.preload}');
     
     // Load thumbnail immediately
     _loadThumbnail();
     
     // Initialize based on play state or preload flag
     if (widget.isPlaying) {
-      print('🚀 Initializing video because isPlaying=true');
+      print('🚀 Will initialize video because isPlaying=true');
       // Use microtask to ensure widget is fully built
       Future.microtask(() {
+        print('🚀 Microtask executing for video init');
         if (mounted) {
           _initializeVideo();
         }
       });
     } else if (widget.preload) {
-      print('🚀 Pre-initializing video for smooth playback');
+      print('🚀 Will pre-initialize video for smooth playback');
       // Stagger preload initialization to avoid decoder overload
       final delay = (_preloadCounter++ % 3) * 200; // 0ms, 200ms, or 400ms
+      print('🚀 Scheduling preload with ${delay}ms delay');
       Future.delayed(Duration(milliseconds: delay), () {
+        print('🚀 Delayed preload executing');
         if (mounted && !_isInitialized && !_isInitializing) {
           _initializeVideo();
         }
       });
     } else {
-      print('⏸️ Not initializing video yet');
+      print('⏸️ Not initializing video - isPlaying=false, preload=false');
     }
   }
   
