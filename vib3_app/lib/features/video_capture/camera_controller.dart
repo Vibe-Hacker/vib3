@@ -88,15 +88,12 @@ class VIB3CameraController {
     if (_controller == null || !_isInitialized || _isRecording) return null;
     
     try {
-      final videoPath = await VideoCache.instance.generateTempPath('mp4');
-      
       await _controller!.startVideoRecording();
       _isRecording = true;
       
       VideoPipelineManager.instance.updateStage(PipelineStage.recording);
-      VideoPipelineManager.instance.setVideoPath(videoPath);
       
-      return videoPath;
+      return 'recording'; // Return a non-null value to indicate success
     } catch (e) {
       debugPrint('Failed to start recording: $e');
       VideoPipelineManager.instance.reportError('Failed to start recording: $e');
@@ -105,17 +102,27 @@ class VIB3CameraController {
   }
   
   Future<XFile?> stopRecording() async {
-    if (_controller == null || !_isInitialized || !_isRecording) return null;
+    debugPrint('🎥 CameraController.stopRecording called');
+    debugPrint('🎥 _controller: $_controller, _isInitialized: $_isInitialized, _isRecording: $_isRecording');
+    
+    if (_controller == null || !_isInitialized || !_isRecording) {
+      debugPrint('❌ Cannot stop recording - controller null or not recording');
+      return null;
+    }
     
     try {
+      debugPrint('🎥 Calling controller.stopVideoRecording()...');
       final file = await _controller!.stopVideoRecording();
       _isRecording = false;
       
+      debugPrint('✅ Recording stopped successfully: ${file.path}');
       VideoPipelineManager.instance.updateStage(PipelineStage.processing);
       
       return file;
     } catch (e) {
-      debugPrint('Failed to stop recording: $e');
+      debugPrint('❌ Failed to stop recording: $e');
+      debugPrint('❌ Error type: ${e.runtimeType}');
+      debugPrint('❌ Stack trace: ${StackTrace.current}');
       VideoPipelineManager.instance.reportError('Failed to stop recording: $e');
       return null;
     }

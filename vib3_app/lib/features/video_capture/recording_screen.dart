@@ -4,8 +4,6 @@ import 'dart:async';
 import 'camera_controller.dart';
 import 'camera_permissions.dart';
 import '../../core/video_pipeline/pipeline_manager.dart';
-import '../../core/video_pipeline/pipeline_state.dart';
-import 'package:provider/provider.dart';
 import '../../screens/video_creator/video_creator_screen.dart';
 
 class RecordingScreen extends StatefulWidget {
@@ -92,16 +90,17 @@ class _RecordingScreenState extends State<RecordingScreen>
   }
   
   void _stopRecording() async {
+    print('🎬 RecordingScreen: Stopping recording...');
     _recordingTimer?.cancel();
     
     final file = await _cameraController.stopRecording();
+    print('🎬 RecordingScreen: Stop recording returned: $file');
+    
     if (file != null && mounted) {
-      // Update pipeline state
-      final pipelineState = Provider.of<PipelineState>(context, listen: false);
-      pipelineState.setVideoPath(file.path);
-      pipelineState.setVideoDuration(Duration(seconds: _recordingSeconds));
+      print('🎬 RecordingScreen: Video file path: ${file.path}');
       
       // Navigate to video creator screen for editing
+      print('🎬 RecordingScreen: Navigating to VideoCreatorScreen...');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -109,7 +108,21 @@ class _RecordingScreenState extends State<RecordingScreen>
             videoPath: file.path,
           ),
         ),
-      );
+      ).then((_) {
+        print('🎬 RecordingScreen: Navigation completed');
+      }).catchError((error) {
+        print('❌ RecordingScreen: Navigation error: $error');
+      });
+    } else {
+      print('❌ RecordingScreen: No file returned or widget not mounted');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save recording'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
   
