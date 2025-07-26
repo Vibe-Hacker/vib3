@@ -56,7 +56,7 @@ dependencies:
   
   # Audio
   just_audio: ^0.9.36
-  record: ^5.0.4
+  # record: ^5.0.4  # Temporarily disabled due to compatibility issue
 
 dev_dependencies:
   flutter_test:
