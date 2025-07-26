@@ -7,6 +7,75 @@ const https = require('https');
 
 const GROK_API_KEY = process.env.GROK_API_KEY;
 const GROK_BASE_URL = 'api.x.ai';
+const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
+const CLAUDE_BASE_URL = 'api.anthropic.com';
+
+async function callClaude(prompt, systemPrompt = null) {
+    const messages = [];
+    
+    messages.push({
+        role: 'user',
+        content: prompt
+    });
+
+    const data = JSON.stringify({
+        model: 'claude-3-opus-20240229',
+        messages: messages,
+        system: systemPrompt || 'You are a helpful AI assistant for the VIB3 project.',
+        max_tokens: 4096,
+        temperature: 0.7
+    });
+
+    const options = {
+        hostname: CLAUDE_BASE_URL,
+        port: 443,
+        path: '/v1/messages',
+        method: 'POST',
+        headers: {
+            'x-api-key': CLAUDE_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
+            'Content-Length': data.length
+        }
+    };
+
+    return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            let responseData = '';
+
+            res.on('data', (chunk) => {
+                responseData += chunk;
+            });
+
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(responseData);
+                    if (res.statusCode !== 200) {
+                        console.error('Claude API Error:', parsed);
+                        reject(new Error(`Claude API returned ${res.statusCode}: ${responseData}`));
+                        return;
+                    }
+                    if (parsed.content && parsed.content[0]) {
+                        resolve(parsed.content[0].text);
+                    } else {
+                        console.error('Unexpected response:', responseData);
+                        reject(new Error('Invalid response from Claude'));
+                    }
+                } catch (error) {
+                    console.error('Parse error:', responseData);
+                    reject(error);
+                }
+            });
+        });
+
+        req.on('error', (error) => {
+            reject(error);
+        });
+
+        req.write(data);
+        req.end();
+    });
+}
 
 async function callGrok(prompt, systemPrompt = null) {
     const messages = [];

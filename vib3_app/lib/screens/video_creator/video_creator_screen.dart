@@ -225,14 +225,16 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                       });
                     }
                   },
+                  onNext: _currentMode == CreatorMode.edit ? _navigateToUpload : null,
                 ),
               ),
             
             // Bottom toolbar (main navigation) - show in edit mode and feature modes
-            // Using Align instead of Positioned to ensure it's always on top
             if (_currentMode != CreatorMode.camera)
-              Align(
-                alignment: Alignment.bottomCenter,
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
                 child: IgnorePointer(
                   ignoring: false, // Always allow touches
                   child: BottomToolbar(
