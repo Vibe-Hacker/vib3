@@ -2350,6 +2350,105 @@ app.post('/api/auth/logout', requireAuth, (req, res) => {
     res.json({ message: 'Logged out successfully' });
 });
 
+// Forgot Password
+app.post('/api/auth/forgot-password', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+    }
+
+    try {
+        // Check if user exists
+        const user = await db.collection('users').findOne({ email });
+
+        // Always return success (don't reveal if email exists)
+        // In production, this would send an actual email with reset link
+        console.log('🔑 Password reset requested for:', email, user ? '(found)' : '(not found)');
+
+        if (user) {
+            // Generate reset token
+            const crypto = require('crypto');
+            const resetToken = crypto.randomBytes(32).toString('hex');
+            const resetTokenExpiry = Date.now() + 3600000; // 1 hour
+
+            // Store reset token in database
+            await db.collection('users').updateOne(
+                { _id: user._id },
+                {
+                    $set: {
+                        resetToken,
+                        resetTokenExpiry
+                    }
+                }
+            );
+
+            console.log('✅ Reset token generated:', resetToken.substring(0, 10) + '...');
+            // TODO: Send email with reset link
+            // For now, return token in development (remove in production!)
+            if (process.env.NODE_ENV === 'development') {
+                return res.json({
+                    message: 'Password reset email sent',
+                    devToken: resetToken // Only for development!
+                });
+            }
+        }
+
+        res.json({ message: 'If that email exists, a password reset link has been sent' });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Reset Password
+app.post('/api/auth/reset-password', async (req, res) => {
+    if (!db) {
+        return res.status(503).json({ error: 'Database not connected' });
+    }
+
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+        return res.status(400).json({ error: 'Token and new password are required' });
+    }
+
+    try {
+        // Find user with valid reset token
+        const user = await db.collection('users').findOne({
+            resetToken: token,
+            resetTokenExpiry: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ error: 'Invalid or expired reset token' });
+        }
+
+        // Hash new password
+        const bcrypt = require('bcryptjs');
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password and clear reset token
+        await db.collection('users').updateOne(
+            { _id: user._id },
+            {
+                $set: { password: hashedPassword },
+                $unset: { resetToken: '', resetTokenExpiry: '' }
+            }
+        );
+
+        console.log('✅ Password reset successful for:', user.email);
+        res.json({ message: 'Password reset successful' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // Get all videos (feed)
 // Main feed endpoint for Flutter app
 app.get('/api/feed', async (req, res) => {
