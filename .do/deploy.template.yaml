@@ -1,0 +1,45 @@
+spec:
+  name: vib3-backend
+  region: nyc
+  services:
+  - name: api
+    github:
+      repo: Vibe-Hacker/vib3
+      branch: main
+      deploy_on_push: true
+    source_dir: /
+    build_command: npm install
+    run_command: node server.js
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 3000
+    envs:
+    - key: NODE_ENV
+      value: production
+    - key: PORT
+      value: "3000"
+    - key: MONGODB_URI
+      scope: RUN_TIME
+      type: SECRET
+    - key: JWT_SECRET
+      scope: RUN_TIME
+      type: SECRET
+    - key: DO_SPACES_KEY
+      scope: RUN_TIME
+      type: SECRET
+    - key: DO_SPACES_SECRET
+      scope: RUN_TIME
+      type: SECRET
+    - key: DO_SPACES_BUCKET
+      value: vib3-videos
+    - key: DO_SPACES_REGION
+      value: nyc3
+    - key: GROK_API_KEY
+      scope: RUN_TIME
+      type: SECRET
+    - key: CLAUDE_API_KEY
+      scope: RUN_TIME
+      type: SECRET
+    - key: CLAUDE_BASE_URL
+      value: https://api.anthropic.com/v1
