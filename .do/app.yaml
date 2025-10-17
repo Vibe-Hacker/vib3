@@ -16,3 +16,12 @@ services:
     value: production
   - key: PORT
     value: "3000"
+  - key: MONGODB_URI
+    scope: RUN_TIME
+    type: SECRET
+  - key: JWT_SECRET
+    scope: RUN_TIME
+    type: SECRET
+  - key: CLAUDE_API_KEY
+    scope: RUN_TIME
+    type: SECRET
