@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
-const auth = require('../../middleware/auth');
+const { requireAuth } = require('../../middleware/auth');
 
 const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 const CLAUDE_BASE_URL = process.env.CLAUDE_BASE_URL || 'https://api.anthropic.com/v1';
@@ -52,7 +52,7 @@ async function callClaudeAPI(prompt, systemPrompt = null, options = {}) {
 }
 
 // Generate code endpoint
-router.post('/generate-code', auth, checkClaudeConfig, async (req, res) => {
+router.post('/generate-code', requireAuth, checkClaudeConfig, async (req, res) => {
     try {
         const { feature, context } = req.body;
         
@@ -72,7 +72,7 @@ router.post('/generate-code', auth, checkClaudeConfig, async (req, res) => {
 });
 
 // Analyze bug endpoint
-router.post('/analyze-bug', auth, checkClaudeConfig, async (req, res) => {
+router.post('/analyze-bug', requireAuth, checkClaudeConfig, async (req, res) => {
     try {
         const { error, code, context } = req.body;
         
@@ -92,7 +92,7 @@ router.post('/analyze-bug', auth, checkClaudeConfig, async (req, res) => {
 });
 
 // Plan feature endpoint
-router.post('/plan-feature', auth, checkClaudeConfig, async (req, res) => {
+router.post('/plan-feature', requireAuth, checkClaudeConfig, async (req, res) => {
     try {
         const { feature, requirements } = req.body;
         
@@ -112,7 +112,7 @@ router.post('/plan-feature', auth, checkClaudeConfig, async (req, res) => {
 });
 
 // Review code endpoint
-router.post('/review-code', auth, checkClaudeConfig, async (req, res) => {
+router.post('/review-code', requireAuth, checkClaudeConfig, async (req, res) => {
     try {
         const { code, purpose } = req.body;
         
@@ -132,7 +132,7 @@ router.post('/review-code', auth, checkClaudeConfig, async (req, res) => {
 });
 
 // Generate MongoDB query endpoint
-router.post('/generate-query', auth, checkClaudeConfig, async (req, res) => {
+router.post('/generate-query', requireAuth, checkClaudeConfig, async (req, res) => {
     try {
         const { description, collection } = req.body;
         
@@ -152,7 +152,7 @@ router.post('/generate-query', auth, checkClaudeConfig, async (req, res) => {
 });
 
 // Bridge endpoint - uses both Grok and Claude
-router.post('/bridge', auth, checkClaudeConfig, async (req, res) => {
+router.post('/bridge', requireAuth, checkClaudeConfig, async (req, res) => {
     try {
         const { prompt } = req.body;
         
@@ -192,7 +192,7 @@ router.post('/bridge', auth, checkClaudeConfig, async (req, res) => {
 });
 
 // General purpose endpoint
-router.post('/general', auth, checkClaudeConfig, async (req, res) => {
+router.post('/general', requireAuth, checkClaudeConfig, async (req, res) => {
     try {
         const { prompt, systemPrompt, options } = req.body;
         
