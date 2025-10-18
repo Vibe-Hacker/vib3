@@ -2438,8 +2438,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
         }
 
         // Hash new password
-        const bcrypt = require('bcryptjs');
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const hashedPassword = crypto.createHash('sha256').update(newPassword).digest('hex');
 
         // Update password and clear reset token
         await db.collection('users').updateOne(
