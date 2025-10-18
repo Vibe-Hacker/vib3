@@ -2368,12 +2368,10 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         const user = await db.collection('users').findOne({ email });
 
         // Always return success (don't reveal if email exists)
-        // In production, this would send an actual email with reset link
         console.log('🔑 Password reset requested for:', email, user ? '(found)' : '(not found)');
 
         if (user) {
             // Generate reset token
-            const crypto = require('crypto');
             const resetToken = crypto.randomBytes(32).toString('hex');
             const resetTokenExpiry = Date.now() + 3600000; // 1 hour
 
@@ -2389,13 +2387,15 @@ app.post('/api/auth/forgot-password', async (req, res) => {
             );
 
             console.log('✅ Reset token generated:', resetToken.substring(0, 10) + '...');
-            // TODO: Send email with reset link
-            // For now, return token in development (remove in production!)
-            if (process.env.NODE_ENV === 'development') {
-                return res.json({
-                    message: 'Password reset email sent',
-                    devToken: resetToken // Only for development!
-                });
+
+            // Send email with reset link
+            const emailService = require('./services/email-service');
+            const emailSent = await emailService.sendPasswordResetEmail(email, resetToken);
+
+            if (emailSent) {
+                console.log('✅ Password reset email sent to:', email);
+            } else {
+                console.warn('⚠️  Password reset email failed to send');
             }
         }
 
