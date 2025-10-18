@@ -1906,15 +1906,16 @@ let db = null;
 let client = null;
 
 async function connectDB() {
-    if (process.env.DATABASE_URL) {
+    const mongoUri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+    if (mongoUri) {
         try {
-            client = new MongoClient(process.env.DATABASE_URL);
+            client = new MongoClient(mongoUri);
             await client.connect();
             db = client.db('vib3');
-            
+
             // Create indexes for better performance
             await createIndexes();
-            
+
             console.log('✅ MongoDB connected successfully');
             return true;
         } catch (error) {
@@ -1922,7 +1923,7 @@ async function connectDB() {
             return false;
         }
     } else {
-        console.log('No DATABASE_URL found - running without database');
+        console.log('No MONGODB_URI or DATABASE_URL found - running without database');
         return false;
     }
 }
@@ -2124,7 +2125,7 @@ app.get('/api/health', async (req, res) => {
         uptime: process.uptime(),
         memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
         database: dbConnected ? 'connected' : 'not connected',
-        databaseUrl: process.env.DATABASE_URL ? 'configured' : 'not configured',
+        databaseUrl: (process.env.MONGODB_URI || process.env.DATABASE_URL) ? 'configured' : 'not configured',
         storage: spacesConfigured ? 'configured' : 'not configured'
     });
 });
@@ -2144,10 +2145,10 @@ app.get('/api/info', (req, res) => {
 // Database test
 app.get('/api/database/test', async (req, res) => {
     if (!db) {
-        return res.json({ 
-            connected: false, 
+        return res.json({
+            connected: false,
             message: 'Database not connected',
-            configured: !!process.env.DATABASE_URL 
+            configured: !!(process.env.MONGODB_URI || process.env.DATABASE_URL)
         });
     }
     
