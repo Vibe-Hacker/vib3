@@ -76,6 +76,14 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Password reset web interface
+app.get('/reset-password', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'reset-password.html'));
+});
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Test video endpoint for debugging
 // const testVideoRouter = require('./test-video-endpoint');
 // app.use('/api', testVideoRouter);
