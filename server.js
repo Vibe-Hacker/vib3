@@ -2228,10 +2228,28 @@ app.post('/api/auth/register', async (req, res) => {
         
         // Remove password from response
         delete user.password;
-        
-        res.json({ 
+
+        // Transform user object to match Flutter model
+        const userResponse = {
+            id: user._id.toString(),
+            username: user.username,
+            email: user.email,
+            displayName: user.displayName || user.username,
+            bio: user.bio || '',
+            profilePicture: user.profileImage || '',
+            coverImage: user.coverImage || null,
+            followersCount: user.followers || 0,
+            followingCount: user.following || 0,
+            postsCount: 0,
+            isVerified: user.isVerified || false,
+            isPrivate: user.isPrivate || false,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+        };
+
+        res.json({
             message: 'Registration successful',
-            user,
+            user: userResponse,
             token
         });
         
@@ -2297,13 +2315,28 @@ app.post('/api/auth/login', async (req, res) => {
         
         // Remove password from response
         delete user.password;
-        
-        // Add totalLikes to user object
-        user.totalLikes = totalLikes;
-        
-        res.json({ 
+
+        // Transform user object to match Flutter model
+        const userResponse = {
+            id: user._id.toString(),
+            username: user.username,
+            email: user.email,
+            displayName: user.displayName || user.username,
+            bio: user.bio || '',
+            profilePicture: user.profileImage || '',
+            coverImage: user.coverImage || null,
+            followersCount: user.followers || 0,
+            followingCount: user.following || 0,
+            postsCount: userVideos.length,
+            isVerified: user.isVerified || false,
+            isPrivate: user.isPrivate || false,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+        };
+
+        res.json({
             message: 'Login successful',
-            user,
+            user: userResponse,
             token
         });
         
