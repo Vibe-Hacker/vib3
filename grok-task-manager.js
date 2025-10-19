@@ -39,11 +39,15 @@ class GrokTaskManager {
 
     async autoEnhanceNewVideos() {
         if (!this.db) return;
-        
+        if (!this.apiKey) {
+            console.log('⚠️ Grok API key not configured, skipping video enhancement');
+            return;
+        }
+
         try {
             // Find videos without enhanced titles/descriptions
             const videos = await this.db.collection('videos')
-                .find({ 
+                .find({
                     aiEnhanced: { $ne: true },
                     status: { $ne: 'deleted' }
                 })
@@ -95,6 +99,11 @@ class GrokTaskManager {
     }
 
     async generateTrendingContent() {
+        if (!this.apiKey) {
+            console.log('⚠️ Grok API key not configured, skipping trend generation');
+            return;
+        }
+
         try {
             const messages = [
                 {
