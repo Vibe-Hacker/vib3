@@ -25,8 +25,8 @@ class PublishScreen extends StatefulWidget {
 class _PublishScreenState extends State<PublishScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  late VideoPlayerController _videoController;
-  
+  VideoPlayerController? _videoController;
+
   bool _isPublic = true;
   bool _allowComments = true;
   bool _allowDuet = true;
@@ -59,32 +59,34 @@ class _PublishScreenState extends State<PublishScreen> {
   
   Future<void> _initializeVideo() async {
     _videoController = VideoPlayerController.file(File(widget.videoPath));
-    await _videoController.initialize();
-    _videoController.setLooping(true);
-    
+    await _videoController!.initialize();
+    _videoController!.setLooping(true);
+
     // Register with VideoPlayerManager
-    VideoPlayerManager.instance.registerController(_videoController);
-    
+    VideoPlayerManager.instance.registerController(_videoController!);
+
     // Clean up all other video controllers to prevent buffer overflow
-    await VideoPlayerManager.instance.cleanupAllExcept(_videoController);
-    
+    await VideoPlayerManager.instance.cleanupAllExcept(_videoController!);
+
     // Use manager to play the video
-    await VideoPlayerManager.instance.playVideo(_videoController);
-    
-    setState(() {});
+    await VideoPlayerManager.instance.playVideo(_videoController!);
+
+    if (mounted) {
+      setState(() {});
+    }
   }
   
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    
-    // Unregister from VideoPlayerManager
-    VideoPlayerManager.instance.unregisterController(_videoController);
-    
-    // Properly dispose video controller
-    _videoController.pause();
-    _videoController.dispose();
+
+    // Unregister and dispose video controller if initialized
+    if (_videoController != null) {
+      VideoPlayerManager.instance.unregisterController(_videoController!);
+      _videoController!.pause();
+      _videoController!.dispose();
+    }
     super.dispose();
   }
   
@@ -119,10 +121,10 @@ class _PublishScreenState extends State<PublishScreen> {
                     child: SizedBox(
                       width: 100,
                       height: 150,
-                      child: _videoController.value.isInitialized
+                      child: _videoController != null && _videoController!.value.isInitialized
                           ? AspectRatio(
-                              aspectRatio: _videoController.value.aspectRatio,
-                              child: VideoPlayer(_videoController),
+                              aspectRatio: _videoController!.value.aspectRatio,
+                              child: VideoPlayer(_videoController!),
                             )
                           : Container(
                               color: Colors.grey[900],
