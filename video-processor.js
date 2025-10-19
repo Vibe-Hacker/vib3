@@ -250,6 +250,72 @@ class VideoProcessor {
         console.log(`🔄 Conversion needed for ${originalFilename}: ${shouldConvert}`);
         return shouldConvert;
     }
+
+    // Flip video horizontally for front camera videos
+    async flipVideoHorizontal(inputBuffer, originalFilename) {
+        const tempId = crypto.randomBytes(8).toString('hex');
+        const inputPath = path.join(this.tempDir, `input_${tempId}${path.extname(originalFilename)}`);
+        const outputPath = path.join(this.tempDir, `flipped_${tempId}.mp4`);
+
+        try {
+            console.log('🔄 Starting horizontal flip for:', originalFilename);
+
+            // Write input buffer to temporary file
+            fs.writeFileSync(inputPath, inputBuffer);
+
+            // Flip video horizontally using FFmpeg
+            await new Promise((resolve, reject) => {
+                ffmpeg(inputPath)
+                    .videoFilters('hflip')
+                    .videoCodec('libx264')
+                    .audioCodec('copy')
+                    .outputOptions('-preset fast')
+                    .outputOptions('-crf 23')
+                    .on('start', (commandLine) => {
+                        console.log('📹 FFmpeg command:', commandLine);
+                    })
+                    .on('progress', (progress) => {
+                        if (progress.percent) {
+                            console.log(`🔄 Flipping progress: ${progress.percent.toFixed(1)}%`);
+                        }
+                    })
+                    .on('end', () => {
+                        console.log('✅ Horizontal flip completed');
+                        resolve();
+                    })
+                    .on('error', (err) => {
+                        console.error('❌ FFmpeg flip error:', err.message);
+                        reject(err);
+                    })
+                    .save(outputPath);
+            });
+
+            // Read flipped file back to buffer
+            const flippedBuffer = fs.readFileSync(outputPath);
+
+            // Clean up temporary files
+            this.cleanup([inputPath, outputPath]);
+
+            console.log('✅ Video flip completed successfully');
+            console.log(`📦 Original size: ${(inputBuffer.length / 1024 / 1024).toFixed(2)}MB`);
+            console.log(`📦 Flipped size: ${(flippedBuffer.length / 1024 / 1024).toFixed(2)}MB`);
+
+            return {
+                success: true,
+                buffer: flippedBuffer,
+                originalSize: inputBuffer.length,
+                flippedSize: flippedBuffer.length
+            };
+
+        } catch (error) {
+            console.error('❌ Video flip failed:', error);
+
+            // Clean up any remaining files
+            this.cleanup([inputPath, outputPath]);
+
+            throw error;
+        }
+    }
 }
 
 module.exports = VideoProcessor;

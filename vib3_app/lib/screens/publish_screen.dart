@@ -541,6 +541,7 @@ class _PublishScreenState extends State<PublishScreen> {
         token: token,
         hashtags: hashtagsString,
         musicName: widget.musicName,
+        isFrontCamera: widget.isFrontCamera,
       );
       
       setState(() {

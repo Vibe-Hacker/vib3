@@ -63,14 +63,17 @@ router.post('/upload', upload.single('video'), async (req, res) => {
         console.log(`🎬 Processing video upload: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB)`);
 
         // Check for bypass flag
-        const bypassProcessing = req.body.bypassProcessing === 'true' || 
+        const bypassProcessing = req.body.bypassProcessing === 'true' ||
                                 process.env.BYPASS_VIDEO_PROCESSING === 'true' ||
                                 req.file.originalname.toLowerCase().includes('download') ||
                                 req.file.originalname.toLowerCase().includes('test');
-        
+
+        // Check if front camera video that needs flipping
+        const isFrontCamera = req.body.isFrontCamera === 'true';
+
         let conversionResult;
-        
-        if (bypassProcessing) {
+
+        if (bypassProcessing && !isFrontCamera) {
             console.log('⚡ BYPASSING video processing');
             conversionResult = {
                 success: true,
@@ -80,6 +83,28 @@ router.post('/upload', upload.single('video'), async (req, res) => {
                 skipped: true,
                 bypassed: true
             };
+        } else if (bypassProcessing && isFrontCamera) {
+            console.log('🔄 Front camera detected - applying horizontal flip');
+            try {
+                const flippedResult = await videoProcessor.flipVideoHorizontal(req.file.buffer, req.file.originalname);
+                conversionResult = {
+                    success: true,
+                    buffer: flippedResult.buffer,
+                    originalSize: req.file.size,
+                    convertedSize: flippedResult.buffer.length,
+                    flipped: true,
+                    bypassed: false
+                };
+            } catch (flipError) {
+                console.error('❌ Front camera flip failed, uploading unflipped:', flipError);
+                conversionResult = {
+                    success: true,
+                    buffer: req.file.buffer,
+                    originalSize: req.file.size,
+                    convertedSize: req.file.size,
+                    bypassed: true
+                };
+            }
         } else {
             // Validate video
             console.log('📋 Validating video...');

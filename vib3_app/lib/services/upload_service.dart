@@ -15,6 +15,7 @@ class UploadService {
     required String token,
     String? hashtags,
     String? musicName,
+    bool isFrontCamera = false,
   }) async {
     try {
       print('🎬 Starting video upload...');
@@ -89,6 +90,7 @@ class UploadService {
           request.fields['allowDuet'] = allowDuet.toString();
           request.fields['allowStitch'] = allowStitch.toString();
           request.fields['bypassProcessing'] = 'true'; // Skip video processing to avoid errors
+          request.fields['isFrontCamera'] = isFrontCamera.toString(); // For server-side mirroring
 
           // Add hashtags and music info if provided
           if (hashtags != null && hashtags.isNotEmpty) {
