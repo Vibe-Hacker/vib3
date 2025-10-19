@@ -3,15 +3,10 @@ class AppConfig {
   static const List<String> backendUrls = [
     'https://vib3app.net',                         // Production primary
     'https://vib3-web-75tal.ondigitalocean.app',  // Digital Ocean backup
-    'http://192.168.1.100:3000',                  // Local development
-    'http://10.0.2.2:3000',                       // Android emulator localhost
-    'http://localhost:3000',                      // Web localhost
   ];
-  
-  // For local testing on physical device, use your computer's IP
-  // Find your IP: Windows: ipconfig, Mac/Linux: ifconfig
-  static String get baseUrl => 'http://YOUR_ACTUAL_IP:3000'; // Replace YOUR_ACTUAL_IP with the IP from ipconfig
-  // Use 'http://10.0.2.2:3000' for Android emulator
+
+  // Primary backend URL
+  static String get baseUrl => 'https://vib3app.net';
   
   // API Endpoints
   static const String loginEndpoint = '/api/auth/login';
