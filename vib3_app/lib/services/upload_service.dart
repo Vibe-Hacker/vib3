@@ -37,13 +37,14 @@ class UploadService {
       }
       
       // Try multiple endpoint variations
+      // IMPORTANT: File upload endpoint first, metadata-only endpoint last
       final endpoints = [
-        '${AppConfig.baseUrl}/api/videos',
-        '${AppConfig.baseUrl}/api/upload',
-        '${AppConfig.baseUrl}/api/videos/upload',
+        '${AppConfig.baseUrl}/api/videos/upload',  // Correct file upload endpoint
         '${AppConfig.baseUrl}/api/upload/video',
+        '${AppConfig.baseUrl}/api/upload',
         '${AppConfig.baseUrl}/upload',
         '${AppConfig.baseUrl}/feed',
+        '${AppConfig.baseUrl}/api/videos',  // Metadata-only endpoint (last resort)
       ];
       
       for (final endpoint in endpoints) {

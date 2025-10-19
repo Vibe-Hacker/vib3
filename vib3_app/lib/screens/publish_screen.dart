@@ -124,11 +124,7 @@ class _PublishScreenState extends State<PublishScreen> {
                       child: _videoController != null && _videoController!.value.isInitialized
                           ? AspectRatio(
                               aspectRatio: _videoController!.value.aspectRatio,
-                              child: Transform(
-                                alignment: Alignment.center,
-                                transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
-                                child: VideoPlayer(_videoController!),
-                              ),
+                              child: VideoPlayer(_videoController!),
                             )
                           : Container(
                               color: Colors.grey[900],

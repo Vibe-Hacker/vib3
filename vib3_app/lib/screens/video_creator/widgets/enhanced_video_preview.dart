@@ -199,11 +199,7 @@ class _EnhancedVideoPreviewState extends State<EnhancedVideoPreview> {
           child: Center(
             child: AspectRatio(
               aspectRatio: _videoController!.value.aspectRatio,
-              child: Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
-                child: VideoPlayer(_videoController!),
-              ),
+              child: VideoPlayer(_videoController!),
             ),
           ),
         ),
