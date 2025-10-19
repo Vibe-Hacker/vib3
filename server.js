@@ -3498,7 +3498,7 @@ app.get('/api/user/videos', async (req, res) => {
     }
     
     try {
-        const { userId, limit = 20, skip = 0, page = 1, type } = req.query;
+        const { userId, limit = 100, skip = 0, page = 1, type } = req.query;
         const actualSkip = page > 1 ? (parseInt(page) - 1) * parseInt(limit) : parseInt(skip);
         
         // Get current user from auth token if no userId provided
