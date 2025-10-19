@@ -153,18 +153,18 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
   }
 
   Widget _buildThumbnail() {
-    // DISABLED: VideoPlayer for thumbnails to prevent decoder overload
-    // Skip directly to static thumbnail options
-    
     print('🖼️ Building thumbnail for video ${widget.video.id}');
     print('  thumbnailUrl: ${widget.video.thumbnailUrl}');
     print('  videoUrl: ${widget.video.videoUrl}');
     print('  runtimeThumbnailUrl: $_runtimeThumbnailUrl');
-    
+
     // Priority 1: Use provided thumbnail URL
     if (widget.video.thumbnailUrl != null && widget.video.thumbnailUrl!.isNotEmpty) {
+      // Remove #t= fragment if present (that's for video elements, not images)
+      String cleanThumbnailUrl = widget.video.thumbnailUrl!.split('#').first;
+
       return Image.network(
-        widget.video.thumbnailUrl!,
+        cleanThumbnailUrl,
         fit: BoxFit.cover,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
@@ -179,12 +179,21 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
         },
         errorBuilder: (context, error, stackTrace) {
           print('Thumbnail failed to load: ${widget.video.thumbnailUrl}');
+          // For video URLs, try to show first frame using video player
+          if (widget.video.videoUrl != null && !_isInitialized) {
+            _loadVideoThumbnail();
+          }
           return _buildFallbackThumbnail();
         },
       );
     }
-    
-    // Priority 2: Use runtime-generated thumbnail URL
+
+    // Priority 2: Use initialized video player thumbnail
+    if (_thumbnailController != null && _isInitialized) {
+      return VideoPlayer(_thumbnailController!);
+    }
+
+    // Priority 3: Use runtime-generated thumbnail URL
     if (_runtimeThumbnailUrl != null) {
       return Image.network(
         _runtimeThumbnailUrl!,
@@ -198,10 +207,18 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
         },
       );
     }
-    
-    // Skip loading state since we're not loading video controllers anymore
-    
-    // Priority 4: For DigitalOcean Spaces videos, try common thumbnail patterns
+
+    // Priority 4: If video URL exists and we haven't tried loading yet, load video thumbnail
+    if (widget.video.videoUrl != null && !_isThumbnailLoading && !_isInitialized && _thumbnailController == null) {
+      // Start loading video thumbnail in background
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadVideoThumbnail();
+        }
+      });
+    }
+
+    // Priority 5: For DigitalOcean Spaces videos, try common thumbnail patterns
     if (widget.video.videoUrl != null && widget.video.videoUrl!.isNotEmpty) {
       final videoUrl = widget.video.videoUrl!;
       
