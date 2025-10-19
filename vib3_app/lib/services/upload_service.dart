@@ -88,7 +88,8 @@ class UploadService {
           request.fields['allowComments'] = allowComments.toString();
           request.fields['allowDuet'] = allowDuet.toString();
           request.fields['allowStitch'] = allowStitch.toString();
-          
+          request.fields['bypassProcessing'] = 'true'; // Skip video processing to avoid errors
+
           // Add hashtags and music info if provided
           if (hashtags != null && hashtags.isNotEmpty) {
             request.fields['hashtags'] = hashtags;
