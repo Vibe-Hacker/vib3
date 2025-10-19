@@ -50,67 +50,89 @@ class _EnhancedVideoPreviewState extends State<EnhancedVideoPreview> {
     try {
       print('\n=== EnhancedVideoPreview: Initializing ===');
       print('Video path: ${widget.videoPath}');
-      
+
+      // Clean up all existing video controllers first
+      await VideoPlayerManager.nuclearCleanup();
+
+      // Small delay to ensure file is ready and old controllers are cleaned up
+      await Future.delayed(const Duration(milliseconds: 300));
+
       final file = File(widget.videoPath);
-      
-      // Verify file exists
+
+      // Verify file exists and has content
       if (!file.existsSync()) {
-        throw Exception('Video file not found');
+        print('ERROR: File does not exist at path: ${widget.videoPath}');
+        throw Exception('Video file not found at: ${widget.videoPath}');
       }
-      
+
+      final fileSize = await file.length();
+      print('File exists, size: $fileSize bytes');
+
+      if (fileSize == 0) {
+        throw Exception('Video file is empty (0 bytes)');
+      }
+
       // Initialize video player
+      print('Creating VideoPlayerController...');
       _videoController = VideoPlayerController.file(
         file,
         videoPlayerOptions: VideoPlayerOptions(
           mixWithOthers: true, // Allow audio mixing
+          allowBackgroundPlayback: false,
         ),
       );
-      
+
+      print('Initializing controller...');
       await _videoController!.initialize();
+      print('Controller initialized successfully');
+
       await _videoController!.setLooping(true);
-      
+
       // Register with VideoPlayerManager
       VideoPlayerManager.instance.registerController(_videoController!);
-      
+      print('Controller registered with VideoPlayerManager');
+
       // Initialize audio player if music is added
       final creationState = context.read<CreationStateProvider>();
       if (creationState.backgroundMusic != null) {
         print('Background music found: ${creationState.backgroundMusic}');
         _audioPlayer = AudioPlayer();
-        
+
         // Set release mode to loop
         await _audioPlayer!.setReleaseMode(ReleaseMode.loop);
-        
+
         // Play the background music
         await _audioPlayer!.play(
           DeviceFileSource(creationState.backgroundMusic!),
           volume: 0.7, // Slightly lower volume for background
         );
       }
-      
+
       // Start video playback using manager
+      print('Starting playback...');
       await VideoPlayerManager.instance.playVideo(_videoController!);
-      
+
       if (mounted) {
         setState(() {
           _isInitialized = true;
         });
       }
-      
+
       print('=== EnhancedVideoPreview: Success ===\n');
-      
-    } catch (e) {
+
+    } catch (e, stackTrace) {
       print('\n=== EnhancedVideoPreview: ERROR ===');
       print('Error: $e');
+      print('Stack trace: $stackTrace');
       print('================================\n');
-      
+
       if (mounted) {
         setState(() {
           _hasError = true;
-          _errorMessage = e.toString();
+          _errorMessage = 'Failed to load video: ${e.toString()}';
         });
       }
-      
+
       widget.onError?.call();
     }
   }
