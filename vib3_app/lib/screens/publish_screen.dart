@@ -11,13 +11,15 @@ import '../services/video_player_manager.dart';
 class PublishScreen extends StatefulWidget {
   final String videoPath;
   final String? musicName;
-  
+  final bool isFrontCamera;
+
   const PublishScreen({
     super.key,
     required this.videoPath,
     this.musicName,
+    this.isFrontCamera = false,
   });
-  
+
   @override
   State<PublishScreen> createState() => _PublishScreenState();
 }
@@ -124,7 +126,13 @@ class _PublishScreenState extends State<PublishScreen> {
                       child: _videoController != null && _videoController!.value.isInitialized
                           ? AspectRatio(
                               aspectRatio: _videoController!.value.aspectRatio,
-                              child: VideoPlayer(_videoController!),
+                              child: widget.isFrontCamera
+                                  ? Transform(
+                                      alignment: Alignment.center,
+                                      transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
+                                      child: VideoPlayer(_videoController!),
+                                    )
+                                  : VideoPlayer(_videoController!),
                             )
                           : Container(
                               color: Colors.grey[900],

@@ -6,12 +6,14 @@ import 'enhanced_video_preview.dart';
 
 class WorkingVideoPreview extends StatefulWidget {
   final Function(CreatorMode) onModeChange;
-  
+  final bool isFrontCamera;
+
   const WorkingVideoPreview({
     super.key,
     required this.onModeChange,
+    this.isFrontCamera = false,
   });
-  
+
   @override
   State<WorkingVideoPreview> createState() => _WorkingVideoPreviewState();
 }
@@ -98,6 +100,7 @@ class _WorkingVideoPreviewState extends State<WorkingVideoPreview> {
           else if (_videoPath != null)
             EnhancedVideoPreview(
               videoPath: _videoPath!,
+              isFrontCamera: widget.isFrontCamera,
               onError: _handleVideoError,
             )
           else

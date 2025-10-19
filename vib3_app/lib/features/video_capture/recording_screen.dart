@@ -92,13 +92,17 @@ class _RecordingScreenState extends State<RecordingScreen>
   void _stopRecording() async {
     print('🎬 RecordingScreen: Stopping recording...');
     _recordingTimer?.cancel();
-    
+
+    // Capture which camera was used before stopping
+    final wasFrontCamera = _cameraController.isUsingFrontCamera;
+    print('🎬 RecordingScreen: Camera used - Front: $wasFrontCamera');
+
     final file = await _cameraController.stopRecording();
     print('🎬 RecordingScreen: Stop recording returned: $file');
-    
+
     if (file != null && mounted) {
       print('🎬 RecordingScreen: Video file path: ${file.path}');
-      
+
       // Navigate to video creator screen for editing
       print('🎬 RecordingScreen: Navigating to VideoCreatorScreen...');
       Navigator.pushReplacement(
@@ -106,6 +110,7 @@ class _RecordingScreenState extends State<RecordingScreen>
         MaterialPageRoute(
           builder: (context) => VideoCreatorScreen(
             videoPath: file.path,
+            isFrontCamera: wasFrontCamera,
           ),
         ),
       ).then((_) {

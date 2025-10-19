@@ -9,14 +9,16 @@ import '../../../services/video_player_manager.dart';
 /// Enhanced video preview that plays video with background music
 class EnhancedVideoPreview extends StatefulWidget {
   final String videoPath;
+  final bool isFrontCamera;
   final VoidCallback? onError;
-  
+
   const EnhancedVideoPreview({
     super.key,
     required this.videoPath,
+    this.isFrontCamera = false,
     this.onError,
   });
-  
+
   @override
   State<EnhancedVideoPreview> createState() => _EnhancedVideoPreviewState();
 }
@@ -199,7 +201,13 @@ class _EnhancedVideoPreviewState extends State<EnhancedVideoPreview> {
           child: Center(
             child: AspectRatio(
               aspectRatio: _videoController!.value.aspectRatio,
-              child: VideoPlayer(_videoController!),
+              child: widget.isFrontCamera
+                  ? Transform(
+                      alignment: Alignment.center,
+                      transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
+                      child: VideoPlayer(_videoController!),
+                    )
+                  : VideoPlayer(_videoController!),
             ),
           ),
         ),

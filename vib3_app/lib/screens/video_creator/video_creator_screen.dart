@@ -24,27 +24,29 @@ import '../../services/video_player_manager.dart';
 class VideoCreatorScreen extends StatefulWidget {
   final String? videoPath; // Optional - for editing existing video
   final String? audioPath; // Optional - for using existing audio
-  
+  final bool isFrontCamera; // Track which camera was used
+
   const VideoCreatorScreen({
     super.key,
     this.videoPath,
     this.audioPath,
+    this.isFrontCamera = false,
   });
 
   @override
   State<VideoCreatorScreen> createState() => _VideoCreatorScreenState();
 }
 
-class _VideoCreatorScreenState extends State<VideoCreatorScreen> 
+class _VideoCreatorScreenState extends State<VideoCreatorScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   // Animation controllers
   late AnimationController _toolPanelController;
   late AnimationController _transitionController;
-  
+
   // Current mode - start with camera if no initial video
   late CreatorMode _currentMode;
   bool _isDraggingButtons = false;
-  
+
   // Creation state provider - create once and reuse
   late final CreationStateProvider _creationStateProvider;
   
@@ -142,6 +144,7 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
         );
       case CreatorMode.edit:
         return WorkingVideoPreview(
+          isFrontCamera: widget.isFrontCamera,
           onModeChange: (mode) {
             setState(() {
               _currentMode = mode;
@@ -353,6 +356,7 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                         builder: (context) => PublishScreen(
                           videoPath: exportedPath,
                           musicName: creationState.backgroundMusicName,
+                          isFrontCamera: widget.isFrontCamera,
                         ),
                       ),
                     ).then((_) {
