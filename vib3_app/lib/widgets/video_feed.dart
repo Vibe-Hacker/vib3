@@ -1296,7 +1296,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
             final videoIndex = videos.isNotEmpty ? index % videos.length : 0;
             if (videos.isEmpty) return Container(color: Colors.black);
             final video = videos[videoIndex];
-            final isCurrentVideo = index == _currentIndex;
+            final isCurrentVideo = index == _currentIndex && _isScreenVisible && _isAppInForeground;
             final videoProvider = Provider.of<VideoProvider>(context, listen: false);
             final isLiked = videoProvider.isVideoLiked(video.id);
             
