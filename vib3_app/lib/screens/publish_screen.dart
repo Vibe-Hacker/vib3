@@ -496,17 +496,8 @@ class _PublishScreenState extends State<PublishScreen> {
   }
   
   void _publishVideo() async {
-    // Validate title
-    if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please add a title'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    
+    // Title is now optional - no validation needed
+
     setState(() {
       _isPublishing = true;
     });
@@ -523,11 +514,15 @@ class _PublishScreenState extends State<PublishScreen> {
       }
       
       // Prepare video description (title + description + hashtags)
-      String fullDescription = _titleController.text.trim();
+      // Use "Untitled" if no title provided
+      String fullDescription = _titleController.text.trim().isEmpty
+          ? 'Untitled'
+          : _titleController.text.trim();
+
       if (_descriptionController.text.trim().isNotEmpty) {
         fullDescription += '\n\n${_descriptionController.text.trim()}';
       }
-      
+
       // Add hashtags to description
       String hashtagsString = '';
       if (_selectedHashtags.isNotEmpty) {
