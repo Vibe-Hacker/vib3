@@ -1,12 +1,12 @@
 class AppConfig {
   // Backend URLs (multiple for reliability)
   static const List<String> backendUrls = [
-    'https://vib3app.net',                         // Production primary
-    'https://vib3-web-75tal.ondigitalocean.app',  // Digital Ocean backup
+    'https://vib3-backend-u8zjk.ondigitalocean.app',  // DigitalOcean with MongoDB + DO Spaces
+    'https://vib3app.net',                             // Backup server
   ];
 
   // Primary backend URL
-  static String get baseUrl => 'https://vib3app.net';
+  static String get baseUrl => 'https://vib3-backend-u8zjk.ondigitalocean.app';
   
   // API Endpoints
   static const String loginEndpoint = '/api/auth/login';

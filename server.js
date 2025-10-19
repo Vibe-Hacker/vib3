@@ -1898,9 +1898,17 @@ const upload = multer({
         fileSize: videoConfig.UPLOAD_LIMITS.maxFileSize
     },
     fileFilter: (req, file, cb) => {
-        if (videoConfig.SUPPORTED_FORMATS.input.includes(file.mimetype) || file.mimetype.startsWith('video/')) {
+        console.log(`📋 File upload attempt - Field: ${file.fieldname}, MIME: ${file.mimetype}, Name: ${file.originalname}`);
+
+        // Accept any video MIME type or common video file extensions
+        const isVideo = file.mimetype && file.mimetype.startsWith('video/');
+        const hasVideoExtension = file.originalname && /\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp)$/i.test(file.originalname);
+
+        if (isVideo || hasVideoExtension) {
+            console.log(`✅ File accepted: ${file.originalname}`);
             cb(null, true);
         } else {
+            console.log(`❌ File rejected - MIME: ${file.mimetype}, Name: ${file.originalname}`);
             cb(new Error('Invalid file type. Please upload a video file.'));
         }
     }
