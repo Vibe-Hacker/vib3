@@ -61,6 +61,9 @@ router.post('/upload', upload.single('video'), async (req, res) => {
         const BUCKET_NAME = process.env.DO_SPACES_BUCKET || 'vib3-videos';
 
         console.log(`🎬 Processing video upload: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB)`);
+        console.log('📋 Request body fields:', Object.keys(req.body));
+        console.log('📋 bypassProcessing value:', req.body.bypassProcessing);
+        console.log('📋 isFrontCamera value:', req.body.isFrontCamera);
 
         // Check for bypass flag
         const bypassProcessing = req.body.bypassProcessing === 'true' ||
@@ -70,6 +73,8 @@ router.post('/upload', upload.single('video'), async (req, res) => {
 
         // Check if front camera video that needs flipping
         const isFrontCamera = req.body.isFrontCamera === 'true';
+
+        console.log(`🔍 Flags - bypassProcessing: ${bypassProcessing}, isFrontCamera: ${isFrontCamera}`);
 
         let conversionResult;
 
