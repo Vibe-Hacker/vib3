@@ -3211,14 +3211,22 @@ app.post('/api/videos/upload', requireAuth, upload.fields([
         const { description, privacy, allowComments, allowDuet, allowStitch, hashtags, musicName } = req.body;
 
         console.log(`🎬 Processing video upload with thumbnail: ${videoFile.originalname} (${(videoFile.size / 1024 / 1024).toFixed(2)}MB)`);
-        
+        console.log('📋 Request body fields:', Object.keys(req.body));
+        console.log('📋 bypassProcessing value:', req.body.bypassProcessing);
+        console.log('📋 isFrontCamera value:', req.body.isFrontCamera);
+
         // Check for bypass flag for development/testing
-        const bypassProcessing = req.body.bypassProcessing === 'true' || 
+        const bypassProcessing = req.body.bypassProcessing === 'true' ||
                                   process.env.BYPASS_VIDEO_PROCESSING === 'true';
-        
+
+        // Check if front camera video that needs flipping
+        const isFrontCamera = req.body.isFrontCamera === 'true';
+
+        console.log(`🔍 Flags - bypassProcessing: ${bypassProcessing}, isFrontCamera: ${isFrontCamera}`);
+
         let conversionResult;
-        
-        if (bypassProcessing) {
+
+        if (bypassProcessing && !isFrontCamera) {
             console.log('⚡ BYPASSING video processing');
             conversionResult = {
                 success: true,
@@ -3228,6 +3236,28 @@ app.post('/api/videos/upload', requireAuth, upload.fields([
                 skipped: true,
                 bypassed: true
             };
+        } else if (bypassProcessing && isFrontCamera) {
+            console.log('🔄 Front camera detected - applying horizontal flip');
+            try {
+                const flippedResult = await videoProcessor.flipVideoHorizontal(videoFile.buffer, videoFile.originalname);
+                conversionResult = {
+                    success: true,
+                    buffer: flippedResult.buffer,
+                    originalSize: videoFile.size,
+                    convertedSize: flippedResult.buffer.length,
+                    flipped: true,
+                    bypassed: false
+                };
+            } catch (flipError) {
+                console.error('❌ Front camera flip failed, uploading unflipped:', flipError);
+                conversionResult = {
+                    success: true,
+                    buffer: videoFile.buffer,
+                    originalSize: videoFile.size,
+                    convertedSize: videoFile.size,
+                    bypassed: true
+                };
+            }
         } else {
             // Use advanced processor for H.265/HEVC support and multi-resolution
             console.log('📋 Using advanced video processor...');
