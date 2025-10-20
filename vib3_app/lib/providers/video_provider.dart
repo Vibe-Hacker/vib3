@@ -199,7 +199,11 @@ class VideoProvider extends ChangeNotifier {
 
   void removeVideo(String videoId) {
     _videos.removeWhere((video) => video.id == videoId);
-    _debugInfo = 'Removed video $videoId. Total videos: ${_videos.length}';
+    _forYouVideos.removeWhere((video) => video.id == videoId);
+    _followingVideos.removeWhere((video) => video.id == videoId);
+    _discoverVideos.removeWhere((video) => video.id == videoId);
+    _friendsVideos.removeWhere((video) => video.id == videoId);
+    _debugInfo = 'Removed video $videoId from all feeds. Total videos: ${_videos.length}';
     notifyListeners();
   }
 
