@@ -149,6 +149,7 @@ router.post('/upload', upload.single('video'), async (req, res) => {
                             metadata: multiResult.metadata,
                             hashtags: hashtags ? (Array.isArray(hashtags) ? hashtags : hashtags.split(',').map(tag => tag.trim()).filter(tag => tag)) : [],
                             musicName: musicName || '',
+                            isFrontCamera: isFrontCamera, // Save front camera flag for client-side flipping
                             createdAt: new Date(),
                             updatedAt: new Date()
                         };
@@ -256,6 +257,7 @@ router.post('/upload', upload.single('video'), async (req, res) => {
                 comments: [],
                 hashtags: hashtags ? (Array.isArray(hashtags) ? hashtags : hashtags.split(',').map(tag => tag.trim()).filter(tag => tag)) : [],
                 musicName: musicName || '',
+                isFrontCamera: isFrontCamera, // Save front camera flag for client-side flipping
                 createdAt: new Date(),
                 updatedAt: new Date()
             };
