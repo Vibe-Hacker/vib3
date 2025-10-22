@@ -42,6 +42,7 @@
     "@capacitor/camera": "^7.0.1",
     "@capacitor/filesystem": "^7.1.1",
     "@elastic/elasticsearch": "^8.10.0",
+    "@google/generative-ai": "^0.24.1",
     "@tensorflow/tfjs-node": "^4.13.0",
     "amqplib": "^0.10.3",
     "aws-sdk": "^2.1691.0",
