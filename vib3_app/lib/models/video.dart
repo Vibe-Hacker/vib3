@@ -20,7 +20,8 @@ class Video {
   final String? category;
   final Map<String, dynamic>? location;
   final String username;
-  
+  final bool isFrontCamera; // Track if video was recorded with front camera for horizontal flip
+
   // Interaction states
   final bool isLiked;
   final bool isFollowing;
@@ -50,6 +51,7 @@ class Video {
     this.category,
     this.location,
     required this.username,
+    this.isFrontCamera = false,
     this.isLiked = false,
     this.isFollowing = false,
     this.isFavorited = false,
@@ -58,6 +60,9 @@ class Video {
   });
 
   factory Video.fromJson(Map<String, dynamic> json) {
+    final isFrontCameraValue = json['isFrontCamera'] ?? false;
+    print('📹 Video.fromJson: id=${json['_id']}, isFrontCamera=$isFrontCameraValue');
+
     return Video(
       id: json['_id'] ?? '',
       userId: json['userId'] ?? json['userid'] ?? '',
@@ -70,26 +75,27 @@ class Video {
       viewsCount: json['views'] ?? 0,
       duration: json['duration'] ?? 30,
       isPrivate: json['isPrivate'] ?? false,
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt']) 
-          : (json['createdat'] != null 
-              ? DateTime.parse(json['createdat']) 
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : (json['createdat'] != null
+              ? DateTime.parse(json['createdat'])
               : DateTime.now()),
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.parse(json['updatedAt']) 
-          : (json['updatedat'] != null 
-              ? DateTime.parse(json['updatedat']) 
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : (json['updatedat'] != null
+              ? DateTime.parse(json['updatedat'])
               : DateTime.now()),
       user: json['user'] ?? {'username': json['username']},
       musicName: json['musicName'] ?? json['music_name'],
-      hashtags: json['hashtags'] != null 
-          ? List<String>.from(json['hashtags']) 
+      hashtags: json['hashtags'] != null
+          ? List<String>.from(json['hashtags'])
           : null,
       caption: json['caption'] ?? json['description'],
       soundId: json['soundId'] ?? json['sound_id'],
       category: json['category'],
       location: json['location'],
       username: json['username'] ?? json['user']?['username'] ?? 'unknown',
+      isFrontCamera: isFrontCameraValue,
       isLiked: json['isLiked'] ?? false,
       isFollowing: json['isFollowing'] ?? false,
       isFavorited: json['isFavorited'] ?? false,
@@ -121,6 +127,7 @@ class Video {
       'category': category,
       'location': location,
       'username': username,
+      'isFrontCamera': isFrontCamera,
       'isLiked': isLiked,
       'isFollowing': isFollowing,
       'isFavorited': isFavorited,
@@ -151,6 +158,7 @@ class Video {
     String? category,
     Map<String, dynamic>? location,
     String? username,
+    bool? isFrontCamera,
     bool? isLiked,
     bool? isFollowing,
     bool? isFavorited,
@@ -179,6 +187,7 @@ class Video {
       category: category ?? this.category,
       location: location ?? this.location,
       username: username ?? this.username,
+      isFrontCamera: isFrontCamera ?? this.isFrontCamera,
       isLiked: isLiked ?? this.isLiked,
       isFollowing: isFollowing ?? this.isFollowing,
       isFavorited: isFavorited ?? this.isFavorited,

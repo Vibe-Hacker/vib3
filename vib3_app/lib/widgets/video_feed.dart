@@ -237,16 +237,16 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
 
   void _onPageChanged(int index) {
     print('📱 VideoFeed: Page changed to $index, _isScreenVisible: $_isScreenVisible');
-    
+
     // Cancel any pending page change processing
     _pageChangeDebounce?.cancel();
-    
+
     // Track velocity for adaptive preloading
     final now = DateTime.now().millisecondsSinceEpoch;
     if (_lastPageChangeTime > 0) {
       final timeDiff = now - _lastPageChangeTime;
       _scrollVelocity = 1000.0 / timeDiff; // Pages per second
-      
+
       // Adjust preload range based on velocity
       if (_scrollVelocity > 2.0) {
         _preloadRange = 2; // Fast scrolling - preload next
@@ -255,18 +255,18 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
       } else {
         _preloadRange = 1; // Slow scrolling - minimal preload
       }
-      
+
       print('📈 Scroll velocity: ${_scrollVelocity.toStringAsFixed(2)} pages/sec, preload range: $_preloadRange');
     }
     _lastPageChangeTime = now;
-    
+
     // Track skip on previous video if swiped away quickly
     if (_currentIndex != index) {
       try {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final videoProvider = Provider.of<VideoProvider>(context, listen: false);
         final user = authProvider.currentUser;
-        
+
         if (user != null) {
           final videos = _getCurrentVideos();
           if (_currentIndex < videos.length) {
@@ -282,77 +282,49 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
         print('Error tracking video skip: $e');
       }
     }
-    
-    // Immediately update the index
+
+    // Pause previous video
+    final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+    videoProvider.pauseCurrentVideo();
+
+    // Immediately update the index and trigger rebuild for auto-play
     setState(() {
       _currentIndex = index;
     });
-    
-    // Debounce the actual video initialization - reduced from 100ms to 50ms
-    _pageChangeDebounce = Timer(const Duration(milliseconds: 50), () {
-      if (!mounted) return;
-      
-      // Start tracking new video
-      try {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final user = authProvider.currentUser;
-        final videos = _getCurrentVideos();
-        
-        if (user != null && index < videos.length) {
-          final currentVideo = videos[index];
-          InteractionTrackingService().startVideoView(
-            userId: user.id,
-            video: currentVideo,
-          );
-        }
-      } catch (e) {
-        print('Error tracking video view: $e');
+
+    // Start tracking new video
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authProvider.currentUser;
+      final videos = _getCurrentVideos();
+
+      if (user != null && index < videos.length) {
+        final currentVideo = videos[index];
+        InteractionTrackingService().startVideoView(
+          userId: user.id,
+          video: currentVideo,
+        );
       }
-      
-      // Only pause, don't dispose to keep videos ready
-      final videoProvider = Provider.of<VideoProvider>(context, listen: false);
-      videoProvider.pauseCurrentVideo();
-      
-      // Clean up videos that are far from current position
-      if (_currentIndex != index) {
-        // Dispose videos that are more than 2 positions away
-        final oldIndex = _currentIndex;
-        if ((oldIndex - index).abs() > 2) {
-          print('🧹 Cleaning up video at index $oldIndex (too far from new index $index)');
-        }
+    } catch (e) {
+      print('Error tracking video view: $e');
+    }
+
+    // Prefetch next videos
+    final videos = _getCurrentVideos();
+    if (videos.isNotEmpty) {
+      _prefetchVideos(videos);
+
+      // Track video view for intelligent caching
+      if (index < videos.length) {
+        IntelligentCacheManager().trackVideoView(videos[index].videoUrl ?? '');
       }
-      
-      // Force a rebuild to ensure the new video widget gets the correct isPlaying state
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            // This extra setState ensures the VideoPlayerWidget receives the updated isPlaying prop
-          });
-          
-          // Explicitly trigger video playback for the new index
-          // The VideoPlayerWidget will handle the actual playback when it sees isPlaying = true
-          print('📱 VideoFeed: Page changed to index $index, _isScreenVisible: $_isScreenVisible');
-          
-          // Prefetch next videos based on scroll velocity
-          final videos = _getCurrentVideos();
-          if (videos.isNotEmpty) {
-            _prefetchVideos(videos);
-            
-            // Track video view for intelligent caching
-            if (index < videos.length) {
-              IntelligentCacheManager().trackVideoView(videos[index].videoUrl ?? '');
-            }
-          }
-        }
-      });
-    });
+    }
     
     // Load more videos when near the end
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final token = authProvider.authToken;
-    
-    // Get the appropriate video list based on feed type
-    final videoProvider = Provider.of<VideoProvider>(context, listen: false);
+
+    // Get the appropriate video list based on feed type (reuse videoProvider from above)
     List<Video> currentVideos = [];
     switch (widget.feedType) {
       case FeedType.forYou:
@@ -1161,6 +1133,7 @@ class _VideoFeedState extends State<VideoFeed> with WidgetsBindingObserver {
           videoUrl: video.videoUrl!,
           isPlaying: isCurrentVideo,
           preload: preload,
+          isFrontCamera: video.isFrontCamera, // Apply horizontal flip for front camera
         );
       }
     } else {

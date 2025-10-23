@@ -19,7 +19,8 @@ class VideoEntity {
   final bool isFollowing;
   final DateTime createdAt;
   final Duration duration;
-  
+  final bool isFrontCamera; // For horizontal flipping during playback
+
   const VideoEntity({
     required this.id,
     required this.userId,
@@ -39,6 +40,7 @@ class VideoEntity {
     this.isFollowing = false,
     required this.createdAt,
     required this.duration,
+    this.isFrontCamera = false,
   });
   
   VideoEntity copyWith({
@@ -68,6 +70,7 @@ class VideoEntity {
       isFollowing: isFollowing ?? this.isFollowing,
       createdAt: createdAt,
       duration: duration,
+      isFrontCamera: isFrontCamera,
     );
   }
 }

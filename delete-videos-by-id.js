@@ -9,24 +9,12 @@ async function deleteVideosByIds() {
         process.exit(1);
     }
 
-    // Add the video IDs you want to delete here
-    // You can find these IDs in your browser console when viewing the videos
-    const videoIdsToDelete = [
-        // Example: '685837f73698d9a7698433ed',
-        // Add more IDs here, one per line
-    ];
+    // The first two arguments are 'node' and the script name, so we slice them off
+    const videoIdsToDelete = process.argv.slice(2);
 
     if (videoIdsToDelete.length === 0) {
-        console.log('❌ No video IDs specified!');
-        console.log('\nTo use this script:');
-        console.log('1. Open this file in an editor');
-        console.log('2. Add video IDs to the videoIdsToDelete array');
-        console.log('3. Run the script again with: node delete-videos-by-id.js');
-        console.log('\nExample:');
-        console.log("const videoIdsToDelete = [");
-        console.log("    '685837f73698d9a7698433ed',");
-        console.log("    '685838b2a698d9a7698433ef'");
-        console.log("];");
+        console.log('❌ No video IDs provided!');
+        console.log('Usage: node delete-videos-by-id.js <video_id_1> <video_id_2> ...');
         process.exit(1);
     }
 
@@ -36,14 +24,18 @@ async function deleteVideosByIds() {
         await client.connect();
         console.log('✅ Connected to MongoDB');
         
-        const db = client.db('vib3');
-        
+        const db = client.db();
+        const videoCollectionName = process.env.VIDEO_COLLECTION || 'videos';
+        const likesCollectionName = process.env.LIKES_COLLECTION || 'likes';
+        const commentsCollectionName = process.env.COMMENTS_COLLECTION || 'comments';
+        const viewsCollectionName = process.env.VIEWS_COLLECTION || 'views';
+
         console.log(`\n🗑️  Preparing to delete ${videoIdsToDelete.length} videos...`);
         
         for (const videoId of videoIdsToDelete) {
             try {
                 // Get video info first
-                const video = await db.collection('videos').findOne({ 
+                const video = await db.collection(videoCollectionName).findOne({ 
                     _id: new ObjectId(videoId) 
                 });
                 
@@ -57,7 +49,7 @@ async function deleteVideosByIds() {
                 console.log(`   Status: ${video.status || 'unknown'}`);
                 
                 // Mark as deleted (soft delete)
-                const result = await db.collection('videos').updateOne(
+                const result = await db.collection(videoCollectionName).updateOne(
                     { _id: new ObjectId(videoId) },
                     { 
                         $set: { 
@@ -72,13 +64,13 @@ async function deleteVideosByIds() {
                     console.log(`✅ Marked as deleted`);
                     
                     // Clean up related data
-                    const likes = await db.collection('likes').deleteMany({ 
+                    const likes = await db.collection(likesCollectionName).deleteMany({ 
                         videoId: videoId 
                     });
-                    const comments = await db.collection('comments').deleteMany({ 
+                    const comments = await db.collection(commentsCollectionName).deleteMany({ 
                         videoId: videoId 
                     });
-                    const views = await db.collection('views').deleteMany({ 
+                    const views = await db.collection(viewsCollectionName).deleteMany({ 
                         videoId: videoId 
                     });
                     

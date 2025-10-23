@@ -23,7 +23,7 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
+class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   List<Video> userVideos = [];
   List<Video> starredVideos = [];
   List<Video> privateVideos = [];
@@ -36,6 +36,24 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     _tabController = TabController(length: 3, vsync: this);
     _loadUserVideos();
     _refreshUserStats();
+    // Add lifecycle observer to detect when app comes to foreground
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Reload videos when app comes to foreground
+      _loadUserVideos();
+      _refreshUserStats();
+    }
   }
   
   Future<void> _refreshUserStats() async {
@@ -44,12 +62,6 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       // Refresh current user's stats
       await authProvider.refreshUserStats();
     }
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadUserVideos() async {
@@ -387,9 +399,33 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildVideoGrid(userVideos, showDeleteButton: true),
-                  _buildVideoGrid(starredVideos, showDeleteButton: false),
-                  _buildVideoGrid(privateVideos, showDeleteButton: true),
+                  RefreshIndicator(
+                    color: const Color(0xFFFF0080),
+                    backgroundColor: Colors.black,
+                    onRefresh: () async {
+                      await _loadUserVideos();
+                      await _refreshUserStats();
+                    },
+                    child: _buildVideoGrid(userVideos, showDeleteButton: true),
+                  ),
+                  RefreshIndicator(
+                    color: const Color(0xFFFF0080),
+                    backgroundColor: Colors.black,
+                    onRefresh: () async {
+                      await _loadUserVideos();
+                      await _refreshUserStats();
+                    },
+                    child: _buildVideoGrid(starredVideos, showDeleteButton: false),
+                  ),
+                  RefreshIndicator(
+                    color: const Color(0xFFFF0080),
+                    backgroundColor: Colors.black,
+                    onRefresh: () async {
+                      await _loadUserVideos();
+                      await _refreshUserStats();
+                    },
+                    child: _buildVideoGrid(privateVideos, showDeleteButton: true),
+                  ),
                 ],
               ),
             ),
@@ -464,94 +500,114 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   Widget _buildVideoGrid(List<Video> videos, {required bool showDeleteButton}) {
     if (isLoadingVideos) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [
-                  Color(0xFF00CED1), // Cyan
-                  Color(0xFFFF1493), // Deep Pink
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(bounds),
-              child: const Text(
-                'VIB3',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: constraints.maxHeight,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [
+                          Color(0xFF00CED1), // Cyan
+                          Color(0xFFFF1493), // Deep Pink
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'VIB3',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const CircularProgressIndicator(
+                      color: Color(0xFFFF1493),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Loading videos...',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            const CircularProgressIndicator(
-              color: Color(0xFFFF1493),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Loading videos...',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       );
     }
 
     if (videos.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [
-                  Color(0xFF00CED1), // Cyan
-                  Color(0xFFFF1493), // Deep Pink
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(bounds),
-              child: const Icon(
-                Icons.video_library_outlined,
-                size: 64,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [
-                  Color(0xFF00CED1), // Cyan
-                  Color(0xFFFF1493), // Deep Pink
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(bounds),
-              child: const Text(
-                'No videos yet',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: constraints.maxHeight,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [
+                          Color(0xFF00CED1), // Cyan
+                          Color(0xFFFF1493), // Deep Pink
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(bounds),
+                      child: const Icon(
+                        Icons.video_library_outlined,
+                        size: 64,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [
+                          Color(0xFF00CED1), // Cyan
+                          Color(0xFFFF1493), // Deep Pink
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'No videos yet',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Start creating amazing content!',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Start creating amazing content!',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       );
     }
 

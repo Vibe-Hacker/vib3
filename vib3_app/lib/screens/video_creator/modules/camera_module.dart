@@ -262,7 +262,26 @@ class _CameraModuleState extends State<CameraModule>
     try {
       _cameras = await availableCameras();
       if (_cameras.isEmpty) return;
-      
+
+      // Debug: Log all available cameras
+      print('\n🎥 ===== CAMERA DETECTION DEBUG =====');
+      print('📸 Total cameras found: ${_cameras.length}');
+      for (int i = 0; i < _cameras.length; i++) {
+        final camera = _cameras[i];
+        print('📸 Camera $i:');
+        print('   - Name: ${camera.name}');
+        print('   - Lens Direction: ${camera.lensDirection}');
+        print('   - Is Front: ${camera.lensDirection == CameraLensDirection.front}');
+        print('   - Is Back: ${camera.lensDirection == CameraLensDirection.back}');
+      }
+      print('📸 Selected camera index: $_selectedCameraIndex');
+      if (_selectedCameraIndex < _cameras.length) {
+        final selected = _cameras[_selectedCameraIndex];
+        print('📸 Selected camera lens direction: ${selected.lensDirection}');
+        print('📸 Is front camera: ${selected.lensDirection == CameraLensDirection.front}');
+      }
+      print('🎥 ===== END CAMERA DEBUG =====\n');
+
       await _setupCameraController(_selectedCameraIndex);
     } catch (e) {
       print('Error initializing camera: $e');
@@ -366,7 +385,15 @@ class _CameraModuleState extends State<CameraModule>
     setState(() {
       _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras.length;
     });
-    
+
+    // Debug: Log camera switch
+    print('📸 CAMERA SWITCHED to index: $_selectedCameraIndex');
+    if (_selectedCameraIndex < _cameras.length) {
+      final newCamera = _cameras[_selectedCameraIndex];
+      print('📸 New camera lens direction: ${newCamera.lensDirection}');
+      print('📸 Is front camera: ${newCamera.lensDirection == CameraLensDirection.front}');
+    }
+
     await _setupCameraController(_selectedCameraIndex);
   }
   
@@ -557,9 +584,13 @@ class _CameraModuleState extends State<CameraModule>
       // Add to creation state with proper timing
       if (mounted) {
         final creationState = context.read<CreationStateProvider>();
-        
-        // Add clip to provider
-        creationState.addVideoClip(videoFile.path);
+
+        // Add clip to provider with front camera flag
+        // TESTING: Force FALSE - videos may not need flipping at all
+        final isFrontCamera = false;
+        print('📸 CAMERA MODULE: Recording finished, camera index=$_selectedCameraIndex, forcing isFrontCamera=$isFrontCamera (NO TRANSFORM)');
+        print('📸 CAMERA MODULE: Selected camera: ${_cameras[_selectedCameraIndex].name}, lensDirection=${_cameras[_selectedCameraIndex].lensDirection}');
+        creationState.addVideoClip(videoFile.path, isFrontCamera: isFrontCamera);
         
         // Wait longer to ensure all video resources are released
         await Future.delayed(const Duration(seconds: 2)); // Increased to 2 seconds
@@ -1013,7 +1044,7 @@ class _CameraModuleState extends State<CameraModule>
           ),
         
         // Hands-free indicator
-        if (_selectedCameraIndex == 1) // Front camera
+        if (_selectedCameraIndex != 0) // Front camera (index-based detection)
           Positioned(
             top: 120,
             left: 0,

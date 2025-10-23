@@ -102,3 +102,4 @@ __pycache__/flutter/
 /flutter/
 /ndk/
 /cmake/
+.do/app-with-grok.yaml

@@ -154,27 +154,37 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
       case CreatorMode.effects:
         return Container(
           color: Colors.black,
-          child: EffectsModule(),
+          child: SingleChildScrollView(
+            child: EffectsModule(),
+          ),
         );
       case CreatorMode.music:
         return Container(
           color: Colors.black,
-          child: MusicModule(),
+          child: SingleChildScrollView(
+            child: MusicModule(),
+          ),
         );
       case CreatorMode.text:
         return Container(
           color: Colors.black,
-          child: TextModule(),
+          child: SingleChildScrollView(
+            child: TextModule(),
+          ),
         );
       case CreatorMode.filters:
         return Container(
           color: Colors.black,
-          child: FiltersModule(),
+          child: SingleChildScrollView(
+            child: FiltersModule(),
+          ),
         );
       case CreatorMode.tools:
         return Container(
           color: Colors.black,
-          child: ToolsModule(),
+          child: SingleChildScrollView(
+            child: ToolsModule(),
+          ),
         );
     }
   }
@@ -350,13 +360,19 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                     Navigator.pop(dialogContext); // Close loading dialog
                     
                     // Navigate to publish screen
+                    // Use isFrontCamera from the first clip (actually recorded value)
+                    final bool wasFrontCamera = creationState.videoClips.isNotEmpty
+                        ? creationState.videoClips.first.isFrontCamera
+                        : widget.isFrontCamera;
+                    print('📸 Navigating to publish with isFrontCamera=$wasFrontCamera');
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => PublishScreen(
                           videoPath: exportedPath,
                           musicName: creationState.backgroundMusicName,
-                          isFrontCamera: widget.isFrontCamera,
+                          isFrontCamera: wasFrontCamera,
                         ),
                       ),
                     ).then((_) {

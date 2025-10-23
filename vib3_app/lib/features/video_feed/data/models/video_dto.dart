@@ -21,7 +21,8 @@ class VideoDTO {
   final bool isFollowing;
   final DateTime createdAt;
   final int durationInSeconds;
-  
+  final bool isFrontCamera; // For horizontal flipping during playback
+
   VideoDTO({
     required this.id,
     required this.userId,
@@ -41,6 +42,7 @@ class VideoDTO {
     this.isFollowing = false,
     required this.createdAt,
     this.durationInSeconds = 30,
+    this.isFrontCamera = false,
   });
   
   /// Convert from JSON
@@ -128,6 +130,7 @@ class VideoDTO {
       isFollowing: json['isFollowing'] ?? false,
       createdAt: _parseDateTime(json['createdAt'] ?? json['createdat']),
       durationInSeconds: duration,
+      isFrontCamera: json['isFrontCamera'] ?? false, // Parse front camera flag
     );
   }
   
@@ -176,6 +179,7 @@ class VideoDTO {
       isFollowing: isFollowing,
       createdAt: createdAt,
       duration: Duration(seconds: durationInSeconds),
+      isFrontCamera: isFrontCamera,
     );
   }
   
@@ -200,6 +204,7 @@ class VideoDTO {
       isFollowing: entity.isFollowing,
       createdAt: entity.createdAt,
       durationInSeconds: entity.duration.inSeconds,
+      isFrontCamera: entity.isFrontCamera,
     );
   }
   

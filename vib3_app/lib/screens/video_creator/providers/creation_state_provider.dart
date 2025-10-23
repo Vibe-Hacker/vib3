@@ -70,12 +70,13 @@ class CreationStateProvider extends ChangeNotifier {
   bool get beatSyncEnabled => _beatSyncEnabled;
   
   // Add video clip
-  void addVideoClip(String path, {Duration? trimStart, Duration? trimEnd}) {
-    print('CreationStateProvider: Adding video clip: $path');
+  void addVideoClip(String path, {Duration? trimStart, Duration? trimEnd, bool isFrontCamera = false}) {
+    print('CreationStateProvider: Adding video clip: $path (Front camera: $isFrontCamera)');
     final clip = VideoClip(
       path: path,
       trimStart: trimStart ?? Duration.zero,
       trimEnd: trimEnd,
+      isFrontCamera: isFrontCamera,
     );
     _videoClips.add(clip);
     print('CreationStateProvider: Total clips now: ${_videoClips.length}');
@@ -356,15 +357,17 @@ class VideoClip {
   final Duration? trimEnd;
   double speed;
   bool isReversed;
-  
+  final bool isFrontCamera; // Track if recorded with front camera for flipping
+
   VideoClip({
     required this.path,
     this.trimStart = Duration.zero,
     this.trimEnd,
     this.speed = 1.0,
     this.isReversed = false,
+    this.isFrontCamera = false,
   });
-  
+
   Duration get duration {
     // TODO: Get actual video duration
     return const Duration(seconds: 15);

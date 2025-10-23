@@ -2,19 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:http/http.dart' as http;
 import '../services/video_player_manager.dart';
-import '../services/video_url_service.dart';
-import '../services/adaptive_streaming_service.dart';
-import '../services/adaptive_video_service.dart';
-import '../services/intelligent_cache_manager.dart';
-import '../services/thumbnail_service.dart';
-import '../services/intelligent_cache_manager.dart';
-import '../services/hls_streaming_service.dart';
-import '../services/video_performance_service.dart';
-import '../services/buffer_management_service.dart';
-import 'package:dio/dio.dart';
-import 'dart:io';
 
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
@@ -22,6 +10,7 @@ class VideoPlayerWidget extends StatefulWidget {
   final VoidCallback? onTap;
   final bool preload;
   final String? thumbnailUrl;
+  final bool isFrontCamera; // Apply horizontal flip for front camera videos
 
   const VideoPlayerWidget({
     super.key,
@@ -30,6 +19,7 @@ class VideoPlayerWidget extends StatefulWidget {
     this.onTap,
     this.preload = false,
     this.thumbnailUrl,
+    this.isFrontCamera = false,
   });
 
   @override
@@ -50,12 +40,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   static const int _maxRetries = 1;
   bool _isInitializing = false;
   String? _thumbnailUrl;
-  
-  // Cache manager instance
-  final IntelligentCacheManager _cacheManager = IntelligentCacheManager();
-  
-  // Performance monitoring
-  Timer? _performanceTimer;
 
   @override
   void initState() {
@@ -96,11 +80,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   static int _preloadCounter = 0;
   
   Future<void> _loadThumbnail() async {
-    // Try to get thumbnail URL from video URL
-    final thumbnailUrl = await ThumbnailService.generateThumbnailUrl(widget.videoUrl);
-    if (mounted && thumbnailUrl != null) {
+    // Use provided thumbnail URL if available
+    if (mounted && widget.thumbnailUrl != null) {
       setState(() {
-        _thumbnailUrl = thumbnailUrl;
+        _thumbnailUrl = widget.thumbnailUrl;
       });
     }
   }
@@ -212,77 +195,29 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           _controller = null;
         }
         
-        // Transform and validate URL
+        // Simple URL validation and direct playback
         print('🎬 Original video URL: ${widget.videoUrl}');
-        final transformedUrl = VideoUrlService.transformVideoUrl(widget.videoUrl);
-        print('🔄 Transformed URL: $transformedUrl');
-        
-        // Check video format from URL
-        final videoFormat = transformedUrl.toLowerCase().contains('.webm') ? 'WebM' : 
-                           transformedUrl.toLowerCase().contains('.mp4') ? 'MP4' : 
-                           'Unknown';
-        print('🎥 Video format detected: $videoFormat');
-        
-        // Extra validation
-        if (transformedUrl.isEmpty || !transformedUrl.startsWith('http')) {
-          throw Exception('Invalid video URL: $transformedUrl');
+
+        // Basic URL validation
+        if (widget.videoUrl.isEmpty || !widget.videoUrl.startsWith('http')) {
+          throw Exception('Invalid video URL: ${widget.videoUrl}');
         }
-        
-        // Get optimal video URL based on device/network conditions
-        final adaptiveVideoService = AdaptiveVideoService();
-        final hlsService = HLSStreamingService();
-        
-        // Check if we should use HLS
-        String optimalUrl;
-        if (hlsService.isHLSUrl(transformedUrl)) {
-          // Already HLS, get optimal variant
-          optimalUrl = await hlsService.getOptimalHLSVariant(transformedUrl);
-          print('🎯 HLS variant selected: $optimalUrl');
-        } else {
-          // Regular video, use adaptive service
-          optimalUrl = await adaptiveVideoService.getOptimalVideoUrl(
-            transformedUrl, 
-            fastMode: widget.preload
-          );
-          print('🎯 Optimal URL: $optimalUrl');
-        }
-        
-        // Track this video view for predictive caching
-        _cacheManager.trackVideoView(optimalUrl);
-        
-        // Check cache first using member variable cache manager
-        final cachedFile = await _cacheManager.getVideo(optimalUrl);
-        
-        if (cachedFile != null && await cachedFile.exists()) {
-          print('💾 Loading video from cache: ${cachedFile.path}');
-          _controller = VideoPlayerController.file(
-            cachedFile,
-            videoPlayerOptions: VideoPerformanceService().getOptimizedPlayerOptions(),
-          );
-        } else {
-          print('🌐 Loading video from network: $optimalUrl');
-          final uri = Uri.parse(optimalUrl);
-          print('🔗 Parsed URL - Host: ${uri.host}, Path: ${uri.path}');
-          
-          _controller = VideoPlayerController.networkUrl(
-            uri,
-            videoPlayerOptions: VideoPerformanceService().getOptimizedPlayerOptions(),
-            httpHeaders: {
-              'Connection': 'keep-alive',
-              'Cache-Control': 'max-age=3600',
-              'Accept': 'video/mp4,video/webm,video/*;q=0.9,*/*;q=0.8',
-              'Accept-Encoding': 'identity',  // Disable compression for video
-              'User-Agent': 'VIB3/1.0 (Flutter)',
-              'X-Playback-Session-Id': DateTime.now().millisecondsSinceEpoch.toString(),
-              // Optimize for streaming
-              'Accept-Ranges': 'bytes',
-              'Sec-Fetch-Mode': 'no-cors',
-            },
-          );
-          
-          // Download and cache video in background
-          _cacheVideoInBackground(optimalUrl);
-        }
+
+        // Direct network playback - skip all caching/adaptive layers for now
+        final uri = Uri.parse(widget.videoUrl);
+        print('🔗 Direct playback - Host: ${uri.host}, Path: ${uri.path}');
+
+        _controller = VideoPlayerController.networkUrl(
+          uri,
+          videoPlayerOptions: VideoPlayerOptions(
+            mixWithOthers: false,
+            allowBackgroundPlayback: false,
+          ),
+          httpHeaders: {
+            'Accept': 'video/mp4,video/*',
+            'User-Agent': 'VIB3/1.0',
+          },
+        );
         
         // Simple initialization with timeout
         print('🎮 About to call _controller.initialize()...');
@@ -321,10 +256,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         } catch (e) {
           print('⚠️ Error configuring video playback: $e');
         }
-        
-        // Start performance monitoring
-        _startPerformanceMonitoring();
-        
+
         // Set playback speed to reduce decoder load if needed
         if (!widget.isPlaying) {
           // For preloaded videos, pause immediately to save resources
@@ -357,11 +289,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         if (_controller!.value.size.width == 0 || _controller!.value.size.height == 0) {
           print('⚠️ Warning: Video has zero dimensions, may not display properly');
         }
-        
-        // Register with VideoPlayerManager and BufferManagementService
+
+        // Register with VideoPlayerManager
         VideoPlayerManager.instance.registerController(_controller!);
-        BufferManagementService().registerController(_controller!);
-        
+
       } catch (e, stackTrace) {
         print('❌ VideoPlayer: Error initializing ${widget.videoUrl}: $e');
         print('📊 Error type: ${e.runtimeType}');
@@ -457,33 +388,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
-  Future<void> _cacheVideoInBackground(String videoUrl) async {
-    try {
-      print('📥 Starting background cache for: $videoUrl');
-      final dio = Dio();
-      final response = await dio.get(
-        videoUrl,
-        options: Options(
-          responseType: ResponseType.bytes,
-          headers: {
-            'Connection': 'keep-alive',
-            'Cache-Control': 'max-age=3600',
-            'Accept-Encoding': 'gzip, deflate',
-          },
-        ),
-      );
-      
-      if (response.statusCode == 200 && response.data != null) {
-        final cacheManager = IntelligentCacheManager();
-        await cacheManager.cacheVideo(videoUrl, response.data as List<int>);
-        print('✅ Video cached successfully: $videoUrl');
-      }
-    } catch (e) {
-      print('⚠️ Background caching failed: $e');
-      // Don't throw - this is a background operation
-    }
-  }
-
   void _togglePlayPause() {
     if (_controller != null && _isInitialized && mounted) {
       setState(() {
@@ -527,7 +431,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         // Unregister from managers
         try {
           VideoPlayerManager.instance.unregisterController(_controller!);
-          BufferManagementService().unregisterController(_controller!);
         } catch (e) {
           print('⚠️ Error unregistering controller: $e');
         }
@@ -566,8 +469,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     print('🔴 VideoPlayerWidget dispose() called for ${widget.videoUrl}');
     print('🔴 Widget hashCode: ${this.hashCode}');
     _isDisposed = true;
-    
-    _performanceTimer?.cancel();
+
     _disposeController();
     super.dispose();
   }
@@ -658,10 +560,22 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 Positioned.fill(
                   child: Center(
                     child: AspectRatio(
-                      aspectRatio: _controller!.value.aspectRatio > 0 
-                          ? _controller!.value.aspectRatio 
+                      aspectRatio: _controller!.value.aspectRatio > 0
+                          ? _controller!.value.aspectRatio
                           : 9/16, // Default to portrait if aspect ratio is invalid
-                      child: VideoPlayer(_controller!),
+                      child: Builder(
+                        builder: (context) {
+                          print('🎥 VideoPlayer: isFrontCamera=${widget.isFrontCamera}, videoUrl=${widget.videoUrl}');
+                          // Only flip front camera videos horizontally (TikTok/Instagram style)
+                          return widget.isFrontCamera
+                              ? Transform(
+                                  alignment: Alignment.center,
+                                  transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
+                                  child: VideoPlayer(_controller!),
+                                )
+                              : VideoPlayer(_controller!);
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -692,26 +606,4 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       ),
     );
   }
-  
-  // Start performance monitoring
-  void _startPerformanceMonitoring() {
-    _performanceTimer?.cancel();
-    
-    _performanceTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (_controller != null && _controller!.value.isInitialized && mounted) {
-        VideoPerformanceService().analyzeAndOptimize(widget.videoUrl, _controller!);
-        
-        // Log performance metrics
-        final report = VideoPerformanceService().getPerformanceReport(widget.videoUrl);
-        if (report.isNotEmpty) {
-          print('📊 Video Performance Report for ${widget.videoUrl}:');
-          print('   Average FPS: ${report['averageFps']?.toStringAsFixed(1) ?? 'N/A'}');
-          print('   Buffer Health: ${(report['bufferHealth'] * 100)?.toStringAsFixed(1) ?? 'N/A'}%');
-          print('   Quality: ${report['currentQuality'] ?? 'auto'}');
-          print('   Hardware Acceleration: ${report['hardwareAcceleration'] ?? 'unknown'}');
-        }
-      }
-    });
-  }
-  
 }

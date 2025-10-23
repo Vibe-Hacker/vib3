@@ -13,6 +13,7 @@ import '../models/video_editing.dart' as editing;
 import 'voice_effects_processor.dart';
 import 'ar_effects_processor.dart';
 import 'green_screen_processor.dart';
+import 'native_video_processor.dart';
 
 /// Video export service with working video processing
 class VideoExportService {
@@ -57,18 +58,24 @@ class VideoExportService {
       }
       
       onProgress?.call(0.2);
-      
+
       // Step 2: Process video clips
       String processedVideoPath;
-      
+
       if (clips.length == 1) {
         // Single clip - process it
         final sourceFile = File(clips.first.path);
         if (!await sourceFile.exists()) {
           throw Exception('Source video file not found: ${clips.first.path}');
         }
-        
+
         processedVideoPath = clips.first.path;
+
+        // IMPORTANT: Flip front camera videos horizontally (TikTok/Instagram approach)
+        // Don't flip - we'll handle this with CSS transform since native flipping is unreliable
+        if (clips.first.isFrontCamera) {
+          print('🔄 Front camera detected - will flip during playback with Transform');
+        }
         
         // Apply trim if needed using video_editor
         if (clips.first.trimStart != Duration.zero || clips.first.trimEnd != null) {
@@ -166,14 +173,36 @@ class VideoExportService {
     return videoPath;
   }
   
+  /// Flip video horizontally using native platform code (Android MediaCodec / iOS AVFoundation)
+  static Future<String> _flipVideoHorizontal(String videoPath, String outputDir) async {
+    print('🔄 Flipping video horizontally using native platform code...');
+
+    try {
+      // Call native platform channel
+      final String? flippedPath = await NativeVideoProcessor.flipVideoHorizontal(videoPath);
+
+      if (flippedPath != null && await File(flippedPath).exists()) {
+        final fileSize = await File(flippedPath).length();
+        print('✅ Native flip successful: ${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB');
+        return flippedPath;
+      } else {
+        print('⚠️ Native flip returned null or file not found, using original');
+        return videoPath;
+      }
+    } catch (e) {
+      print('❌ Native video flip error: $e');
+      return videoPath; // Return original on error
+    }
+  }
+
   /// Apply video compression and basic optimization
   static Future<String> _applyVideoCompression(String videoPath, String filterName) async {
     print('🗜️ Compressing and optimizing video...');
-    
+
     try {
       final info = await compress.VideoCompress.getMediaInfo(videoPath);
       print('📊 Original video: ${info.filesize! / 1024 / 1024} MB');
-      
+
       // Determine quality based on filter
       compress.VideoQuality quality = compress.VideoQuality.DefaultQuality;
       if (filterName == 'vintage' || filterName == 'blackwhite') {
@@ -181,20 +210,20 @@ class VideoExportService {
       } else if (filterName == 'sharp' || filterName == 'vibrant') {
         quality = compress.VideoQuality.HighestQuality; // Higher quality for sharp/vibrant
       }
-      
+
       final compressedVideo = await compress.VideoCompress.compressVideo(
         videoPath,
         quality: quality,
         deleteOrigin: false,
         includeAudio: true,
       );
-      
+
       if (compressedVideo != null && compressedVideo.path != null) {
         final compressedInfo = await compress.VideoCompress.getMediaInfo(compressedVideo.path!);
         print('✅ Compressed to: ${compressedInfo.filesize! / 1024 / 1024} MB');
         return compressedVideo.path!;
       }
-      
+
       return videoPath;
     } catch (e) {
       print('❌ Compression failed: $e');

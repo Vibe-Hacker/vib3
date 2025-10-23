@@ -531,6 +531,7 @@ class _PublishScreenState extends State<PublishScreen> {
       }
       
       // Upload video
+      print('📸 PUBLISH SCREEN: About to upload with isFrontCamera=${widget.isFrontCamera}');
       final result = await UploadService.uploadVideo(
         videoFile: File(widget.videoPath),
         description: fullDescription,

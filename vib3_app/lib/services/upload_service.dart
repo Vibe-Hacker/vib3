@@ -90,6 +90,7 @@ class UploadService {
           request.fields['allowDuet'] = allowDuet.toString();
           request.fields['allowStitch'] = allowStitch.toString();
           request.fields['bypassProcessing'] = 'true'; // Skip video processing to avoid errors
+          print('📸 UPLOAD: isFrontCamera = $isFrontCamera (sending as string: ${isFrontCamera.toString()})');
           request.fields['isFrontCamera'] = isFrontCamera.toString(); // For server-side mirroring
 
           // Add hashtags and music info if provided

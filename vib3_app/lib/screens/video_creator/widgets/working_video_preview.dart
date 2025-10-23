@@ -20,6 +20,7 @@ class WorkingVideoPreview extends StatefulWidget {
 
 class _WorkingVideoPreviewState extends State<WorkingVideoPreview> {
   String? _videoPath;
+  bool _isFrontCamera = false;
   bool _isLoading = true;
   int _retryCount = 0;
   static const int _maxRetries = 10;
@@ -43,11 +44,13 @@ class _WorkingVideoPreviewState extends State<WorkingVideoPreview> {
     print('Retry count: $_retryCount');
     
     if (provider.videoClips.isNotEmpty) {
-      final path = provider.videoClips.first.path;
-      print('Video path found: $path');
-      
+      final clip = provider.videoClips.first;
+      print('Video path found: ${clip.path}');
+      print('isFrontCamera from clip: ${clip.isFrontCamera}');
+
       setState(() {
-        _videoPath = path;
+        _videoPath = clip.path;
+        _isFrontCamera = clip.isFrontCamera;
         _isLoading = false;
       });
     } else if (_retryCount < _maxRetries) {
@@ -75,10 +78,13 @@ class _WorkingVideoPreviewState extends State<WorkingVideoPreview> {
   @override
   Widget build(BuildContext context) {
     final creationState = context.watch<CreationStateProvider>();
-    
+
     return Container(
       color: Colors.black,
+      width: double.infinity,
+      height: double.infinity,
       child: Stack(
+        fit: StackFit.expand,
         children: [
           // Video player or loading state
           if (_isLoading)
@@ -100,7 +106,7 @@ class _WorkingVideoPreviewState extends State<WorkingVideoPreview> {
           else if (_videoPath != null)
             EnhancedVideoPreview(
               videoPath: _videoPath!,
-              isFrontCamera: widget.isFrontCamera,
+              isFrontCamera: _isFrontCamera,
               onError: _handleVideoError,
             )
           else

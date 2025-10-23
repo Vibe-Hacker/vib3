@@ -1,117 +1,123 @@
-# Gemini AI Terminal Setup for VIB3
+# Gemini AI Setup for VIB3
 
-A command-line interface to chat with Google's Gemini AI for coding assistance on the VIB3 project.
+Three ways to use Gemini AI for coding on the VIB3 project.
 
-## Setup Instructions
+---
 
-### 1. Get Your Gemini API Key
+## 1. Gemini CLI (Command-Line Coding Assistant) - INSTALLED ✅
 
-1. Visit: https://makersuite.google.com/app/apikey
-2. Sign in with your Google account
-3. Click "Create API Key"
-4. Copy the API key
+**Google's official CLI - works exactly like Claude Code!**
 
-### 2. Set Environment Variable
+### What It Does
+- Terminal-based coding assistant (just like `claude` command)
+- Edits files, creates features, fixes bugs
+- Reads your entire codebase
+- Uses Gemini 2.5 Pro with 1M token context
 
-**Option A: Persistent (Recommended)**
-```cmd
-setx GEMINI_API_KEY "your-api-key-here"
-```
-Then **close and reopen** your terminal for the change to take effect.
-
-**Option B: Temporary (Current Session Only)**
-```cmd
-set GEMINI_API_KEY=your-api-key-here
+### Installation
+Already installed via:
+```bash
+npm install -g @google/gemini-cli
 ```
 
-**PowerShell:**
-```powershell
-$env:GEMINI_API_KEY="your-api-key-here"
-```
+Version: **0.10.0** ✅
 
-### 3. Run Gemini CLI
+### How to Use
 
-From the VIB3 directory:
-
+**Start Gemini CLI:**
 ```cmd
 gemini
 ```
 
-Or directly with Node:
+First time you'll see authentication options:
+- **Option 1 (Recommended)**: Login with Google (FREE - 1,000 req/day)
+- **Option 2**: Use API key from Google AI Studio
 
-```cmd
-node gemini-cli.js
+**Example Usage:**
 ```
-
-## Features
-
-### Interactive Chat
-Just type your questions and press Enter. Gemini maintains conversation context.
+$ gemini
+> fix the front camera mirroring issue
+> add a new feature for video effects
+> explain how the video upload works
+```
 
 ### Commands
+- Type your request and press Enter
+- Gemini will read/edit files automatically
+- Exit with `Ctrl+C` or type `/exit`
 
-- `/exit` or `/quit` - Exit the chat
-- `/clear` - Clear conversation history
-- `/save` - Save conversation to a text file
-- `/file <path>` - Analyze a file from your project
-- `/help` - Show help message
+---
 
-### Example Usage
+## 2. Gemini Code Assist (VS Code Extension)
 
+Works inside VS Code with AI code completion and inline generation.
+
+### Installation
+
+1. Open VS Code
+2. Press `Ctrl+Shift+X` (Extensions)
+3. Search: **"Gemini Code Assist"**
+4. Click Install
+5. Sign in with Google
+6. Start using (FREE)
+
+### Features
+
+- **Agent Mode**: Multi-file task completion
+- **Code Completion**: Tab to accept suggestions
+- **Inline Generation**: `Ctrl+I` for code prompts
+- **Context-Aware**: Analyzes entire codebase
+
+---
+
+## 3. Simple Gemini Chat (Terminal Window)
+
+Basic chat interface I built earlier (not a coding assistant).
+
+### How to Use
+
+**Desktop Shortcut:**
+- Double-click **"Gemini AI"** icon on desktop
+
+**Or via Command:**
+```cmd
+cd C:\Users\VIBE\Desktop\VIB3
+gemini-cli
 ```
-💎 You: How can I optimize Flutter video playback?
+(Note: This uses the `gemini-cli.js` file, NOT the official Google Gemini CLI above)
 
-🤔 Gemini is thinking...
+### Features
+- `/file <path>` - Analyze a file
+- `/save` - Save conversation
+- `/clear` - Clear history
+- `/exit` - Quit
 
-💎 Gemini:
-Here are some strategies to optimize Flutter video playback:
+---
 
-1. Use video_player with caching...
-2. Implement lazy loading...
-[... detailed response ...]
-```
+## Comparison
 
-### Analyze Project Files
+| Feature | Gemini CLI (Official) | Gemini Code Assist | Simple Chat |
+|---------|----------------------|-------------------|-------------|
+| **Command** | `gemini` | Inside VS Code | Desktop shortcut |
+| **Type** | Like Claude Code | VS Code Extension | Basic chat |
+| **Edits Files** | ✅ Yes | ✅ Yes | ❌ No |
+| **Codebase Aware** | ✅ Yes | ✅ Yes | ❌ No |
+| **Best For** | Command-line coding | IDE coding | Quick questions |
 
-```
-💎 You: /file vib3_app/lib/main.dart
-```
+---
 
-Gemini will analyze the file and provide insights, suggestions, and potential issues.
+## Recommendation
 
-## Tips
+**For coding (like Claude Code):** Use **Gemini CLI** (`gemini` command)
 
-1. **Be Specific**: Ask detailed questions about your code
-2. **Share Context**: Mention the VIB3 project and Flutter when relevant
-3. **Use /file**: Analyze specific files for targeted advice
-4. **Save Important Chats**: Use `/save` to keep useful conversations
+**For VS Code integration:** Use **Gemini Code Assist** extension
 
-## Troubleshooting
+**For quick chat:** Use desktop shortcut
 
-### "GEMINI_API_KEY not set" error
+---
 
-Make sure you:
-1. Set the environment variable correctly
-2. **Reopened your terminal** after using `setx`
-3. Used the correct command for your shell (CMD vs PowerShell)
+## Links
 
-### API Key Invalid
-
-- Verify the API key is correct (no extra spaces)
-- Check that the API is enabled in your Google Cloud Console
-- Ensure you're using a valid Gemini API key (not a different Google API key)
-
-## Cost
-
-Gemini API has a generous free tier:
-- 60 requests per minute
-- 1,500 requests per day
-- Rate limits may apply
-
-Check current pricing: https://ai.google.dev/pricing
-
-## Privacy
-
-- Conversations are stored locally in memory during the session
-- Use `/save` to export conversations to text files
-- No data is sent to any server except Google's Gemini API
+- Gemini CLI GitHub: https://github.com/google-gemini/gemini-cli
+- Gemini Code Assist Docs: https://developers.google.com/gemini-code-assist
+- Get API Key: https://makersuite.google.com/app/apikey
