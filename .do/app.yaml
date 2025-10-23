@@ -7,7 +7,7 @@ services:
       branch: main
       deploy_on_push: true
     source_dir: /
-    build_command: npm install
+    build_command: npm prune --production && npm install && npm run build
     run_command: node server.js
     environment_slug: node-js
     instance_count: 1
