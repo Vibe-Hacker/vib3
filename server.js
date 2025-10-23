@@ -21,7 +21,7 @@ const constants = require('./constants');
 const videoConfig = require('./config/video-config');
 const { requireAuth: modularRequireAuth, createSession: modularCreateSession, sessions: modularSessions } = require('./middleware/auth');
 const grokDevRoutes = require('./server/routes/grok-dev');
-const GrokTaskManager = require('./grok-task-manager');
+const GeminiTaskManager = require('./gemini-task-manager');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -5664,7 +5664,7 @@ let grokManager = null;
 // Initialize Grok after database connection
 async function initializeGrok() {
     if (db && !grokManager) {
-        grokManager = new GrokTaskManager(db);
+        geminiManager = new GeminiTaskManager(db);
         grokManager.setupEndpoints(app);
         grokManager.startBackgroundTasks();
         console.log('🤖 Grok AI Task Manager initialized');
@@ -5722,13 +5722,10 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
         await initializeGrok();
         
         // Initialize Grok Task Manager
-        const grokTaskManager = new GrokTaskManager(db);
-        grokTaskManager.setupEndpoints(app);
-        
-        // Start background tasks only in production
-        if (process.env.NODE_ENV === 'production') {
-            grokTaskManager.startBackgroundTasks();
-        }
+const geminiTaskManager = new GeminiTaskManager(db);
+geminiTaskManager.setupEndpoints(app);
+
+geminiTaskManager.startBackgroundTasks();
     }
     
     console.log('');
