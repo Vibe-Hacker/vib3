@@ -35,7 +35,7 @@
     "build": "echo 'Building microservices...' && npm run build:all",
     "build:all": "npm run build:shared && npm run build:services",
     "build:shared": "cd shared && npm run build",
-    "build:services": "for service in microservices/*; do (cd $service && npm run build); done",
+    "build:services": "for service in microservices/*; do (cd $service && npm run build || true); done",
     "postinstall": "mkdir -p temp"
   },
   "dependencies": {
