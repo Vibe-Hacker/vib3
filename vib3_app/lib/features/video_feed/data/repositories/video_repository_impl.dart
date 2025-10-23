@@ -135,4 +135,13 @@ class VideoRepositoryImpl implements VideoRepository {
       print('Failed to track watch time: $e');
     }
   }
+
+  @override
+  Future<void> markAsNotInterested(String videoId) async {
+    try {
+      await _remoteDataSource.markAsNotInterested(videoId);
+    } catch (e) {
+      print('Failed to mark as not interested: $e');
+    }
+  }
 }

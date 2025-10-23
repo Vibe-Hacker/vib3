@@ -129,6 +129,9 @@ class RecommendationEngine {
       
       // Get user preferences
       const preferences = await this.getUserPreferences(userId);
+
+      // Get disinterested videos
+      const disinterestedVideoIds = await this.db.collection('user_disinterests').find({ userId }).map(doc => doc.videoId).toArray();
       
       // Get collaborative filtering candidates
       const collaborativeCandidates = await this.getCollaborativeFilteringCandidates(
@@ -157,11 +160,15 @@ class RecommendationEngine {
         allCandidates, userId, preferences
       );
       
-      // Filter out viewed videos if requested
+      // Filter out viewed and disinterested videos
       let finalCandidates = scoredCandidates;
+      const viewedVideos = new Set(userHistory.map(h => h.videoId));
+      const disinterestedVideos = new Set(disinterestedVideoIds);
+
+      finalCandidates = scoredCandidates.filter(c => !disinterestedVideos.has(c.videoId));
+
       if (excludeViewed) {
-        const viewedVideos = new Set(userHistory.map(h => h.videoId));
-        finalCandidates = scoredCandidates.filter(c => !viewedVideos.has(c.videoId));
+        finalCandidates = finalCandidates.filter(c => !viewedVideos.has(c.videoId));
       }
       
       // Apply diversity

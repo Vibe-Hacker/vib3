@@ -179,19 +179,44 @@ class _VideoFeedWidgetState extends State<VideoFeedWidget> {
           itemBuilder: (context, index) {
             final video = videos[index];
             
-            return Stack(
-              children: [
-                // Use video player with smart preloading
-                VideoPlayerWidget(
-                  key: ValueKey(video.videoUrl),
-                  videoUrl: video.videoUrl,
-                  isPlaying: index == _currentIndex,
-                  preload: (index - _currentIndex).abs() <= 1, // Preload 1 video ahead/behind
-                ),
-                
-                // Video info overlay
-                _buildVideoOverlay(context, video, provider),
-              ],
+            return GestureDetector(
+              onLongPress: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Not Interested'),
+                    content: const Text('Are you sure you want to mark this video as not interested?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          provider.markAsNotInterested(video.id);
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Not Interested'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: Stack(
+                children: [
+                  // Use video player with smart preloading
+                  VideoPlayerWidget(
+                    key: ValueKey(video.videoUrl),
+                    videoUrl: video.videoUrl,
+                    isPlaying: index == _currentIndex,
+                    preload: (index - _currentIndex).abs() <= 1, // Preload 1 video ahead/behind
+                    isFrontCamera: video.isFrontCamera, // Pass front camera flag for Transform
+                  ),
+
+                  // Video info overlay
+                  _buildVideoOverlay(context, video, provider),
+                ],
+              ),
             );
           },
         );

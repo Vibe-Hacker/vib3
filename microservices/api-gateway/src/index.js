@@ -300,25 +300,18 @@ app.use('/api/analytics', circuitBreaker('analytics'),
 app.use('/api/notification', circuitBreaker('notification'),
   createProxyMiddleware(services.notification));
 
-// Load balancing for feed endpoint
-let currentVideoInstance = 0;
-const videoInstances = process.env.VIDEO_SERVICE_INSTANCES?.split(',') || [
-  'http://video-service-1:3002',
-  'http://video-service-2:3002',
-  'http://video-service-3:3002',
-];
-
-app.use('/api/feed', feedLimiter, (req, res, next) => {
-  // Round-robin load balancing
-  const targetInstance = videoInstances[currentVideoInstance];
-  currentVideoInstance = (currentVideoInstance + 1) % videoInstances.length;
-
-  createProxyMiddleware({
-    target: targetInstance,
+app.use('/api/feed', feedLimiter, circuitBreaker('recommendation'), createProxyMiddleware({
+    target: services.recommendation.target,
     changeOrigin: true,
-    pathRewrite: { '^/api/feed': '/feed' },
-  })(req, res, next);
-});
+    pathRewrite: (path, req) => {
+        const userId = req.user ? req.user.userId : 'anonymous';
+        const sessionId = req.id || 'unknown'; // Use request ID for anonymous session
+        if (userId === 'anonymous') {
+            return `/recommendations/anonymous/${sessionId}`;
+        }
+        return `/recommendations/${userId}`;
+    },
+}));
 
 // Metrics collection middleware
 app.use((req, res, next) => {

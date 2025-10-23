@@ -16,6 +16,7 @@ abstract class VideoRemoteDataSource {
   Future<int> getVideoLikes(String videoId);
   Future<void> incrementViewCount(String videoId);
   Future<void> trackWatchTime(String videoId, Duration watchTime);
+  Future<void> markAsNotInterested(String videoId);
 }
 
 class VideoRemoteDataSourceImpl implements VideoRemoteDataSource {
@@ -228,6 +229,25 @@ class VideoRemoteDataSourceImpl implements VideoRemoteDataSource {
       ).timeout(const Duration(seconds: 5));
     } catch (e) {
       print('Error tracking watch time: $e');
+    }
+  }
+
+  @override
+  Future<void> markAsNotInterested(String videoId) async {
+    try {
+      final headers = await _getHeaders();
+      final userId = await _authService.getUserId();
+      await _httpClient.post(
+        Uri.parse(ApiConfig.buildUrl('recommendations') + '/interactions'),
+        headers: headers,
+        body: jsonEncode({
+          'userId': userId,
+          'videoId': videoId,
+          'action': 'not-interested',
+        }),
+      ).timeout(const Duration(seconds: 5));
+    } catch (e) {
+      print('Error marking as not interested: $e');
     }
   }
 }

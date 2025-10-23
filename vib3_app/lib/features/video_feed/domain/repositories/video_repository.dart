@@ -17,4 +17,5 @@ abstract class VideoRepository {
   // View tracking
   Future<void> incrementViewCount(String videoId);
   Future<void> trackWatchTime(String videoId, Duration watchTime);
+  Future<void> markAsNotInterested(String videoId);
 }

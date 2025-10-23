@@ -197,6 +197,20 @@ class VideoFeedProvider extends ChangeNotifier {
     }
   }
   
+  // Mark a video as not interested
+  Future<void> markAsNotInterested(String videoId) async {
+    try {
+      await _repository.markAsNotInterested(videoId);
+      // Remove the video from the feed
+      _forYouVideos.removeWhere((v) => v.id == videoId);
+      _followingVideos.removeWhere((v) => v.id == videoId);
+      _friendsVideos.removeWhere((v) => v.id == videoId);
+      notifyListeners();
+    } catch (e) {
+      print('Failed to mark as not interested: $e');
+    }
+  }
+
   // Helper method to update video in all lists
   void _updateVideoInLists(VideoEntity updatedVideo) {
     // Update in for you list
