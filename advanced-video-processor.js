@@ -31,7 +31,7 @@ class AdvancedVideoProcessor {
     }
 
     // Main processing function that handles all video types
-    async processVideo(inputBuffer, originalFilename) {
+    async processVideo(inputBuffer, originalFilename, options = {}) {
         const processId = crypto.randomBytes(8).toString('hex');
         const inputPath = path.join(this.tempDir, `input_${processId}${path.extname(originalFilename)}`);
         const outputPrefix = path.join(this.outputDir, processId);
@@ -58,7 +58,7 @@ class AdvancedVideoProcessor {
             console.log(`🎥 Video codec: ${videoInfo.video?.codec} ${isHEVC ? '(HEVC detected)' : ''}`);
             
             // Process video to multiple resolutions
-            const results = await this.generateMultipleResolutions(inputPath, outputPrefix, videoInfo);
+            const results = await this.generateMultipleResolutions(inputPath, outputPrefix, videoInfo, options);
             
             // Generate HLS playlist
             const hlsResult = await this.generateHLS(outputPrefix, results);
@@ -93,7 +93,7 @@ class AdvancedVideoProcessor {
     }
 
     // Generate multiple resolution versions
-    async generateMultipleResolutions(inputPath, outputPrefix, videoInfo) {
+    async generateMultipleResolutions(inputPath, outputPrefix, videoInfo, options = {}) {
         const results = [];
         const sourceHeight = videoInfo.video?.height || 1920;
         
@@ -110,7 +110,7 @@ class AdvancedVideoProcessor {
         for (const resolution of applicableResolutions) {
             try {
                 const outputPath = `${outputPrefix}_${resolution.name}.mp4`;
-                await this.transcodeVideo(inputPath, outputPath, resolution, videoInfo);
+                await this.transcodeVideo(inputPath, outputPath, resolution, videoInfo, options);
                 
                 const stats = await fs.stat(outputPath);
                 results.push({
@@ -132,7 +132,7 @@ class AdvancedVideoProcessor {
     }
 
     // Transcode video with H.264/H.265 support
-    transcodeVideo(inputPath, outputPath, resolution, videoInfo) {
+    transcodeVideo(inputPath, outputPath, resolution, videoInfo, options = {}) {
         return new Promise((resolve, reject) => {
             const isHEVC = videoInfo.video?.codec === 'hevc' || videoInfo.video?.codec === 'h265';
             
@@ -183,7 +183,13 @@ class AdvancedVideoProcessor {
                 }
             }
             
-            command.videoFilter(scaleFilter);
+            const videoFilters = [scaleFilter];
+            if (options.isFrontCamera) {
+                console.log('📷 Front camera detected, applying horizontal flip.');
+                videoFilters.push('hflip');
+            }
+
+            command.videoFilter(videoFilters.join(','));
             
             // Add frame rate limiting for large videos
             if (videoInfo.video.fps > 30) {

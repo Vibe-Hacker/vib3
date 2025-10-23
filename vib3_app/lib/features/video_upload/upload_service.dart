@@ -22,6 +22,7 @@ class UploadService {
     required String thumbnailPath,
     required String token,
     required Map<String, dynamic> metadata,
+    bool isFrontCamera = false,
   }) async {
     try {
       VideoPipelineManager.instance.updateStage(PipelineStage.uploading);
@@ -42,6 +43,9 @@ class UploadService {
           _currentRequest!.fields[key] = value.toString();
         }
       });
+
+      // Add the isFrontCamera flag
+      _currentRequest!.fields['isFrontCamera'] = isFrontCamera.toString();
       
       // Add video file
       final videoFile = File(videoPath);

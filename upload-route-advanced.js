@@ -13,12 +13,12 @@ async function advancedVideoUpload(req, res) {
             });
         }
 
-        const { description, privacy, allowComments, allowDuet, allowStitch, hashtags, musicName } = req.body;
+        const { description, privacy, allowComments, allowDuet, allowStitch, hashtags, musicName, isFrontCamera } = req.body;
 
         console.log(`🎬 Advanced video processing: ${videoFile.originalname} (${(videoFile.size / 1024 / 1024).toFixed(2)}MB)`);
         
         // Process video with advanced processor
-        const processingResult = await advancedProcessor.processVideo(videoFile.buffer, videoFile.originalname);
+        const processingResult = await advancedProcessor.processVideo(videoFile.buffer, videoFile.originalname, { isFrontCamera: isFrontCamera === 'true' });
         
         if (!processingResult.success) {
             throw new Error('Video processing failed');
