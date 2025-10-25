@@ -5660,16 +5660,21 @@ const recommendationEndpoints = require('./recommendation-endpoints');
 recommendationEndpoints(app, db);
 
 // Grok Task Manager already loaded at top
+// DISABLED: App 2 uses Grok API, not Gemini API
+// TODO: Create grok-task-manager.js to replace gemini-task-manager.js
 let grokManager = null;
+let geminiManager = null;
 
 // Initialize Grok after database connection
 async function initializeGrok() {
-    if (db && !grokManager) {
-        geminiManager = new GeminiTaskManager(db);
-        grokManager.setupEndpoints(app);
-        grokManager.startBackgroundTasks();
-        console.log('🤖 Grok AI Task Manager initialized');
-    }
+    // TEMPORARILY DISABLED - causing crashes because App 2 uses Grok, not Gemini
+    console.log('⚠️ AI Task Manager disabled - App 2 uses Grok API (not Gemini)');
+    // if (db && !geminiManager) {
+    //     geminiManager = new GeminiTaskManager(db);
+    //     geminiManager.setupEndpoints(app);
+    //     geminiManager.startBackgroundTasks();
+    //     console.log('🤖 Grok AI Task Manager initialized');
+    // }
 }
 
 // Serve video variants and manifests
@@ -5721,12 +5726,12 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
     // Initialize Grok AI if database is connected
     if (dbConnected) {
         await initializeGrok();
-        
-        // Initialize Grok Task Manager
-const geminiTaskManager = new GeminiTaskManager(db);
-geminiTaskManager.setupEndpoints(app);
 
-geminiTaskManager.startBackgroundTasks();
+        // Initialize Grok Task Manager
+        // DISABLED: App 2 uses Grok API, not Gemini API
+        // const geminiTaskManager = new GeminiTaskManager(db);
+        // geminiTaskManager.setupEndpoints(app);
+        // geminiTaskManager.startBackgroundTasks();
     }
     
     console.log('');
