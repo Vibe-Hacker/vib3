@@ -23,15 +23,20 @@ const BUCKET_NAME = 'vib3-videos';
 async function handleVideoUpload(req, res) {
   try {
     const { video, thumbnail } = req.files;
-    const { description, privacy, allowComments, allowDuet, allowStitch, hashtags, musicName } = req.body;
+    const { description, privacy, allowComments, allowDuet, allowStitch, hashtags, musicName, isFrontCamera } = req.body;
     
     // Generate unique IDs
     const videoId = generateUniqueId();
     const timestamp = Date.now();
     
+    let videoBuffer = video.buffer;
+    if (isFrontCamera === 'true') {
+      videoBuffer = await flipVideoHorizontal(videoBuffer);
+    }
+    
     // Upload video to DigitalOcean Spaces
     const videoKey = `videos/${timestamp}-${videoId}.mp4`;
-    const videoUrl = await uploadToSpaces(video.buffer, videoKey, 'video/mp4');
+    const videoUrl = await uploadToSpaces(videoBuffer, videoKey, 'video/mp4');
     
     let thumbnailUrl;
     
@@ -302,6 +307,44 @@ async function updateVideoThumbnail(videoId, thumbnailUrl) {
   //   { _id: videoId },
   //   { $set: { thumbnailUrl } }
   // );
+}
+
+// Flip video horizontally for front camera videos
+async function flipVideoHorizontal(inputBuffer) {
+    const tempId = generateUniqueId();
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'vib3-flip-'));
+    const inputPath = path.join(tempDir, `input_${tempId}.mp4`);
+    const outputPath = path.join(tempDir, `flipped_${tempId}.mp4`);
+
+    try {
+        console.log('🔄 Starting horizontal flip...');
+
+        // Write input buffer to temporary file
+        await fs.writeFile(inputPath, inputBuffer);
+
+        // Flip video horizontally using FFmpeg
+        await new Promise((resolve, reject) => {
+            ffmpeg(inputPath)
+                .videoFilters('hflip')
+                .audioCodec('copy')
+                .on('end', resolve)
+                .on('error', reject)
+                .save(outputPath);
+        });
+
+        // Read flipped file back to buffer
+        const flippedBuffer = await fs.readFile(outputPath);
+
+        console.log('✅ Horizontal flip completed successfully');
+        return flippedBuffer;
+
+    } catch (error) {
+        console.error('❌ Video flip failed:', error);
+        throw error; // Re-throw error to be caught by the main handler
+    } finally {
+        // Clean up temporary directory
+        await fs.rm(tempDir, { recursive: true, force: true });
+    }
 }
 
 // Export functions for use in other modules

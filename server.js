@@ -1880,7 +1880,7 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
             });
         }
 
-        const { title, description, username, userId, hashtags, musicName } = req.body;
+        const { title, description, username, userId, hashtags, musicName, isFrontCamera } = req.body;
 
         console.log(`🎬 Processing video upload: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)}MB)`);
         console.log('🔍 Upload user association debug:', {
@@ -1889,6 +1889,7 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
             bodyUsername: username,
             willUse: req.user.userId || userId
         });
+        console.log(`📷 isFrontCamera: ${isFrontCamera}`);
 
         // Check for bypass flag for development/testing
         const bypassProcessing = req.body.bypassProcessing === 'true' || 
@@ -1933,7 +1934,8 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
                     const multiResult = await multiQualityProcessor.processMultiQuality(
                         req.file.buffer, 
                         req.file.originalname,
-                        req.user.userId || userId
+                        req.user.userId || userId,
+                        { isFrontCamera: isFrontCamera === 'true' }
                     );
                     
                     // Return multi-quality result format
@@ -1955,7 +1957,7 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
 
             // Step 2: Convert video to standard H.264 MP4 (single quality)
             console.log('📋 Step 2: Converting video to standard MP4...');
-            conversionResult = await videoProcessor.convertToStandardMp4(req.file.buffer, req.file.originalname);
+            conversionResult = await videoProcessor.convertToStandardMp4(req.file.buffer, req.file.originalname, { isFrontCamera: isFrontCamera === 'true' });
         }
         
         let finalBuffer, finalMimeType, processingInfo;

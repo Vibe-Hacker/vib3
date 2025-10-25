@@ -6,10 +6,12 @@ import 'publish_screen.dart';
 /// Simple video editor screen for basic editing after recording
 class SimpleVideoEditor extends StatefulWidget {
   final String videoPath;
-  
+  final bool isFrontCamera;
+
   const SimpleVideoEditor({
     super.key,
     required this.videoPath,
+    this.isFrontCamera = false,
   });
 
   @override
@@ -54,11 +56,15 @@ class _SimpleVideoEditorState extends State<SimpleVideoEditor> {
   }
   
   void _navigateToPublish() {
+    print('📲 SimpleVideoEditor: Navigating to PublishScreen');
+    print('📹 isFrontCamera value: ${widget.isFrontCamera}');
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PublishScreen(
           videoPath: widget.videoPath,
+          isFrontCamera: widget.isFrontCamera,
         ),
       ),
     );
@@ -111,7 +117,13 @@ class _SimpleVideoEditorState extends State<SimpleVideoEditor> {
                 child: _isInitialized && _controller != null
                     ? AspectRatio(
                         aspectRatio: _controller!.value.aspectRatio,
-                        child: VideoPlayer(_controller!),
+                        child: widget.isFrontCamera
+                            ? Transform(
+                                alignment: Alignment.center,
+                                transform: Matrix4.rotationY(3.14159),
+                                child: VideoPlayer(_controller!),
+                              )
+                            : VideoPlayer(_controller!),
                       )
                     : const CircularProgressIndicator(
                         color: Color(0xFF00CED1),

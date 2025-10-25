@@ -7,6 +7,7 @@ import '../../services/video_player_manager.dart';
 class VideoPlayerControllerWidget extends StatefulWidget {
   final String videoUrl;
   final bool isPlaying;
+  final bool isFrontCamera;
   final Function(VideoPlayerController?)? onControllerReady;
   final VoidCallback? onError;
   final VoidCallback? onTap;
@@ -15,6 +16,7 @@ class VideoPlayerControllerWidget extends StatefulWidget {
     super.key,
     required this.videoUrl,
     required this.isPlaying,
+    this.isFrontCamera = false,
     this.onControllerReady,
     this.onError,
     this.onTap,
@@ -163,9 +165,16 @@ class _VideoPlayerControllerWidgetState extends State<VideoPlayerControllerWidge
       return Container(color: Colors.black);
     }
 
+    print('📹 VideoPlayerControllerWidget: isFrontCamera=${widget.isFrontCamera}, applying Transform=${widget.isFrontCamera}');
     return GestureDetector(
       onTap: widget.onTap,
-      child: VideoPlayer(_controller!),
+      child: widget.isFrontCamera
+          ? Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.rotationY(3.14159),
+              child: VideoPlayer(_controller!),
+            )
+          : VideoPlayer(_controller!),
     );
   }
 }

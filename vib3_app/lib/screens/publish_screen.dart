@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
+import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import '../models/video.dart';
 import '../services/upload_service.dart';
 import '../providers/auth_provider.dart';
@@ -53,6 +54,9 @@ class _PublishScreenState extends State<PublishScreen> {
   @override
   void initState() {
     super.initState();
+    print('📱 PublishScreen: initState');
+    print('📹 isFrontCamera received: ${widget.isFrontCamera}');
+    print('🎬 videoPath: ${widget.videoPath}');
     // Clean up all video resources before initializing preview
     VideoPlayerManager.nuclearCleanup().then((_) {
       _initializeVideo();
@@ -129,7 +133,7 @@ class _PublishScreenState extends State<PublishScreen> {
                               child: widget.isFrontCamera
                                   ? Transform(
                                       alignment: Alignment.center,
-                                      transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
+                                      transform: Matrix4.rotationY(3.14159),
                                       child: VideoPlayer(_videoController!),
                                     )
                                   : VideoPlayer(_videoController!),

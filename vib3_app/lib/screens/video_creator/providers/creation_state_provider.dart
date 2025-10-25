@@ -71,7 +71,7 @@ class CreationStateProvider extends ChangeNotifier {
   
   // Add video clip
   void addVideoClip(String path, {Duration? trimStart, Duration? trimEnd, bool isFrontCamera = false}) {
-    print('CreationStateProvider: Adding video clip: $path (Front camera: $isFrontCamera)');
+    print('CreationStateProvider: Adding video clip: $path (isFrontCamera: $isFrontCamera)');
     final clip = VideoClip(
       path: path,
       trimStart: trimStart ?? Duration.zero,
@@ -355,19 +355,19 @@ class VideoClip {
   final String path;
   final Duration trimStart;
   final Duration? trimEnd;
+  final bool isFrontCamera;
   double speed;
   bool isReversed;
-  final bool isFrontCamera; // Track if recorded with front camera for flipping
 
   VideoClip({
     required this.path,
     this.trimStart = Duration.zero,
     this.trimEnd,
+    this.isFrontCamera = false,
     this.speed = 1.0,
     this.isReversed = false,
-    this.isFrontCamera = false,
   });
-
+  
   Duration get duration {
     // TODO: Get actual video duration
     return const Duration(seconds: 15);

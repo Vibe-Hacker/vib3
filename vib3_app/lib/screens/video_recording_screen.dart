@@ -47,6 +47,15 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
     try {
       _cameras = await availableCameras();
       if (_cameras.isNotEmpty) {
+        // Default to front camera (TikTok-style)
+        _selectedCameraIndex = _cameras.indexWhere(
+          (camera) => camera.lensDirection == CameraLensDirection.front
+        );
+        // If no front camera found, use back camera
+        if (_selectedCameraIndex == -1) {
+          _selectedCameraIndex = 0;
+        }
+
         _controller = CameraController(
           _cameras[_selectedCameraIndex],
           ResolutionPreset.high,
@@ -131,11 +140,21 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen>
         
         // Navigate directly without checking file
         print('🚀 Attempting direct navigation to editor...');
-        
+
+        // Detect if front camera was used
+        final isFrontCamera = _cameras.isNotEmpty &&
+            _cameras[_selectedCameraIndex].lensDirection == CameraLensDirection.front;
+
+        print('📹 Front camera detected: $isFrontCamera');
+        print('📸 Camera lens direction: ${_cameras[_selectedCameraIndex].lensDirection}');
+
         // Push and replace to prevent going back to recording screen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => SimpleVideoEditor(videoPath: video.path),
+            builder: (context) => SimpleVideoEditor(
+              videoPath: video.path,
+              isFrontCamera: isFrontCamera,
+            ),
           ),
         );
         

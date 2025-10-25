@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'dart:async';
+import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new/return_code.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import 'camera_controller.dart';
 import 'camera_permissions.dart';
 import '../../core/video_pipeline/pipeline_manager.dart';
@@ -101,7 +105,45 @@ class _RecordingScreenState extends State<RecordingScreen>
     print('🎬 RecordingScreen: Stop recording returned: $file');
 
     if (file != null && mounted) {
-      print('🎬 RecordingScreen: Video file path: ${file.path}');
+      String finalVideoPath = file.path;
+
+      if (wasFrontCamera) {
+        // Show processing dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+
+        final Directory appTemporaryDirectory = await getTemporaryDirectory();
+        final String outputVideoPath = '${appTemporaryDirectory.path}/flipped_${DateTime.now().millisecondsSinceEpoch}.mp4';
+        
+        final String ffmpegCommand = '-i "$finalVideoPath" -vf "hflip" -c:a copy "$outputVideoPath"';
+
+        final session = await FFmpegKit.execute(ffmpegCommand);
+        final returnCode = await session.getReturnCode();
+
+        // Close processing dialog
+        Navigator.of(context).pop();
+
+        if (ReturnCode.isSuccess(returnCode)) {
+          print('✅ FFmpeg command completed successfully. Output: $outputVideoPath');
+          finalVideoPath = outputVideoPath;
+          // Optionally, delete the original mirrored file
+          try {
+            File(file.path).delete();
+          } catch (e) {
+            print('Could not delete original file: $e');
+          }
+        } else {
+          print('❌ FFmpeg command failed with return code: $returnCode');
+          // Proceed with the original (mirrored) video if flipping fails
+        }
+      }
+
+      print('🎬 RecordingScreen: Final video path: $finalVideoPath');
 
       // Navigate to video creator screen for editing
       print('🎬 RecordingScreen: Navigating to VideoCreatorScreen...');
@@ -109,7 +151,7 @@ class _RecordingScreenState extends State<RecordingScreen>
         context,
         MaterialPageRoute(
           builder: (context) => VideoCreatorScreen(
-            videoPath: file.path,
+            videoPath: finalVideoPath,
             isFrontCamera: wasFrontCamera,
           ),
         ),
@@ -122,7 +164,7 @@ class _RecordingScreenState extends State<RecordingScreen>
       print('❌ RecordingScreen: No file returned or widget not mounted');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Failed to save recording'),
             backgroundColor: Colors.red,
           ),

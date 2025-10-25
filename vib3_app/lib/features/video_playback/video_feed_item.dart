@@ -125,6 +125,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
           child: VideoPlayerControllerWidget(
             videoUrl: widget.video.videoUrl,
             isPlaying: widget.isPlaying && !_isPaused,
+            isFrontCamera: widget.video.isFrontCamera,
             onTap: _handleVideoTap,
             onError: () {
               // Handle error if needed

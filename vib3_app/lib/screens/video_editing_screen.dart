@@ -64,8 +64,9 @@ class MusicTrack {
 
 class VideoEditingScreen extends StatefulWidget {
   final String videoPath;
+  final bool isFrontCamera;
 
-  const VideoEditingScreen({super.key, required this.videoPath});
+  const VideoEditingScreen({super.key, required this.videoPath, this.isFrontCamera = false});
 
   @override
   State<VideoEditingScreen> createState() => _VideoEditingScreenState();
@@ -312,7 +313,12 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => const UploadScreen(),
+        builder: (context) => UploadScreen(
+          arguments: {
+            'videoPath': widget.videoPath,
+            'isFrontCamera': widget.isFrontCamera,
+          },
+        ),
       ),
     );
   }
@@ -338,17 +344,17 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                 // Header
                 _buildHeader(),
                 
-                // Video preview - responsive height
+                // Video preview - responsive height (reduced to prevent overflow)
                 Container(
-                  height: constraints.maxHeight * 0.35, // 35% of available height
+                  height: constraints.maxHeight * 0.30, // Reduced to 30% from 35%
                   child: Stack(
                 children: [
                   // Video player
                   _buildVideoPreview(),
-                  
+
                   // Text overlays
                   ..._textOverlays.map((overlay) => _buildTextOverlay(overlay)),
-                  
+
                   // Filter overlay
                   if (_selectedFilter != 'none')
                     Positioned.fill(
@@ -356,7 +362,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                         color: _filters.firstWhere((f) => f.name == _selectedFilter).color,
                       ),
                     ),
-                  
+
                   // Play/pause button
                   Center(
                     child: GestureDetector(
@@ -383,12 +389,12 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
                 ],
               ),
             ),
-            
-            // Timeline
+
+            // Timeline (reduced height)
             _buildTimeline(),
-            
-            // Tools - use remaining space
-            Expanded(
+
+            // Tools - use remaining space (changed from Expanded to Flexible)
+            Flexible(
               child: _buildTools(),
             ),
             
@@ -460,7 +466,13 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
     return Center(
       child: AspectRatio(
         aspectRatio: _controller!.value.aspectRatio,
-        child: VideoPlayer(_controller!),
+        child: widget.isFrontCamera
+            ? Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.rotationY(3.14159),
+                child: VideoPlayer(_controller!),
+              )
+            : VideoPlayer(_controller!),
       ),
     );
   }
@@ -504,7 +516,7 @@ class _VideoEditingScreenState extends State<VideoEditingScreen>
 
   Widget _buildTimeline() {
     return Container(
-      height: 70, // Further reduced
+      height: 60, // Reduced to 60 from 70
       color: Colors.grey[900],
       child: Column(
         children: [

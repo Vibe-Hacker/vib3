@@ -154,37 +154,27 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
       case CreatorMode.effects:
         return Container(
           color: Colors.black,
-          child: SingleChildScrollView(
-            child: EffectsModule(),
-          ),
+          child: EffectsModule(),
         );
       case CreatorMode.music:
         return Container(
           color: Colors.black,
-          child: SingleChildScrollView(
-            child: MusicModule(),
-          ),
+          child: MusicModule(),
         );
       case CreatorMode.text:
         return Container(
           color: Colors.black,
-          child: SingleChildScrollView(
-            child: TextModule(),
-          ),
+          child: TextModule(),
         );
       case CreatorMode.filters:
         return Container(
           color: Colors.black,
-          child: SingleChildScrollView(
-            child: FiltersModule(),
-          ),
+          child: FiltersModule(),
         );
       case CreatorMode.tools:
         return Container(
           color: Colors.black,
-          child: SingleChildScrollView(
-            child: ToolsModule(),
-          ),
+          child: ToolsModule(),
         );
     }
   }
@@ -360,11 +350,17 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                     Navigator.pop(dialogContext); // Close loading dialog
                     
                     // Navigate to publish screen
-                    // Use isFrontCamera from the first clip (actually recorded value)
-                    final bool wasFrontCamera = creationState.videoClips.isNotEmpty
+                    // Get isFrontCamera from the first video clip in creation state
+                    final isFrontCamera = creationState.videoClips.isNotEmpty
                         ? creationState.videoClips.first.isFrontCamera
-                        : widget.isFrontCamera;
-                    print('📸 Navigating to publish with isFrontCamera=$wasFrontCamera');
+                        : false;
+
+                    print('🎬 VideoCreatorScreen: Navigating to Publish');
+                    print('📹 isFrontCamera from creationState: $isFrontCamera');
+                    print('📦 Total video clips: ${creationState.videoClips.length}');
+                    if (creationState.videoClips.isNotEmpty) {
+                      print('📹 First clip isFrontCamera: ${creationState.videoClips.first.isFrontCamera}');
+                    }
 
                     Navigator.push(
                       context,
@@ -372,7 +368,7 @@ class _VideoCreatorScreenState extends State<VideoCreatorScreen>
                         builder: (context) => PublishScreen(
                           videoPath: exportedPath,
                           musicName: creationState.backgroundMusicName,
-                          isFrontCamera: wasFrontCamera,
+                          isFrontCamera: isFrontCamera,
                         ),
                       ),
                     ).then((_) {

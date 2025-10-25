@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
 import '../providers/video_provider.dart';
 import '../services/video_service.dart';
 import '../widgets/tabbed_video_feed.dart';
 import 'dart:io';
+import '../providers/auth_provider.dart';
+import '../services/upload_service.dart';
 
 class UploadVideoScreen extends StatefulWidget {
   final String videoPath;
   final String? musicName;
+  final bool isFrontCamera;
   
   const UploadVideoScreen({
     super.key,
     required this.videoPath,
     this.musicName,
+    this.isFrontCamera = false,
   });
 
   @override
@@ -23,17 +28,18 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   final TextEditingController _captionController = TextEditingController();
   final TextEditingController _tagsController = TextEditingController();
   final VideoService _videoService = VideoService();
-  
+  VideoPlayerController? _videoController;
+
   bool _isUploading = false;
   double _uploadProgress = 0.0;
-  
+
   // Privacy settings
   String _privacy = 'public'; // public, friends, private
   bool _allowComments = true;
   bool _allowDuet = true;
   bool _allowStitch = true;
   bool _allowDownload = true;
-  
+
   // Cover image
   String? _coverImagePath;
   int _coverFrameIndex = 0;
@@ -56,7 +62,19 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   void initState() {
     super.initState();
     print('UploadVideoScreen initState - videoPath: ${widget.videoPath}');
+    print('UploadVideoScreen initState - isFrontCamera: ${widget.isFrontCamera}');
+    _initializeVideo();
     _generateCoverOptions();
+  }
+
+  Future<void> _initializeVideo() async {
+    _videoController = VideoPlayerController.file(File(widget.videoPath));
+    await _videoController!.initialize();
+    _videoController!.setLooping(true);
+    _videoController!.play();
+    if (mounted) {
+      setState(() {});
+    }
   }
   
   void _generateCoverOptions() {
@@ -69,6 +87,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   void dispose() {
     _captionController.dispose();
     _tagsController.dispose();
+    _videoController?.dispose();
     super.dispose();
   }
   
@@ -112,34 +131,42 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
         }
       }
       
-      // Create video data
-      final videoData = {
-        'videoPath': widget.videoPath,
-        'caption': _captionController.text,
-        'tags': _tagsController.text.split(' ').where((tag) => tag.isNotEmpty).toList(),
-        'privacy': _privacy,
-        'allowComments': _allowComments,
-        'allowDuet': _allowDuet,
-        'allowStitch': _allowStitch,
-        'allowDownload': _allowDownload,
-        'coverImage': _coverImagePath,
-        'musicName': widget.musicName,
-      };
-      
-      // TODO: Actually upload to server
-      // await _videoService.uploadVideo(videoData);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.authToken;
+
+      if (token == null) {
+        throw Exception('Authentication token not found');
+      }
+
+      // Actually upload to server
+      final result = await UploadService.uploadVideo(
+        videoFile: File(widget.videoPath),
+        description: _captionController.text,
+        privacy: _privacy,
+        allowComments: _allowComments,
+        allowDuet: _allowDuet,
+        allowStitch: _allowStitch,
+        token: token,
+        hashtags: _tagsController.text,
+        musicName: widget.musicName,
+        isFrontCamera: widget.isFrontCamera,
+      );
       
       if (mounted) {
-        // Show success and navigate to home
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Video uploaded successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Navigate to home screen
-        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+        if (result['success']) {
+          // Show success and navigate to home
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Video uploaded successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // Navigate to home screen
+          Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+        } else {
+          throw Exception(result['error'] ?? 'Upload failed');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -273,42 +300,25 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Video thumbnail placeholder
-                        Container(
-                          color: Colors.grey[800],
-                          child: const Icon(
-                            Icons.play_circle_filled,
-                            color: Colors.white54,
-                            size: 50,
-                          ),
-                        ),
-                        // Play button overlay
-                        Positioned(
-                          bottom: 10,
-                          right: 10,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.7),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'Preview',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
+                    child: _videoController != null && _videoController!.value.isInitialized
+                        ? AspectRatio(
+                            aspectRatio: _videoController!.value.aspectRatio,
+                            child: widget.isFrontCamera
+                                ? Transform(
+                                    alignment: Alignment.center,
+                                    transform: Matrix4.rotationY(3.14159),
+                                    child: VideoPlayer(_videoController!),
+                                  )
+                                : VideoPlayer(_videoController!),
+                          )
+                        : Container(
+                            color: Colors.grey[800],
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF00CED1),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
                 const SizedBox(width: 16),

@@ -52,122 +52,120 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Profile Picture
-            GestureDetector(
-              onTap: _changeProfilePicture,
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: const Color(0xFF1A1A1A),
-                    backgroundImage: user?.profilePicture != null
-                        ? NetworkImage(user!.profilePicture!)
-                        : null,
-                    child: user?.profilePicture == null
-                        ? Text(
-                            user?.username[0].toUpperCase() ?? '',
-                            style: const TextStyle(fontSize: 40),
-                          )
-                        : null,
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFF0080),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        size: 20,
-                        color: Colors.white,
-                      ),
+        children: [
+          // Profile Picture
+          GestureDetector(
+            onTap: _changeProfilePicture,
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: const Color(0xFF1A1A1A),
+                  backgroundImage: user?.profilePicture != null
+                      ? NetworkImage(user!.profilePicture!)
+                      : null,
+                  child: user?.profilePicture == null
+                      ? Text(
+                          user?.username[0].toUpperCase() ?? '',
+                          style: const TextStyle(fontSize: 40),
+                        )
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFF0080),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 20,
+                      color: Colors.white,
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: _changeProfilePicture,
-              child: const Text(
-                'Change photo',
-                style: TextStyle(color: Color(0xFFFF0080)),
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Profile Info Fields
-            _buildTextField(
-              controller: _displayNameController,
-              label: 'Name',
-              maxLength: 30,
-            ),
-            _buildTextField(
-              controller: _usernameController,
-              label: 'Username',
-              prefix: '@',
-              maxLength: 24,
-            ),
-            _buildTextField(
-              controller: _bioController,
-              label: 'Bio',
-              maxLines: 4,
-              maxLength: 80,
-            ),
-            
-            // Social Links Section
-            const SizedBox(height: 24),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Social',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: _changeProfilePicture,
+            child: const Text(
+              'Change photo',
+              style: TextStyle(color: Color(0xFFFF0080)),
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Profile Info Fields
+          _buildTextField(
+            controller: _displayNameController,
+            label: 'Name',
+            maxLength: 30,
+          ),
+          _buildTextField(
+            controller: _usernameController,
+            label: 'Username',
+            prefix: '@',
+            maxLength: 24,
+          ),
+          _buildTextField(
+            controller: _bioController,
+            label: 'Bio',
+            maxLines: 4,
+            maxLength: 80,
+          ),
+          
+          // Social Links Section
+          const SizedBox(height: 24),
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Social',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 16),
-            
-            _buildSocialField(
-              controller: _instagramController,
-              label: 'Instagram',
-              icon: Icons.camera_alt,
-            ),
-            _buildSocialField(
-              controller: _youtubeController,
-              label: 'YouTube',
-              icon: Icons.play_circle_outline,
-            ),
-            _buildSocialField(
-              controller: _websiteController,
-              label: 'Website',
-              icon: Icons.link,
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // Additional Options
-            ListTile(
-              title: const Text('Private information',
-                style: TextStyle(color: Colors.white)),
-              subtitle: const Text('Manage your personal information',
-                style: TextStyle(color: Colors.grey)),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () {
-                // Navigate to private information
-              },
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          
+          _buildSocialField(
+            controller: _instagramController,
+            label: 'Instagram',
+            icon: Icons.camera_alt,
+          ),
+          _buildSocialField(
+            controller: _youtubeController,
+            label: 'YouTube',
+            icon: Icons.play_circle_outline,
+          ),
+          _buildSocialField(
+            controller: _websiteController,
+            label: 'Website',
+            icon: Icons.link,
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Additional Options
+          ListTile(
+            title: const Text('Private information',
+              style: TextStyle(color: Colors.white)),
+            subtitle: const Text('Manage your personal information',
+              style: TextStyle(color: Colors.grey)),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            onTap: () {
+              // Navigate to private information
+            },
+          ),
+        ],
       ),
     );
   }

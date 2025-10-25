@@ -84,6 +84,7 @@ class _CameraModuleState extends State<CameraModule>
   CameraController? _cameraController;
   List<CameraDescription> _cameras = [];
   int _selectedCameraIndex = 0;
+  bool _isFrontCamera = false;
   
   // Recording state
   bool _isRecording = false;
@@ -263,24 +264,19 @@ class _CameraModuleState extends State<CameraModule>
       _cameras = await availableCameras();
       if (_cameras.isEmpty) return;
 
-      // Debug: Log all available cameras
-      print('\n🎥 ===== CAMERA DETECTION DEBUG =====');
-      print('📸 Total cameras found: ${_cameras.length}');
-      for (int i = 0; i < _cameras.length; i++) {
-        final camera = _cameras[i];
-        print('📸 Camera $i:');
-        print('   - Name: ${camera.name}');
-        print('   - Lens Direction: ${camera.lensDirection}');
-        print('   - Is Front: ${camera.lensDirection == CameraLensDirection.front}');
-        print('   - Is Back: ${camera.lensDirection == CameraLensDirection.back}');
+      // Find front camera index (TikTok-style default)
+      int frontCameraIndex = _cameras.indexWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front
+      );
+
+      // Use front camera if available, otherwise use first available camera
+      if (frontCameraIndex != -1) {
+        _selectedCameraIndex = frontCameraIndex;
+        print('📸 CameraModule: Defaulting to front camera (index $frontCameraIndex)');
+      } else {
+        _selectedCameraIndex = 0;
+        print('📸 CameraModule: No front camera found, using camera at index 0');
       }
-      print('📸 Selected camera index: $_selectedCameraIndex');
-      if (_selectedCameraIndex < _cameras.length) {
-        final selected = _cameras[_selectedCameraIndex];
-        print('📸 Selected camera lens direction: ${selected.lensDirection}');
-        print('📸 Is front camera: ${selected.lensDirection == CameraLensDirection.front}');
-      }
-      print('🎥 ===== END CAMERA DEBUG =====\n');
 
       await _setupCameraController(_selectedCameraIndex);
     } catch (e) {
@@ -323,7 +319,11 @@ class _CameraModuleState extends State<CameraModule>
       enableAudio: true,
       imageFormatGroup: ImageFormatGroup.yuv420,
     );
-    
+
+    // Track if using front camera
+    _isFrontCamera = (camera.lensDirection == CameraLensDirection.front);
+    print('📸 CameraModule: Camera initialized - isFrontCamera = $_isFrontCamera');
+
     try {
       await _cameraController!.initialize();
       
@@ -385,15 +385,7 @@ class _CameraModuleState extends State<CameraModule>
     setState(() {
       _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras.length;
     });
-
-    // Debug: Log camera switch
-    print('📸 CAMERA SWITCHED to index: $_selectedCameraIndex');
-    if (_selectedCameraIndex < _cameras.length) {
-      final newCamera = _cameras[_selectedCameraIndex];
-      print('📸 New camera lens direction: ${newCamera.lensDirection}');
-      print('📸 Is front camera: ${newCamera.lensDirection == CameraLensDirection.front}');
-    }
-
+    
     await _setupCameraController(_selectedCameraIndex);
   }
   
@@ -586,11 +578,10 @@ class _CameraModuleState extends State<CameraModule>
         final creationState = context.read<CreationStateProvider>();
 
         // Add clip to provider with front camera flag
-        // TESTING: Force FALSE - videos may not need flipping at all
-        final isFrontCamera = false;
-        print('📸 CAMERA MODULE: Recording finished, camera index=$_selectedCameraIndex, forcing isFrontCamera=$isFrontCamera (NO TRANSFORM)');
-        print('📸 CAMERA MODULE: Selected camera: ${_cameras[_selectedCameraIndex].name}, lensDirection=${_cameras[_selectedCameraIndex].lensDirection}');
-        creationState.addVideoClip(videoFile.path, isFrontCamera: isFrontCamera);
+        print('🎥 CameraModule: Adding clip with isFrontCamera = $_isFrontCamera');
+        print('📂 CameraModule: Video path = ${videoFile.path}');
+        creationState.addVideoClip(videoFile.path, isFrontCamera: _isFrontCamera);
+        print('✅ CameraModule: Clip added. Total clips: ${creationState.videoClips.length}');
         
         // Wait longer to ensure all video resources are released
         await Future.delayed(const Duration(seconds: 2)); // Increased to 2 seconds
@@ -940,11 +931,17 @@ class _CameraModuleState extends State<CameraModule>
               _setZoom(_zoomLevel * details.scale);
             },
             onDoubleTap: _handleGesture, // Hands-free gesture simulation
-            child: _arEffectsEnabled 
-                ? _buildARPreview() 
+            child: _arEffectsEnabled
+                ? _buildARPreview()
                 : _filtersEnabled
                     ? _buildFilterPreview()
-                    : CameraPreview(_cameraController!),
+                    : _isFrontCamera
+                        ? Transform(
+                            alignment: Alignment.center,
+                            transform: Matrix4.rotationY(3.14159),
+                            child: CameraPreview(_cameraController!),
+                          )
+                        : CameraPreview(_cameraController!),
           ),
         ),
         
@@ -1044,7 +1041,7 @@ class _CameraModuleState extends State<CameraModule>
           ),
         
         // Hands-free indicator
-        if (_selectedCameraIndex != 0) // Front camera (index-based detection)
+        if (_selectedCameraIndex == 1) // Front camera
           Positioned(
             top: 120,
             left: 0,

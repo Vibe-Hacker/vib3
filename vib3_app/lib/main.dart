@@ -176,11 +176,13 @@ class _VIB3AppState extends State<VIB3App> with WidgetsBindingObserver {
                 final args = settings.arguments as Map<String, dynamic>?;
                 final videoPath = args?['videoPath'] ?? '';
                 final musicName = args?['musicName'];
-                print('Creating UploadVideoScreen with videoPath: $videoPath, musicName: $musicName');
+                final isFrontCamera = args?['isFrontCamera'] ?? false;
+                print('Creating UploadVideoScreen with videoPath: $videoPath, musicName: $musicName, isFrontCamera: $isFrontCamera');
                 return MaterialPageRoute(
                   builder: (context) => UploadVideoScreen(
                     videoPath: videoPath,
                     musicName: musicName,
+                    isFrontCamera: isFrontCamera,
                   ),
                 );
               }

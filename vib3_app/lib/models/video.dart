@@ -29,6 +29,11 @@ class Video {
   final bool hasCommented;
   final bool hasShared;
 
+  // Video settings
+  final bool isFrontCamera;
+  final bool allowDuet;
+  final bool allowStitch;
+
   Video({
     required this.id,
     required this.userId,
@@ -57,6 +62,9 @@ class Video {
     this.isFavorited = false,
     this.hasCommented = false,
     this.hasShared = false,
+    this.isFrontCamera = false,
+    this.allowDuet = true,
+    this.allowStitch = true,
   });
 
   factory Video.fromJson(Map<String, dynamic> json) {
@@ -101,6 +109,9 @@ class Video {
       isFavorited: json['isFavorited'] ?? false,
       hasCommented: json['hasCommented'] ?? false,
       hasShared: json['hasShared'] ?? false,
+      isFrontCamera: json['isFrontCamera'] ?? false,
+      allowDuet: json['allowDuet'] ?? true,
+      allowStitch: json['allowStitch'] ?? true,
     );
   }
 
@@ -133,6 +144,9 @@ class Video {
       'isFavorited': isFavorited,
       'hasCommented': hasCommented,
       'hasShared': hasShared,
+      'isFrontCamera': isFrontCamera,
+      'allowDuet': allowDuet,
+      'allowStitch': allowStitch,
     };
   }
 
@@ -164,6 +178,9 @@ class Video {
     bool? isFavorited,
     bool? hasCommented,
     bool? hasShared,
+    bool? isFrontCamera,
+    bool? allowDuet,
+    bool? allowStitch,
   }) {
     return Video(
       id: id ?? this.id,
@@ -193,6 +210,9 @@ class Video {
       isFavorited: isFavorited ?? this.isFavorited,
       hasCommented: hasCommented ?? this.hasCommented,
       hasShared: hasShared ?? this.hasShared,
+      isFrontCamera: isFrontCamera ?? this.isFrontCamera,
+      allowDuet: allowDuet ?? this.allowDuet,
+      allowStitch: allowStitch ?? this.allowStitch,
     );
   }
 }

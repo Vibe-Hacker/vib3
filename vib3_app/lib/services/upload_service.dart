@@ -1,10 +1,53 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
+import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 import '../config/app_config.dart';
 import 'thumbnail_service.dart';
 
 class UploadService {
+  /// Flip video horizontally for front camera videos
+  static Future<File> _flipVideoHorizontally(File inputFile) async {
+    try {
+      print('🔄 Flipping video horizontally for front camera...');
+
+      final tempDir = await getTemporaryDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputPath = path.join(tempDir.path, 'flipped_$timestamp.mp4');
+
+      // FFmpeg command to flip video horizontally
+      final command = '-i "${inputFile.path}" -vf "hflip" -c:a copy -y "$outputPath"';
+
+      print('🎬 Running FFmpeg command: $command');
+      final session = await FFmpegKit.execute(command);
+      final returnCode = await session.getReturnCode();
+
+      if (ReturnCode.isSuccess(returnCode)) {
+        print('✅ Video flipped successfully!');
+        final outputFile = File(outputPath);
+        if (await outputFile.exists()) {
+          print('📁 Flipped video: $outputPath');
+          print('📏 Flipped size: ${outputFile.lengthSync() / 1024 / 1024} MB');
+          return outputFile;
+        } else {
+          print('❌ Flipped file not found after FFmpeg success');
+          return inputFile;
+        }
+      } else {
+        print('❌ FFmpeg failed with return code: $returnCode');
+        final output = await session.getOutput();
+        print('FFmpeg output: $output');
+        return inputFile;
+      }
+    } catch (e) {
+      print('❌ Error flipping video: $e');
+      return inputFile;
+    }
+  }
+
   static Future<Map<String, dynamic>> uploadVideo({
     required File videoFile,
     required String description,
@@ -21,18 +64,26 @@ class UploadService {
       print('🎬 Starting video upload...');
       print('📁 Video file: ${videoFile.path}');
       print('📏 File size: ${videoFile.lengthSync() / 1024 / 1024} MB');
-      
+      print('📹 Front camera: $isFrontCamera');
+
       // Check if file exists
       if (!await videoFile.exists()) {
         print('❌ Video file does not exist!');
         return {'success': false, 'error': 'Video file not found'};
+      }
+
+      // Flip video horizontally for front camera to match preview
+      File uploadFile = videoFile;
+      if (isFrontCamera) {
+        print('📹 Front camera detected - flipping video horizontally to match preview');
+        uploadFile = await _flipVideoHorizontally(videoFile);
       }
       
       // Generate thumbnail before uploading video
       print('🖼️ Generating thumbnail for video...');
       File? thumbnailFile;
       try {
-        thumbnailFile = await ThumbnailService.generateVideoThumbnail(videoFile.path);
+        thumbnailFile = await ThumbnailService.generateVideoThumbnail(uploadFile.path);
       } catch (e) {
         print('⚠️ Thumbnail generation failed: $e');
       }
@@ -59,11 +110,11 @@ class UploadService {
           request.headers['Authorization'] = 'Bearer $token';
           print('🔐 Auth token: ${token.substring(0, 10)}...');
 
-          // Add video file
+          // Add video file (flipped if front camera)
           request.files.add(
             await http.MultipartFile.fromPath(
               'video',
-              videoFile.path,
+              uploadFile.path,
               filename: 'video_${DateTime.now().millisecondsSinceEpoch}.mp4',
             ),
           );
@@ -89,9 +140,18 @@ class UploadService {
           request.fields['allowComments'] = allowComments.toString();
           request.fields['allowDuet'] = allowDuet.toString();
           request.fields['allowStitch'] = allowStitch.toString();
-          request.fields['bypassProcessing'] = 'true'; // Skip video processing to avoid errors
-          print('📸 UPLOAD: isFrontCamera = $isFrontCamera (sending as string: ${isFrontCamera.toString()})');
-          request.fields['isFrontCamera'] = isFrontCamera.toString(); // For server-side mirroring
+          request.fields['bypassProcessing'] = 'false'; // Skip video processing to avoid errors
+
+          // DEBUG: Log isFrontCamera value before adding to request
+          print('📹 DEBUG: isFrontCamera parameter value = $isFrontCamera');
+          print('📹 DEBUG: isFrontCamera.toString() = ${isFrontCamera.toString()}');
+
+          // Send the actual isFrontCamera value so backend knows to display it mirrored
+          request.fields['isFrontCamera'] = isFrontCamera.toString();
+
+          // DEBUG: Confirm field was added
+          print('📹 DEBUG: Added isFrontCamera to request.fields');
+          print('📹 DEBUG: request.fields[\'isFrontCamera\'] = ${request.fields['isFrontCamera']}');
 
           // Add hashtags and music info if provided
           if (hashtags != null && hashtags.isNotEmpty) {
@@ -100,6 +160,12 @@ class UploadService {
           if (musicName != null && musicName.isNotEmpty) {
             request.fields['musicName'] = musicName;
           }
+
+          // DEBUG: Show all fields being sent
+          print('📋 DEBUG: All request.fields being sent to backend:');
+          request.fields.forEach((key, value) {
+            print('   - $key: $value');
+          });
 
           print('📤 Sending upload request...');
           final response = await request.send().timeout(

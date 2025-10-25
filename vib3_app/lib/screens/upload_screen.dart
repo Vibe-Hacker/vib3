@@ -39,7 +39,8 @@ class _UploadScreenState extends State<UploadScreen> with AutomaticKeepAliveClie
   String? _selectedMusicName;
   VideoCompatibility? _videoCompatibility;
   bool _isCheckingVideo = false;
-  
+  bool _isFrontCamera = false;
+
   @override
   bool get wantKeepAlive => false;
 
@@ -50,15 +51,20 @@ class _UploadScreenState extends State<UploadScreen> with AutomaticKeepAliveClie
     if (widget.arguments != null) {
       final videoPath = widget.arguments!['videoPath'] as String?;
       final musicName = widget.arguments!['musicName'] as String?;
-      
+      final isFrontCamera = widget.arguments!['isFrontCamera'] as bool?;
+
       if (videoPath != null) {
         _selectedVideo = XFile(videoPath);
         _initializeVideoPlayer();
         _checkVideoCompatibility();
       }
-      
+
       if (musicName != null) {
         _selectedMusicName = musicName;
+      }
+
+      if (isFrontCamera != null) {
+        _isFrontCamera = isFrontCamera;
       }
     }
   }
@@ -328,6 +334,7 @@ class _UploadScreenState extends State<UploadScreen> with AutomaticKeepAliveClie
         token: token,
         hashtags: _hashtagsController.text.trim(),
         musicName: _selectedMusicName,
+        isFrontCamera: _isFrontCamera,
       );
       
       // Close progress dialog
@@ -528,7 +535,13 @@ class _UploadScreenState extends State<UploadScreen> with AutomaticKeepAliveClie
                         borderRadius: BorderRadius.circular(12),
                         child: AspectRatio(
                           aspectRatio: _videoController!.value.aspectRatio,
-                          child: VideoPlayer(_videoController!),
+                          child: _isFrontCamera
+                              ? Transform(
+                                  alignment: Alignment.center,
+                                  transform: Matrix4.rotationY(3.14159),
+                                  child: VideoPlayer(_videoController!),
+                                )
+                              : VideoPlayer(_videoController!),
                         ),
                       )
                     : const Center(
