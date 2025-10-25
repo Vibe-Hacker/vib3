@@ -5622,10 +5622,9 @@ const videoRouter = initializeVideoRoutes({
     videoProcessor, 
     multiQualityProcessor, 
     s3, 
-    db 
+    db
 });
 app.use('/api/video', videoRouter); // New modular video routes
-const modularRequireAuth = require('./middleware/auth');
 
 // New, modern feed endpoint
 app.get('/api/feed', modularRequireAuth, async (req, res) => {
