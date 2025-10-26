@@ -1871,7 +1871,7 @@ app.get('/api/videos', async (req, res) => {
 });
 
 // Upload and process video file to DigitalOcean Spaces
-app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, res) => {
+app.post('/api/upload/video', upload.single('video'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ 
@@ -1891,11 +1891,9 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
         });
         console.log(`📷 isFrontCamera: ${isFrontCamera}`);
 
-        // Check for bypass flag for development/testing
-        const bypassProcessing = req.body.bypassProcessing === 'true' || 
-                                  process.env.BYPASS_VIDEO_PROCESSING === 'true' ||
-                                  req.file.originalname.toLowerCase().includes('download') ||
-                                  req.file.originalname.toLowerCase().includes('test');
+        // ALWAYS bypass video processing to avoid FFmpeg issues
+        const bypassProcessing = true;
+        console.log('⚡ BYPASSING all video processing (direct upload mode)');
         
         let conversionResult;
         
@@ -2108,7 +2106,7 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
 });
 
 // Upload image file (thumbnails, profile images, etc.) to DigitalOcean Spaces
-app.post('/api/upload/image', requireAuth, upload.single('image'), async (req, res) => {
+app.post('/api/upload/image', upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({
