@@ -2626,10 +2626,16 @@ app.get('/api/posts', async (req, res) => {
 app.post('/api/posts', async (req, res) => {
     try {
         const {
+            userId,
+            type,
+            caption,
+            media,
+            tags,
+            commentsEnabled,
+            sharingEnabled,
+            // Legacy format support
             videoUrl,
             thumbnailUrl,
-            caption,
-            userId,
             username,
             hashtags,
             isFrontCamera,
@@ -2638,30 +2644,47 @@ app.post('/api/posts', async (req, res) => {
         } = req.body;
 
         console.log('📝 Creating new post:', {
-            hasVideoUrl: !!videoUrl,
-            hasThumbnailUrl: !!thumbnailUrl,
-            caption: caption?.substring(0, 50),
             userId,
-            username,
-            isFrontCamera
+            type,
+            caption: caption?.substring(0, 50),
+            mediaCount: media?.length,
+            tags: tags?.length,
         });
 
+        // Support both new and legacy formats
+        let finalVideoUrl, finalThumbnailUrl;
+
+        if (media && media.length > 0) {
+            // New format: extract from media array
+            const firstMedia = media[0];
+            finalVideoUrl = firstMedia.url || firstMedia.videoUrl;
+            finalThumbnailUrl = firstMedia.thumbnailUrl || firstMedia.thumbnail;
+        } else if (videoUrl) {
+            // Legacy format: use direct fields
+            finalVideoUrl = videoUrl;
+            finalThumbnailUrl = thumbnailUrl;
+        }
+
         // Validate required fields
-        if (!videoUrl) {
+        if (!finalVideoUrl) {
             return res.status(400).json({
                 success: false,
-                error: 'Video URL is required',
+                error: 'Video URL is required (provide media array or videoUrl)',
             });
         }
 
         // Create post object
         const post = {
-            videoUrl,
-            thumbnailUrl: thumbnailUrl || null,
-            caption: caption || '',
             userId: userId || 'anonymous',
             username: username || 'Anonymous User',
-            hashtags: hashtags || [],
+            type: type || 'video',
+            videoUrl: finalVideoUrl,
+            thumbnailUrl: finalThumbnailUrl || null,
+            caption: caption || '',
+            hashtags: tags || hashtags || [],
+            media: media || [],
+            commentsEnabled: commentsEnabled !== false,
+            sharingEnabled: sharingEnabled !== false,
             isFrontCamera: isFrontCamera === 'true' || isFrontCamera === true,
             musicName: musicName || null,
             musicArtist: musicArtist || null,
