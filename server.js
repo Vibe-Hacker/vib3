@@ -2622,6 +2622,82 @@ app.get('/api/posts', async (req, res) => {
     }
 });
 
+// Create a new post
+app.post('/api/posts', async (req, res) => {
+    try {
+        const {
+            videoUrl,
+            thumbnailUrl,
+            caption,
+            userId,
+            username,
+            hashtags,
+            isFrontCamera,
+            musicName,
+            musicArtist,
+        } = req.body;
+
+        console.log('📝 Creating new post:', {
+            hasVideoUrl: !!videoUrl,
+            hasThumbnailUrl: !!thumbnailUrl,
+            caption: caption?.substring(0, 50),
+            userId,
+            username,
+            isFrontCamera
+        });
+
+        // Validate required fields
+        if (!videoUrl) {
+            return res.status(400).json({
+                success: false,
+                error: 'Video URL is required',
+            });
+        }
+
+        // Create post object
+        const post = {
+            videoUrl,
+            thumbnailUrl: thumbnailUrl || null,
+            caption: caption || '',
+            userId: userId || 'anonymous',
+            username: username || 'Anonymous User',
+            hashtags: hashtags || [],
+            isFrontCamera: isFrontCamera === 'true' || isFrontCamera === true,
+            musicName: musicName || null,
+            musicArtist: musicArtist || null,
+            createdAt: new Date(),
+            status: 'published',
+            likes: 0,
+            comments: 0,
+            shares: 0,
+            views: 0,
+        };
+
+        // If database is available, save to DB
+        if (db) {
+            const result = await db.collection('posts').insertOne(post);
+            post._id = result.insertedId;
+            console.log(`✅ Post saved to database: ${post._id}`);
+        } else {
+            // No database, generate fake ID
+            post._id = new ObjectId();
+            console.log(`✅ Post created (no DB): ${post._id}`);
+        }
+
+        res.status(201).json({
+            success: true,
+            post,
+        });
+    } catch (error) {
+        console.error('❌ Error creating post:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to create post',
+            message: error.message,
+        });
+    }
+});
+
 // Get user's videos for profile page
 app.get('/api/user/videos', async (req, res) => {
     if (!db) {
