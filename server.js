@@ -2107,6 +2107,63 @@ app.post('/api/upload/video', requireAuth, upload.single('video'), async (req, r
     }
 });
 
+// Upload image file (thumbnails, profile images, etc.) to DigitalOcean Spaces
+app.post('/api/upload/image', requireAuth, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                error: 'No image file provided',
+                code: 'NO_FILE'
+            });
+        }
+
+        const BUCKET_NAME = process.env.DO_SPACES_BUCKET || 'vib3-videos';
+        const fileName = `images/${Date.now()}-${Math.random().toString(36).substring(7)}${path.extname(req.file.originalname)}`;
+
+        console.log(`📸 Uploading image: ${req.file.originalname} (${(req.file.size / 1024).toFixed(2)}KB)`);
+
+        // Upload to DigitalOcean Spaces
+        const uploadParams = {
+            Bucket: BUCKET_NAME,
+            Key: fileName,
+            Body: req.file.buffer,
+            ContentType: req.file.mimetype,
+            ACL: 'public-read',
+            Metadata: {
+                'original-name': req.file.originalname,
+                'upload-date': new Date().toISOString()
+            }
+        };
+
+        const uploadResult = await s3.upload(uploadParams).promise();
+        let imageUrl = uploadResult.Location;
+
+        // Normalize URL format for DigitalOcean Spaces
+        if (imageUrl && !imageUrl.startsWith('https://')) {
+            const cdnUrl = process.env.DO_SPACES_CDN_URL || `https://${BUCKET_NAME}.nyc3.cdn.digitaloceanspaces.com`;
+            imageUrl = `${cdnUrl}/${fileName}`;
+        }
+
+        console.log(`✅ Image uploaded successfully: ${imageUrl}`);
+
+        res.json({
+            success: true,
+            url: imageUrl,
+            filename: fileName,
+            size: req.file.size,
+            mimetype: req.file.mimetype
+        });
+
+    } catch (error) {
+        console.error('❌ Image upload error:', error);
+        res.status(500).json({
+            error: 'Failed to upload image',
+            code: 'UPLOAD_FAILED',
+            technical: error.message
+        });
+    }
+});
+
 // Helper function to generate video thumbnail using FFmpeg
 async function generateVideoThumbnail(videoUrl, videoId) {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'vib3-thumb-'));
