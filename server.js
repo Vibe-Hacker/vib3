@@ -71,9 +71,9 @@ app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
         timestamp: new Date().toISOString(),
-        deploymentVersion: '2025-10-26-detailed-logging',
+        deploymentVersion: '2025-10-26-typeerror-fix',
         staticMiddlewareFixed: true,
-        commit: 'ce07c22'
+        commit: 'a5f9cf3'
     });
 });
 
