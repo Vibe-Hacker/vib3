@@ -68,11 +68,29 @@ app.use((req, res, next) => {
 
 // Health check endpoint (before static files)
 app.get('/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'OK', 
+    res.status(200).json({
+        status: 'OK',
         timestamp: new Date().toISOString(),
-        deploymentVersion: '2025-07-18-fix-api-routes',
+        deploymentVersion: '2025-10-26-env-vars-debug',
         staticMiddlewareFixed: true
+    });
+});
+
+// Debug endpoint to check environment variables
+app.get('/debug/env', (req, res) => {
+    res.json({
+        hasSpacesKey: !!process.env.DO_SPACES_KEY,
+        hasSpacesSecret: !!process.env.DO_SPACES_SECRET,
+        hasSpacesEndpoint: !!process.env.DO_SPACES_ENDPOINT,
+        hasSpacesBucket: !!process.env.DO_SPACES_BUCKET,
+        hasCdnUrl: !!process.env.DO_SPACES_CDN_URL,
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+        spacesKeyLength: process.env.DO_SPACES_KEY?.length || 0,
+        spacesSecretLength: process.env.DO_SPACES_SECRET?.length || 0,
+        bucket: process.env.DO_SPACES_BUCKET || 'NOT_SET',
+        endpoint: process.env.DO_SPACES_ENDPOINT || 'NOT_SET',
+        region: process.env.DO_SPACES_REGION || 'NOT_SET',
+        nodeEnv: process.env.NODE_ENV || 'NOT_SET'
     });
 });
 
