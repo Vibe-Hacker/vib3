@@ -1970,7 +1970,7 @@ app.post('/api/upload/video', upload.single('video'), async (req, res) => {
             sessionUserId: req.user?.userId,
             bodyUserId: userId,
             bodyUsername: username,
-            willUse: req.user.userId || userId
+            willUse: req.user?.userId || userId
         });
         console.log(`📷 isFrontCamera: ${isFrontCamera}`);
 
