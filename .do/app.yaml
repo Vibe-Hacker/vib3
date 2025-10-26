@@ -32,3 +32,15 @@ services:
     - key: DO_SPACES_REGION
       value: nyc3
       scope: RUN_TIME
+    - key: DO_SPACES_ENDPOINT
+      value: nyc3.digitaloceanspaces.com
+      scope: RUN_TIME
+    - key: DO_SPACES_CDN_URL
+      value: https://vib3-videos.nyc3.cdn.digitaloceanspaces.com
+      scope: RUN_TIME
+    - key: DATABASE_URL
+      value: mongodb+srv://vibeadmin:P0pp0p25!@cluster0.y06bp.mongodb.net/vib3?retryWrites=true&w=majority&appName=Cluster0
+      scope: RUN_TIME
+    - key: ALLOWED_ORIGINS
+      value: '*'
+      scope: RUN_TIME
