@@ -25,7 +25,7 @@ const GeminiTaskManager = require('./gemini-task-manager');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-console.log('🚀 VIB3 Server starting...');
+console.log('🚀 VIB3 Server starting... [2025-10-26 env-vars-update]');
 
 // Middleware
 app.use(express.json({ limit: '100mb' }));
