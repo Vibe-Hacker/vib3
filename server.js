@@ -2082,6 +2082,14 @@ app.post('/api/upload/video', upload.single('video'), async (req, res) => {
         const fileName = `videos/${Date.now()}-${crypto.randomBytes(16).toString('hex')}${fileExtension}`;
 
         console.log('📋 Step 3: Uploading to DigitalOcean Spaces...');
+        console.log('🔍 S3 Upload Details:', {
+            bufferSize: finalBuffer.length,
+            bufferSizeMB: (finalBuffer.length / 1024 / 1024).toFixed(2),
+            fileName: fileName,
+            mimeType: finalMimeType,
+            bucket: BUCKET_NAME,
+            endpoint: process.env.DO_SPACES_ENDPOINT || 'nyc3.digitaloceanspaces.com'
+        });
 
         // Step 4: Upload to DigitalOcean Spaces
         const uploadParams = {
@@ -2097,7 +2105,9 @@ app.post('/api/upload/video', upload.single('video'), async (req, res) => {
             }
         };
 
+        console.log('⏳ Starting S3 upload...');
         const uploadResult = await s3.upload(uploadParams).promise();
+        console.log('✅ S3 upload completed successfully');
         let videoUrl = uploadResult.Location;
         
         // Normalize URL format for DigitalOcean Spaces
@@ -2109,6 +2119,7 @@ app.post('/api/upload/video', upload.single('video'), async (req, res) => {
         console.log('✅ Upload completed to:', videoUrl);
 
         // Step 5: Save to database with processing information
+        console.log('📋 Step 4: Saving video record to database...');
         let videoRecord = null;
         if (db) {
             const video = {
@@ -2134,11 +2145,14 @@ app.post('/api/upload/video', upload.single('video'), async (req, res) => {
                 updatedAt: new Date()
             };
 
+            console.log('⏳ Inserting video record into MongoDB...');
             const result = await db.collection('videos').insertOne(video);
             video._id = result.insertedId;
             videoRecord = video;
-            
-            console.log('✅ Video record saved to database');
+
+            console.log('✅ Video record saved to database with ID:', result.insertedId);
+        } else {
+            console.log('⚠️ Database connection not available, skipping DB save');
         }
 
         // Step 6: Return success response with detailed information
@@ -2159,12 +2173,17 @@ app.post('/api/upload/video', upload.single('video'), async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Upload error:', error);
-        
+        console.error('❌ Upload error occurred:');
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error code:', error.code);
+        console.error('Full error:', error);
+        console.error('Stack trace:', error.stack);
+
         // Enhanced error reporting
         let errorCode = 'UNKNOWN_ERROR';
         let userMessage = 'Upload failed. Please try again.';
-        
+
         if (error.message.includes('ENOENT')) {
             errorCode = 'FFMPEG_NOT_FOUND';
             userMessage = 'Video processing is temporarily unavailable. Please try again later.';
@@ -2177,12 +2196,23 @@ app.post('/api/upload/video', upload.single('video'), async (req, res) => {
         } else if (error.message.includes('duration')) {
             errorCode = 'VIDEO_TOO_LONG';
             userMessage = 'Video is too long. Please upload a video shorter than 3 minutes.';
+        } else if (error.code === 'NoSuchBucket') {
+            errorCode = 'S3_BUCKET_NOT_FOUND';
+            userMessage = 'Storage bucket not found. Please contact support.';
+        } else if (error.code === 'InvalidAccessKeyId' || error.code === 'SignatureDoesNotMatch') {
+            errorCode = 'S3_CREDENTIALS_INVALID';
+            userMessage = 'Storage credentials are invalid. Please contact support.';
+        } else if (error.code === 'RequestTimeout' || error.message.includes('timeout')) {
+            errorCode = 'UPLOAD_TIMEOUT';
+            userMessage = 'Upload timed out. Please try again with a smaller file.';
         }
-        
-        res.status(500).json({ 
+
+        res.status(500).json({
             error: userMessage,
             code: errorCode,
-            technical: error.message // For debugging
+            technical: error.message,
+            errorName: error.name,
+            s3ErrorCode: error.code || 'NONE'
         });
     }
 });
