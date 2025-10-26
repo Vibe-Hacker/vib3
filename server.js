@@ -94,6 +94,48 @@ app.get('/debug/env', (req, res) => {
     });
 });
 
+// Test S3 upload endpoint
+app.get('/debug/test-s3', async (req, res) => {
+    try {
+        const testBuffer = Buffer.from('Test upload from VIB3 backend');
+        const testFileName = `test/test-${Date.now()}.txt`;
+
+        const uploadParams = {
+            Bucket: BUCKET_NAME,
+            Key: testFileName,
+            Body: testBuffer,
+            ContentType: 'text/plain',
+            ACL: 'public-read'
+        };
+
+        console.log('Testing S3 upload with params:', {
+            bucket: BUCKET_NAME,
+            key: testFileName,
+            endpoint: process.env.DO_SPACES_ENDPOINT || 'nyc3.digitaloceanspaces.com',
+            region: process.env.DO_SPACES_REGION || 'nyc3'
+        });
+
+        const uploadResult = await s3.upload(uploadParams).promise();
+
+        res.json({
+            success: true,
+            message: 'S3 upload test successful',
+            url: uploadResult.Location,
+            bucket: BUCKET_NAME,
+            key: testFileName
+        });
+    } catch (error) {
+        console.error('S3 test upload failed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'S3 upload test failed',
+            error: error.message,
+            errorCode: error.code,
+            errorStack: error.stack
+        });
+    }
+});
+
 // Password reset web interface
 app.get('/reset-password', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'reset-password.html'));
