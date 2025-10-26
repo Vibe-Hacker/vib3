@@ -2013,9 +2013,9 @@ app.post('/api/upload/video', upload.single('video'), async (req, res) => {
                 console.log('📋 Step 2: Processing video into multiple quality variants...');
                 try {
                     const multiResult = await multiQualityProcessor.processMultiQuality(
-                        req.file.buffer, 
+                        req.file.buffer,
                         req.file.originalname,
-                        req.user.userId || userId,
+                        req.user?.userId || userId,
                         { isFrontCamera: isFrontCamera === 'true' }
                     );
                     
@@ -2124,7 +2124,7 @@ app.post('/api/upload/video', upload.single('video'), async (req, res) => {
         let videoRecord = null;
         if (db) {
             const video = {
-                userId: req.user.userId || userId,
+                userId: req.user?.userId || userId,
                 username: username || 'unknown',
                 title,
                 description: description || '',
