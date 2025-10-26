@@ -71,9 +71,10 @@ app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
         timestamp: new Date().toISOString(),
-        deploymentVersion: '2025-10-26-all-typeerror-fixes',
+        deploymentVersion: '2025-10-26-thumbnail-upload-fix',
         staticMiddlewareFixed: true,
-        commit: 'd2243a2'
+        imageUploadEnabled: true,
+        commit: 'pending'
     });
 });
 
@@ -1002,17 +1003,17 @@ const upload = multer({
     fileFilter: (req, file, cb) => {
         console.log(`📋 File upload attempt - Field: ${file.fieldname}, MIME: ${file.mimetype}, Name: ${file.originalname}`);
 
-        // Accept thumbnails (images) for thumbnail field
-        if (file.fieldname === 'thumbnail') {
+        // Accept thumbnails (images) for thumbnail or image field
+        if (file.fieldname === 'thumbnail' || file.fieldname === 'image') {
             const isImage = file.mimetype && file.mimetype.startsWith('image/');
             const hasImageExtension = file.originalname && /\.(jpg|jpeg|png|gif|webp)$/i.test(file.originalname);
 
             if (isImage || hasImageExtension) {
-                console.log(`✅ Thumbnail accepted: ${file.originalname}`);
+                console.log(`✅ Image/Thumbnail accepted: ${file.originalname}`);
                 cb(null, true);
             } else {
-                console.log(`❌ Thumbnail rejected - MIME: ${file.mimetype}, Name: ${file.originalname}`);
-                cb(new Error('Invalid thumbnail type. Please upload an image file.'));
+                console.log(`❌ Image rejected - MIME: ${file.mimetype}, Name: ${file.originalname}`);
+                cb(new Error('Invalid image type. Please upload an image file.'));
             }
             return;
         }
@@ -1022,7 +1023,7 @@ const upload = multer({
         const hasVideoExtension = file.originalname && /\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp)$/i.test(file.originalname);
 
         if (isVideo || hasVideoExtension) {
-            console.log(`✅ File accepted: ${file.originalname}`);
+            console.log(`✅ Video file accepted: ${file.originalname}`);
             cb(null, true);
         } else {
             console.log(`❌ File rejected - MIME: ${file.mimetype}, Name: ${file.originalname}`);
