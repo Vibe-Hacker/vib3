@@ -136,6 +136,28 @@ app.get('/debug/test-s3', async (req, res) => {
     }
 });
 
+// Test FFmpeg installation
+app.get('/debug/test-ffmpeg', async (req, res) => {
+    const { exec } = require('child_process');
+    const util = require('util');
+    const execPromise = util.promisify(exec);
+
+    try {
+        const { stdout, stderr } = await execPromise('ffmpeg -version');
+        res.json({
+            success: true,
+            message: 'FFmpeg is installed',
+            version: stdout.split('\n')[0]
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'FFmpeg not found or not working',
+            error: error.message
+        });
+    }
+});
+
 // Password reset web interface
 app.get('/reset-password', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'reset-password.html'));
