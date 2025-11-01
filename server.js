@@ -1682,9 +1682,9 @@ app.get('/api/videos', async (req, res) => {
                 
                 // Apply engagement-based algorithm and randomization
                 console.log(`🎲 Before shuffle: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
-                videos = await applyEngagementRanking(videos, db);
-                console.log(`📊 After engagement ranking: ${videos.slice(0,3).map(v => v._id).join(', ')}`);
-                
+                // videos = await applyEngagementRanking(videos, db);  // DISABLED - function not defined
+                console.log(`📊 Skipping engagement ranking (not implemented)`);
+
                 // Force randomization - simple reverse every other call
                 if (Math.random() > 0.5) {
                     videos.reverse();
