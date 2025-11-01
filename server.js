@@ -1045,7 +1045,10 @@ async function connectDB() {
         try {
             client = new MongoClient(mongoUri);
             await client.connect();
-            db = client.db('vib3');
+            // Extract database name from URI or use default
+            const dbName = mongoUri.split('/').pop().split('?')[0] || 'vib3';
+            db = client.db(dbName);
+            console.log(`📊 Connected to database: ${dbName}`);
 
             // Create indexes for better performance
             await createIndexes();
