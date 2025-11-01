@@ -1045,8 +1045,16 @@ async function connectDB() {
         try {
             client = new MongoClient(mongoUri);
             await client.connect();
-            // Extract database name from URI or use default
-            const dbName = mongoUri.split('/').pop().split('?')[0] || 'vib3';
+            // Use explicit DB name from env, or extract from URI, or use default
+            let dbName = process.env.MONGODB_DATABASE_NAME;
+            if (!dbName) {
+                // Extract from URI: mongodb://.../.../dbname?params
+                const uriParts = mongoUri.split('/');
+                dbName = uriParts[uriParts.length - 1].split('?')[0];
+            }
+            if (!dbName || dbName.includes('mongodb')) {
+                dbName = 'vib3_app2_prod'; // Fallback to app2 database
+            }
             db = client.db(dbName);
             console.log(`📊 Connected to database: ${dbName}`);
 
