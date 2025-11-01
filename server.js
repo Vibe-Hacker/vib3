@@ -1053,7 +1053,7 @@ async function connectDB() {
                 dbName = uriParts[uriParts.length - 1].split('?')[0];
             }
             if (!dbName || dbName.includes('mongodb')) {
-                dbName = 'vib3_app2_prod'; // Fallback to app2 database
+                dbName = 'vib3'; // Fallback to vib3 database where videos were originally uploaded
             }
             db = client.db(dbName);
             console.log(`📊 Connected to database: ${dbName}`);
